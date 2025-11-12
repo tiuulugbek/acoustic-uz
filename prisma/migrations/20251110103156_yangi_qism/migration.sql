@@ -1,0 +1,16 @@
+-- AlterTable
+ALTER TABLE "Product" ADD COLUMN     "benefits_ru" TEXT[] DEFAULT ARRAY[]::TEXT[],
+ADD COLUMN     "benefits_uz" TEXT[] DEFAULT ARRAY[]::TEXT[],
+ADD COLUMN     "features_ru" TEXT[] DEFAULT ARRAY[]::TEXT[],
+ADD COLUMN     "features_uz" TEXT[] DEFAULT ARRAY[]::TEXT[],
+ADD COLUMN     "fittingRange_ru" TEXT,
+ADD COLUMN     "fittingRange_uz" TEXT,
+ADD COLUMN     "galleryUrls" TEXT[] DEFAULT ARRAY[]::TEXT[],
+ADD COLUMN     "intro_ru" TEXT,
+ADD COLUMN     "intro_uz" TEXT,
+ADD COLUMN     "regulatoryNote_ru" TEXT,
+ADD COLUMN     "regulatoryNote_uz" TEXT,
+ADD COLUMN     "relatedProductIds" TEXT[] DEFAULT ARRAY[]::TEXT[],
+ADD COLUMN     "tech_ru" TEXT,
+ADD COLUMN     "tech_uz" TEXT,
+ADD COLUMN     "usefulArticleSlugs" TEXT[] DEFAULT ARRAY[]::TEXT[];

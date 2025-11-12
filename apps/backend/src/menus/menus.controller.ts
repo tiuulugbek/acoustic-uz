@@ -1,0 +1,27 @@
+import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
+import { MenusService } from './menus.service';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { RbacGuard } from '../common/guards/rbac.guard';
+import { RequirePermissions } from '../common/decorators/permissions.decorator';
+import { Public } from '../common/decorators/public.decorator';
+
+@ApiTags('public', 'admin')
+@Controller('menus')
+export class MenusController {
+  constructor(private readonly service: MenusService) {}
+
+  @Public()
+  @Get(':name')
+  findOne(@Param('name') name: string) {
+    return this.service.findOne(name);
+  }
+
+  @UseGuards(JwtAuthGuard, RbacGuard)
+  @Post(':name')
+  @RequirePermissions('content.write')
+  update(@Param('name') name: string, @Body() dto: { items: unknown }) {
+    return this.service.update(name, dto.items);
+  }
+}
+
