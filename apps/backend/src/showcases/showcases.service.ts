@@ -17,7 +17,10 @@ export class ShowcasesService {
     }
 
     const products = await this.prisma.product.findMany({
-      where: { id: { in: showcase.productIds } },
+      where: { 
+        id: { in: showcase.productIds },
+        status: 'published', // Only return published products
+      },
       include: { brand: true, category: true },
     });
 

@@ -197,3 +197,14 @@ export const homepageNewsItemSchema = z.object({
   status: z.enum(['published', 'draft', 'archived']).default('published'),
 });
 
+export const homepageServiceSchema = z.object({
+  title_uz: z.string().min(1),
+  title_ru: z.string().min(1),
+  excerpt_uz: z.string().optional(),
+  excerpt_ru: z.string().optional(),
+  slug: z.string().optional().nullable(),
+  imageId: z.string().cuid().optional().nullable(),
+  order: z.number().int().default(0),
+  status: z.enum(['published', 'draft', 'archived']).default('published'),
+});
+

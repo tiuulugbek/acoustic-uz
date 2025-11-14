@@ -133,4 +133,42 @@ export class HomepageController {
   deleteNews(@Param('id') id: string) {
     return this.homepage.deleteNewsItem(id);
   }
+
+  @Public()
+  @Get('services')
+  findPublicServices() {
+    return this.homepage.findServices(true);
+  }
+
+  @UseGuards(JwtAuthGuard, RbacGuard)
+  @Get('services/admin')
+  @RequirePermissions('content.read')
+  @ApiBearerAuth()
+  findAllServices() {
+    return this.homepage.findServices(false);
+  }
+
+  @UseGuards(JwtAuthGuard, RbacGuard)
+  @Post('services')
+  @RequirePermissions('content.write')
+  @ApiBearerAuth()
+  createService(@Body() dto: unknown) {
+    return this.homepage.createService(dto);
+  }
+
+  @UseGuards(JwtAuthGuard, RbacGuard)
+  @Patch('services/:id')
+  @RequirePermissions('content.write')
+  @ApiBearerAuth()
+  updateService(@Param('id') id: string, @Body() dto: unknown) {
+    return this.homepage.updateService(id, dto);
+  }
+
+  @UseGuards(JwtAuthGuard, RbacGuard)
+  @Delete('services/:id')
+  @RequirePermissions('content.write')
+  @ApiBearerAuth()
+  deleteService(@Param('id') id: string) {
+    return this.homepage.deleteService(id);
+  }
 }

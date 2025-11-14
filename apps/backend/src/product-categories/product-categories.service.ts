@@ -19,6 +19,13 @@ export class ProductCategoriesService {
     });
   }
 
+  async findBySlug(slug: string) {
+    return this.prisma.productCategory.findFirst({
+      where: { slug },
+      include: { parent: true, children: true, image: true },
+    });
+  }
+
   async create(data: unknown) {
     return this.prisma.productCategory.create({ data: data as any });
   }

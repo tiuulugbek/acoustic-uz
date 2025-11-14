@@ -17,6 +17,12 @@ export class ProductCategoriesController {
     return this.service.findAll();
   }
 
+  @Public()
+  @Get('slug/:slug')
+  findBySlug(@Param('slug') slug: string) {
+    return this.service.findBySlug(slug);
+  }
+
   @UseGuards(JwtAuthGuard, RbacGuard)
   @Post()
   @RequirePermissions('content.write')

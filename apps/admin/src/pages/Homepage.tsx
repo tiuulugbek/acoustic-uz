@@ -38,9 +38,14 @@ import {
   createHomepageNewsItem,
   updateHomepageNewsItem,
   deleteHomepageNewsItem,
+  getHomepageServices,
+  createHomepageService,
+  updateHomepageService,
+  deleteHomepageService,
   HomepageHearingAidDto,
   HomepageJourneyStepDto,
   HomepageNewsItemDto,
+  HomepageServiceDto,
   getPosts,
   PostDto,
   ApiError,
@@ -54,13 +59,8 @@ import {
   type CreateBannerPayload,
   type UpdateBannerPayload,
   type MediaDto,
-  getServices,
-  createService,
-  updateService,
-  deleteService,
-  type ServiceDto,
-  type CreateServicePayload,
-  type UpdateServicePayload,
+  type CreateHomepageServicePayload,
+  type UpdateHomepageServicePayload,
   getProductCategoriesAdmin,
   createProductCategory,
   updateProductCategory,
@@ -380,46 +380,46 @@ function SlidesTab() {
   );
 }
 
-// Services Tab
-function ServicesTab() {
+// Homepage Services Tab (separate from regular services)
+function HomepageServicesTab() {
   const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery<ServiceDto[], ApiError>({
-    queryKey: ['services'],
-    queryFn: getServices,
+  const { data, isLoading } = useQuery<HomepageServiceDto[], ApiError>({
+    queryKey: ['homepage-services-admin'],
+    queryFn: getHomepageServices,
   });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingService, setEditingService] = useState<ServiceDto | null>(null);
+  const [editingService, setEditingService] = useState<HomepageServiceDto | null>(null);
   const [form] = Form.useForm();
 
   const createMutation = useMutation({
-    mutationFn: createService,
+    mutationFn: createHomepageService,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['services'] });
+      queryClient.invalidateQueries({ queryKey: ['homepage-services-admin'] });
       message.success('Xizmat saqlandi');
     },
     onError: (error: ApiError) => message.error(error.message || 'Xatolik yuz berdi'),
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: UpdateServicePayload }) => updateService(id, payload),
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateHomepageServicePayload }) => updateHomepageService(id, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['services'] });
+      queryClient.invalidateQueries({ queryKey: ['homepage-services-admin'] });
       message.success('Xizmat yangilandi');
     },
     onError: (error: ApiError) => message.error(error.message || 'Xatolik yuz berdi'),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: deleteService,
+    mutationFn: deleteHomepageService,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['services'] });
+      queryClient.invalidateQueries({ queryKey: ['homepage-services-admin'] });
       message.success("Xizmat o'chirildi");
     },
     onError: (error: ApiError) => message.error(error.message || "O'chirishda xatolik"),
   });
 
-  const columns: ColumnsType<ServiceDto> = useMemo(
+  const columns: ColumnsType<HomepageServiceDto> = useMemo(
     () => [
       {
         title: 'Sarlavha (uz)',
@@ -435,7 +435,7 @@ function ServicesTab() {
         title: 'Holati',
         dataIndex: 'status',
         key: 'status',
-        render: (value: ServiceDto['status']) => {
+        render: (value: HomepageServiceDto['status']) => {
           const color = value === 'published' ? 'green' : value === 'draft' ? 'orange' : 'default';
           return <Tag color={color}>{value}</Tag>;
         },
@@ -448,7 +448,7 @@ function ServicesTab() {
       {
         title: 'Amallar',
         key: 'actions',
-        render: (_: unknown, record: ServiceDto) => (
+        render: (_: unknown, record: HomepageServiceDto) => (
           <Space>
             <Button
               size="small"
@@ -459,12 +459,10 @@ function ServicesTab() {
                   title_ru: record.title_ru,
                   excerpt_uz: record.excerpt_uz,
                   excerpt_ru: record.excerpt_ru,
-                  body_uz: record.body_uz,
-                  body_ru: record.body_ru,
                   slug: record.slug,
                   status: record.status,
                   order: record.order,
-                  coverId: record.cover?.id,
+                  imageId: record.image?.id,
                 });
                 setIsModalOpen(true);
               }}
@@ -493,17 +491,15 @@ function ServicesTab() {
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
-      const payload: CreateServicePayload = {
+      const payload: CreateHomepageServicePayload = {
         title_uz: values.title_uz,
         title_ru: values.title_ru,
         excerpt_uz: values.excerpt_uz ?? undefined,
         excerpt_ru: values.excerpt_ru ?? undefined,
-        body_uz: values.body_uz ?? undefined,
-        body_ru: values.body_ru ?? undefined,
-        slug: values.slug,
+        slug: values.slug ?? undefined,
         order: typeof values.order === 'number' ? values.order : Number(values.order ?? 0),
         status: values.status,
-        coverId: values.coverId || undefined,
+        imageId: values.imageId || undefined,
       };
 
       if (editingService) {
@@ -542,16 +538,10 @@ function ServicesTab() {
           <Form.Item label="Qisqa matn (ru)" name="excerpt_ru">
             <Input.TextArea rows={3} />
           </Form.Item>
-          <Form.Item label="To'liq matn (uz)" name="body_uz">
-            <Input.TextArea rows={5} />
+          <Form.Item label="Slug" name="slug">
+            <Input placeholder="xizmat-slug (ixtiyoriy)" />
           </Form.Item>
-          <Form.Item label="To'liq matn (ru)" name="body_ru">
-            <Input.TextArea rows={5} />
-          </Form.Item>
-          <Form.Item label="Slug" name="slug" rules={[{ required: true }]}>
-            <Input placeholder="xizmat-slug" />
-          </Form.Item>
-          <Form.Item label="Rasm ID" name="coverId">
+          <Form.Item label="Rasm ID" name="imageId">
             <Input placeholder="Media ID" />
           </Form.Item>
           <Form.Item label="Holati" name="status" initialValue="published">
@@ -1668,9 +1658,9 @@ export default function HomepagePage() {
       children: <SlidesTab />,
     },
     {
-      key: 'services',
-      label: 'Xizmatlar',
-      children: <ServicesTab />,
+      key: 'homepage-services',
+      label: 'Bosh sahifa xizmatlari',
+      children: <HomepageServicesTab />,
     },
     {
       key: 'categories',

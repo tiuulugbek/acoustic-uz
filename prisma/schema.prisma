@@ -52,6 +52,7 @@ model Media {
   posts    Post[]
   branches Branch[]
   homepageHearingAids HomepageHearingAid[]
+  homepageServices    HomepageService[]
   productCategories ProductCategory[]
 
   @@index([url])
@@ -362,5 +363,22 @@ model HomepageNewsItem {
 
   @@index([status, order])
   @@index([postId])
+}
+
+model HomepageService {
+  id           String   @id @default(cuid())
+  title_uz     String
+  title_ru     String
+  excerpt_uz   String?
+  excerpt_ru   String?
+  slug         String?
+  imageId      String?
+  image        Media?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
+  order        Int      @default(0)
+  status       String   @default("published")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([status, order])
 }
 

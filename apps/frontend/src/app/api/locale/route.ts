@@ -86,14 +86,17 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Create response with redirect (use 307 to preserve method, but 302 is fine for GET)
+  // Set locale cookie FIRST, before creating redirect response
+  // This ensures the cookie is set in the response that will be sent
+  const expires = new Date();
+  expires.setTime(expires.getTime() + LOCALE_COOKIE_MAX_AGE * 1000);
+
+  // Create response with redirect (use 307 to preserve method)
+  // IMPORTANT: Set cookie before redirect so it's included in the response
   const response = NextResponse.redirect(redirectUrl, { status: 307 });
 
   // Set locale cookie with proper attributes
   // Use both maxAge and expires for maximum compatibility
-  const expires = new Date();
-  expires.setTime(expires.getTime() + LOCALE_COOKIE_MAX_AGE * 1000);
-
   response.cookies.set(LOCALE_COOKIE_NAME, locale, {
     path: '/',
     maxAge: LOCALE_COOKIE_MAX_AGE,
@@ -107,6 +110,11 @@ export async function GET(request: NextRequest) {
   response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   response.headers.set('Pragma', 'no-cache');
   response.headers.set('Expires', '0');
+  
+  // Log cookie setting for debugging
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[Locale API] Setting cookie ${LOCALE_COOKIE_NAME}=${locale} for redirect to ${redirectUrl.toString()}`);
+  }
 
   return response;
 }

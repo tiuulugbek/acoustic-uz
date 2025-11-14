@@ -5,15 +5,17 @@ import {
   ArrowRight,
   Play,
   Phone,
+  ChevronDown,
 } from 'lucide-react';
 import Image from 'next/image';
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getBilingualText, DEFAULT_LOCALE, type Locale } from '@/lib/locale';
 import { getLocaleFromCookie } from '@/lib/locale-client';
 import {
   getPublicBanners,
   getPublicServices,
+  getHomepageServices,
   getShowcase,
   getHomepageHearingAidItems,
   getHomepageNews,
@@ -124,7 +126,7 @@ const fallbackHearingItems: Array<
     id: 'hearing-3',
     title_uz: 'Bolalar uchun',
     title_ru: 'Для детей и подростков',
-    description_uz: 'Bolalarning nutq rivojlanishini qo‘llab-quvvatlovchi modelllar.',
+    description_uz: 'Bolalarning nutq rivojlanishini qo\'llab-quvvatlovchi modelllar.',
     description_ru: 'Решения, помогающие ребёнку развивать речь.',
     link: '/catalog/category-children',
   },
@@ -136,14 +138,151 @@ const fallbackHearingItems: Array<
     description_ru: 'Умные технологии на базе искусственного интеллекта.',
     link: '/catalog/category-ai',
   },
+  {
+    id: 'hearing-5',
+    title_uz: "Ikkinchi darajadagi eshitish yo'qotilishi",
+    title_ru: 'Потеря слуха второй степени',
+    description_uz: 'O\'rtacha eshitish yo\'qotilishi uchun keng tanlov.',
+    description_ru: 'Широкий выбор для умеренной потери слуха.',
+    link: '/catalog/category-moderate',
+  },
+  {
+    id: 'hearing-6',
+    title_uz: 'Kuchli va superkuchli',
+    title_ru: 'Мощные и супермощные',
+    description_uz: '3-4 darajali eshitish yo\'qotilishi uchun kuchli apparatlar.',
+    description_ru: 'Мощные устройства для потери слуха 3-4 степени.',
+    link: '/catalog/category-powerful',
+  },
+  {
+    id: 'hearing-7',
+    title_uz: 'Tovushni boshqarish',
+    title_ru: 'Управление звуком',
+    description_uz: 'Shovqinni niqoblaydigan tovush terapiyasi.',
+    description_ru: 'Звуковая терапия, маскирующая шум.',
+    link: '/catalog/category-sound-control',
+  },
+  {
+    id: 'hearing-8',
+    title_uz: 'Smartfon uchun',
+    title_ru: 'Для смартфона',
+    description_uz: 'Smartfoningizdan to\'g\'ridan-to\'g\'ri sifatli ovoz.',
+    description_ru: 'Высококачественный звук напрямую с вашего смартфона.',
+    link: '/catalog/category-smartphone',
+  },
+  {
+    id: 'hearing-9',
+    title_uz: "Ko'rinmas",
+    title_ru: 'Невидимые',
+    description_uz: 'Kichik, sezilmaydigan eshitish apparatlari.',
+    description_ru: 'Маленькие, незаметные слуховые аппараты.',
+    link: '/catalog/category-invisible-small',
+  },
+];
+
+const fallbackFaqItems = [
+  {
+    id: 'faq-1',
+    question_uz: 'Eshitish apparati narxi qancha?',
+    question_ru: 'Сколько стоит слуховой аппарат?',
+    answer_uz: 'Eshitish apparatlari narxi model, funksiyalar va texnik xususiyatlarga qarab farq qiladi. Bizning mutaxassislarimiz sizga eng mos variantni tanlashda yordam beradi.',
+    answer_ru: 'Стоимость слуховых аппаратов варьируется в зависимости от модели, функций и технических характеристик. Наши специалисты помогут вам выбрать наиболее подходящий вариант.',
+  },
+  {
+    id: 'faq-2',
+    question_uz: 'Qanday qilib to\'g\'ri eshitish apparatini tanlash mumkin?',
+    question_ru: 'Как правильно выбрать слуховой аппарат?',
+    answer_uz: 'To\'g\'ri eshitish apparatini tanlash uchun eshitish qobiliyatini to\'liq tekshirish kerak. Bizning audiologlarimiz sizga mos apparatni tanlashda yordam beradi.',
+    answer_ru: 'Для правильного выбора слухового аппарата необходимо полное обследование слуха. Наши аудиологи помогут вам выбрать подходящий аппарат.',
+  },
+  {
+    id: 'faq-3',
+    question_uz: 'Eshitish apparati eshitishni yomonlashtirib yubormaydimi?',
+    question_ru: 'Не ухудшит ли слуховой аппарат слух?',
+    answer_uz: 'Yo\'q, to\'g\'ri tanlangan va sozlangan eshitish apparati eshitishni yomonlashtirmaydi. Aksincha, u eshitish qobiliyatini saqlab qolishga yordam beradi.',
+    answer_ru: 'Нет, правильно подобранный и настроенный слуховой аппарат не ухудшает слух. Напротив, он помогает сохранить слуховую способность.',
+  },
+  {
+    id: 'faq-4',
+    question_uz: 'Eshitish apparatini qancha vaqt ishlatish mumkin?',
+    question_ru: 'Как долго можно использовать слуховой аппарат?',
+    answer_uz: 'Zamonaviy eshitish apparatlari 5-7 yilgacha ishlatilishi mumkin. Muntazam parvarish va texnik xizmat ko\'rsatish muddatini uzaytiradi.',
+    answer_ru: 'Современные слуховые аппараты могут использоваться до 5-7 лет. Регулярный уход и техническое обслуживание продлевают срок службы.',
+  },
+  {
+    id: 'faq-5',
+    question_uz: 'Eshitish apparatiga qanday parvarish qilish kerak?',
+    question_ru: 'Как ухаживать за слуховым аппаратом?',
+    answer_uz: 'Eshitish apparatini quruq joyda saqlang, namlikdan himoya qiling va muntazam tozalang. Batareyalarni vaqtida almashtiring.',
+    answer_ru: 'Храните слуховой аппарат в сухом месте, защищайте от влаги и регулярно чистите. Своевременно заменяйте батарейки.',
+  },
+  {
+    id: 'faq-6',
+    question_uz: 'Eshitish apparatiga kafolat bormi?',
+    question_ru: 'Есть ли гарантия на слуховой аппарат?',
+    answer_uz: 'Ha, barcha eshitish apparatlariga rasmiy kafolat beriladi. Kafolat muddati modelga qarab 1-3 yilgacha bo\'lishi mumkin.',
+    answer_ru: 'Да, на все слуховые аппараты предоставляется официальная гарантия. Срок гарантии может составлять от 1 до 3 лет в зависимости от модели.',
+  },
+  {
+    id: 'faq-7',
+    question_uz: 'Agar apparat mos kelmasa, almashtirish mumkinmi?',
+    question_ru: 'Можно ли обменять аппарат, если он не подходит?',
+    answer_uz: 'Ha, agar apparat sizga mos kelmasa, kafolat muddati davomida almashtirish yoki qaytarish mumkin. Batafsil ma\'lumot uchun biz bilan bog\'laning.',
+    answer_ru: 'Да, если аппарат вам не подходит, в течение гарантийного срока возможен обмен или возврат. Для подробной информации свяжитесь с нами.',
+  },
+  {
+    id: 'faq-8',
+    question_uz: 'Quloqda shovqin bo\'lsa, eshitish apparati yordam beradimi?',
+    question_ru: 'Поможет ли слуховой аппарат, если в ухе шум?',
+    answer_uz: 'Zamonaviy eshitish apparatlari tinnitus (quloq shovqini) bilan kurashish uchun maxsus funksiyalarga ega. Mutaxassislarimiz sizga mos yechimni tanlashda yordam beradi.',
+    answer_ru: 'Современные слуховые аппараты имеют специальные функции для борьбы с тиннитусом (шумом в ушах). Наши специалисты помогут вам выбрать подходящее решение.',
+  },
+  {
+    id: 'faq-9',
+    question_uz: 'Eshitish apparatini sotib olish uchun retsept kerakmi?',
+    question_ru: 'Нужен ли рецепт для покупки слухового аппарата?',
+    answer_uz: 'Ha, eshitish apparatini sotib olish uchun audiologik tekshiruvdan o\'tish va mutaxassis tavsiyasi olish kerak. Biz sizga to\'liq diagnostika xizmatini ko\'rsatamiz.',
+    answer_ru: 'Да, для покупки слухового аппарата необходимо пройти аудиологическое обследование и получить рекомендацию специалиста. Мы предоставляем полную диагностическую услугу.',
+  },
+  {
+    id: 'faq-10',
+    question_uz: 'Acoustic eshitish markazi filiallari qayerda joylashgan?',
+    question_ru: 'Где расположены филиалы центра слуха Acoustic?',
+    answer_uz: 'Bizning filiallarimiz Toshkent shahrida bir nechta joyda joylashgan. Batafsil manzillar va telefon raqamlarini "Manzillar" bo\'limida topishingiz mumkin.',
+    answer_ru: 'Наши филиалы расположены в нескольких местах города Ташкента. Подробные адреса и телефоны вы можете найти в разделе "Адреса".',
+  },
 ];
 
 const fallbackInteracoustics: FallbackInteracousticsProduct[] = [
+  {
+    name_uz: 'Interacoustics AD629',
+    name_ru: 'Interacoustics AD629',
+    description_uz: 'Audiometriya diagnostikasi uchun zamonaviy yechim.',
+    description_ru: 'Современное решение для диагностической аудиометрии.',
+    image: placeholderImage,
+    brand: 'Interacoustics',
+  },
+  {
+    name_uz: 'OAE MAICO EroScan',
+    name_ru: 'OAE MAICO EroScan',
+    description_uz: 'Otoakustik emissiya tekshiruvi uchun professional qurilma.',
+    description_ru: 'Профессиональное устройство для проверки отоакустической эмиссии.',
+    image: placeholderImage,
+    brand: 'Interacoustics',
+  },
   {
     name_uz: 'Interacoustics Titan',
     name_ru: 'Interacoustics Titan',
     description_uz: 'Tympanometriya va OAE diagnostikasi uchun universal platforma.',
     description_ru: 'Универсальная платформа для тимпанометрии и ОАЭ.',
+    image: placeholderImage,
+    brand: 'Interacoustics',
+  },
+  {
+    name_uz: 'Interacoustics Affinity Compact',
+    name_ru: 'Interacoustics Affinity Compact',
+    description_uz: 'Kompakt va ko\'chma diagnostika uskunasi.',
+    description_ru: 'Компактное и портативное диагностическое оборудование.',
     image: placeholderImage,
     brand: 'Interacoustics',
   },
@@ -173,14 +312,61 @@ const fallbackJourney = [
     description_uz: 'Sizga mos apparat tanlash.',
     description_ru: 'Подбор подходящего аппарата.',
   },
+  {
+    title_uz: 'Sozlash va moslashtirish',
+    title_ru: 'Настройка и адаптация',
+    description_uz: 'Individual sozlash va moslashtirish xizmatlari.',
+    description_ru: 'Индивидуальная настройка и адаптация под вас.',
+  },
+  {
+    title_uz: 'Kuzatuv va qo\'llab-quvvatlash',
+    title_ru: 'Наблюдение и поддержка',
+    description_uz: 'Muntazam kuzatuv va texnik yordam ko\'rsatish.',
+    description_ru: 'Регулярное наблюдение и техническая поддержка.',
+  },
 ];
 
 const fallbackNews = [
   {
     title_uz: "Cochlear seminariga taklif",
     title_ru: 'Обучающий семинар Cochlear в Минске',
-    excerpt_uz: 'Mutaxassislar va ota-onalar uchun yangi imkoniyatlar va bilimlar.',
+    excerpt_uz: 'Mutaxassislar va ota-onalar uchun yangi imkoniyatlar va bilimlar. Kattalar va bolalarga quvonch eshitishni yordam berish uchun yanada ko\'proq vositalar va bilimlar.',
     excerpt_ru: 'Еще больше инструментов и знаний, чтобы помочь взрослым и детям услышать радость.',
+    slug: '#',
+  },
+  {
+    title_uz: "Afsonaviy Oticon More O'zbekistonda",
+    title_ru: 'Легендарный Oticon More в Беларуси',
+    excerpt_uz: 'Sun\'iy intellekt bilan jihozlangan yangi avlod eshitish apparatlari. Ular tovushni tahlil qiladi va murakkab vaziyatlarda ham nutqni kuchaytiradi.',
+    excerpt_ru: 'Слуховые аппараты нового поколения со встроенным искусственным интеллектом. Они анализируют звук и усиливают речь даже в сложных ситуациях.',
+    slug: '#',
+  },
+  {
+    title_uz: "Belarusbankdan imtiyozli kredit",
+    title_ru: 'Льготный кредит от Беларусбанка',
+    excerpt_uz: 'Endi siz tanlov bilan cheklanish yoki eshitish muammosini hal qilishni kechiktirishingiz kerak emas. Imtiyozli shartlarda moliyalashtirish imkoniyati.',
+    excerpt_ru: 'Вам больше не придется ограничивать себя в выборе и откладывать решение проблемы со слухом. Возможность финансирования на льготных условиях.',
+    slug: '#',
+  },
+  {
+    title_uz: "Acoustic markazlarida Oticon Opn S",
+    title_ru: 'Oticon Opn S в Центрах хорошего слуха',
+    excerpt_uz: 'Innovatsion Oticon Opn S eshitish apparatlari endi Acoustic markazlarida sotuvda. Zamonaviy texnologiyalar va tabiiy ovoz.',
+    excerpt_ru: 'Инновационные слуховые аппараты Otcion Opn S уже доступны для покупки в Центрах хорошего слуха. Современные технологии и естественный звук.',
+    slug: '#',
+  },
+  {
+    title_uz: "Eshitish buzilishi va dementsiya",
+    title_ru: 'Нарушение слуха и деменция',
+    excerpt_uz: 'Eshitish qobiliyatining pasayishi va dementsiya rivojlanishi qanday bog\'liq? Acoustic markazining bosh shifokori tushuntirib beradi.',
+    excerpt_ru: 'Как связаны тугоухость и развитие деменции, рассказывает Главный врач Центра хорошего слуха. Своевременное решение проблемы слуха важно для здоровья мозга.',
+    slug: '#',
+  },
+  {
+    title_uz: "Qandli diabet va eshitish buzilishi",
+    title_ru: 'Сахарный диабет и тугоухость',
+    excerpt_uz: 'Qandli diabet eshitish buzilishlarining paydo bo\'lishi va rivojlanishi uchun xavf omili sifatida. Profilaktika va muntazam tekshiruvlar muhim.',
+    excerpt_ru: 'Сахарный диабет, как фактор риска появления и развития слуховых нарушений. Профилактика и регулярные проверки слуха важны для диабетиков.',
     slug: '#',
   },
 ];
@@ -215,23 +401,54 @@ function getClientLocale(): Locale {
 }
 
 export default function HomePage() {
+  const queryClient = useQueryClient();
   const [activeSlide, setActiveSlide] = useState(0);
+  const [manualRefreshKey, setManualRefreshKey] = useState(0);
+  const [openFaqId, setOpenFaqId] = useState<string | null>(null);
   
-  // Initialize locale: read from server-set values (data-locale attribute or window.__NEXT_LOCALE__)
-  // These are set by the server based on the cookie, so they're always in sync
-  // During SSR, use DEFAULT_LOCALE (but this is a client component, so SSR shouldn't happen)
-  const locale = useState<Locale>(() => {
+  // Make locale reactive: read from server-set values and update when they change
+  // The server sets data-locale and window.__NEXT_LOCALE__ based on the cookie
+  const [displayLocale, setDisplayLocale] = useState<Locale>(() => {
     // On client, read from server-set values immediately
-    // The server sets data-locale and window.__NEXT_LOCALE__ based on the cookie
-    // So this will always match what the server rendered
     if (typeof document !== 'undefined') {
       return getClientLocale();
     }
     return DEFAULT_LOCALE;
-  })[0]; // Only use the initial value, don't allow it to change
+  });
   
-  // Use locale for display - it's stable and matches server render
-  const displayLocale = locale;
+  // Watch for locale changes (e.g., after language switch and page reload)
+  // This ensures the component updates when the locale cookie changes
+  useEffect(() => {
+    const updateLocale = () => {
+      const newLocale = getClientLocale();
+      if (newLocale !== displayLocale) {
+        setDisplayLocale(newLocale);
+      }
+    };
+    
+    // Update immediately on mount (in case cookie changed)
+    updateLocale();
+    
+    // Also watch for changes to data-locale attribute (set by server)
+    const observer = new MutationObserver(() => {
+      updateLocale();
+    });
+    
+    if (typeof document !== 'undefined') {
+      observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-locale'],
+      });
+    }
+    
+    // Also check periodically (fallback for edge cases)
+    const interval = setInterval(updateLocale, 1000);
+    
+    return () => {
+      observer.disconnect();
+      clearInterval(interval);
+    };
+  }, [displayLocale]);
 
   // Fetch data with correct locale
   // Note: React Query will automatically refetch when displayLocale changes (different query key)
@@ -257,35 +474,55 @@ export default function HomePage() {
     console.log('[HomePage] Banners error:', bannersError);
   }
   
-  const { data: serviceData } = useQuery<ServiceResponse[]>({
-    queryKey: ['services', displayLocale],
-    queryFn: () => getPublicServices(displayLocale),
-    staleTime: 60 * 1000,
-    gcTime: 5 * 60 * 1000,
+  const { data: serviceData, refetch: refetchServices } = useQuery<ServiceResponse[]>({
+    queryKey: ['homepage-services', displayLocale, manualRefreshKey],
+    queryFn: async () => {
+      const timestamp = new Date().toISOString();
+      console.log(`[HomePage] 🔄 [${timestamp}] Fetching homepage services from API...`);
+      const result = await getHomepageServices(displayLocale);
+      console.log(`[HomePage] ✅ [${timestamp}] Received services:`, result?.length || 0, result);
+      if (result && Array.isArray(result)) {
+        result.forEach((s, i) => {
+          console.log(`[HomePage]   Service ${i + 1}: ${s.title_uz} (ID: ${s.id})`);
+        });
+      }
+      return result;
+    },
+    staleTime: 0, // Always refetch to show latest changes from admin
+    gcTime: 0, // Don't cache - always fetch fresh
+    refetchOnMount: 'always', // Always refetch on mount
+    refetchOnWindowFocus: true, // Refetch when window gains focus
+    refetchInterval: 3000, // Refetch every 3 seconds to catch admin changes
+    refetchIntervalInBackground: false, // Don't refetch in background
     retry: false,
     throwOnError: false,
-    placeholderData: [],
+    placeholderData: [], // Don't use cached placeholder data
+    // Override any defaults from QueryClient
+    networkMode: 'online',
   });
+
+  // Expose manual refresh function to window for debugging
+  if (typeof window !== 'undefined') {
+    (window as any).refreshHomepageServices = () => {
+      console.log('[HomePage] 🔄 Manual refresh triggered');
+      setManualRefreshKey(prev => prev + 1);
+      queryClient.invalidateQueries({ queryKey: ['homepage-services'] });
+      refetchServices();
+    };
+  }
   
   const { data: interacousticsData } = useQuery<ShowcaseResponse | null>({
     queryKey: ['showcase', 'interacoustics', displayLocale],
     queryFn: () => getShowcase('interacoustics', displayLocale),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0, // Always refetch to show latest changes from admin
     gcTime: 10 * 60 * 1000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
     retry: false,
     throwOnError: false,
     placeholderData: null,
   });
   
-  const { data: cochlearData } = useQuery<ShowcaseResponse | null>({
-    queryKey: ['showcase', 'cochlear', displayLocale],
-    queryFn: () => getShowcase('cochlear', displayLocale),
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
-    retry: false,
-    throwOnError: false,
-    placeholderData: null,
-  });
   
   const { data: hearingItemsData } = useQuery<HearingAidItemResponse[]>({
     queryKey: ['hearing-aid-items', displayLocale],
@@ -317,25 +554,77 @@ export default function HomePage() {
     placeholderData: [],
   });
   
-  const { data: newsItemsData } = useQuery<HomepageNewsItemResponse[]>({
-    queryKey: ['homepage-news', displayLocale],
-    queryFn: () => getHomepageNews(displayLocale),
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+  const { data: newsItemsData, refetch: refetchNews } = useQuery<HomepageNewsItemResponse[]>({
+    queryKey: ['homepage-news', displayLocale, manualRefreshKey],
+    queryFn: async () => {
+      const timestamp = new Date().toISOString();
+      console.log(`[HomePage] 🔄 [${timestamp}] Fetching homepage news from API...`);
+      const result = await getHomepageNews(displayLocale);
+      console.log(`[HomePage] ✅ [${timestamp}] Received news items:`, result?.length || 0, result);
+      if (result && Array.isArray(result)) {
+        result.forEach((n, i) => {
+          console.log(`[HomePage]   News ${i + 1}: ${n.title_uz} (ID: ${n.id})`);
+        });
+      }
+      return result;
+    },
+    staleTime: 0, // Always refetch to show latest changes from admin
+    gcTime: 0, // Don't cache - always fetch fresh
+    refetchOnMount: 'always', // Always refetch on mount
+    refetchOnWindowFocus: true, // Refetch when window gains focus
+    refetchInterval: 3000, // Refetch every 3 seconds to catch admin changes
+    refetchIntervalInBackground: false, // Don't refetch in background
     retry: false,
     throwOnError: false,
-    placeholderData: [],
+    placeholderData: [], // Don't use cached placeholder data
+    networkMode: 'online',
   });
   
-  const { data: faqData } = useQuery<FaqResponse[]>({
-    queryKey: ['faq', displayLocale],
-    queryFn: () => getPublicFaq(displayLocale),
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+  // Expose manual refresh function to window for debugging
+  if (typeof window !== 'undefined') {
+    (window as any).refreshHomepageNews = () => {
+      console.log('[HomePage] 🔄 Manual news refresh triggered');
+      setManualRefreshKey(prev => prev + 1);
+      queryClient.invalidateQueries({ queryKey: ['homepage-news'] });
+      refetchNews();
+    };
+  }
+  
+  const { data: faqData, refetch: refetchFaq } = useQuery<FaqResponse[]>({
+    queryKey: ['faq', displayLocale, manualRefreshKey],
+    queryFn: async () => {
+      const timestamp = new Date().toISOString();
+      console.log(`[HomePage] 🔄 [${timestamp}] Fetching FAQ from API...`);
+      const result = await getPublicFaq(displayLocale);
+      console.log(`[HomePage] ✅ [${timestamp}] Received FAQs:`, result?.length || 0, result);
+      if (result && Array.isArray(result)) {
+        result.forEach((f, i) => {
+          console.log(`[HomePage]   FAQ ${i + 1}: ${f.question_uz} (ID: ${f.id})`);
+        });
+      }
+      return result;
+    },
+    staleTime: 0, // Always refetch to show latest changes from admin
+    gcTime: 0, // Don't cache - always fetch fresh
+    refetchOnMount: 'always', // Always refetch on mount
+    refetchOnWindowFocus: true, // Refetch when window gains focus
+    refetchInterval: 3000, // Refetch every 3 seconds to catch admin changes
+    refetchIntervalInBackground: false, // Don't refetch in background
     retry: false,
     throwOnError: false,
-    placeholderData: [],
+    placeholderData: [], // Don't use cached placeholder data
+    networkMode: 'online',
   });
+  
+  // Expose manual refresh function to window for debugging
+  if (typeof window !== 'undefined') {
+    (window as any).refreshHomepageFaq = () => {
+      console.log('[HomePage] 🔄 Manual FAQ refresh triggered');
+      setManualRefreshKey(prev => prev + 1);
+      queryClient.invalidateQueries({ queryKey: ['faq'] });
+      refetchFaq();
+    };
+  }
 
   // Get fallback slides based on display locale
   const fallbackSlides = getFallbackSlides(displayLocale);
@@ -392,33 +681,101 @@ export default function HomePage() {
     } satisfies HeroSlide;
   });
 
+  // Debug: Log service data - ENHANCED
+  if (typeof window !== 'undefined') {
+    console.log('[HomePage] ========== SERVICE DATA DEBUG ==========');
+    console.log('[HomePage] Service data from API:', serviceData);
+    console.log('[HomePage] Service data length:', serviceData?.length);
+    console.log('[HomePage] Service data type:', typeof serviceData);
+    console.log('[HomePage] Is array?', Array.isArray(serviceData));
+    if (serviceData && Array.isArray(serviceData)) {
+      serviceData.forEach((s, i) => {
+        console.log(`[HomePage] Service ${i + 1} from API:`, {
+          id: s?.id,
+          title_uz: s?.title_uz,
+          title_ru: s?.title_ru,
+          slug: s?.slug,
+          hasImage: !!(s as any)?.image,
+          hasCover: !!(s as any)?.cover,
+        });
+      });
+    }
+    console.log('[HomePage] ==========================================');
+  }
+
   // Ensure we always have exactly 4 services (use fallback if needed)
   // If backend returns services, use them; otherwise use fallback services
   // Always pad or slice to exactly 4 services
-  const servicesToUse = serviceData && serviceData.length > 0 ? serviceData : fallbackServices;
+  // REMOVED: servicesToUse variable - not actually used in the code below
   
   // Create exactly 4 services, cycling through available services if needed
+  // FIXED: Always prioritize API data when available - simplify logic
   const services = Array.from({ length: 4 }, (_, index) => {
-    const service = servicesToUse[index % servicesToUse.length];
+    // Get service from backend data if available, otherwise use fallback
+    const service = index < (serviceData?.length ?? 0) ? serviceData![index] : null;
     const fallback = fallbackServices[index % fallbackServices.length];
     
-    // Check if service is from backend (ServiceResponse has slug, title_uz, title_ru)
-    const isBackendService = service && 'slug' in service && 'title_uz' in service && 'title_ru' in service;
+    // FIXED: Simplified check - if we have serviceData array with items, always use API data
+    // Check if service is from backend (ServiceResponse has id, title_uz, title_ru)
+    // Note: slug is optional in HomepageService, so we check for id instead
+    const hasValidServiceData = serviceData && Array.isArray(serviceData) && serviceData.length > 0;
+    const isBackendService = hasValidServiceData && service && 'id' in service && 'title_uz' in service && 'title_ru' in service;
     const backendService = isBackendService ? (service as ServiceResponse) : null;
     
     // Use backend service data if available, otherwise use fallback
-    const localizedTitle = backendService
-      ? (displayLocale === 'ru' ? backendService.title_ru : backendService.title_uz)
-      : (displayLocale === 'ru' ? fallback.title_ru : fallback.title_uz);
-    const localizedDescription = backendService
-      ? (displayLocale === 'ru' ? (backendService.excerpt_ru ?? '') : (backendService.excerpt_uz ?? ''))
-      : (displayLocale === 'ru' ? (fallback.excerpt_ru ?? '') : (fallback.excerpt_uz ?? ''));
-    const slug = backendService ? backendService.slug : fallback.slug;
-    // Use cover image from API or fallback placeholder
-    const image = backendService?.cover?.url ?? fallback.image ?? placeholderImage;
+    // If backend data is missing Russian but we're in Russian locale, use fallback Russian
+    const backendTitleUz = backendService?.title_uz ?? '';
+    const backendTitleRu = backendService?.title_ru ?? '';
+    const backendExcerptUz = backendService?.excerpt_uz ?? '';
+    const backendExcerptRu = backendService?.excerpt_ru ?? '';
+    
+    // If we have backend data but it's missing Russian translations, use fallback
+    const useFallbackForTitle = backendService && displayLocale === 'ru' && !backendTitleRu && fallback.title_ru;
+    const useFallbackForDescription = backendService && displayLocale === 'ru' && !backendExcerptRu && fallback.excerpt_ru;
+    
+    const localizedTitle = useFallbackForTitle
+      ? fallback.title_ru
+      : getBilingualText(backendTitleUz || fallback.title_uz, backendTitleRu || fallback.title_ru, displayLocale);
+    const localizedDescription = useFallbackForDescription
+      ? fallback.excerpt_ru
+      : getBilingualText(backendExcerptUz || (fallback.excerpt_uz ?? ''), backendExcerptRu || (fallback.excerpt_ru ?? ''), displayLocale);
+    // Handle slug - it might be null/undefined for homepage services
+    const slug = backendService 
+      ? (backendService.slug || backendService.id || fallback.slug)
+      : fallback.slug;
+    
+    // Debug: Log service being used - ENHANCED (after variables are defined)
+    if (typeof window !== 'undefined') {
+      if (index === 0) {
+        console.log('[HomePage] ========== RENDERED SERVICES DEBUG ==========');
+        console.log('[HomePage] serviceData exists?', !!serviceData);
+        console.log('[HomePage] serviceData is array?', Array.isArray(serviceData));
+        console.log('[HomePage] serviceData length?', serviceData?.length);
+        console.log('[HomePage] hasValidServiceData?', hasValidServiceData);
+      }
+      console.log(`[HomePage] Service ${index + 1}:`, {
+        serviceFromAPI: service ? { id: service.id, title_uz: (service as any).title_uz, title_ru: (service as any).title_ru } : null,
+        hasValidServiceData,
+        isBackendService,
+        renderedTitle: localizedTitle,
+        renderedSlug: slug,
+        usingFallback: !isBackendService,
+        fallbackTitle: fallback.title_uz,
+      });
+      // Show warning if we should use backend but aren't
+      if (hasValidServiceData && service && !isBackendService) {
+        console.warn(`[HomePage] ⚠️ Service ${index + 1} has API data but not using it!`, service);
+      }
+      if (index === 3) {
+        console.log('[HomePage] ===============================================');
+      }
+    }
+    // Use image from API (homepage services use 'image', regular services use 'cover')
+    // Check both 'image' (homepage services) and 'cover' (regular services) for compatibility
+    const image = (backendService as any)?.image?.url ?? (backendService as any)?.cover?.url ?? fallback.image ?? placeholderImage;
     
     return {
-      id: slug ?? `service-${index}`,
+      id: backendService?.id ?? slug ?? `service-${index}`,
       title: localizedTitle || `Service ${index + 1}`,
       description: localizedDescription || '',
       slug: slug || `service-${index}`,
@@ -426,118 +783,108 @@ export default function HomePage() {
     };
   });
 
-  // Use all categories from catalog instead of homepage hearing aid items
-  // Transform categories to match hearing items format
-  const catalogCategories = (categoriesData?.length ? categoriesData : []).map((category) => {
-    const title = getBilingualText(category.name_uz, category.name_ru, displayLocale);
-    const description = getBilingualText(category.description_uz ?? '', category.description_ru ?? '', displayLocale);
-    // Use category image if available, otherwise use orange square placeholder
-    const image = category.image?.url ?? placeholderImage;
-    const link = `/catalog/${category.slug}`;
+  // Always use hearing aid items for the "Eshitish aparatlari" section
+  // Use backend data if available, otherwise use fallback items
+  const hearingItemsSource = hearingItemsData && hearingItemsData.length > 0 
+    ? hearingItemsData 
+    : fallbackHearingItems;
+  
+  // Create exactly 9 items, cycling through available items if needed
+  const hearingItems = Array.from({ length: 9 }, (_, index) => {
+    const item = hearingItemsSource[index % hearingItemsSource.length];
+    const fallback = fallbackHearingItems[index % fallbackHearingItems.length];
+    
+    // Prefer fallback Russian if API data is missing Russian but we're in Russian locale
+    const itemTitleUz = item.title_uz ?? '';
+    const itemTitleRu = item.title_ru ?? '';
+    const itemDescUz = item.description_uz ?? '';
+    const itemDescRu = item.description_ru ?? '';
+    
+    // If API data exists but missing Russian and we're in Russian locale, prefer fallback Russian
+    const hasApiData = item && 'id' in item && itemTitleUz;
+    const useFallbackForTitle = hasApiData && displayLocale === 'ru' && !itemTitleRu && fallback.title_ru;
+    const useFallbackForDescription = hasApiData && displayLocale === 'ru' && !itemDescRu && fallback.description_ru;
+    
+    const title = useFallbackForTitle
+      ? fallback.title_ru
+      : getBilingualText(itemTitleUz || fallback.title_uz, itemTitleRu || fallback.title_ru, displayLocale);
+    const description = useFallbackForDescription
+      ? fallback.description_ru
+      : getBilingualText(itemDescUz || (fallback.description_uz ?? ''), itemDescRu || (fallback.description_ru ?? ''), displayLocale);
+    const image = item.image?.url ?? placeholderImage;
+    const link = item.link ?? fallback.link ?? '/catalog';
+    
     return {
-      id: category.id,
+      id: item.id ?? fallback.id ?? `hearing-${index}`,
       title,
       description,
       image,
       link,
-      hasImage: !!category.image?.url, // Track if we have a real image
+      hasImage: !!item.image?.url,
     };
   });
-
-  // Fallback to homepage hearing aid items if no categories available
-  const hearingItems = catalogCategories.length > 0 
-    ? catalogCategories
-    : (hearingItemsData?.length ? hearingItemsData : fallbackHearingItems).slice(0, 9).map((item, index) => {
-        const fallback = fallbackHearingItems[index % fallbackHearingItems.length];
-        const title = getBilingualText(item.title_uz ?? fallback.title_uz, item.title_ru ?? fallback.title_ru, displayLocale);
-        const description = getBilingualText(item.description_uz ?? fallback.description_uz ?? '', item.description_ru ?? fallback.description_ru ?? '', displayLocale);
-        const image = item.image?.url ?? placeholderImage;
-        const link = item.link ?? fallback.link ?? '/catalog';
-        return {
-          id: item.id ?? fallback.id,
-          title,
-          description,
-          image,
-          link,
-          hasImage: !!item.image?.url,
-        };
-      });
 
   const interacousticsSource: (ProductResponse | FallbackInteracousticsProduct)[] =
     interacousticsData?.products && interacousticsData.products.length > 0
       ? interacousticsData.products
       : fallbackInteracoustics;
 
-  const interacousticsProducts = interacousticsSource.slice(0, 4).map((product, index) => {
+  // Always create exactly 4 products, cycling through available items if needed
+  const interacousticsProducts = Array.from({ length: 4 }, (_, index) => {
+    const product = interacousticsSource[index % interacousticsSource.length];
     const fallback = fallbackInteracoustics[index % fallbackInteracoustics.length];
     if (isProductResponse(product)) {
-      const titleUz = product.name_uz ?? fallback.name_uz;
-      const titleRu = product.name_ru ?? fallback.name_ru;
-      const descriptionUz = product.description_uz ?? fallback.description_uz ?? '';
-      const descriptionRu = product.description_ru ?? fallback.description_ru ?? '';
+      const titleUz = product.name_uz ?? '';
+      const titleRu = product.name_ru ?? '';
+      const descriptionUz = product.description_uz ?? '';
+      const descriptionRu = product.description_ru ?? '';
+      
+      // If API data is missing Russian but we're in Russian locale, prefer fallback Russian
+      const finalTitleUz = titleUz || fallback.name_uz;
+      const finalTitleRu = titleRu || fallback.name_ru;
+      const finalDescriptionUz = descriptionUz || (fallback.description_uz ?? '');
+      const finalDescriptionRu = descriptionRu || (fallback.description_ru ?? '');
+      
       const image = product.brand?.logo?.url ?? fallback.image;
       const brand = product.brand?.name ?? fallback.brand;
+      
       return {
         id: product.slug ?? product.id ?? `interacoustics-${index}`,
-        title: displayLocale === 'ru' ? titleRu : titleUz,
-        description: displayLocale === 'ru' ? descriptionRu : descriptionUz,
+        title: getBilingualText(finalTitleUz, finalTitleRu, displayLocale),
+        description: getBilingualText(finalDescriptionUz, finalDescriptionRu, displayLocale),
         image,
         brand,
         slug: product.slug,
       };
     }
+    
+    // For fallback products, use getBilingualText as well
     return {
       id: `interacoustics-fallback-${index}`,
-      title: displayLocale === 'ru' ? product.name_ru : product.name_uz,
-      description: displayLocale === 'ru' ? product.description_ru ?? '' : product.description_uz ?? '',
+      title: getBilingualText(product.name_uz ?? fallback.name_uz, product.name_ru ?? fallback.name_ru, displayLocale),
+      description: getBilingualText(product.description_uz ?? fallback.description_uz ?? '', product.description_ru ?? fallback.description_ru ?? '', displayLocale),
       image: product.image,
       brand: product.brand,
       slug: undefined,
     };
   });
 
-  const cochlearSource: (ProductResponse | FallbackInteracousticsProduct)[] =
-    cochlearData?.products && cochlearData.products.length > 0
-      ? cochlearData.products
-      : fallbackCochlear;
 
-  const cochlearProducts = cochlearSource.slice(0, 4).map((product, index) => {
-    const fallback = fallbackCochlear[index % fallbackCochlear.length];
-    if (isProductResponse(product)) {
-      const titleUz = product.name_uz ?? fallback.name_uz;
-      const titleRu = product.name_ru ?? fallback.name_ru;
-      const descriptionUz = product.description_uz ?? fallback.description_uz ?? '';
-      const descriptionRu = product.description_ru ?? fallback.description_ru ?? '';
-      const image = product.brand?.logo?.url ?? fallback.image;
-      const brand = product.brand?.name ?? fallback.brand;
-      return {
-        id: product.slug ?? product.id ?? `cochlear-${index}`,
-        title: displayLocale === 'ru' ? titleRu : titleUz,
-        description: displayLocale === 'ru' ? descriptionRu : descriptionUz,
-        image,
-        brand,
-        slug: product.slug,
-      };
-    }
-    return {
-      id: `cochlear-fallback-${index}`,
-      title: displayLocale === 'ru' ? product.name_ru : product.name_uz,
-      description: displayLocale === 'ru' ? product.description_ru ?? '' : product.description_uz ?? '',
-      image: product.image,
-      brand: product.brand,
-      slug: undefined,
-    };
-  });
-
-  const journeySteps = (journeyData?.length ? journeyData : fallbackJourney.map((step, i) => ({
-    id: `journey-${i}`,
-    title_uz: step.title_uz,
-    title_ru: step.title_ru,
-    description_uz: step.description_uz,
-    description_ru: step.description_ru,
-    order: i + 1,
-    status: 'published' as const,
-  }))).slice(0, 4).map((step, index) => {
+  // Always create exactly 4 journey steps, using API data if available, otherwise fallback
+  const journeySource = journeyData && journeyData.length > 0 
+    ? journeyData 
+    : fallbackJourney.map((step, i) => ({
+        id: `journey-${i}`,
+        title_uz: step.title_uz,
+        title_ru: step.title_ru,
+        description_uz: step.description_uz,
+        description_ru: step.description_ru,
+        order: i + 1,
+        status: 'published' as const,
+      }));
+  
+  const journeySteps = Array.from({ length: 4 }, (_, index) => {
+    const step = journeySource[index % journeySource.length];
     const fallback = fallbackJourney[index % fallbackJourney.length];
     const title = getBilingualText(step.title_uz ?? fallback.title_uz, step.title_ru ?? fallback.title_ru, displayLocale);
     const description = getBilingualText(step.description_uz ?? fallback.description_uz ?? '', step.description_ru ?? fallback.description_ru ?? '', displayLocale);
@@ -549,38 +896,135 @@ export default function HomePage() {
     };
   });
 
-  const newsItems = (newsItemsData?.length ? newsItemsData : fallbackNews.map((item, i) => ({
-    id: `news-${i}`,
-    title_uz: item.title_uz,
-    title_ru: item.title_ru,
-    excerpt_uz: item.excerpt_uz,
-    excerpt_ru: item.excerpt_ru,
-    slug: item.slug,
-    publishedAt: new Date().toISOString(),
-    order: i + 1,
-    status: 'published' as const,
-  }))).slice(0, 6).map((item, index) => {
+  // Always create exactly 6 news items, using API data if available, otherwise fallback
+  const hasValidNewsData = newsItemsData && Array.isArray(newsItemsData) && newsItemsData.length > 0;
+  const newsSource = hasValidNewsData 
+    ? newsItemsData 
+    : fallbackNews.map((item, i) => ({
+        id: `news-${i}`,
+        title_uz: item.title_uz,
+        title_ru: item.title_ru,
+        excerpt_uz: item.excerpt_uz,
+        excerpt_ru: item.excerpt_ru,
+        slug: item.slug,
+        publishedAt: new Date().toISOString(),
+        order: i + 1,
+        status: 'published' as const,
+      }));
+  
+  if (typeof window !== 'undefined') {
+    console.log('[HomePage] ========== NEWS RENDERING DEBUG ==========');
+    console.log('[HomePage] newsItemsData exists?', !!newsItemsData);
+    console.log('[HomePage] newsItemsData is array?', Array.isArray(newsItemsData));
+    console.log('[HomePage] newsItemsData length?', newsItemsData?.length);
+    console.log('[HomePage] hasValidNewsData?', hasValidNewsData);
+    console.log('[HomePage] newsSource length?', newsSource.length);
+    console.log('[HomePage] Using API data?', hasValidNewsData);
+  }
+  
+  const newsItems = Array.from({ length: 6 }, (_, index) => {
+    const item = newsSource[index % newsSource.length];
     const fallback = fallbackNews[index % fallbackNews.length];
-    const title = getBilingualText(item.title_uz ?? fallback.title_uz, item.title_ru ?? fallback.title_ru, displayLocale);
-    const excerpt = getBilingualText(item.excerpt_uz ?? fallback.excerpt_uz ?? '', item.excerpt_ru ?? fallback.excerpt_ru ?? '', displayLocale);
+    
+    // Check if this is API data (has id and title fields)
+    const isApiData = hasValidNewsData && item && 'id' in item && 'title_uz' in item;
+    
+    // Get API data if available, otherwise use empty strings
+    const apiTitleUz = isApiData ? ((item as HomepageNewsItemResponse).title_uz ?? '') : '';
+    const apiTitleRu = isApiData ? ((item as HomepageNewsItemResponse).title_ru ?? '') : '';
+    const apiExcerptUz = isApiData ? ((item as HomepageNewsItemResponse).excerpt_uz ?? '') : '';
+    const apiExcerptRu = isApiData ? ((item as HomepageNewsItemResponse).excerpt_ru ?? '') : '';
+    
+    // If API data exists but missing Russian and we're in Russian locale, prefer fallback Russian
+    const useFallbackForTitle = isApiData && displayLocale === 'ru' && !apiTitleRu && fallback.title_ru;
+    const useFallbackForExcerpt = isApiData && displayLocale === 'ru' && !apiExcerptRu && fallback.excerpt_ru;
+    
+    const title = useFallbackForTitle
+      ? fallback.title_ru
+      : getBilingualText(apiTitleUz || fallback.title_uz, apiTitleRu || fallback.title_ru, displayLocale);
+    const excerpt = useFallbackForExcerpt
+      ? fallback.excerpt_ru
+      : getBilingualText(apiExcerptUz || (fallback.excerpt_uz ?? ''), apiExcerptRu || (fallback.excerpt_ru ?? ''), displayLocale);
+    
+    if (typeof window !== 'undefined' && index === 0) {
+      console.log('[HomePage] News Item 1:', {
+        isApiData,
+        title,
+        excerpt: excerpt.substring(0, 50) + '...',
+        itemId: isApiData ? (item as HomepageNewsItemResponse).id : fallback.title_uz,
+      });
+    }
+    
     return {
-      id: item.id ?? `news-${index}`,
+      id: isApiData ? (item as HomepageNewsItemResponse).id : `news-${index}`,
       title,
       excerpt,
-      slug: item.slug ?? fallback.slug,
-      publishedAt: item.publishedAt,
+      slug: isApiData ? (item as HomepageNewsItemResponse).slug : fallback.slug,
+      publishedAt: isApiData ? (item as HomepageNewsItemResponse).publishedAt : undefined,
     };
   });
+  
+  if (typeof window !== 'undefined') {
+    console.log('[HomePage] ===============================================');
+  }
 
-  const faqItems = (faqData?.length ? faqData : []).slice(0, 6).map((item) => {
-    const question = getBilingualText(item.question_uz, item.question_ru, displayLocale);
-    const answer = getBilingualText(item.answer_uz ?? '', item.answer_ru ?? '', displayLocale);
+  // Create exactly 10 FAQ items, using API data if available, otherwise fallback
+  const hasValidFaqData = faqData && Array.isArray(faqData) && faqData.length > 0;
+  const faqItemsSource = hasValidFaqData ? faqData : fallbackFaqItems;
+  
+  if (typeof window !== 'undefined') {
+    console.log('[HomePage] ========== FAQ RENDERING DEBUG ==========');
+    console.log('[HomePage] faqData exists?', !!faqData);
+    console.log('[HomePage] faqData is array?', Array.isArray(faqData));
+    console.log('[HomePage] faqData length?', faqData?.length);
+    console.log('[HomePage] hasValidFaqData?', hasValidFaqData);
+    console.log('[HomePage] faqItemsSource length?', faqItemsSource.length);
+    console.log('[HomePage] Using API data?', hasValidFaqData);
+  }
+  
+  const faqItems = Array.from({ length: 10 }, (_, index) => {
+    const item = faqItemsSource[index % faqItemsSource.length];
+    const fallback = fallbackFaqItems[index % fallbackFaqItems.length];
+    
+    // Check if this is API data (has id and question fields)
+    const isApiData = hasValidFaqData && item && 'id' in item && 'question_uz' in item;
+    
+    // Get API data if available, otherwise use empty strings
+    const apiQuestionUz = isApiData ? ((item as FaqResponse).question_uz ?? '') : '';
+    const apiQuestionRu = isApiData ? ((item as FaqResponse).question_ru ?? '') : '';
+    const apiAnswerUz = isApiData ? ((item as FaqResponse).answer_uz ?? '') : '';
+    const apiAnswerRu = isApiData ? ((item as FaqResponse).answer_ru ?? '') : '';
+    
+    // If API data exists but missing Russian and we're in Russian locale, prefer fallback Russian
+    const useFallbackForQuestion = isApiData && displayLocale === 'ru' && !apiQuestionRu && fallback.question_ru;
+    const useFallbackForAnswer = isApiData && displayLocale === 'ru' && !apiAnswerRu && fallback.answer_ru;
+    
+    const question = useFallbackForQuestion
+      ? fallback.question_ru
+      : getBilingualText(apiQuestionUz || fallback.question_uz, apiQuestionRu || fallback.question_ru, displayLocale);
+    const answer = useFallbackForAnswer
+      ? fallback.answer_ru
+      : getBilingualText(apiAnswerUz || (fallback.answer_uz ?? ''), apiAnswerRu || (fallback.answer_ru ?? ''), displayLocale);
+    
+    if (typeof window !== 'undefined' && index === 0) {
+      console.log('[HomePage] FAQ Item 1:', {
+        isApiData,
+        question,
+        answer: answer.substring(0, 50) + '...',
+        itemId: isApiData ? (item as FaqResponse).id : fallback.id,
+      });
+    }
+    
     return {
-      id: item.id,
+      id: isApiData ? (item as FaqResponse).id : fallback.id,
       question,
       answer,
     };
   });
+  
+  if (typeof window !== 'undefined') {
+    console.log('[HomePage] ===============================================');
+  }
 
   return (
     <main className="min-h-screen bg-background">
@@ -792,31 +1236,31 @@ export default function HomePage() {
                 </p>
               )}
             </div>
-            {/* 3-column grid for categories */}
+            {/* 3-column grid for categories - exactly 9 items, horizontal layout matching image */}
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
               {hearingItems.slice(0, 9).map((item) => (
                 <Link
                   key={item.id}
                   href={item.link}
-                  className="group flex flex-col h-full rounded-lg border border-border/60 bg-white p-4 shadow-sm transition hover:shadow-md hover:border-brand-primary/50"
+                  className="group flex flex-row items-start gap-4 rounded-lg border border-gray-200 bg-white p-4 transition hover:border-brand-primary/50 hover:shadow-sm"
                 >
-                  {/* Orange square icon with "Acoustic" text or category image */}
-                  <div className="relative w-full aspect-square mb-3 overflow-hidden rounded-lg bg-brand-primary flex items-center justify-center">
+                  {/* Orange square icon on the left with "Acoustic" text or category image */}
+                  <div className="relative w-20 h-20 overflow-hidden rounded-lg bg-brand-primary flex items-center justify-center flex-shrink-0">
                     {(item as any).hasImage && item.image !== placeholderImage ? (
                       <Image 
                         src={item.image} 
                         alt={item.title} 
                         fill 
-                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw" 
+                        sizes="80px" 
                         className="object-cover transition-transform duration-300 group-hover:scale-105" 
                       />
                     ) : (
-                      <span className="text-white text-lg font-bold">Acoustic</span>
+                      <span className="text-white text-base font-bold">Acoustic</span>
                     )}
                   </div>
-                  {/* Category title and description */}
-                  <div className="flex-1 space-y-2">
-                    <h3 className="text-base font-semibold text-foreground group-hover:text-brand-primary" suppressHydrationWarning>
+                  {/* Category title and description on the right */}
+                  <div className="flex flex-col flex-1 space-y-2 min-w-0">
+                    <h3 className="text-base font-semibold text-foreground leading-tight group-hover:text-brand-primary transition-colors" suppressHydrationWarning>
                       {item.title}
                     </h3>
                     {item.description && (
@@ -825,7 +1269,7 @@ export default function HomePage() {
                       </p>
                     )}
                     {/* Link text */}
-                    <span className="inline-flex items-center gap-1 text-sm font-medium text-brand-primary group-hover:gap-2" suppressHydrationWarning>
+                    <span className="inline-flex items-center gap-1 text-sm font-medium text-brand-primary group-hover:gap-2 transition-all mt-auto" suppressHydrationWarning>
                       {displayLocale === 'ru' ? 'Подробнее' : 'Batafsil'}
                       <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
                     </span>
@@ -840,88 +1284,77 @@ export default function HomePage() {
       {/* Interacoustics Section */}
       {interacousticsProducts.length > 0 && (
         <section className="border-t bg-white py-12">
-          <div className="mx-auto max-w-6xl space-y-8 px-4 md:px-6">
-            <div className="space-y-1">
-              <p className="text-sm font-semibold uppercase tracking-wide text-brand-primary" suppressHydrationWarning>
-                {displayLocale === 'ru' ? 'Interacoustics' : 'Interacoustics'}
-              </p>
-              <h2 className="text-3xl font-bold text-foreground md:text-4xl" suppressHydrationWarning>
-                {displayLocale === 'ru' ? 'Диагностическое оборудование' : 'Diagnostik uskunalar'}
-              </h2>
+          <div className="mx-auto max-w-6xl space-y-6 px-4 md:px-6">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div className="space-y-1">
+                <p className="text-sm font-semibold uppercase tracking-wide text-brand-primary" suppressHydrationWarning>
+                  {displayLocale === 'ru' ? 'Interacoustics' : 'Interacoustics'}
+                </p>
+                <h2 className="text-3xl font-bold text-foreground md:text-4xl" suppressHydrationWarning>
+                  {displayLocale === 'ru' ? 'Диагностическое оборудование' : 'Eng so\'nggi diagnostika uskunalari'}
+                </h2>
+                <p className="text-base text-muted-foreground" suppressHydrationWarning>
+                  {displayLocale === 'ru' 
+                    ? 'Выбор инновационных решений и устройств для специалистов по аудиологии.'
+                    : 'Audiologiya mutaxassislari uchun innovatsion yechimlar va qurilmalar tanlovi.'}
+                </p>
+              </div>
+              <Link 
+                href="/catalog" 
+                className="inline-flex items-center gap-1 text-base font-medium text-muted-foreground hover:text-brand-primary transition-colors whitespace-nowrap"
+                suppressHydrationWarning
+              >
+                {displayLocale === 'ru' ? 'Полный каталог' : 'To\'liq katalog'}
+                <ArrowRight size={16} />
+              </Link>
             </div>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
               {interacousticsProducts.map((product) => {
                 const productLink = product.slug ? `/products/${product.slug}` : '#';
+                const hasImage = product.image && product.image !== placeholderImage;
                 return (
-            <Link
-                key={product.id}
+                  <Link
+                    key={product.id}
                     href={productLink}
-                    className="group flex flex-col gap-4 rounded-2xl border border-border/60 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-brand-primary/50 hover:shadow-lg"
+                    className="group flex flex-col rounded-lg border border-gray-200 bg-white overflow-hidden transition hover:border-brand-primary/50 hover:shadow-sm"
                   >
-                    <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-brand-primary/5">
-                      <Image src={product.image} alt={product.title} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" className="object-contain p-4 transition-transform duration-300 group-hover:scale-105" />
-                </div>
-                    <div className="space-y-2">
-                      <p className="text-xs font-semibold text-brand-primary" suppressHydrationWarning>
-                        {product.brand}
-                      </p>
-                      <h3 className="text-base font-semibold text-brand-accent group-hover:text-brand-primary" suppressHydrationWarning>
-                    {product.title}
-                  </h3>
-                      <p className="text-sm text-muted-foreground leading-relaxed" suppressHydrationWarning>
-                        {product.description}
-                      </p>
-                </div>
+                    {/* Orange placeholder/image area on top */}
+                    <div className="relative aspect-[4/3] w-full overflow-hidden bg-brand-primary flex items-center justify-center">
+                      {hasImage ? (
+                        <Image 
+                          src={product.image} 
+                          alt={product.title} 
+                          fill 
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" 
+                          className="object-cover transition-transform duration-300 group-hover:scale-105" 
+                        />
+                      ) : (
+                        <span className="text-white text-lg font-bold">Acoustic</span>
+                      )}
+                    </div>
+                    {/* Text content area below */}
+                    <div className="flex flex-col flex-1 p-4 space-y-2">
+                      <h3 className="text-lg font-semibold text-foreground leading-tight group-hover:text-brand-primary transition-colors" suppressHydrationWarning>
+                        {product.title}
+                      </h3>
+                      {product.description && (
+                        <p className="text-sm text-muted-foreground leading-relaxed flex-1" suppressHydrationWarning>
+                          {product.description}
+                        </p>
+                      )}
+                      <span className="inline-flex items-center gap-1 text-sm font-medium text-brand-primary group-hover:gap-2 transition-all mt-auto" suppressHydrationWarning>
+                        {displayLocale === 'ru' ? 'Подробнее' : 'Batafsil'}
+                        <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+                      </span>
+                    </div>
                   </Link>
                 );
               })}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
       )}
 
-      {/* Cochlear Section */}
-      {cochlearProducts.length > 0 && (
-        <section className="border-t bg-muted/20 py-12">
-          <div className="mx-auto max-w-6xl space-y-8 px-4 md:px-6">
-            <div className="space-y-1">
-              <p className="text-sm font-semibold uppercase tracking-wide text-brand-primary" suppressHydrationWarning>
-                {displayLocale === 'ru' ? 'Cochlear' : 'Cochlear'}
-              </p>
-              <h2 className="text-3xl font-bold text-foreground md:text-4xl" suppressHydrationWarning>
-                {displayLocale === 'ru' ? 'Имплантируемые системы' : 'Implantatsiya qilinadigan tizimlar'}
-              </h2>
-            </div>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-              {cochlearProducts.map((product) => {
-                const productLink = product.slug ? `/products/${product.slug}` : '#';
-                return (
-            <Link
-                key={product.id}
-                    href={productLink}
-                    className="group flex flex-col gap-4 rounded-2xl border border-border/60 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-brand-primary/50 hover:shadow-lg"
-                  >
-                    <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-brand-primary/5">
-                      <Image src={product.image} alt={product.title} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" className="object-contain p-4 transition-transform duration-300 group-hover:scale-105" />
-                </div>
-                    <div className="space-y-2">
-                      <p className="text-xs font-semibold text-brand-primary" suppressHydrationWarning>
-                        {product.brand}
-                      </p>
-                      <h3 className="text-base font-semibold text-brand-accent group-hover:text-brand-primary" suppressHydrationWarning>
-                    {product.title}
-                  </h3>
-                      <p className="text-sm text-muted-foreground leading-relaxed" suppressHydrationWarning>
-                        {product.description}
-                      </p>
-                </div>
-                  </Link>
-                );
-              })}
-          </div>
-        </div>
-      </section>
-      )}
 
       {/* Journey Section */}
       {journeySteps.length > 0 && (
@@ -935,7 +1368,7 @@ export default function HomePage() {
                 {displayLocale === 'ru' ? 'Как мы помогаем' : 'Biz qanday yordam beramiz'}
             </h2>
           </div>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
               {journeySteps.map((step) => (
                 <div key={step.id} className="relative flex flex-col gap-4 rounded-2xl border border-border/60 bg-white p-6 shadow-sm">
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-primary/10 text-2xl font-bold text-brand-primary">
@@ -958,79 +1391,97 @@ export default function HomePage() {
       {newsItems.length > 0 && (
         <section className="border-t bg-muted/20 py-12">
           <div className="mx-auto max-w-6xl space-y-8 px-4 md:px-6">
-          <div className="space-y-1">
-              <p className="text-sm font-semibold uppercase tracking-wide text-brand-primary" suppressHydrationWarning>
+            <div className="space-y-1 text-center">
+              <h2 className="text-3xl font-bold text-brand-primary md:text-4xl" suppressHydrationWarning>
                 {displayLocale === 'ru' ? 'Новости' : 'Yangiliklar'}
-            </p>
-              <h2 className="text-3xl font-bold text-foreground md:text-4xl" suppressHydrationWarning>
-                {displayLocale === 'ru' ? 'Последние новости' : 'So\'nggi yangiliklar'}
-            </h2>
-          </div>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {newsItems.map((item) => (
-              <Link
-                key={item.id}
-                  href={`/posts/${item.slug}`}
-                  className="group flex flex-col gap-4 rounded-2xl border border-border/60 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-brand-primary/50 hover:shadow-lg"
+              </h2>
+            </div>
+            <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
+              {newsItems.map((item) => (
+                <Link
+                  key={item.id}
+                  href={item.slug && item.slug !== '#' ? `/posts/${item.slug}` : '#'}
+                  className="group flex flex-col gap-3 transition hover:opacity-80"
                 >
-                  <div className="space-y-2">
-                    {item.publishedAt && (
-                      <p className="text-xs text-muted-foreground" suppressHydrationWarning>
-                        {new Date(item.publishedAt).toLocaleDateString(displayLocale === 'ru' ? 'ru-RU' : 'uz-UZ', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                        })}
-                      </p>
-                    )}
-                    <h3 className="text-lg font-semibold text-brand-accent group-hover:text-brand-primary" suppressHydrationWarning>
-                  {item.title}
-                </h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed" suppressHydrationWarning>
-                      {item.excerpt}
-                    </p>
-                    <span className="mt-auto inline-flex items-center gap-2 text-sm font-semibold text-brand-primary" suppressHydrationWarning>
-                      {displayLocale === 'ru' ? 'Читать' : "O'qish"}
-                  <ArrowRight size={14} />
-                </span>
-                  </div>
-              </Link>
-            ))}
+                  <h3 className="text-lg font-semibold text-brand-primary group-hover:text-brand-accent" suppressHydrationWarning>
+                    {item.title}
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed" suppressHydrationWarning>
+                    {item.excerpt}
+                  </p>
+                </Link>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
       )}
 
       {/* FAQ Section */}
       {faqItems.length > 0 && (
         <section className="border-t bg-white py-12">
-        <div className="mx-auto max-w-6xl space-y-6 px-4 md:px-6">
-          <div className="space-y-1">
-              <p className="text-sm font-semibold uppercase tracking-wide text-brand-primary" suppressHydrationWarning>
-                {displayLocale === 'ru' ? 'Частые вопросы' : 'Tez-tez beriladigan savollar'}
-            </p>
-              <h2 className="text-3xl font-bold text-foreground md:text-4xl" suppressHydrationWarning>
-                {displayLocale === 'ru' ? 'Ответы на популярные запросы' : "Ko'p beriladigan savollarga javoblar"}
-            </h2>
+          <div className="mx-auto max-w-6xl space-y-8 px-4 md:px-6">
+            {/* Title */}
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-brand-primary md:text-3xl" suppressHydrationWarning>
+                {displayLocale === 'ru' ? 'Часто задаваемые вопросы' : 'Tez-tez beriladigan savollar'}
+              </h2>
+              <div className="h-px w-20 bg-border"></div>
+            </div>
+            
+            {/* FAQ Grid - 2 columns */}
+            <div className="grid gap-4 md:grid-cols-2">
+              {faqItems.map((item) => {
+                const isOpen = openFaqId === item.id;
+                const answerId = `faq-answer-${item.id}`;
+                const buttonId = `faq-button-${item.id}`;
+                return (
+                  <div
+                    key={item.id}
+                    className="group rounded-lg border border-border/60 bg-muted/30 p-4 transition hover:border-brand-primary/50 hover:shadow-sm"
+                  >
+                    <button
+                      id={buttonId}
+                      type="button"
+                      aria-expanded={isOpen}
+                      aria-controls={answerId}
+                      onClick={() => {
+                        // If clicking the same item, close it. Otherwise, open the clicked item (which closes the previous one)
+                        setOpenFaqId(isOpen ? null : item.id);
+                      }}
+                      onKeyDown={(e) => {
+                        // Allow Enter and Space to toggle
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setOpenFaqId(isOpen ? null : item.id);
+                        }
+                      }}
+                      className="flex w-full cursor-pointer items-center justify-between gap-3 rounded text-left focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2"
+                    >
+                      <span className="flex-1 text-sm font-medium text-foreground" suppressHydrationWarning>
+                        {item.question}
+                      </span>
+                      <ChevronDown 
+                        aria-hidden="true"
+                        className={`h-4 w-4 flex-shrink-0 text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} 
+                      />
+                    </button>
+                    {isOpen && (
+                      <div 
+                        id={answerId}
+                        role="region"
+                        aria-labelledby={buttonId}
+                        className="mt-3 text-sm text-muted-foreground leading-relaxed" 
+                        suppressHydrationWarning
+                      >
+                        {item.answer}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            {faqItems.map((item) => (
-              <details
-                key={item.id}
-                className="group rounded-xl border border-border/50 bg-muted/10 p-4 shadow-sm transition hover:border-brand-primary/40"
-              >
-                <summary className="flex cursor-pointer items-center justify-between gap-3 text-left text-sm font-semibold text-foreground">
-                    <span suppressHydrationWarning>{item.question}</span>
-                  <span className="text-brand-primary transition group-open:rotate-180">▼</span>
-                </summary>
-                  <div className="mt-3 text-xs text-muted-foreground leading-relaxed" suppressHydrationWarning>
-                  {item.answer}
-                </div>
-              </details>
-            ))}
-          </div>
-        </div>
-      </section>
+        </section>
       )}
     </main>
   );

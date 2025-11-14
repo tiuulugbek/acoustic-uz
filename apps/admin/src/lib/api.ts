@@ -288,6 +288,52 @@ export const deleteHomepageNewsItem = (id: string) =>
     method: 'DELETE',
   });
 
+export interface HomepageServiceDto {
+  id: string;
+  title_uz: string;
+  title_ru: string;
+  excerpt_uz?: string | null;
+  excerpt_ru?: string | null;
+  slug?: string | null;
+  order: number;
+  status: 'published' | 'draft' | 'archived';
+  image?: {
+    id: string;
+    url: string;
+  } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CreateHomepageServicePayload = {
+  title_uz: string;
+  title_ru: string;
+  excerpt_uz?: string | null;
+  excerpt_ru?: string | null;
+  slug?: string | null;
+  order?: number;
+  status?: HomepageServiceDto['status'];
+  imageId?: string | null;
+};
+
+export type UpdateHomepageServicePayload = Partial<CreateHomepageServicePayload>;
+
+export const getHomepageServices = () => request<HomepageServiceDto[]>('/homepage/services/admin');
+export const createHomepageService = (payload: CreateHomepageServicePayload) =>
+  request<HomepageServiceDto>('/homepage/services', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+export const updateHomepageService = (id: string, payload: UpdateHomepageServicePayload) =>
+  request<HomepageServiceDto>(`/homepage/services/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+export const deleteHomepageService = (id: string) =>
+  request<void>(`/homepage/services/${id}`, {
+    method: 'DELETE',
+  });
+
 export interface BannerDto {
   id: string;
   title_uz: string;

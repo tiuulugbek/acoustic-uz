@@ -30,6 +30,16 @@ export function middleware(request: NextRequest) {
   // If no locale cookie exists, set a default one to ensure consistent behavior
   // This prevents the locale from changing based on browser settings or other factors
   const localeCookie = request.cookies.get(LOCALE_COOKIE_NAME);
+  
+  // Log cookie for debugging
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`[Middleware] Locale cookie check:`, { 
+      exists: !!localeCookie, 
+      value: localeCookie?.value,
+      path: request.nextUrl.pathname 
+    });
+  }
+  
   if (!localeCookie || !localeCookie.value) {
     // Set default locale cookie (Uzbek) if none exists
     // This ensures users always see a consistent default language
@@ -40,6 +50,9 @@ export function middleware(request: NextRequest) {
       httpOnly: false, // Allow client-side reading
       secure: process.env.NODE_ENV === 'production', // Secure in production
     });
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Middleware] Setting default locale cookie: ${DEFAULT_LOCALE}`);
+    }
   } else {
     // Validate and normalize existing cookie value
     const value = localeCookie.value.trim().toLowerCase();
@@ -52,6 +65,21 @@ export function middleware(request: NextRequest) {
         httpOnly: false,
         secure: process.env.NODE_ENV === 'production',
       });
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[Middleware] Invalid cookie value "${localeCookie.value}", resetting to default: ${DEFAULT_LOCALE}`);
+      }
+    } else {
+      // Valid cookie - preserve it (ensure it's set in response to refresh expiry)
+      response.cookies.set(LOCALE_COOKIE_NAME, value, {
+        path: '/',
+        maxAge: 60 * 60 * 24 * 365, // 1 year
+        sameSite: 'lax',
+        httpOnly: false,
+        secure: process.env.NODE_ENV === 'production',
+      });
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[Middleware] Preserving valid locale cookie: ${value}`);
+      }
     }
   }
 

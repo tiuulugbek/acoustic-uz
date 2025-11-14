@@ -6,6 +6,10 @@ import { getServiceBySlug } from '@/lib/api-server';
 import { detectLocale } from '@/lib/locale-server';
 import { getBilingualText } from '@/lib/locale';
 
+// Force dynamic rendering to always fetch fresh data from admin
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 interface ServicePageProps {
   params: {
     slug: string;

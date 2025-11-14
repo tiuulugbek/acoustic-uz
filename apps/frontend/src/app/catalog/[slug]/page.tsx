@@ -129,27 +129,216 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
   // The api-server wrapper ensures this never throws, so we can safely await it
   const category = await getCategoryBySlug(params.slug, locale);
 
-  // If category is null, show fallback UI (backend down or category not found)
-  // Never crash - always show UI structure
+  // If category is null, show all products instead of error
+  // This handles cases where homepage links to categories that don't exist yet
+  // Users can still browse all products and use filters
   if (!category) {
-    // Show empty state with same UI structure
+    // Fetch all products to show when category doesn't exist
+    const allProducts = await getProducts({ status: 'published' }, locale) || [];
+    
+    // Apply filters even without category
+    const selectedBrands = searchParams.brand?.split(',').filter(Boolean) ?? [];
+    const selectedAudience = searchParams.audience?.split(',').filter(Boolean) ?? [];
+    const selectedForms = searchParams.form?.split(',').filter(Boolean) ?? [];
+    const selectedSignal = searchParams.signal?.split(',').filter(Boolean) ?? [];
+    const selectedPower = searchParams.power?.split(',').filter(Boolean) ?? [];
+    const selectedLoss = searchParams.loss?.split(',').filter(Boolean) ?? [];
+
+    let filteredProducts = [...allProducts];
+
+    if (selectedBrands.length > 0) {
+      filteredProducts = filteredProducts.filter((p) => p.brand && selectedBrands.includes(p.brand.slug));
+    }
+    if (selectedAudience.length > 0) {
+      filteredProducts = filteredProducts.filter((p) => selectedAudience.some((a) => p.audience.includes(a)));
+    }
+    if (selectedForms.length > 0) {
+      filteredProducts = filteredProducts.filter((p) => selectedForms.some((f) => p.formFactors.includes(f)));
+    }
+    if (selectedSignal.length > 0) {
+      filteredProducts = filteredProducts.filter((p) => p.signalProcessing && selectedSignal.includes(p.signalProcessing));
+    }
+    if (selectedPower.length > 0) {
+      filteredProducts = filteredProducts.filter((p) => p.powerLevel && selectedPower.includes(p.powerLevel));
+    }
+    if (selectedLoss.length > 0) {
+      filteredProducts = filteredProducts.filter((p) => selectedLoss.some((l) => p.hearingLossLevels.includes(l)));
+    }
+
+    // Sort products
+    const sortBy = searchParams.sort ?? 'newest';
+    if (sortBy === 'price_asc') {
+      filteredProducts.sort((a, b) => {
+        const priceA = a.price ? Number(a.price) : Infinity;
+        const priceB = b.price ? Number(b.price) : Infinity;
+        return priceA - priceB;
+      });
+    } else if (sortBy === 'price_desc') {
+      filteredProducts.sort((a, b) => {
+        const priceA = a.price ? Number(a.price) : Infinity;
+        const priceB = b.price ? Number(b.price) : Infinity;
+        return priceB - priceA;
+      });
+    }
+
+    // Pagination
+    const totalItems = filteredProducts.length;
+    const totalPages = Math.max(1, Math.ceil(totalItems / PRODUCTS_PER_PAGE));
+    const currentPage = Math.min(Math.max(1, parseInt(searchParams.page || '1', 10)), totalPages);
+    const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
+    const endIndex = startIndex + PRODUCTS_PER_PAGE;
+    const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
+
+    // Get brands for filters
+    const brandMap = new Map<string, BrandResponse>();
+    allProducts.forEach((p) => {
+      if (p.brand) {
+        brandMap.set(p.brand.id, p.brand);
+      }
+    });
+    const availableBrands: Array<BrandResponse & { count?: number }> = Array.from(brandMap.values());
+
+    const { brandCounts, audienceCounts, formCounts, powerCounts, lossCounts } = calculateFacetCounts(allProducts);
+
+    const placeholderImage = `data:image/svg+xml,${encodeURIComponent(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect width="100%" height="100%" fill="#F07E22"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#fff" font-family="Arial" font-size="28">Acoustic</text></svg>`,
+    )}`;
+
+    // Show all products when category doesn't exist
     return (
       <main className="min-h-screen bg-background">
-        <div className="mx-auto max-w-6xl px-4 py-10 md:px-6">
-          <div className="rounded-lg border border-border bg-card p-8 text-center">
-            <h1 className="mb-4 text-2xl font-bold text-foreground">
-              {locale === 'ru' ? 'Категория не найдена' : 'Kategoriya topilmadi'}
-            </h1>
-            <p className="text-muted-foreground">
-              {locale === 'ru' 
-                ? 'К сожалению, мы не можем загрузить информацию о категории в данный момент.'
-                : 'Afsuski, kategoriya haqida ma\'lumotni hozircha yuklay olmaymiz.'}
-            </p>
-            <Link href="/catalog" className="mt-6 inline-block text-brand-primary hover:underline">
-              {locale === 'ru' ? '← Вернуться в каталог' : '← Katalogga qaytish'}
+        {/* Breadcrumbs */}
+        <section className="bg-muted/40">
+          <div className="mx-auto max-w-6xl px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:px-6">
+            <Link href="/" className="hover:text-brand-primary">
+              {locale === 'ru' ? 'Главная' : 'Bosh sahifa'}
+            </Link>
+            <span className="mx-2">›</span>
+            <Link href="/catalog" className="hover:text-brand-primary">
+              {locale === 'ru' ? 'Каталог' : 'Katalog'}
             </Link>
           </div>
-        </div>
+        </section>
+
+        {/* Header */}
+        <section className="bg-brand-accent text-white">
+          <div className="mx-auto max-w-6xl space-y-4 px-4 py-10 md:px-6">
+            <h1 className="text-3xl font-bold md:text-4xl">
+              {locale === 'ru' ? 'Все товары' : 'Barcha mahsulotlar'}
+            </h1>
+            <p className="max-w-4xl text-base leading-relaxed text-white/90">
+              {locale === 'ru'
+                ? 'Все товары в каталоге. Используйте фильтры для уточнения поиска.'
+                : "Katalogdagi barcha mahsulotlar. Qidiruvni aniqlashtirish uchun filtrlardan foydalaning."}
+            </p>
+          </div>
+        </section>
+
+        {/* Main Content - reuse same layout as category page */}
+        <section className="bg-white py-8">
+          <div className="mx-auto max-w-6xl px-4 md:px-6">
+            <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+              {/* Filter Sidebar */}
+              <aside className="hidden lg:block">
+                <CatalogFilters
+                  categorySlug={params.slug}
+                  locale={locale}
+                  brands={availableBrands}
+                  selectedBrands={selectedBrands}
+                  selectedAudience={selectedAudience}
+                  selectedForms={selectedForms}
+                  selectedPower={selectedPower}
+                  selectedLoss={selectedLoss}
+                  audienceCounts={audienceCounts}
+                  formCounts={formCounts}
+                  powerCounts={powerCounts}
+                  lossCounts={lossCounts}
+                />
+              </aside>
+
+              {/* Product Grid */}
+              <div className="space-y-6">
+                {/* Brand Chips */}
+                {availableBrands.length > 0 && (
+                  <CatalogBrandChips categorySlug={params.slug} locale={locale} brands={availableBrands} selectedBrands={selectedBrands} />
+                )}
+
+                {/* Sort & Results Count */}
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    {locale === 'ru' ? `Найдено товаров: ${totalItems}` : `Topilgan mahsulotlar: ${totalItems}`}
+                  </p>
+                  <CatalogSort categorySlug={params.slug} locale={locale} currentSort={sortBy} />
+                </div>
+
+                {/* Products Grid */}
+                {paginatedProducts.length > 0 ? (
+                  <>
+                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                      {paginatedProducts.map((product) => {
+                        const mainImage = product.galleryUrls?.[0] ?? product.brand?.logo?.url ?? placeholderImage;
+                        const priceFormatted = formatPrice(product.price);
+                        const availability = product.availabilityStatus ? availabilityMap[product.availabilityStatus] : undefined;
+                        const productName = getBilingualText(product.name_uz, product.name_ru, locale);
+
+                        return (
+                          <Link
+                            key={product.id}
+                            href={`/products/${product.slug}`}
+                            className="group flex flex-col gap-4 rounded-2xl border border-border/60 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-brand-primary/50 hover:shadow-lg"
+                          >
+                            <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-brand-primary/5">
+                              <Image
+                                src={mainImage}
+                                alt={productName}
+                                fill
+                                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                                className="object-contain p-4 transition-transform duration-300 group-hover:scale-105"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <h3 className="text-lg font-semibold text-brand-accent group-hover:text-brand-primary">{productName}</h3>
+                              {product.brand && <p className="text-xs text-muted-foreground">{product.brand.name}</p>}
+                              {priceFormatted && <p className="text-xl font-semibold text-brand-primary">{priceFormatted}</p>}
+                              {availability && (
+                                <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold ${availability.color}`}>
+                                  {locale === 'ru' ? availability.ru : availability.uz}
+                                </span>
+                              )}
+                            </div>
+                            <span className="mt-auto inline-flex items-center gap-2 text-sm font-semibold text-brand-primary group-hover:text-brand-accent">
+                              {locale === 'ru' ? 'Подробнее' : 'Batafsil'} →
+                            </span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+
+                    {/* Pagination */}
+                    <CatalogPagination
+                      categorySlug={params.slug}
+                      locale={locale}
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      totalItems={totalItems}
+                    />
+                  </>
+                ) : (
+                  <div className="rounded-2xl border border-border/60 bg-muted/20 p-12 text-center">
+                    <p className="text-lg font-semibold text-brand-accent">
+                      {locale === 'ru' ? 'Товары не найдены' : 'Mahsulotlar topilmadi'}
+                    </p>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      {locale === 'ru'
+                        ? 'Попробуйте изменить параметры фильтров.'
+                        : "Filtrlarni o'zgartirib ko'ring."}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
     );
   }

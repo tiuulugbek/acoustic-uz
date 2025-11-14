@@ -25,7 +25,12 @@ async function fetchJson<T>(
   try {
     // Parse the path to handle existing query parameters
     const [pathname, existingQuery] = path.split('?');
-    const url = new URL(pathname, API_BASE);
+    // Fix: Remove leading slash if present to avoid absolute path replacement
+    // Then properly append to API_BASE
+    const cleanPath = pathname.startsWith('/') ? pathname.slice(1) : pathname;
+    // Ensure API_BASE ends with / for proper URL construction
+    const baseUrl = API_BASE.endsWith('/') ? API_BASE : `${API_BASE}/`;
+    const url = new URL(cleanPath, baseUrl);
     
     // Add existing query parameters if any
     if (existingQuery) {
@@ -72,7 +77,18 @@ async function fetchJson<T>(
     const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
     try {
-      const response = await fetch(url.toString(), {
+      // Add cache-busting timestamp for homepage services, FAQ, and news to ensure fresh data
+      const isHomepageServices = path.includes('/homepage/services');
+      const isFaq = path.includes('/faq');
+      const isHomepageNews = path.includes('/homepage/news');
+      let finalUrl = url.toString();
+      if (isHomepageServices || isFaq || isHomepageNews) {
+        // Add cache-busting query parameter
+        const separator = url.search ? '&' : '?';
+        finalUrl = `${finalUrl}${separator}_t=${Date.now()}`;
+      }
+      
+      const response = await fetch(finalUrl, {
         ...init,
         headers,
         cache: 'no-store', // Always disable caching for locale-dependent content
@@ -147,6 +163,7 @@ export interface ServiceResponse {
   excerpt_ru?: string | null;
   slug: string;
   cover?: MediaResponse | null;
+  image?: MediaResponse | null; // Homepage services use 'image' instead of 'cover'
 }
 
 export interface ProductCategoryResponse {
@@ -172,12 +189,27 @@ export const getPublicServices = (locale?: string) => {
   return fetchJson<ServiceResponse[]>(url, locale);
 };
 
+export const getHomepageServices = (locale?: string) => {
+  const url = '/homepage/services';
+  return fetchJson<ServiceResponse[]>(url, locale);
+};
+
 export const getProductCategories = (locale?: string) => {
   return fetchJson<ProductCategoryResponse[]>('/product-categories', locale);
 };
 
 export const getCategoryBySlug = async (slug: string, locale?: string): Promise<ProductCategoryResponse | null> => {
-  // getProductCategories already handles errors gracefully and returns []
+  try {
+    // First try direct API endpoint (if backend supports it)
+    const directResult = await fetchJson<ProductCategoryResponse>(`/product-categories/slug/${slug}`, locale);
+    if (directResult) {
+      return directResult;
+    }
+  } catch {
+    // Fallback to searching all categories
+  }
+  
+  // Fallback: get all categories and find by slug
   const categories = await getProductCategories(locale);
   if (!categories || categories.length === 0) {
     return null;

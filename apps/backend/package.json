@@ -17,7 +17,8 @@
     "db:migrate": "pnpm dlx prisma migrate dev --schema=../../prisma/schema.prisma",
     "db:migrate:deploy": "pnpm dlx prisma migrate deploy --schema=../../prisma/schema.prisma",
     "db:seed": "pnpm exec ts-node --transpile-only --project tsconfig.json ../../prisma/seed.ts",
-    "db:studio": "pnpm dlx prisma studio --schema=../../prisma/schema.prisma"
+    "db:studio": "pnpm dlx prisma studio --schema=../../prisma/schema.prisma",
+    "db:migrate-services": "pnpm exec ts-node --transpile-only --project tsconfig.json ../../scripts/migrate-services-to-homepage.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.3.0",

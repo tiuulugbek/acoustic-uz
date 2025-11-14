@@ -4,6 +4,7 @@ import {
   homepageHearingAidSchema,
   homepageJourneyStepSchema,
   homepageNewsItemSchema,
+  homepageServiceSchema,
 } from '@acoustic/shared';
 
 @Injectable()
@@ -15,6 +16,7 @@ export class HomepageService {
       homepageHearingAid: any;
       homepageJourneyStep: any;
       homepageNewsItem: any;
+      homepageService: any;
     };
   }
 
@@ -116,5 +118,40 @@ export class HomepageService {
 
   async deleteNewsItem(id: string) {
     return this.client.homepageNewsItem.delete({ where: { id } });
+  }
+
+  async findServices(publicOnly = false) {
+    return this.client.homepageService.findMany({
+      where: publicOnly ? { status: 'published' } : {},
+      include: { image: true },
+      orderBy: [{ order: 'asc' }, { updatedAt: 'desc' }],
+    });
+  }
+
+  async createService(data: unknown) {
+    const validated = homepageServiceSchema.parse(data);
+    return this.client.homepageService.create({
+      data: {
+        ...validated,
+        imageId: validated.imageId ?? undefined,
+      },
+      include: { image: true },
+    });
+  }
+
+  async updateService(id: string, data: unknown) {
+    const validated = homepageServiceSchema.partial().parse(data);
+    return this.client.homepageService.update({
+      where: { id },
+      data: {
+        ...validated,
+        ...(validated.imageId !== undefined ? { imageId: validated.imageId ?? null } : {}),
+      },
+      include: { image: true },
+    });
+  }
+
+  async deleteService(id: string) {
+    return this.client.homepageService.delete({ where: { id } });
   }
 }

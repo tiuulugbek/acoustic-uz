@@ -19,11 +19,20 @@ export function detectLocale(): Locale {
       // Normalize the cookie value (trim and lowercase)
       const value = localeCookie.value.trim().toLowerCase();
       if (value === 'ru' || value === 'uz') {
+        // Log detected locale for debugging (only in development)
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`[Locale] Detected locale from cookie: ${value} (raw: "${localeCookie.value}")`);
+        }
         return value as Locale;
       }
       // Log unexpected cookie values for debugging (only in development)
       if (process.env.NODE_ENV === 'development') {
         console.log(`[Locale] Invalid cookie value: "${localeCookie.value}" (normalized: "${value}")`);
+      }
+    } else {
+      // Log missing cookie for debugging (only in development)
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[Locale] No locale cookie found, using default: ${DEFAULT_LOCALE}`);
       }
     }
 
