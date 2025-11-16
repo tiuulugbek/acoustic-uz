@@ -15,36 +15,48 @@ export function detectLocale(): Locale {
     const cookieStore = cookies();
     const localeCookie = cookieStore.get(LOCALE_COOKIE_NAME);
 
+    // Always log in development for debugging
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Locale] Cookie detection:`, {
+        exists: !!localeCookie,
+        rawValue: localeCookie?.value,
+        cookieName: LOCALE_COOKIE_NAME,
+      });
+    }
+
     if (localeCookie?.value) {
       // Normalize the cookie value (trim and lowercase)
       const value = localeCookie.value.trim().toLowerCase();
       if (value === 'ru' || value === 'uz') {
         // Log detected locale for debugging (only in development)
         if (process.env.NODE_ENV === 'development') {
-          console.log(`[Locale] Detected locale from cookie: ${value} (raw: "${localeCookie.value}")`);
+          console.log(`[Locale] ✅ Detected locale from cookie: ${value} (raw: "${localeCookie.value}")`);
         }
         return value as Locale;
       }
       // Log unexpected cookie values for debugging (only in development)
       if (process.env.NODE_ENV === 'development') {
-        console.log(`[Locale] Invalid cookie value: "${localeCookie.value}" (normalized: "${value}")`);
+        console.warn(`[Locale] ⚠️ Invalid cookie value: "${localeCookie.value}" (normalized: "${value}")`);
       }
     } else {
       // Log missing cookie for debugging (only in development)
       if (process.env.NODE_ENV === 'development') {
-        console.log(`[Locale] No locale cookie found, using default: ${DEFAULT_LOCALE}`);
+        console.warn(`[Locale] ⚠️ No locale cookie found, using default: ${DEFAULT_LOCALE}`);
       }
     }
 
     // Always default to Uzbek if no valid cookie is set
     // This ensures consistent behavior: users see Uzbek by default and must explicitly switch to Russian
     // The middleware should set a default cookie, but if it doesn't, we default here
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Locale] Returning default locale: ${DEFAULT_LOCALE}`);
+    }
     return DEFAULT_LOCALE;
   } catch (error) {
     // If anything fails, return default locale
     // In development, log the error for debugging
     if (process.env.NODE_ENV === 'development') {
-      console.error('[Locale] Error detecting locale:', error);
+      console.error('[Locale] ❌ Error detecting locale:', error);
       if (error instanceof Error) {
         console.error('[Locale] Error details:', error.message, error.stack);
       }

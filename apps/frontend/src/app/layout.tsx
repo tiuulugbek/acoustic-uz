@@ -45,9 +45,13 @@ export default async function RootLayout({
       <body className="font-sans">
         <Providers>
           {/* Set locale in window before children render - this script runs synchronously */}
+          {/* CRITICAL: This value MUST be set before React hydrates to prevent hydration mismatch */}
           <script
             dangerouslySetInnerHTML={{
-              __html: `window.__NEXT_LOCALE__='${locale}';`,
+              __html: `
+                window.__NEXT_LOCALE__='${locale}';
+                console.log('[Layout Script] Set initial locale:', '${locale}');
+              `,
             }}
           />
           <div className="flex min-h-screen flex-col bg-muted/20">

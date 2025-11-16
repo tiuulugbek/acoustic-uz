@@ -55,7 +55,7 @@ const menuItems: MenuProps['items'] = [
   {
     key: '/children-hearing',
     icon: <BookOutlined />,
-    label: 'Bolalar va eshitish',
+    label: 'Bolalar',
   },
   {
     key: '/about',

@@ -153,6 +153,61 @@ export const deleteService = (id: string) =>
     method: 'DELETE',
   });
 
+// Service Categories API
+export interface ServiceCategoryDto {
+  id: string;
+  name_uz: string;
+  name_ru: string;
+  slug: string;
+  description_uz?: string | null;
+  description_ru?: string | null;
+  icon?: string | null;
+  imageId?: string | null;
+  image?: {
+    id: string;
+    url: string;
+  } | null;
+  parentId?: string | null;
+  parent?: ServiceCategoryDto | null;
+  children?: ServiceCategoryDto[];
+  services?: ServiceDto[];
+  order: number;
+  status: 'published' | 'draft' | 'archived';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CreateServiceCategoryPayload = {
+  name_uz: string;
+  name_ru: string;
+  slug: string;
+  description_uz?: string | null;
+  description_ru?: string | null;
+  icon?: string | null;
+  imageId?: string | null;
+  parentId?: string | null;
+  order?: number;
+  status?: ServiceCategoryDto['status'];
+};
+
+export type UpdateServiceCategoryPayload = Partial<CreateServiceCategoryPayload>;
+
+export const getServiceCategoriesAdmin = () => request<ServiceCategoryDto[]>('/service-categories/admin');
+export const createServiceCategory = (payload: CreateServiceCategoryPayload) =>
+  request<ServiceCategoryDto>('/service-categories', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+export const updateServiceCategory = (id: string, payload: UpdateServiceCategoryPayload) =>
+  request<ServiceCategoryDto>(`/service-categories/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+export const deleteServiceCategory = (id: string) =>
+  request<void>(`/service-categories/${id}`, {
+    method: 'DELETE',
+  });
+
 export interface HomepageHearingAidDto {
   id: string;
   title_uz: string;

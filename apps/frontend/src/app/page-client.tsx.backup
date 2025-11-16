@@ -1,0 +1,888 @@
+'use client';
+
+import Link from 'next/link';
+import {
+  ArrowRight,
+  Play,
+  Phone,
+  ChevronDown,
+} from 'lucide-react';
+import Image from 'next/image';
+import { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { getBilingualText, DEFAULT_LOCALE, type Locale } from '@/lib/locale';
+import { getLocaleFromCookie } from '@/lib/locale-client';
+import {
+  getPublicBanners,
+  getPublicServices,
+  getHomepageServices,
+  getShowcase,
+  getHomepageHearingAidItems,
+  getHomepageNews,
+  getPublicFaq,
+  getHomepageJourney,
+  getProductCategories,
+  BannerResponse,
+  ServiceResponse,
+  ProductResponse,
+  ShowcaseResponse,
+  HearingAidItemResponse,
+  HomepageNewsItemResponse,
+  FaqResponse,
+  HomepageJourneyStepResponse,
+  ProductCategoryResponse,
+} from '@/lib/api';
+
+type HeroSlide = {
+  id: string;
+  title: string;
+  subtitle: string;
+  cta: string;
+  image: string;
+  link: string;
+};
+
+// Removed all fallback data - frontend fully depends on backend
+
+// Helper to get locale from DOM - works on client only
+// Fixed: Read from server-set values only, no re-detection after mount
+function getClientLocale(): Locale {
+  if (typeof document === 'undefined') return DEFAULT_LOCALE;
+  
+  // Read from HTML data attribute first (set by server, available immediately)
+  const htmlLocale = document.documentElement.getAttribute('data-locale');
+  if (htmlLocale === 'ru' || htmlLocale === 'uz') {
+    return htmlLocale as Locale;
+  }
+  
+  // Fallback to window.__NEXT_LOCALE__ (set by script before React)
+  if (typeof window !== 'undefined' && (window as { __NEXT_LOCALE__?: string }).__NEXT_LOCALE__) {
+    const windowLocale = (window as { __NEXT_LOCALE__?: string }).__NEXT_LOCALE__;
+    if (windowLocale === 'ru' || windowLocale === 'uz') {
+      return windowLocale as Locale;
+    }
+  }
+  
+  // Fallback to cookie
+  return getLocaleFromCookie();
+}
+
+export default function HomePage() {
+  const queryClient = useQueryClient();
+  const [activeSlide, setActiveSlide] = useState(0);
+  const [manualRefreshKey, setManualRefreshKey] = useState(0);
+  const [openFaqId, setOpenFaqId] = useState<string | null>(null);
+  
+  // Make locale reactive: read from server-set values and update when they change
+  // The server sets data-locale and window.__NEXT_LOCALE__ based on the cookie
+  const [displayLocale, setDisplayLocale] = useState<Locale>(() => {
+    // On client, read from server-set values immediately
+    if (typeof document !== 'undefined') {
+      return getClientLocale();
+    }
+    return DEFAULT_LOCALE;
+  });
+  
+  // Watch for locale changes (e.g., after language switch and page reload)
+  // This ensures the component updates when the locale cookie changes
+  useEffect(() => {
+    const updateLocale = () => {
+      const newLocale = getClientLocale();
+      if (newLocale !== displayLocale) {
+        setDisplayLocale(newLocale);
+      }
+    };
+    
+    // Update immediately on mount (in case cookie changed)
+    updateLocale();
+    
+    // Also watch for changes to data-locale attribute (set by server)
+    const observer = new MutationObserver(() => {
+      updateLocale();
+    });
+    
+    if (typeof document !== 'undefined') {
+      observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-locale'],
+      });
+    }
+    
+    // Also check periodically (fallback for edge cases)
+    const interval = setInterval(updateLocale, 1000);
+    
+    return () => {
+      observer.disconnect();
+      clearInterval(interval);
+    };
+  }, [displayLocale]);
+
+  // Reset active slide when locale changes to ensure fresh rendering
+  useEffect(() => {
+    setActiveSlide(0);
+  }, [displayLocale]);
+
+  // Invalidate ALL queries when locale changes to ensure everything updates simultaneously
+  useEffect(() => {
+    if (displayLocale) {
+      setManualRefreshKey(prev => prev + 1);
+      queryClient.removeQueries({ queryKey: ['banners'] });
+      queryClient.removeQueries({ queryKey: ['homepage-services'] });
+      queryClient.removeQueries({ queryKey: ['showcase'] });
+      queryClient.invalidateQueries({ queryKey: ['hearing-aid-items'] });
+      queryClient.invalidateQueries({ queryKey: ['homepage-journey'] });
+      queryClient.invalidateQueries({ queryKey: ['homepage-news'] });
+      queryClient.invalidateQueries({ queryKey: ['faq'] });
+      queryClient.invalidateQueries({ queryKey: ['product-categories'] });
+    }
+  }, [displayLocale, queryClient]);
+
+  // Fetch data with correct locale - frontend fully depends on backend
+  // Queries will throw errors if backend is unavailable - React Query handles error states
+  const { data: bannerData, isLoading: isLoadingBanners, isError: isErrorBanners } = useQuery<BannerResponse[]>({
+    queryKey: ['banners', displayLocale, manualRefreshKey],
+    queryFn: () => getPublicBanners(displayLocale),
+    staleTime: 0,
+    gcTime: 0,
+    retry: false,
+    throwOnError: false, // Allow individual sections to handle errors independently
+  });
+  
+  const { data: serviceData, isLoading: isLoadingServices, isError: isErrorServices } = useQuery<ServiceResponse[]>({
+    queryKey: ['homepage-services', displayLocale, manualRefreshKey],
+    queryFn: () => getHomepageServices(displayLocale),
+    staleTime: 0,
+    gcTime: 0,
+    retry: false,
+    throwOnError: false, // Allow individual sections to handle errors independently
+  });
+  
+  const { data: interacousticsData, isLoading: isLoadingInteracoustics, isError: isErrorInteracoustics } = useQuery<ShowcaseResponse | null>({
+    queryKey: ['showcase', 'interacoustics', displayLocale, manualRefreshKey],
+    queryFn: () => getShowcase('interacoustics', displayLocale),
+    staleTime: 0,
+    gcTime: 0,
+    retry: false,
+    throwOnError: false, // Allow individual sections to handle errors independently
+  });
+
+  const { data: hearingItemsData, isLoading: isLoadingHearingItems, isError: isErrorHearingItems } = useQuery<HearingAidItemResponse[]>({
+    queryKey: ['hearing-aid-items', displayLocale, manualRefreshKey],
+    queryFn: () => getHomepageHearingAidItems(displayLocale),
+    staleTime: 0,
+    gcTime: 0,
+    retry: false,
+    throwOnError: false, // Allow individual sections to handle errors independently
+  });
+
+  const { data: categoriesData, isLoading: isLoadingCategories, isError: isErrorCategories } = useQuery<ProductCategoryResponse[]>({
+    queryKey: ['product-categories', displayLocale, manualRefreshKey],
+    queryFn: () => getProductCategories(displayLocale),
+    staleTime: 0,
+    gcTime: 0,
+    retry: false,
+    throwOnError: false, // Allow individual sections to handle errors independently
+  });
+
+  const { data: journeyData, isLoading: isLoadingJourney, isError: isErrorJourney } = useQuery<HomepageJourneyStepResponse[]>({
+    queryKey: ['homepage-journey', displayLocale, manualRefreshKey],
+    queryFn: () => getHomepageJourney(displayLocale),
+    staleTime: 0,
+    gcTime: 0,
+    retry: false,
+    throwOnError: false, // Allow individual sections to handle errors independently
+  });
+
+  const { data: newsItemsData, isLoading: isLoadingNews, isError: isErrorNews } = useQuery<HomepageNewsItemResponse[]>({
+    queryKey: ['homepage-news', displayLocale, manualRefreshKey],
+    queryFn: () => getHomepageNews(displayLocale),
+    staleTime: 0,
+    gcTime: 0,
+    retry: false,
+    throwOnError: false, // Allow individual sections to handle errors independently
+  });
+
+  const { data: faqData, isLoading: isLoadingFaq, isError: isErrorFaq } = useQuery<FaqResponse[]>({
+    queryKey: ['faq', displayLocale, manualRefreshKey],
+    queryFn: () => getPublicFaq(displayLocale),
+    staleTime: 0,
+    gcTime: 0,
+    retry: false,
+    throwOnError: false, // Allow individual sections to handle errors independently
+  });
+
+  // Don't block the entire page - let each section handle its own loading/error state
+  // This allows sections to render independently even if some queries fail
+
+  // Use banner data from backend - no fallbacks
+  // Filter to only show banners with valid titles
+  const hasValidBannerData = bannerData && Array.isArray(bannerData) && bannerData.length > 0;
+  const bannerSource = hasValidBannerData 
+    ? bannerData.filter((banner) => banner.title_uz || banner.title_ru)
+    : [];
+  
+  const slides: HeroSlide[] = bannerSource.map((banner, index) => {
+    const entity = banner as BannerResponse;
+    
+    // Get API data
+    const apiTitleUz = entity.title_uz ?? '';
+    const apiTitleRu = entity.title_ru ?? '';
+    const apiTextUz = entity.text_uz ?? '';
+    const apiTextRu = entity.text_ru ?? '';
+    const apiCtaUz = entity.ctaText_uz ?? '';
+    const apiCtaRu = entity.ctaText_ru ?? '';
+    
+    // Use current locale from API
+    const title = displayLocale === 'ru' ? apiTitleRu : apiTitleUz;
+    const subtitle = displayLocale === 'ru' ? (apiTextRu || '') : (apiTextUz || '');
+    const cta = displayLocale === 'ru' ? (apiCtaRu || '') : (apiCtaUz || '');
+    
+    // Extract image URL from MediaResponse
+    // Convert relative URLs to absolute URLs by prepending API base URL
+    let imageUrl = entity.image?.url || '';
+    if (imageUrl && imageUrl.startsWith('/') && !imageUrl.startsWith('//')) {
+      // Relative URL - prepend API base URL (without /api suffix since uploads are at root)
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      const baseUrl = apiBase.replace('/api', '');
+      imageUrl = `${baseUrl}${imageUrl}`;
+    }
+    
+    return {
+      id: entity.id ?? `banner-${index}`,
+      title: title || '',
+      subtitle: subtitle || '',
+      cta: cta || '',
+      image: imageUrl || '',
+      link: entity.ctaLink || '#',
+    } satisfies HeroSlide;
+  });
+
+
+  // Use services from backend - no fallbacks
+  const services = (serviceData && Array.isArray(serviceData) && serviceData.length > 0 ? serviceData : []).slice(0, 4).map((service, index) => {
+    const title = displayLocale === 'ru' ? (service.title_ru || '') : (service.title_uz || '');
+    const description = displayLocale === 'ru' ? (service.excerpt_ru || '') : (service.excerpt_uz || '');
+    const image = (service as any)?.image?.url ?? (service as any)?.cover?.url ?? '';
+    if (image && image.startsWith('/') && !image.startsWith('//')) {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      const baseUrl = apiBase.replace('/api', '');
+      return {
+        id: service.id ?? `service-${index}`,
+        title: title || '',
+        description: description || '',
+        slug: service.slug || service.id || `service-${index}`,
+        image: `${baseUrl}${image}`,
+      };
+    }
+    return {
+      id: service.id ?? `service-${index}`,
+      title: title || '',
+      description: description || '',
+      slug: service.slug || service.id || `service-${index}`,
+      image: image || '',
+    };
+  });
+
+  // Use hearing aid items from backend - no fallbacks
+  const hearingItems = (hearingItemsData && hearingItemsData.length > 0 ? hearingItemsData : []).slice(0, 9).map((item, index) => {
+    const title = displayLocale === 'ru' ? (item.title_ru || '') : (item.title_uz || '');
+    const description = displayLocale === 'ru' ? (item.description_ru || '') : (item.description_uz || '');
+    let image = item.image?.url || '';
+    if (image && image.startsWith('/') && !image.startsWith('//')) {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      const baseUrl = apiBase.replace('/api', '');
+      image = `${baseUrl}${image}`;
+    }
+    return {
+      id: item.id ?? `hearing-${index}`,
+      title: title || '',
+      description: description || '',
+      image: image || '',
+      link: item.link || '/catalog',
+      hasImage: !!item.image?.url,
+    };
+  });
+
+  // Use interacoustics products from backend - no fallbacks
+  const interacousticsProducts = (interacousticsData?.products && interacousticsData.products.length > 0 ? interacousticsData.products : []).slice(0, 4).map((product, index) => {
+    const title = displayLocale === 'ru' ? (product.name_ru || '') : (product.name_uz || '');
+    const description = displayLocale === 'ru' ? (product.description_ru || '') : (product.description_uz || '');
+    let image = product.brand?.logo?.url || '';
+    if (image && image.startsWith('/') && !image.startsWith('//')) {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      const baseUrl = apiBase.replace('/api', '');
+      image = `${baseUrl}${image}`;
+    }
+    return {
+      id: product.slug ?? product.id ?? `interacoustics-${index}`,
+      title: title || '',
+      description: description || '',
+      image: image || '',
+      brand: product.brand?.name || '',
+      slug: product.slug,
+    };
+  });
+
+
+  // Use journey steps from backend - no fallbacks
+  const journeySteps = (journeyData && Array.isArray(journeyData) && journeyData.length > 0 ? journeyData : []).slice(0, 4).map((step, index) => {
+    const title = displayLocale === 'ru' ? (step.title_ru || '') : (step.title_uz || '');
+    const description = displayLocale === 'ru' ? (step.description_ru || '') : (step.description_uz || '');
+    return {
+      id: step.id ?? `journey-${index}`,
+      title: title || '',
+      description: description || '',
+      order: step.order ?? index + 1,
+    };
+  });
+
+  // Use news items from backend - no fallbacks
+  const newsItems = (newsItemsData && Array.isArray(newsItemsData) && newsItemsData.length > 0 ? newsItemsData : []).slice(0, 6).map((item, index) => {
+    const title = displayLocale === 'ru' ? (item.title_ru || '') : (item.title_uz || '');
+    const excerpt = displayLocale === 'ru' ? (item.excerpt_ru || '') : (item.excerpt_uz || '');
+    return {
+      id: item.id ?? `news-${index}`,
+      title: title || '',
+      excerpt: excerpt || '',
+      slug: item.slug || '#',
+      publishedAt: item.publishedAt,
+    };
+  });
+  
+  // Use FAQ items from backend - no fallbacks
+  const faqItems = (faqData && Array.isArray(faqData) && faqData.length > 0 ? faqData : []).slice(0, 10).map((item, index) => {
+    const question = displayLocale === 'ru' ? (item.question_ru || '') : (item.question_uz || '');
+    const answer = displayLocale === 'ru' ? (item.answer_ru || '') : (item.answer_uz || '');
+    // Use the original item ID to ensure accordion works correctly
+    // If backend doesn't provide unique IDs, use index as fallback
+    const uniqueId = item.id || `faq-${index}`;
+    return {
+      id: uniqueId,
+      baseId: item.id,
+      question: question || '',
+      answer: answer || '',
+    };
+  });
+  
+
+  return (
+    <main className="min-h-screen bg-background">
+      {/* Hero Section with Slides - Two-Column Layout */}
+      {slides.length > 0 && (
+        <section className="bg-white py-8">
+          <div className="mx-auto max-w-6xl px-4 md:px-6">
+            <div className="relative overflow-hidden rounded-lg bg-white shadow-sm">
+              <div className="flex flex-col md:flex-row md:items-stretch">
+                {/* Left Panel - Text Content with White Background */}
+                <div className="relative flex flex-col justify-center bg-white px-6 py-6 md:px-8 md:py-8 md:w-1/2 md:min-h-[320px] rounded-l-lg">
+                  {slides.map((slide, index) => (
+                    <div
+                      key={`text-${slide.id}-${displayLocale}-${manualRefreshKey}`}
+                      className={`transition-opacity duration-500 ${
+                        index === activeSlide ? 'opacity-100 relative z-10' : 'absolute inset-0 opacity-0 z-0 pointer-events-none'
+                      }`}
+                    >
+                      <div className="space-y-3 md:space-y-4">
+                        {/* Dark Blue Heading */}
+                        <h1 className="text-xl font-bold leading-tight text-[#1e3a8a] md:text-2xl lg:text-3xl" suppressHydrationWarning>
+                          {slide.title}
+                        </h1>
+                        {/* Grey Subtitle */}
+                        {slide.subtitle && (
+                          <p className="text-sm leading-relaxed text-muted-foreground md:text-base" suppressHydrationWarning>
+                            {slide.subtitle}
+                          </p>
+                        )}
+                        {/* CTA Buttons Row */}
+                        <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                          {/* Primary Orange CTA Button */}
+                          {slide.cta && (
+                            <Link
+                              href={slide.link}
+                              className="inline-flex items-center gap-2 rounded-lg bg-brand-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-primary/90 md:px-5 md:py-2.5"
+                              suppressHydrationWarning
+                            >
+                              {slide.cta}
+                              <ArrowRight size={14} className="md:w-4 md:h-4" />
+                            </Link>
+                          )}
+                          {/* Secondary White Outlined Phone Button */}
+                          <Link
+                            href="tel:+998712021441"
+                            className="inline-flex items-center gap-2 rounded-lg border-2 border-border bg-white px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-muted/50 md:px-5 md:py-2.5"
+                            suppressHydrationWarning
+                          >
+                            <Phone size={14} className="md:w-4 md:h-4" />
+                            <span>1385</span>
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {/* Navigation Dots - Bottom Left */}
+                  {slides.length > 1 && (
+                    <div className="absolute bottom-3 left-6 flex items-center gap-2 z-20 md:bottom-4 md:left-8">
+                      {slides.map((_, dotIndex) => (
+                        <button
+                          key={dotIndex}
+                          type="button"
+                          onClick={() => setActiveSlide(dotIndex)}
+                          className={`h-2 w-2 rounded-full transition-all ${
+                            dotIndex === activeSlide
+                              ? 'h-2.5 w-2.5 bg-brand-primary'
+                              : 'bg-muted-foreground/40 hover:bg-muted-foreground/60'
+                          }`}
+                          aria-label={`Go to slide ${dotIndex + 1}`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Right Panel - Orange Block with Image or "Acoustic" Text */}
+                <div className="relative w-full md:w-1/2 bg-brand-primary md:min-h-[320px] rounded-r-lg">
+                  {slides.map((slide, index) => {
+                    const imageUrl = slide.image;
+                    const isActive = index === activeSlide;
+                    // Check if we have a real image from backend
+                    // Real images are URLs (http/https) or uploaded media
+                    const hasRealImage = imageUrl && 
+                      (imageUrl.startsWith('http://') || 
+                       imageUrl.startsWith('https://') || 
+                       (imageUrl.startsWith('/') && !imageUrl.startsWith('//')));
+                    
+                    return (
+                      <div
+                        key={`image-${slide.id}-${displayLocale}-${manualRefreshKey}`}
+                        className={`absolute inset-0 transition-opacity duration-500 rounded-r-lg ${
+                          isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+                        }`}
+                      >
+                        {hasRealImage ? (
+                          // Show image if available from backend
+                          <div className="absolute inset-0 flex items-center justify-center p-4 md:p-6 lg:p-8">
+                            <img
+                              src={imageUrl}
+                              alt={slide.title}
+                              className="max-w-full max-h-full object-contain rounded-lg"
+                              style={{ 
+                                width: 'auto',
+                                height: 'auto',
+                                maxWidth: 'calc(100% - 2rem)',
+                                maxHeight: 'calc(100% - 2rem)'
+                              }}
+                              onError={(e) => {
+                                // If image fails to load, show "Acoustic" text
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                const parent = target.parentElement;
+                                if (parent) {
+                                  parent.innerHTML = '<div class="absolute inset-0 flex items-center justify-center rounded-r-lg"><span class="text-3xl font-bold text-white md:text-4xl lg:text-5xl">Acoustic</span></div>';
+                                }
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          // Show "Acoustic" text if no image (centered in orange block)
+                          <div className="absolute inset-0 flex items-center justify-center rounded-r-lg">
+                            <span className="text-3xl font-bold text-white md:text-4xl lg:text-5xl">Acoustic</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Services Section - Image-based Cards - Always show 4 in a row */}
+      {services.length > 0 && (
+        <section className="bg-white py-8">
+          <div className="mx-auto max-w-6xl px-4 md:px-6">
+            <div className="mb-8">
+              <h2 className="text-3xl font-bold text-foreground md:text-4xl" suppressHydrationWarning>
+                {displayLocale === 'ru' ? 'Наши услуги' : 'Bizning xizmatlar'}
+              </h2>
+            </div>
+            {/* Grid: 1 col on mobile, 2 cols on small screens, 4 cols on medium+ screens */}
+            <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
+              {/* Always display exactly 4 services */}
+              {services.map((service) => (
+                <Link
+                  key={service.id}
+                  href={`/services/${service.slug}`}
+                  className="group flex flex-col overflow-hidden rounded-lg bg-white shadow-sm transition hover:shadow-md"
+                >
+                  {/* Service Image */}
+                  <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted/20">
+                    <Image
+                      src={service.image}
+                      alt={service.title}
+                      fill
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                      unoptimized={service.image?.startsWith('data:')}
+                      suppressHydrationWarning
+                    />
+                  </div>
+                  
+                  {/* Service Content */}
+                  <div className="flex flex-1 flex-col p-5">
+                    <h3 className="mb-2 text-lg font-semibold text-foreground group-hover:text-brand-primary" suppressHydrationWarning>
+                      {service.title}
+                    </h3>
+                    {service.description && (
+                      <p className="mb-4 flex-1 text-sm leading-relaxed text-muted-foreground" suppressHydrationWarning>
+                        {service.description}
+                      </p>
+                    )}
+                    <span className="inline-flex items-center gap-1 text-sm font-medium text-brand-primary group-hover:gap-2" suppressHydrationWarning>
+                      {displayLocale === 'ru' ? 'Подробнее' : 'Batafsil'}
+                      <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Hearing Aids Section (Product Catalog) */}
+      {(hearingItems.length > 0 || isLoadingHearingItems) && (
+        <section className="border-t bg-white py-12">
+          <div className="mx-auto max-w-6xl space-y-6 px-4 md:px-6">
+            <div className="space-y-1">
+              <p className="text-sm font-semibold uppercase tracking-wide text-brand-primary" suppressHydrationWarning>
+                {displayLocale === 'ru' ? 'Слуховые аппараты' : 'Eshitish apparatlari'}
+              </p>
+              <h2 className="text-3xl font-bold text-foreground md:text-4xl" suppressHydrationWarning>
+                {displayLocale === 'ru' ? 'Решения для вашего образа жизни' : 'Turmush tarziga mos eshitish yechimlari'}
+              </h2>
+              {displayLocale === 'ru' ? (
+                <p className="text-base text-muted-foreground" suppressHydrationWarning>
+                  Мы подберём модель, которая подходит вашему образу жизни, активности и бюджету.
+                </p>
+              ) : (
+                <p className="text-base text-muted-foreground" suppressHydrationWarning>
+                  Biz sizning odatlaringiz, faolligingiz va byudjetingizga mos modelni topamiz.
+                </p>
+              )}
+            </div>
+            {/* 3-column grid for categories - exactly 9 items, horizontal layout matching image */}
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
+              {isLoadingHearingItems ? (
+                // Show loading skeletons while fetching
+                Array.from({ length: 9 }).map((_, index) => (
+                  <div key={`skeleton-${index}`} className="flex flex-row items-start gap-4 rounded-lg border border-gray-200 bg-white p-4 animate-pulse">
+                    <div className="w-20 h-20 rounded-lg bg-brand-primary/20 flex-shrink-0"></div>
+                    <div className="flex flex-col flex-1 space-y-2 min-w-0">
+                      <div className="h-5 bg-muted/40 rounded w-3/4"></div>
+                      <div className="h-4 bg-muted/30 rounded w-full"></div>
+                      <div className="h-4 bg-muted/30 rounded w-2/3"></div>
+                    </div>
+                  </div>
+                ))
+              ) : isErrorHearingItems ? (
+                // Show error message
+                <div className="col-span-full text-center py-8">
+                  <p className="text-muted-foreground" suppressHydrationWarning>
+                    {displayLocale === 'ru' 
+                      ? 'Не удалось загрузить каталог продуктов. Попробуйте обновить страницу.' 
+                      : 'Mahsulotlar katalogini yuklab bo\'lmadi. Sahifani yangilab ko\'ring.'}
+                  </p>
+                </div>
+              ) : hearingItems.length === 0 ? (
+                // Show empty state
+                <div className="col-span-full text-center py-8">
+                  <p className="text-muted-foreground" suppressHydrationWarning>
+                    {displayLocale === 'ru' 
+                      ? 'Каталог продуктов пуст.' 
+                      : 'Mahsulotlar katalogi bo\'sh.'}
+                  </p>
+                </div>
+              ) : (
+                hearingItems.slice(0, 9).map((item) => (
+                <Link
+                  key={item.id}
+                  href={item.link}
+                  className="group flex flex-row items-start gap-4 rounded-lg border border-gray-200 bg-white p-4 transition hover:border-brand-primary/50 hover:shadow-sm"
+                >
+                  {/* Orange square icon on the left with "Acoustic" text or category image */}
+                  <div className="relative w-20 h-20 overflow-hidden rounded-lg bg-brand-primary flex items-center justify-center flex-shrink-0">
+                    {(item as any).hasImage && item.image ? (
+                      <Image 
+                        src={item.image} 
+                        alt={item.title} 
+                        fill 
+                        sizes="80px" 
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        suppressHydrationWarning
+                      />
+                    ) : (
+                      <span className="text-white text-base font-bold">Acoustic</span>
+                    )}
+                  </div>
+                  {/* Category title and description on the right */}
+                  <div className="flex flex-col flex-1 space-y-2 min-w-0">
+                    <h3 className="text-base font-semibold text-foreground leading-tight group-hover:text-brand-primary transition-colors" suppressHydrationWarning>
+                      {item.title}
+                    </h3>
+                    {item.description && (
+                      <p className="text-sm text-muted-foreground leading-relaxed" suppressHydrationWarning>
+                        {item.description}
+                      </p>
+                    )}
+                    {/* Link text */}
+                    <span className="inline-flex items-center gap-1 text-sm font-medium text-brand-primary group-hover:gap-2 transition-all mt-auto" suppressHydrationWarning>
+                      {displayLocale === 'ru' ? 'Подробнее' : 'Batafsil'}
+                      <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+                    </span>
+                  </div>
+                </Link>
+              ))
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Interacoustics Section */}
+      {interacousticsProducts.length > 0 && (
+        <section className="border-t bg-white py-12">
+          <div className="mx-auto max-w-6xl space-y-6 px-4 md:px-6">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div className="space-y-1">
+                <p className="text-sm font-semibold uppercase tracking-wide text-brand-primary" suppressHydrationWarning>
+                  {displayLocale === 'ru' ? 'Interacoustics' : 'Interacoustics'}
+                </p>
+                <h2 className="text-3xl font-bold text-foreground md:text-4xl" suppressHydrationWarning>
+                  {displayLocale === 'ru' ? 'Диагностическое оборудование' : 'Eng so\'nggi diagnostika uskunalari'}
+                </h2>
+                <p className="text-base text-muted-foreground" suppressHydrationWarning>
+                  {displayLocale === 'ru' 
+                    ? 'Выбор инновационных решений и устройств для специалистов по аудиологии.'
+                    : 'Audiologiya mutaxassislari uchun innovatsion yechimlar va qurilmalar tanlovi.'}
+                </p>
+              </div>
+              <Link 
+                href="/catalog" 
+                className="inline-flex items-center gap-1 text-base font-medium text-muted-foreground hover:text-brand-primary transition-colors whitespace-nowrap"
+                suppressHydrationWarning
+              >
+                {displayLocale === 'ru' ? 'Полный каталог' : 'To\'liq katalog'}
+                <ArrowRight size={16} />
+              </Link>
+            </div>
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
+              {interacousticsProducts.map((product) => {
+                const productLink = product.slug ? `/products/${product.slug}` : '#';
+                const hasImage = product.image && product.image.length > 0;
+                return (
+                  <Link
+                    key={product.id}
+                    href={productLink}
+                    className="group flex flex-col rounded-lg border border-gray-200 bg-white overflow-hidden transition hover:border-brand-primary/50 hover:shadow-sm"
+                  >
+                    {/* Orange placeholder/image area on top */}
+                    <div className="relative aspect-[4/3] w-full overflow-hidden bg-brand-primary flex items-center justify-center">
+                      {hasImage ? (
+                        <Image 
+                          src={product.image} 
+                          alt={product.title} 
+                          fill 
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" 
+                          className="object-cover transition-transform duration-300 group-hover:scale-105"
+                          suppressHydrationWarning
+                        />
+                      ) : (
+                        <span className="text-white text-lg font-bold">Acoustic</span>
+                      )}
+                    </div>
+                    {/* Text content area below */}
+                    <div className="flex flex-col flex-1 p-4 space-y-2">
+                      <h3 className="text-lg font-semibold text-foreground leading-tight group-hover:text-brand-primary transition-colors" suppressHydrationWarning>
+                        {product.title}
+                      </h3>
+                      {product.description && (
+                        <p className="text-sm text-muted-foreground leading-relaxed flex-1" suppressHydrationWarning>
+                          {product.description}
+                        </p>
+                      )}
+                      <span className="inline-flex items-center gap-1 text-sm font-medium text-brand-primary group-hover:gap-2 transition-all mt-auto" suppressHydrationWarning>
+                        {displayLocale === 'ru' ? 'Подробнее' : 'Batafsil'}
+                        <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+
+
+      {/* Journey Section */}
+      {journeySteps.length > 0 && (
+        <section className="border-t bg-white py-12">
+          <div className="mx-auto max-w-6xl space-y-8 px-4 md:px-6">
+          <div className="space-y-1">
+              <p className="text-sm font-semibold uppercase tracking-wide text-brand-primary" suppressHydrationWarning>
+                {displayLocale === 'ru' ? 'Путь к лучшему слуху' : 'Yaxshi eshitishga yo\'l'}
+              </p>
+              <h2 className="text-3xl font-bold text-foreground md:text-4xl" suppressHydrationWarning>
+                {displayLocale === 'ru' ? 'Как мы помогаем' : 'Biz qanday yordam beramiz'}
+            </h2>
+          </div>
+            <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
+              {journeySteps.map((step) => (
+                <div key={step.id} className="relative flex flex-col gap-4 rounded-2xl border border-border/60 bg-white p-6 shadow-sm">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-brand-primary/10 text-2xl font-bold text-brand-primary">
+                    {step.order}
+                  </div>
+                  <h3 className="text-lg font-semibold text-brand-accent" suppressHydrationWarning>
+                    {step.title}
+                </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed" suppressHydrationWarning>
+                    {step.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+      )}
+
+      {/* News Section */}
+      {(newsItems.length > 0 || isLoadingNews) && (
+        <section className="border-t bg-muted/20 py-12">
+          <div className="mx-auto max-w-6xl space-y-8 px-4 md:px-6">
+            <div className="space-y-1 text-center">
+              <h2 className="text-3xl font-bold text-brand-primary md:text-4xl" suppressHydrationWarning>
+                {displayLocale === 'ru' ? 'Новости' : 'Yangiliklar'}
+              </h2>
+            </div>
+            <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
+              {isLoadingNews ? (
+                // Show loading skeletons while fetching
+                Array.from({ length: 6 }).map((_, index) => (
+                  <div key={`news-skeleton-${index}`} className="flex flex-col gap-3 animate-pulse">
+                    <div className="h-6 bg-muted/40 rounded w-3/4"></div>
+                    <div className="h-4 bg-muted/30 rounded w-full"></div>
+                    <div className="h-4 bg-muted/30 rounded w-5/6"></div>
+                  </div>
+                ))
+              ) : isErrorNews ? (
+                // Show error message
+                <div className="col-span-full text-center py-8">
+                  <p className="text-muted-foreground" suppressHydrationWarning>
+                    {displayLocale === 'ru' 
+                      ? 'Не удалось загрузить новости. Попробуйте обновить страницу.' 
+                      : 'Yangiliklarni yuklab bo\'lmadi. Sahifani yangilab ko\'ring.'}
+                  </p>
+                </div>
+              ) : newsItems.length === 0 ? (
+                // Show empty state
+                <div className="col-span-full text-center py-8">
+                  <p className="text-muted-foreground" suppressHydrationWarning>
+                    {displayLocale === 'ru' 
+                      ? 'Новостей пока нет.' 
+                      : 'Hozircha yangiliklar yo\'q.'}
+                  </p>
+                </div>
+              ) : (
+                newsItems.map((item) => (
+                <Link
+                  key={item.id}
+                  href={item.slug && item.slug !== '#' ? `/posts/${item.slug}` : '#'}
+                  className="group flex flex-col gap-3 transition hover:opacity-80"
+                >
+                  <h3 className="text-lg font-semibold text-brand-primary group-hover:text-brand-accent" suppressHydrationWarning>
+                    {item.title}
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed" suppressHydrationWarning>
+                    {item.excerpt}
+                  </p>
+                </Link>
+              ))
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* FAQ Section */}
+      {faqItems.length > 0 && (
+        <section className="border-t bg-white py-12">
+          <div className="mx-auto max-w-6xl space-y-8 px-4 md:px-6">
+            {/* Title */}
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-brand-primary md:text-3xl" suppressHydrationWarning>
+                {displayLocale === 'ru' ? 'Часто задаваемые вопросы' : 'Tez-tez beriladigan savollar'}
+              </h2>
+              <div className="h-px w-20 bg-border"></div>
+            </div>
+            
+            {/* FAQ Grid - 2 columns */}
+            <div className="grid gap-4 md:grid-cols-2">
+              {faqItems.map((item, faqIndex) => {
+                const isOpen = openFaqId === item.id;
+                const answerId = `faq-answer-${item.id}`;
+                const buttonId = `faq-button-${item.id}`;
+                return (
+                  <div
+                    key={item.id}
+                    className="group rounded-lg border border-border/60 bg-muted/30 p-4 transition hover:border-brand-primary/50 hover:shadow-sm"
+                  >
+                    <button
+                      id={buttonId}
+                      type="button"
+                      aria-expanded={isOpen}
+                      aria-controls={answerId}
+                      onClick={() => {
+                        // If clicking the same item, close it. Otherwise, open the clicked item (which closes the previous one)
+                        setOpenFaqId(isOpen ? null : item.id);
+                      }}
+                      onKeyDown={(e) => {
+                        // Allow Enter and Space to toggle
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          setOpenFaqId(isOpen ? null : item.id);
+                        }
+                      }}
+                      className="flex w-full cursor-pointer items-center justify-between gap-3 rounded text-left focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2"
+                    >
+                      <span className="flex-1 text-sm font-medium text-foreground" suppressHydrationWarning>
+                        {item.question}
+                      </span>
+                      <ChevronDown 
+                        aria-hidden="true"
+                        className={`h-4 w-4 flex-shrink-0 text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} 
+                      />
+                    </button>
+                    {isOpen && (
+                      <div 
+                        id={answerId}
+                        role="region"
+                        aria-labelledby={buttonId}
+                        className="mt-3 text-sm text-muted-foreground leading-relaxed" 
+                        suppressHydrationWarning
+                      >
+                        {item.answer}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
+    </main>
+  );
+}

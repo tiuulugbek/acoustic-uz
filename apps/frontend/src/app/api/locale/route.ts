@@ -9,36 +9,64 @@ export async function POST(request: NextRequest) {
 
     // Validate locale
     if (locale !== 'uz' && locale !== 'ru') {
-      return NextResponse.json({ error: 'Invalid locale' }, { status: 400 });
+      if (process.env.NODE_ENV === 'development') {
+        console.error(`[Locale API] Invalid locale in POST: ${locale}`);
+      }
+      return NextResponse.json({ error: 'Invalid locale. Must be "uz" or "ru".' }, { status: 400 });
     }
 
     // Get the referer or origin to redirect back to the same page
-    const referer = request.headers.get('referer') || request.nextUrl.origin;
-    const redirectUrl = new URL(referer);
+    const referer = request.headers.get('referer');
+    let redirectUrl: URL;
+    
+    if (referer) {
+      try {
+        redirectUrl = new URL(referer);
+        // Ensure referer is from the same origin for security
+        if (redirectUrl.origin !== request.nextUrl.origin) {
+          redirectUrl = new URL('/', request.nextUrl.origin);
+        }
+      } catch {
+        redirectUrl = new URL('/', request.nextUrl.origin);
+      }
+    } else {
+      redirectUrl = new URL('/', request.nextUrl.origin);
+    }
 
-    // Create response with redirect
-    const response = NextResponse.redirect(redirectUrl, { status: 307 });
-
-    // Set locale cookie with proper attributes
+    // Calculate expiration date
     const expires = new Date();
     expires.setTime(expires.getTime() + LOCALE_COOKIE_MAX_AGE * 1000);
 
+    // Create response with redirect (use 307 to preserve method)
+    const response = NextResponse.redirect(redirectUrl, { status: 307 });
+
+    // Set locale cookie with proper attributes
+    // Use both maxAge and expires for maximum compatibility
     response.cookies.set(LOCALE_COOKIE_NAME, locale, {
       path: '/',
       maxAge: LOCALE_COOKIE_MAX_AGE,
       expires: expires,
       sameSite: 'lax',
       httpOnly: false, // Allow client-side reading
-      secure: process.env.NODE_ENV === 'production', // Secure in production
+      secure: process.env.NODE_ENV === 'production', // Secure in production (HTTPS only)
     });
 
     // Set cache-control headers to prevent caching
     response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     response.headers.set('Pragma', 'no-cache');
     response.headers.set('Expires', '0');
+    
+    // Log cookie setting for debugging
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[Locale API] ✅ Setting cookie ${LOCALE_COOKIE_NAME}=${locale} (POST)`);
+      console.log(`[Locale API] Redirecting to: ${redirectUrl.toString()}`);
+    }
 
     return response;
   } catch (error) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[Locale API] Error in POST handler:', error);
+    }
     return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }
 }
@@ -49,8 +77,12 @@ export async function GET(request: NextRequest) {
   const locale = searchParams.get('locale') as Locale;
   const redirectTo = searchParams.get('redirect');
 
+  // Validate locale
   if (locale !== 'uz' && locale !== 'ru') {
-    return NextResponse.json({ error: 'Invalid locale' }, { status: 400 });
+    if (process.env.NODE_ENV === 'development') {
+      console.error(`[Locale API] Invalid locale: ${locale}`);
+    }
+    return NextResponse.json({ error: 'Invalid locale. Must be "uz" or "ru".' }, { status: 400 });
   }
 
   // Get redirect URL from query param, referer, or default to homepage
@@ -63,6 +95,10 @@ export async function GET(request: NextRequest) {
       // If redirectTo is a full URL, use it directly; otherwise, make it relative to origin
       if (decodedRedirect.startsWith('http://') || decodedRedirect.startsWith('https://')) {
         redirectUrl = new URL(decodedRedirect);
+        // Ensure it's from the same origin for security
+        if (redirectUrl.origin !== request.nextUrl.origin) {
+          redirectUrl = new URL('/', request.nextUrl.origin);
+        }
       } else {
         // For relative URLs, create a new URL with the origin
         // This handles paths with query parameters correctly
@@ -70,6 +106,9 @@ export async function GET(request: NextRequest) {
       }
     } catch (error) {
       // If URL parsing fails, default to homepage
+      if (process.env.NODE_ENV === 'development') {
+        console.error(`[Locale API] Failed to parse redirect URL: ${redirectTo}`, error);
+      }
       redirectUrl = new URL('/', request.nextUrl.origin);
     }
   } else {
@@ -78,6 +117,10 @@ export async function GET(request: NextRequest) {
     if (referer) {
       try {
         redirectUrl = new URL(referer);
+        // Ensure referer is from the same origin for security
+        if (redirectUrl.origin !== request.nextUrl.origin) {
+          redirectUrl = new URL('/', request.nextUrl.origin);
+        }
       } catch {
         redirectUrl = new URL('/', request.nextUrl.origin);
       }
@@ -86,13 +129,12 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Set locale cookie FIRST, before creating redirect response
-  // This ensures the cookie is set in the response that will be sent
+  // Calculate expiration date
   const expires = new Date();
   expires.setTime(expires.getTime() + LOCALE_COOKIE_MAX_AGE * 1000);
 
   // Create response with redirect (use 307 to preserve method)
-  // IMPORTANT: Set cookie before redirect so it's included in the response
+  // IMPORTANT: Create response first, then set cookie on it
   const response = NextResponse.redirect(redirectUrl, { status: 307 });
 
   // Set locale cookie with proper attributes
@@ -106,14 +148,17 @@ export async function GET(request: NextRequest) {
     secure: process.env.NODE_ENV === 'production', // Secure in production (HTTPS only)
   });
 
-  // Also set a cache-control header to prevent caching of the redirect
+  // Set cache-control headers to prevent caching of the redirect
+  // This ensures the redirect is always fresh and the cookie is properly set
   response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   response.headers.set('Pragma', 'no-cache');
   response.headers.set('Expires', '0');
   
   // Log cookie setting for debugging
   if (process.env.NODE_ENV === 'development') {
-    console.log(`[Locale API] Setting cookie ${LOCALE_COOKIE_NAME}=${locale} for redirect to ${redirectUrl.toString()}`);
+    console.log(`[Locale API] ✅ Setting cookie ${LOCALE_COOKIE_NAME}=${locale}`);
+    console.log(`[Locale API] Redirecting to: ${redirectUrl.toString()}`);
+    console.log(`[Locale API] Cookie will expire at: ${expires.toISOString()}`);
   }
 
   return response;

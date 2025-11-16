@@ -77,12 +77,15 @@ async function fetchJson<T>(
     const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
     try {
-      // Add cache-busting timestamp for homepage services, FAQ, and news to ensure fresh data
-      const isHomepageServices = path.includes('/homepage/services');
-      const isFaq = path.includes('/faq');
-      const isHomepageNews = path.includes('/homepage/news');
+      // Add cache-busting timestamp for all homepage endpoints and menu endpoints to ensure fresh data
+      const isHomepageEndpoint = path.includes('/homepage/') || 
+                                  path.includes('/banners') ||
+                                  path.includes('/faq') ||
+                                  path.includes('/showcases');
+      const isMenuEndpoint = path.includes('/menus/');
+      const isCategoryEndpoint = path.includes('/product-categories');
       let finalUrl = url.toString();
-      if (isHomepageServices || isFaq || isHomepageNews) {
+      if (isHomepageEndpoint || isMenuEndpoint || isCategoryEndpoint) {
         // Add cache-busting query parameter
         const separator = url.search ? '&' : '?';
         finalUrl = `${finalUrl}${separator}_t=${Date.now()}`;
@@ -98,10 +101,8 @@ async function fetchJson<T>(
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        // Don't throw errors - return empty data instead
-        // This allows the UI to gracefully fall back to default content
-        console.warn(`[API] Request failed: ${response.status} ${response.statusText} for ${path}`);
-        return [] as T; // Return empty array for list endpoints, undefined will be handled by callers
+        // Throw errors when backend is unavailable - frontend depends fully on backend
+        throw new ApiFetchError(response.status, `Request failed: ${response.status} ${response.statusText} for ${path}`);
       }
 
       if (response.status === 204) {
@@ -118,21 +119,28 @@ async function fetchJson<T>(
       throw fetchError;
     }
   } catch (error) {
-    // Catch all errors (network errors, timeouts, JSON parse errors, etc.)
-    // Return empty data instead of throwing, so UI can display fallback content
-    console.warn(`[API] Failed to fetch ${path}:`, error instanceof Error ? error.message : 'Unknown error');
+    // Re-throw all errors - frontend depends fully on backend
+    // If backend is down, let React Query handle the error state
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorName = error instanceof Error ? error.name : 'Unknown';
     
-    // Return appropriate empty value based on expected return type
-    // For array endpoints, return empty array; for object endpoints, return null/undefined
-    // The caller should handle these gracefully
-    if (path.includes('/banners') || path.includes('/services') || path.includes('/products') || 
-        path.includes('/categories') || path.includes('/homepage') || path.includes('/faq') ||
-        path.includes('/brands')) {
-      return [] as T;
+    // Enhanced error logging for debugging
+    console.error(`[API] ❌ Failed to fetch ${path}:`, {
+      error: errorMessage,
+      errorType: errorName,
+      apiBase: API_BASE,
+      fullUrl: `${API_BASE}/${path}`,
+      locale: locale || 'not provided',
+    });
+    
+    // Check if it's a network error (backend not running)
+    if (errorName === 'AbortError' || errorMessage.includes('timeout') || errorMessage.includes('Failed to fetch')) {
+      console.error(`[API] ⚠️ Backend appears to be unavailable or unreachable at ${API_BASE}`);
+      throw new Error(`Backend unavailable: ${errorMessage}`);
     }
     
-    // For single object endpoints, return null
-    return null as T;
+    // Re-throw the error
+    throw error;
   }
 }
 
@@ -196,6 +204,45 @@ export const getHomepageServices = (locale?: string) => {
 
 export const getProductCategories = (locale?: string) => {
   return fetchJson<ProductCategoryResponse[]>('/product-categories', locale);
+};
+
+export interface ServiceCategoryResponse {
+  id: string;
+  name_uz: string;
+  name_ru: string;
+  slug: string;
+  description_uz?: string | null;
+  description_ru?: string | null;
+  icon?: string | null;
+  image?: MediaResponse | null;
+  parentId?: string | null;
+  parent?: ServiceCategoryResponse | null;
+  children?: ServiceCategoryResponse[] | null;
+  services?: ServiceResponse[] | null;
+  order: number;
+  status: string;
+}
+
+export const getServiceCategories = (locale?: string) => {
+  return fetchJson<ServiceCategoryResponse[]>('/service-categories?public=true', locale);
+};
+
+export const getServiceCategoryBySlug = async (slug: string, locale?: string): Promise<ServiceCategoryResponse | null> => {
+  try {
+    // First try direct API endpoint (if backend supports it)
+    const directResult = await fetchJson<ServiceCategoryResponse>(`/service-categories/slug/${slug}?public=true`, locale);
+    if (directResult) {
+      return directResult;
+    }
+  } catch (error) {
+    // Fallback to fetching all and finding by slug
+  }
+  // Fallback: fetch all categories and find by slug
+  const categories = await getServiceCategories(locale);
+  if (!categories || categories.length === 0) {
+    return null;
+  }
+  return categories.find((cat) => cat.slug === slug) ?? null;
 };
 
 export const getCategoryBySlug = async (slug: string, locale?: string): Promise<ProductCategoryResponse | null> => {

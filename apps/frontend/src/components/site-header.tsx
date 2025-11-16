@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Menu,
@@ -18,12 +18,12 @@ import {
   MapPin,
 } from 'lucide-react';
 import { getProductCategories, getMenu, type MenuItemResponse, type ProductCategoryResponse } from '@/lib/api';
-import { DEFAULT_MENUS } from '@acoustic/shared';
+// Removed DEFAULT_MENUS fallback - frontend fully depends on backend
 import LanguageSwitcher, { LanguageSwitcherMobile } from '@/components/language-switcher';
 import { getBilingualText, DEFAULT_LOCALE, type Locale } from '@/lib/locale';
 import { getLocaleFromCookie } from '@/lib/locale-client';
 
-type CatalogMenuEntry = Pick<ProductCategoryResponse, 'id' | 'slug' | 'name_uz' | 'name_ru'>;
+// Removed CatalogMenuEntry - not currently used
 
 type NavItem =
   | {
@@ -40,56 +40,22 @@ type NavItem =
       children: { href: string; label: string }[];
     };
 
-const fallbackCatalogMenu: CatalogMenuEntry[] = [
-  {
-    id: 'fallback-category-bte',
-    slug: 'category-bte',
-    name_uz: 'BTE (Quloq orqasida)',
-    name_ru: 'BTE (За ухом)',
-  },
-  {
-    id: 'fallback-category-ite',
-    slug: 'category-ite',
-    name_uz: 'ITE (Quloq ichida)',
-    name_ru: 'ITE (В ухе)',
-  },
-  {
-    id: 'fallback-category-ric',
-    slug: 'category-ric',
-    name_uz: 'RIC (Kanal ichida)',
-    name_ru: 'RIC (В канале)',
-  },
-  {
-    id: 'fallback-category-children',
-    slug: 'category-mini-bte',
-    name_uz: 'Bolalar uchun apparatlar',
-    name_ru: 'Аппараты для детей',
-  },
-  {
-    id: 'fallback-category-accessories',
-    slug: 'category-other',
-    name_uz: 'Aksessuarlar va parvarish',
-    name_ru: 'Аксессуары и уход',
-  },
-  {
-    id: 'fallback-category-power',
-    slug: 'category-power-bte',
-    name_uz: 'Kuchli BTE yechimlari',
-    name_ru: 'Мощные BTE решения',
-  },
-];
+// Removed fallback catalog menu - frontend fully depends on backend
 
 // Helper to get locale from DOM (available on client)
+// ALWAYS prioritizes DOM attributes over cookies to prevent reverting to stale values
 function getLocaleFromDOM(): Locale {
   if (typeof document === 'undefined') return DEFAULT_LOCALE;
   
-  // Read from HTML data attribute first (set by server) - most reliable
+  // Priority 1: Read from HTML data attribute (set by server) - MOST RELIABLE
+  // This is set in layout.tsx and reflects the actual server-detected locale
   const htmlLocale = document.documentElement.getAttribute('data-locale');
   if (htmlLocale === 'ru' || htmlLocale === 'uz') {
     return htmlLocale as Locale;
   }
   
-  // Fallback to window.__NEXT_LOCALE__ (set by script before React loads)
+  // Priority 2: Read from window.__NEXT_LOCALE__ (set by inline script before React)
+  // This is set by the server and matches the data-locale attribute
   if (typeof window !== 'undefined' && (window as any).__NEXT_LOCALE__) {
     const locale = (window as any).__NEXT_LOCALE__;
     if (locale === 'ru' || locale === 'uz') {
@@ -97,8 +63,16 @@ function getLocaleFromDOM(): Locale {
     }
   }
   
-  // Fallback to cookie (least reliable, but works as last resort)
-  return getLocaleFromCookie();
+  // Priority 3: Read from cookie ONLY as last resort
+  // We don't trust cookies if DOM attributes are missing, as they might be stale
+  // But we need a fallback for the initial render before server sets DOM attributes
+  const cookieLocale = getLocaleFromCookie();
+  if (cookieLocale && cookieLocale !== DEFAULT_LOCALE) {
+    console.warn('[SiteHeader] ⚠️ Using cookie locale (DOM attribute missing):', cookieLocale);
+    return cookieLocale;
+  }
+  
+  return DEFAULT_LOCALE;
 }
 
 export default function SiteHeader() {
@@ -137,31 +111,87 @@ export default function SiteHeader() {
   
   const [displayLocale, setDisplayLocale] = useState<Locale>(getInitialLocale);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [menuRefreshKey, setMenuRefreshKey] = useState(0);
 
+  // Track if we've successfully switched locale to prevent reverting
+  const [localeChangeInProgress, setLocaleChangeInProgress] = useState(false);
+  const consecutiveChecksRef = useRef<{ locale: Locale | null; count: number }>({ locale: null, count: 0 });
+  
   // Watch for locale changes AFTER initial render (e.g., after language switch)
   // Note: Initial locale is set correctly in useState above to match server render
   useEffect(() => {
+    const LOCALE_STABLE_CHECKS = 2; // Require 2 consecutive checks to confirm locale change
+    
     const checkLocaleChange = () => {
       if (typeof document === 'undefined') return;
       
       const domLocale = getLocaleFromDOM();
+      
+      // Only update if locale is actually different AND stable
+      // This prevents reverting back due to race conditions or stale cookie reads
       if (domLocale !== displayLocale) {
-        console.log('[SiteHeader] 🔄 Locale changed from', displayLocale, 'to', domLocale, '- updating menu');
-        setDisplayLocale(domLocale);
-        // Invalidate ALL queries with old locale and refetch with new locale
-        queryClient.removeQueries({ queryKey: ['menu', 'header'] });
-        queryClient.removeQueries({ queryKey: ['product-categories'] });
-        // Force fresh fetch with new locale
-        queryClient.refetchQueries({ queryKey: ['menu', 'header', domLocale] });
-        queryClient.refetchQueries({ queryKey: ['product-categories', domLocale] });
+        // Track consecutive checks for the same new locale
+        if (consecutiveChecksRef.current.locale === domLocale) {
+          consecutiveChecksRef.current.count++;
+        } else {
+          // New locale detected, reset counter
+          consecutiveChecksRef.current.locale = domLocale;
+          consecutiveChecksRef.current.count = 1;
+        }
+        
+        // Only update if we've seen the same new locale in multiple consecutive checks
+        // OR if we're already in the middle of a locale change (to complete it)
+        if (consecutiveChecksRef.current.count >= LOCALE_STABLE_CHECKS || localeChangeInProgress) {
+          console.log('[SiteHeader] 🔄 Locale changed from', displayLocale, 'to', domLocale, '- updating menu');
+          setLocaleChangeInProgress(true);
+          setDisplayLocale(domLocale);
+          // Force menu refresh with new locale
+          setMenuRefreshKey(prev => prev + 1);
+          // Remove ALL menu and category queries (including old locale caches)
+          queryClient.removeQueries({ queryKey: ['menu'] });
+          queryClient.removeQueries({ queryKey: ['product-categories'] });
+          // Small delay to ensure state update completes before refetch
+          setTimeout(() => {
+            queryClient.refetchQueries({ queryKey: ['menu', 'header', domLocale] });
+            queryClient.refetchQueries({ queryKey: ['product-categories', domLocale] });
+            setLocaleChangeInProgress(false);
+          }, 50);
+          // Reset counter after successful change
+          consecutiveChecksRef.current.locale = null;
+          consecutiveChecksRef.current.count = 0;
+        } else {
+          console.log('[SiteHeader] 🔍 Locale change detected but waiting for confirmation:', domLocale, `(${consecutiveChecksRef.current.count}/${LOCALE_STABLE_CHECKS})`);
+        }
+      } else {
+        // Locale matches, reset counter
+        consecutiveChecksRef.current.locale = null;
+        consecutiveChecksRef.current.count = 0;
       }
     };
     
-    // Check once after mount (in case DOM changed after initial render)
-    const timeoutId = setTimeout(checkLocaleChange, 0);
+    // Check immediately on mount to catch any locale changes
+    checkLocaleChange();
     
-    // Watch for changes to data-locale attribute
-    const observer = new MutationObserver(checkLocaleChange);
+    // Check again after a brief delay to catch any DOM updates
+    const timeoutId = setTimeout(checkLocaleChange, 100);
+    
+    // Watch for changes to data-locale attribute (most reliable)
+    const observer = new MutationObserver((mutations) => {
+      // Only react to actual attribute changes, not just any check
+      const hasLocaleChange = mutations.some(m => 
+        m.type === 'attributes' && 
+        m.attributeName === 'data-locale' &&
+        (m.target as HTMLElement).getAttribute('data-locale') !== displayLocale
+      );
+      
+      if (hasLocaleChange) {
+        const newLocale = getLocaleFromDOM();
+        consecutiveChecksRef.current.locale = newLocale;
+        consecutiveChecksRef.current.count = LOCALE_STABLE_CHECKS; // Trust DOM mutations immediately
+        checkLocaleChange();
+      }
+    });
+    
     if (typeof document !== 'undefined') {
       observer.observe(document.documentElement, {
         attributes: true,
@@ -169,21 +199,41 @@ export default function SiteHeader() {
       });
     }
     
+    // Check periodically but less frequently (every 1 second instead of 500ms)
+    // This reduces unnecessary checks and prevents reverting due to stale values
+    const intervalId = setInterval(checkLocaleChange, 1000);
+    
     return () => {
       clearTimeout(timeoutId);
+      clearInterval(intervalId);
       observer.disconnect();
     };
-  }, [displayLocale, queryClient]);
+  }, [displayLocale, queryClient, localeChangeInProgress]);
 
-  const { data: catalogCategoriesData } = useQuery<ProductCategoryResponse[]>({
-    queryKey: ['product-categories', displayLocale],
-    queryFn: () => getProductCategories(displayLocale),
-    staleTime: 10 * 60 * 1000,
+  const { data: catalogCategoriesData, isLoading: isLoadingCategories } = useQuery<ProductCategoryResponse[]>({
+    queryKey: ['product-categories', displayLocale, menuRefreshKey],
+    queryFn: async () => {
+      const timestamp = new Date().toISOString();
+      const currentLocale = displayLocale || getLocaleFromDOM(); // Ensure we always have a locale
+      console.log(`[SiteHeader] 🔄 [${timestamp}] Fetching product categories with locale: ${currentLocale} (displayLocale: ${displayLocale})`);
+      const result = await getProductCategories(currentLocale);
+      console.log(`[SiteHeader] ✅ [${timestamp}] Received product categories:`, result?.length || 0);
+      return result;
+    },
+    enabled: !!displayLocale, // Don't run query until locale is set
+    staleTime: 0, // Always refetch when locale changes
+    gcTime: 300000, // Keep cache for 5 minutes to preserve data during refetch
+    refetchOnMount: 'always', // Always refetch on mount
+    refetchOnWindowFocus: false, // Don't refetch on window focus (avoid unnecessary requests)
+    retry: false,
+    throwOnError: false, // Don't throw errors - handle gracefully to prevent menu from disappearing
+    networkMode: 'online',
+    placeholderData: (previousData) => previousData, // Keep previous data while loading to prevent menu from disappearing
   });
 
   const catalogMenuItems = useMemo(
     () =>
-      (catalogCategoriesData?.length ? catalogCategoriesData : fallbackCatalogMenu)
+      (catalogCategoriesData?.length ? catalogCategoriesData : [])
         .slice(0, 8)
         .map((category) => ({
           href: `/catalog#category-${category.slug}`,
@@ -192,18 +242,30 @@ export default function SiteHeader() {
     [catalogCategoriesData, displayLocale],
   );
 
-  const { data: headerMenu, refetch: refetchMenu } = useQuery({
-    queryKey: ['menu', 'header', displayLocale],
-    queryFn: () => {
-      console.log('[SiteHeader] Fetching menu with locale:', displayLocale);
-      return getMenu('header', displayLocale);
+  const { data: headerMenu, refetch: refetchMenu, isLoading: isLoadingMenu } = useQuery({
+    queryKey: ['menu', 'header', displayLocale, menuRefreshKey],
+    queryFn: async () => {
+      const timestamp = new Date().toISOString();
+      const currentLocale = displayLocale || getLocaleFromDOM(); // Ensure we always have a locale
+      console.log(`[SiteHeader] 🔄 [${timestamp}] Fetching menu with locale: ${currentLocale} (displayLocale: ${displayLocale})`);
+      const result = await getMenu('header', currentLocale);
+      console.log(`[SiteHeader] ✅ [${timestamp}] Received menu:`, result ? `${result.items?.length || 0} items` : 'null');
+      if (result?.items) {
+        result.items.forEach((item, i) => {
+          console.log(`[SiteHeader]   Menu item ${i + 1}: ${item.title_uz} / ${item.title_ru} (locale: ${currentLocale})`);
+        });
+      }
+      return result;
     },
+    enabled: !!displayLocale, // Don't run query until locale is set
     staleTime: 0, // Always refetch when locale changes
-    gcTime: 0, // Don't cache - always fetch fresh
-    refetchOnMount: 'always',
-    refetchOnWindowFocus: false,
+    gcTime: 300000, // Keep cache for 5 minutes to preserve data during refetch
+    refetchOnMount: 'always', // Always refetch on mount
+    refetchOnWindowFocus: false, // Don't refetch on window focus (avoid unnecessary requests)
     retry: false,
-    throwOnError: false,
+    throwOnError: false, // Don't throw errors - handle gracefully to prevent menu from disappearing
+    networkMode: 'online',
+    placeholderData: (previousData) => previousData, // Keep previous data while loading to prevent menu from disappearing
   });
   
   // Log menu data when it changes
@@ -215,23 +277,50 @@ export default function SiteHeader() {
   
   // Force menu refetch when displayLocale changes
   // This ensures menu updates immediately when locale changes
+  // Use a ref to prevent multiple simultaneous refetches
+  const refetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
   useEffect(() => {
-    console.log('[SiteHeader] 🔄 displayLocale changed to:', displayLocale, '- refetching menu and categories');
-    // Invalidate and refetch with new locale
-    queryClient.invalidateQueries({ queryKey: ['menu', 'header'] });
-    queryClient.invalidateQueries({ queryKey: ['product-categories'] });
-    // Force immediate refetch
-    refetchMenu();
-    queryClient.refetchQueries({ queryKey: ['product-categories', displayLocale] });
-  }, [displayLocale, refetchMenu, queryClient]);
+    if (displayLocale && !localeChangeInProgress) {
+      console.log('[SiteHeader] 🔄 displayLocale changed to:', displayLocale, '- invalidating and refetching menu and categories');
+      
+      // Clear any pending refetch
+      if (refetchTimeoutRef.current) {
+        clearTimeout(refetchTimeoutRef.current);
+      }
+      
+      // Force menu refresh key increment to trigger refetch
+      setMenuRefreshKey(prev => prev + 1);
+      // Remove ALL old cached queries for ALL locales
+      queryClient.removeQueries({ queryKey: ['menu'] });
+      queryClient.removeQueries({ queryKey: ['product-categories'] });
+      
+      // Force immediate refetch with new locale after a brief delay
+      // This ensures the query key has updated with the new menuRefreshKey
+      refetchTimeoutRef.current = setTimeout(() => {
+        const currentLocale = displayLocale;
+        console.log('[SiteHeader] ✅ Refetching menu with locale:', currentLocale);
+        refetchMenu();
+        queryClient.refetchQueries({ queryKey: ['product-categories', currentLocale] });
+        refetchTimeoutRef.current = null;
+      }, 100);
+    }
+    
+    return () => {
+      if (refetchTimeoutRef.current) {
+        clearTimeout(refetchTimeoutRef.current);
+        refetchTimeoutRef.current = null;
+      }
+    };
+  }, [displayLocale, refetchMenu, queryClient, localeChangeInProgress]);
 
   const headerMenuItems = useMemo<MenuItemResponse[]>(() => {
     if (headerMenu?.items?.length) {
       return [...headerMenu.items].sort((a, b) => a.order - b.order);
     }
 
-    // Deep copy to convert readonly arrays to mutable arrays
-    return JSON.parse(JSON.stringify(DEFAULT_MENUS.header)) as MenuItemResponse[];
+    // No fallback - return empty array if backend is unavailable
+    return [];
   }, [headerMenu, displayLocale]); // Add displayLocale to dependencies to ensure recalculation
 
   const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -290,8 +379,19 @@ export default function SiteHeader() {
     return items;
   }, [headerMenuItems, catalogMenuItems, displayLocale]);
 
+  // Log current state for debugging
+  useEffect(() => {
+    console.log('[SiteHeader] Current state:', {
+      displayLocale,
+      menuRefreshKey,
+      hasMenuData: !!headerMenu,
+      menuItemsCount: headerMenu?.items?.length || 0,
+      navItemsCount: navItems.length,
+    });
+  }, [displayLocale, menuRefreshKey, headerMenu, navItems.length]);
+
   return (
-    <header className="border-b shadow-sm">
+    <header className="border-b shadow-sm" key={`header-${displayLocale}-${menuRefreshKey}`}>
       <div className="bg-white">
         <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 md:flex-row md:items-center md:justify-between md:px-6">
           <div className="flex items-center gap-3">
@@ -337,8 +437,21 @@ export default function SiteHeader() {
 
       <div className="bg-brand-primary">
         <div className="mx-auto hidden max-w-6xl items-center px-4 md:px-6 lg:flex">
-          <nav key={`nav-${displayLocale}`} className="flex w-full items-stretch">
-            {navItems.map((item, index) => {
+          <nav key={`nav-${displayLocale}`} className="flex w-full items-stretch min-h-[52px]">
+            {navItems.length === 0 && (isLoadingMenu || isLoadingCategories) && !headerMenu ? (
+              // Show skeleton menu items while loading to maintain layout (only if no cached data)
+              Array.from({ length: 6 }).map((_, index) => (
+                <div
+                  key={`skeleton-${index}`}
+                  className={`flex-1 animate-pulse ${index > 0 ? 'border-l border-white/20' : ''}`}
+                >
+                  <div className="flex h-full w-full items-center justify-center gap-2 px-4 py-3">
+                    <div className="h-4 w-20 rounded bg-white/20"></div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              navItems.map((item, index) => {
               const borderClass = index === 0 ? '' : 'border-l border-white/20';
               // Use locale in key to force remount when locale changes
 
@@ -385,7 +498,8 @@ export default function SiteHeader() {
                   <span suppressHydrationWarning>{item.label}</span>
                 </Link>
               );
-            })}
+            })
+            )}
           </nav>
         </div>
 
@@ -398,7 +512,15 @@ export default function SiteHeader() {
             >
               <Phone size={16} /> 1385
             </Link>
-            {navItems.map((item) => {
+            {navItems.length === 0 && (isLoadingMenu || isLoadingCategories) && !headerMenu ? (
+              // Show skeleton menu items while loading for mobile (only if no cached data)
+              Array.from({ length: 5 }).map((_, index) => (
+                <div key={`mobile-skeleton-${index}`} className="space-y-2 rounded-lg border border-white/20 p-3 animate-pulse">
+                  <div className="h-5 w-32 rounded bg-white/20"></div>
+                </div>
+              ))
+            ) : (
+              navItems.map((item) => {
               // Use locale in key to force remount when locale changes
               return item.type === 'dropdown' ? (
                 <div key={`${item.href}-${displayLocale}`} className="space-y-2 rounded-lg border border-white/20 p-3">
@@ -443,7 +565,8 @@ export default function SiteHeader() {
                   <span suppressHydrationWarning>{item.label}</span>
                 </Link>
               );
-            })}
+            })
+            )}
             <LanguageSwitcherMobile />
           </nav>
         )}

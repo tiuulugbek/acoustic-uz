@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Backend Failure Test</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    .test-section {
+      margin: 30px 0;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    .success { color: #22c55e; }
+    .warning { color: #f59e0b; }
+    .error { color: #ef4444; }
+    .info { color: #3b82f6; }
+    button {
+      background: #f07e22;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background: #e06d11;
+    }
+    pre {
+      background: #f5f5f5;
+      padding: 15px;
+      border-radius: 6px;
+      overflow-x: auto;
+    }
+    .result {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 4px;
+      background: #f9fafb;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 Backend Failure Test Tool</h1>
+  <p>This page helps you test how the frontend behaves when the backend is unavailable.</p>
+
+  <div class="test-section">
+    <h2>1. Check Backend Status</h2>
+    <button onclick="checkBackend()">Check Backend</button>
+    <div id="backend-status" class="result"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>2. Test API Endpoints</h2>
+    <button onclick="testEndpoint('/banners')">Test Banners</button>
+    <button onclick="testEndpoint('/homepage/services')">Test Services</button>
+    <button onclick="testEndpoint('/menus/header')">Test Menu</button>
+    <button onclick="testEndpoint('/product-categories')">Test Categories</button>
+    <button onclick="testEndpoint('/faq')">Test FAQ</button>
+    <div id="api-results" class="result"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>3. Test Frontend Pages</h2>
+    <p>Visit these pages and verify they load with fallback content:</p>
+    <ul>
+      <li><a href="http://localhost:3000" target="_blank">Homepage</a> - Should show fallback content</li>
+      <li><a href="http://localhost:3000/catalog" target="_blank">Catalog</a> - Should show default categories</li>
+      <li><a href="http://localhost:3000/products/test" target="_blank">Product Page</a> - Should show "Product not found"</li>
+      <li><a href="http://localhost:3000/services/test" target="_blank">Service Page</a> - Should show "Service not found"</li>
+    </ul>
+  </div>
+
+  <div class="test-section">
+    <h2>4. Expected Behavior</h2>
+    <ul>
+      <li class="success">✅ All pages should load without errors</li>
+      <li class="success">✅ Fallback content should be displayed</li>
+      <li class="success">✅ Navigation should work</li>
+      <li class="success">✅ Language switching should work</li>
+      <li class="warning">⚠️ Console should show warnings (not errors)</li>
+    </ul>
+  </div>
+
+  <div class="test-section">
+    <h2>5. Console Output</h2>
+    <p>Open browser console (F12) and check for:</p>
+    <pre>[API] ❌ Failed to fetch /banners: { error: "Failed to fetch", ... }
+[API] ⚠️ Backend appears to be unavailable or unreachable
+[API] 💡 Frontend will display fallback content.
+[HomePage] ⚠️ No banner data loaded, using fallback content</pre>
+  </div>
+
+  <script>
+    const API_BASE = 'http://localhost:3001/api';
+    
+    async function checkBackend() {
+      const statusDiv = document.getElementById('backend-status');
+      statusDiv.innerHTML = '<p class="info">Checking backend...</p>';
+      
+      try {
+        const response = await fetch(`${API_BASE}/banners`, {
+          method: 'GET',
+          signal: AbortSignal.timeout(2000)
+        });
+        
+        if (response.ok) {
+          statusDiv.innerHTML = '<p class="success">✅ Backend is running</p>';
+        } else {
+          statusDiv.innerHTML = '<p class="warning">⚠️ Backend responded with error: ' + response.status + '</p>';
+        }
+      } catch (error) {
+        statusDiv.innerHTML = '<p class="error">❌ Backend is unavailable (expected for this test)</p>' +
+          '<p>Error: ' + error.message + '</p>' +
+          '<p class="info">💡 Frontend should still work with fallback content</p>';
+      }
+    }
+    
+    async function testEndpoint(path) {
+      const resultsDiv = document.getElementById('api-results');
+      resultsDiv.innerHTML = '<p class="info">Testing ' + path + '...</p>';
+      
+      try {
+        const startTime = Date.now();
+        const response = await fetch(`${API_BASE}${path}`, {
+          method: 'GET',
+          signal: AbortSignal.timeout(3000)
+        });
+        const duration = Date.now() - startTime;
+        
+        if (response.ok) {
+          const data = await response.json();
+          resultsDiv.innerHTML = '<p class="success">✅ ' + path + ' responded successfully (' + duration + 'ms)</p>' +
+            '<pre>' + JSON.stringify(data, null, 2).substring(0, 200) + '...</pre>';
+        } else {
+          resultsDiv.innerHTML = '<p class="warning">⚠️ ' + path + ' returned error: ' + response.status + '</p>';
+        }
+      } catch (error) {
+        resultsDiv.innerHTML = '<p class="error">❌ ' + path + ' failed</p>' +
+          '<p>Error: ' + error.message + '</p>' +
+          '<p class="info">💡 This is expected when backend is down - frontend should use fallback content</p>';
+      }
+    }
+    
+    // Auto-check on load
+    window.addEventListener('load', () => {
+      checkBackend();
+    });
+  </script>
+</body>
+</html>
+

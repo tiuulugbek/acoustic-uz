@@ -11,6 +11,7 @@ import {
   InputNumber,
   Popconfirm,
   message,
+  Tabs,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -27,7 +28,10 @@ import {
   CreateServicePayload,
   UpdateServicePayload,
   ApiError,
+  getServiceCategoriesAdmin,
+  ServiceCategoryDto,
 } from '../lib/api';
+import ServiceCategoriesPage from './ServiceCategories';
 
 const statusOptions = [
   { label: 'Nashr etilgan', value: 'published' },
@@ -36,10 +40,37 @@ const statusOptions = [
 ];
 
 export default function ServicesPage() {
+  return (
+    <Tabs
+      defaultActiveKey="services"
+      items={[
+        {
+          key: 'services',
+          label: 'Xizmatlar',
+          children: <ServicesManager />,
+        },
+        {
+          key: 'categories',
+          label: 'Kategoriyalar',
+          children: <ServiceCategoriesPage />,
+        },
+      ]}
+    />
+  );
+}
+
+function ServicesManager() {
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery<ServiceDto[], ApiError>({
     queryKey: ['services'],
     queryFn: getServices,
+    retry: false,
+  });
+
+  // Fetch service categories for the dropdown
+  const { data: categoriesData, isLoading: isLoadingCategories } = useQuery<ServiceCategoryDto[], ApiError>({
+    queryKey: ['service-categories-admin'],
+    queryFn: getServiceCategoriesAdmin,
     retry: false,
   });
 
@@ -97,6 +128,7 @@ export default function ServicesPage() {
       status: service.status,
       order: service.order,
       coverId: service.cover?.id,
+      categoryId: (service as any).categoryId || (service as any).category?.id,
     });
     setIsModalOpen(true);
   };
@@ -119,6 +151,7 @@ export default function ServicesPage() {
         order: typeof values.order === 'number' ? values.order : Number(values.order ?? 0),
         status: values.status,
         coverId: values.coverId || undefined,
+        categoryId: values.categoryId || undefined,
       };
 
       if (editingService) {
@@ -154,6 +187,11 @@ export default function ServicesPage() {
               {record.title_ru ? (
                 <div style={{ fontSize: 12, color: '#6b7280' }}>{record.title_ru}</div>
               ) : null}
+              {(record as any).category?.name_uz && (
+                <div style={{ fontSize: 12, color: '#9ca3af' }}>
+                  Kategoriya: {(record as any).category.name_uz}
+                </div>
+              )}
             </div>
           </Space>
         ),
@@ -273,6 +311,17 @@ export default function ServicesPage() {
           </Form.Item>
           <Form.Item label="Cover ID" name="coverId" extra="Media ID (ixtiyoriy)">
             <Input placeholder="Media ID" />
+          </Form.Item>
+          <Form.Item label="Kategoriya" name="categoryId" extra="Xizmat kategoriyasini tanlang (ixtiyoriy)">
+            <Select
+              placeholder="Kategoriyani tanlang"
+              allowClear
+              loading={isLoadingCategories}
+              options={categoriesData?.map((cat) => ({
+                label: `${cat.name_uz}${cat.name_ru ? ` / ${cat.name_ru}` : ''}`,
+                value: cat.id,
+              }))}
+            />
           </Form.Item>
         </Form>
       </Modal>

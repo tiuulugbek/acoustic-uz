@@ -94,7 +94,7 @@ export declare const DEFAULT_MENUS: {
         readonly order: 40;
     }, {
         readonly id: "menu-children";
-        readonly title_uz: "Bolalar va eshitish";
+        readonly title_uz: "Bolalar";
         readonly title_ru: "Дети и слух";
         readonly href: "/children-hearing";
         readonly order: 50;

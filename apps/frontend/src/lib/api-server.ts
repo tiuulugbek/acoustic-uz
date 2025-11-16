@@ -10,9 +10,40 @@ import {
   getProductBySlug as getProductBySlugApi,
   getProducts as getProductsApi,
   getProductCategories as getProductCategoriesApi,
+  getPublicBanners as getPublicBannersApi,
+  getHomepageServices as getHomepageServicesApi,
+  getPublicServices as getPublicServicesApi,
+  getShowcase as getShowcaseApi,
+  getHomepageHearingAidItems as getHomepageHearingAidItemsApi,
+  getHomepageNews as getHomepageNewsApi,
+  getPublicFaq as getPublicFaqApi,
+  getHomepageJourney as getHomepageJourneyApi,
+  getServiceCategories as getServiceCategoriesApi,
+  getServiceCategoryBySlug as getServiceCategoryBySlugApi,
   type ProductCategoryResponse,
+  type ServiceCategoryResponse,
   type ServiceDetailResponse,
   type ProductResponse,
+  type BannerResponse,
+  type ServiceResponse,
+  type ShowcaseResponse,
+  type HearingAidItemResponse,
+  type HomepageNewsItemResponse,
+  type FaqResponse,
+  type HomepageJourneyStepResponse,
+} from './api';
+
+// Re-export types for use in pages
+export type { 
+  ProductCategoryResponse, 
+  ServiceCategoryResponse,
+  BannerResponse,
+  ServiceResponse,
+  ShowcaseResponse,
+  HearingAidItemResponse,
+  HomepageNewsItemResponse,
+  FaqResponse,
+  HomepageJourneyStepResponse,
 } from './api';
 
 /**
@@ -113,6 +144,138 @@ export async function getProductCategories(
     () => getProductCategoriesApi(locale),
     [],
     'Failed to fetch product categories',
+  );
+}
+
+/**
+ * Get public banners - returns empty array if backend is down
+ */
+export async function getPublicBanners(
+  locale?: string,
+): Promise<BannerResponse[]> {
+  return safeApiCall(
+    () => getPublicBannersApi(locale),
+    [],
+    'Failed to fetch banners',
+  );
+}
+
+/**
+ * Get homepage services - returns empty array if backend is down
+ */
+export async function getHomepageServices(
+  locale?: string,
+): Promise<ServiceResponse[]> {
+  return safeApiCall(
+    () => getHomepageServicesApi(locale),
+    [],
+    'Failed to fetch homepage services',
+  );
+}
+
+/**
+ * Get all public services - returns empty array if backend is down
+ */
+export async function getServices(
+  locale?: string,
+): Promise<ServiceResponse[]> {
+  return safeApiCall(
+    () => getPublicServicesApi(locale),
+    [],
+    'Failed to fetch services',
+  );
+}
+
+/**
+ * Get showcase (Interacoustics) - returns null if backend is down
+ */
+export async function getShowcase(
+  name: string,
+  locale?: string,
+): Promise<ShowcaseResponse | null> {
+  return safeApiCall(
+    () => getShowcaseApi(name, locale),
+    null,
+    `Failed to fetch showcase: ${name}`,
+  );
+}
+
+/**
+ * Get homepage hearing aid items (Product Catalog) - returns empty array if backend is down
+ */
+export async function getHomepageHearingAidItems(
+  locale?: string,
+): Promise<HearingAidItemResponse[]> {
+  return safeApiCall(
+    () => getHomepageHearingAidItemsApi(locale),
+    [],
+    'Failed to fetch homepage hearing aid items',
+  );
+}
+
+/**
+ * Get homepage news - returns empty array if backend is down
+ */
+export async function getHomepageNews(
+  locale?: string,
+): Promise<HomepageNewsItemResponse[]> {
+  return safeApiCall(
+    () => getHomepageNewsApi(locale),
+    [],
+    'Failed to fetch homepage news',
+  );
+}
+
+/**
+ * Get public FAQ - returns empty array if backend is down
+ */
+export async function getPublicFaq(
+  locale?: string,
+): Promise<FaqResponse[]> {
+  return safeApiCall(
+    () => getPublicFaqApi(locale),
+    [],
+    'Failed to fetch FAQ',
+  );
+}
+
+/**
+ * Get homepage journey steps - returns empty array if backend is down
+ */
+export async function getHomepageJourney(
+  locale?: string,
+): Promise<HomepageJourneyStepResponse[]> {
+  return safeApiCall(
+    () => getHomepageJourneyApi(locale),
+    [],
+    'Failed to fetch homepage journey',
+  );
+}
+
+/**
+ * Get service categories - returns empty array if backend is down
+ */
+export async function getServiceCategories(
+  locale?: string,
+): Promise<ServiceCategoryResponse[]> {
+  return safeApiCall(
+    () => getServiceCategoriesApi(locale),
+    [],
+    'Failed to fetch service categories',
+  );
+}
+
+/**
+ * Get service category by slug - returns null if not found or backend is down
+ */
+export async function getServiceCategoryBySlug(
+  slug: string,
+  locale?: string,
+): Promise<ServiceCategoryResponse | null> {
+  return safeApiCall(
+    () => getServiceCategoryBySlugApi(slug, locale),
+    null,
+    `Failed to fetch service category: ${slug}`,
   );
 }
 

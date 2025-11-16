@@ -54,6 +54,7 @@ model Media {
   homepageHearingAids HomepageHearingAid[]
   homepageServices    HomepageService[]
   productCategories ProductCategory[]
+  serviceCategories ServiceCategory[]
 
   @@index([url])
 }
@@ -91,6 +92,31 @@ model Banner {
   @@index([status, order])
 }
 
+model ServiceCategory {
+  id            String   @id @default(cuid())
+  name_uz       String
+  name_ru       String
+  slug          String   @unique
+  description_uz String?
+  description_ru String?
+  icon          String?
+  imageId       String?
+  image         Media?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
+  parentId      String?
+  parent        ServiceCategory? @relation("ServiceCategoryToParent", fields: [parentId], references: [id], onDelete: Cascade)
+  children      ServiceCategory[] @relation("ServiceCategoryToParent")
+  services      Service[]
+  order         Int      @default(0)
+  status        String   @default("published")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([slug])
+  @@index([parentId])
+  @@index([order])
+  @@index([status])
+}
+
 model Service {
   id          String   @id @default(cuid())
   title_uz    String
@@ -100,6 +126,8 @@ model Service {
   body_uz     String?
   body_ru     String?
   slug        String   @unique
+  categoryId  String?
+  category    ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   coverId     String?
   cover       Media?   @relation(fields: [coverId], references: [id], onDelete: SetNull)
   order       Int      @default(0)
@@ -108,6 +136,7 @@ model Service {
   updatedAt   DateTime @updatedAt
 
   @@index([slug])
+  @@index([categoryId])
   @@index([status, order])
 }
 

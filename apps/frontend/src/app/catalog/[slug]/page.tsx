@@ -3,13 +3,18 @@ import Link from 'next/link';
 // Removed notFound import - we never crash, always show UI
 import type { Metadata } from 'next';
 import { getProducts, type ProductResponse, type BrandResponse } from '@/lib/api';
-import { getCategoryBySlug, type ProductCategoryResponse } from '@/lib/api-server';
+import { getCategoryBySlug } from '@/lib/api-server';
 import CatalogFilters from '@/components/catalog-filters';
 import CatalogSort from '@/components/catalog-sort';
 import CatalogBrandChips from '@/components/catalog-brand-chips';
 import CatalogPagination from '@/components/catalog-pagination';
 import { detectLocale } from '@/lib/locale-server';
 import { getBilingualText } from '@/lib/locale';
+
+// Force dynamic rendering to ensure locale is always read from cookies
+// This prevents Next.js from caching the page with a stale locale
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 interface CatalogCategoryPageProps {
   params: {
@@ -198,7 +203,7 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
     });
     const availableBrands: Array<BrandResponse & { count?: number }> = Array.from(brandMap.values());
 
-    const { brandCounts, audienceCounts, formCounts, powerCounts, lossCounts } = calculateFacetCounts(allProducts);
+    const { audienceCounts, formCounts, powerCounts, lossCounts } = calculateFacetCounts(allProducts);
 
     const placeholderImage = `data:image/svg+xml,${encodeURIComponent(
       `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect width="100%" height="100%" fill="#F07E22"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#fff" font-family="Arial" font-size="28">Acoustic</text></svg>`,
@@ -210,11 +215,11 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
         {/* Breadcrumbs */}
         <section className="bg-muted/40">
           <div className="mx-auto max-w-6xl px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:px-6">
-            <Link href="/" className="hover:text-brand-primary">
+            <Link href="/" className="hover:text-brand-primary" suppressHydrationWarning>
               {locale === 'ru' ? 'Главная' : 'Bosh sahifa'}
             </Link>
             <span className="mx-2">›</span>
-            <Link href="/catalog" className="hover:text-brand-primary">
+            <Link href="/catalog" className="hover:text-brand-primary" suppressHydrationWarning>
               {locale === 'ru' ? 'Каталог' : 'Katalog'}
             </Link>
           </div>
@@ -223,10 +228,10 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
         {/* Header */}
         <section className="bg-brand-accent text-white">
           <div className="mx-auto max-w-6xl space-y-4 px-4 py-10 md:px-6">
-            <h1 className="text-3xl font-bold md:text-4xl">
+            <h1 className="text-3xl font-bold md:text-4xl" suppressHydrationWarning>
               {locale === 'ru' ? 'Все товары' : 'Barcha mahsulotlar'}
             </h1>
-            <p className="max-w-4xl text-base leading-relaxed text-white/90">
+            <p className="max-w-4xl text-base leading-relaxed text-white/90" suppressHydrationWarning>
               {locale === 'ru'
                 ? 'Все товары в каталоге. Используйте фильтры для уточнения поиска.'
                 : "Katalogdagi barcha mahsulotlar. Qidiruvni aniqlashtirish uchun filtrlardan foydalaning."}
@@ -265,7 +270,7 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
 
                 {/* Sort & Results Count */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground" suppressHydrationWarning>
                     {locale === 'ru' ? `Найдено товаров: ${totalItems}` : `Topilgan mahsulotlar: ${totalItems}`}
                   </p>
                   <CatalogSort categorySlug={params.slug} locale={locale} currentSort={sortBy} />
@@ -306,7 +311,7 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
                                 </span>
                               )}
                             </div>
-                            <span className="mt-auto inline-flex items-center gap-2 text-sm font-semibold text-brand-primary group-hover:text-brand-accent">
+                            <span className="mt-auto inline-flex items-center gap-2 text-sm font-semibold text-brand-primary group-hover:text-brand-accent" suppressHydrationWarning>
                               {locale === 'ru' ? 'Подробнее' : 'Batafsil'} →
                             </span>
                           </Link>
@@ -325,10 +330,10 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
                   </>
                 ) : (
                   <div className="rounded-2xl border border-border/60 bg-muted/20 p-12 text-center">
-                    <p className="text-lg font-semibold text-brand-accent">
+                    <p className="text-lg font-semibold text-brand-accent" suppressHydrationWarning>
                       {locale === 'ru' ? 'Товары не найдены' : 'Mahsulotlar topilmadi'}
                     </p>
-                    <p className="mt-2 text-sm text-muted-foreground">
+                    <p className="mt-2 text-sm text-muted-foreground" suppressHydrationWarning>
                       {locale === 'ru'
                         ? 'Попробуйте изменить параметры фильтров.'
                         : "Filtrlarni o'zgartirib ko'ring."}
@@ -346,8 +351,47 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
   // Fetch all data with locale - returns empty array if backend is down
   const allProducts = await getProducts({ status: 'published' }, locale) || [];
 
-  // Filter products by category
-  let filteredProducts = allProducts.filter((p) => p.category?.id === category.id);
+  // Filter products by category - support both direct categoryId match and property-based matching
+  // This allows products to appear on catalog category pages based on their properties
+  // even if they're not directly assigned to that category
+  let filteredProducts = allProducts.filter((p) => {
+    // Direct category match (products assigned to this category via categoryId)
+    if (p.category?.id === category.id) {
+      return true;
+    }
+    
+    // Property-based matching for catalog categories (homepage hearing aid categories)
+    // This allows products to appear on catalog pages based on their properties
+    const categorySlug = category.slug;
+    
+    // Match products to catalog categories based on their properties
+    if (categorySlug === 'category-children' && p.audience?.includes('children')) {
+      return true;
+    }
+    if (categorySlug === 'category-seniors' && p.audience?.includes('elderly')) {
+      return true;
+    }
+    if (categorySlug === 'category-ai' && p.signalProcessing?.toLowerCase().includes('ai')) {
+      return true;
+    }
+    if (categorySlug === 'category-moderate-loss' && p.hearingLossLevels?.includes('moderate')) {
+      return true;
+    }
+    if (categorySlug === 'category-powerful' && (p.hearingLossLevels?.includes('severe') || p.hearingLossLevels?.includes('profound') || p.powerLevel?.toLowerCase().includes('power'))) {
+      return true;
+    }
+    if (categorySlug === 'category-tinnitus' && p.tinnitusSupport === true) {
+      return true;
+    }
+    if (categorySlug === 'category-smartphone' && (p.smartphoneCompatibility?.length > 0 || p.smartphoneCompatibility?.includes('iphone') || p.smartphoneCompatibility?.includes('android'))) {
+      return true;
+    }
+    if (categorySlug === 'category-invisible' && (p.formFactors?.includes('iic') || p.formFactors?.includes('cic') || p.formFactors?.includes('cic-iic'))) {
+      return true;
+    }
+    
+    return false;
+  });
 
   // Apply filters (multiple values supported via comma-separated query params)
   const selectedBrands = searchParams.brand?.split(',').filter(Boolean) ?? [];
@@ -407,7 +451,43 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
   const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
 
   // Get all products in category (before filters) for facet counts
-  const categoryProducts = allProducts.filter((p) => p.category?.id === category.id);
+  // Include both direct categoryId matches and property-based matches
+  const categoryProducts = allProducts.filter((p) => {
+    // Direct category match
+    if (p.category?.id === category.id) {
+      return true;
+    }
+    
+    // Property-based matching for catalog categories
+    const categorySlug = category.slug;
+    
+    if (categorySlug === 'category-children' && p.audience?.includes('children')) {
+      return true;
+    }
+    if (categorySlug === 'category-seniors' && p.audience?.includes('elderly')) {
+      return true;
+    }
+    if (categorySlug === 'category-ai' && p.signalProcessing?.toLowerCase().includes('ai')) {
+      return true;
+    }
+    if (categorySlug === 'category-moderate-loss' && p.hearingLossLevels?.includes('moderate')) {
+      return true;
+    }
+    if (categorySlug === 'category-powerful' && (p.hearingLossLevels?.includes('severe') || p.hearingLossLevels?.includes('profound') || p.powerLevel?.toLowerCase().includes('power'))) {
+      return true;
+    }
+    if (categorySlug === 'category-tinnitus' && p.tinnitusSupport === true) {
+      return true;
+    }
+    if (categorySlug === 'category-smartphone' && (p.smartphoneCompatibility?.length > 0 || p.smartphoneCompatibility?.includes('iphone') || p.smartphoneCompatibility?.includes('android'))) {
+      return true;
+    }
+    if (categorySlug === 'category-invisible' && (p.formFactors?.includes('iic') || p.formFactors?.includes('cic') || p.formFactors?.includes('cic-iic'))) {
+      return true;
+    }
+    
+    return false;
+  });
   const { brandCounts, audienceCounts, formCounts, powerCounts, lossCounts } = calculateFacetCounts(categoryProducts);
 
   // Get brands that appear in this category's products with counts
@@ -435,23 +515,23 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
       {/* Breadcrumbs */}
       <section className="bg-muted/40">
         <div className="mx-auto max-w-6xl px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:px-6">
-          <Link href="/" className="hover:text-brand-primary">
+          <Link href="/" className="hover:text-brand-primary" suppressHydrationWarning>
             {locale === 'ru' ? 'Главная' : 'Bosh sahifa'}
           </Link>
           <span className="mx-2">›</span>
-          <Link href="/catalog" className="hover:text-brand-primary">
+          <Link href="/catalog" className="hover:text-brand-primary" suppressHydrationWarning>
             {locale === 'ru' ? 'Каталог' : 'Katalog'}
           </Link>
           <span className="mx-2">›</span>
-          <span className="text-brand-primary">{categoryName}</span>
+          <span className="text-brand-primary" suppressHydrationWarning>{categoryName}</span>
         </div>
       </section>
 
       {/* Header */}
       <section className="bg-brand-accent text-white">
         <div className="mx-auto max-w-6xl space-y-4 px-4 py-10 md:px-6">
-          <h1 className="text-3xl font-bold md:text-4xl">{categoryName}</h1>
-          <p className="max-w-4xl text-base leading-relaxed text-white/90">
+          <h1 className="text-3xl font-bold md:text-4xl" suppressHydrationWarning>{categoryName}</h1>
+          <p className="max-w-4xl text-base leading-relaxed text-white/90" suppressHydrationWarning>
             {locale === 'ru'
               ? `Все товары в категории "${categoryName}". Используйте фильтры для уточнения поиска.`
               : `"${categoryName}" kategoriyasidagi barcha mahsulotlar. Qidiruvni aniqlashtirish uchun filtrlardan foydalaning.`}
@@ -490,7 +570,7 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
 
               {/* Sort & Results Count */}
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground" suppressHydrationWarning>
                   {locale === 'ru' ? `Найдено товаров: ${totalItems}` : `Topilgan mahsulotlar: ${totalItems}`}
                 </p>
                 <CatalogSort categorySlug={params.slug} locale={locale} currentSort={sortBy} />
@@ -522,16 +602,16 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
                             />
                           </div>
                           <div className="space-y-2">
-                            <h3 className="text-lg font-semibold text-brand-accent group-hover:text-brand-primary">{productName}</h3>
+                            <h3 className="text-lg font-semibold text-brand-accent group-hover:text-brand-primary" suppressHydrationWarning>{productName}</h3>
                             {product.brand && <p className="text-xs text-muted-foreground">{product.brand.name}</p>}
                             {priceFormatted && <p className="text-xl font-semibold text-brand-primary">{priceFormatted}</p>}
                             {availability && (
-                              <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold ${availability.color}`}>
+                              <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold ${availability.color}`} suppressHydrationWarning>
                                 {locale === 'ru' ? availability.ru : availability.uz}
                               </span>
                             )}
                           </div>
-                          <span className="mt-auto inline-flex items-center gap-2 text-sm font-semibold text-brand-primary group-hover:text-brand-accent">
+                          <span className="mt-auto inline-flex items-center gap-2 text-sm font-semibold text-brand-primary group-hover:text-brand-accent" suppressHydrationWarning>
                             {locale === 'ru' ? 'Подробнее' : 'Batafsil'} →
                           </span>
                         </Link>

@@ -1,28 +1,28 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { ServicesService } from './services.service';
+import { ServiceCategoriesService } from './service-categories.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RbacGuard } from '../common/guards/rbac.guard';
 import { RequirePermissions } from '../common/decorators/permissions.decorator';
 import { Public } from '../common/decorators/public.decorator';
 
 @ApiTags('public', 'admin')
-@Controller('services')
-export class ServicesController {
-  constructor(private readonly servicesService: ServicesService) {}
+@Controller('service-categories')
+export class ServiceCategoriesController {
+  constructor(private readonly service: ServiceCategoriesService) {}
 
   @Public()
   @Get()
-  @ApiOperation({ summary: 'Get all services (public)' })
-  findAll(@Query('public') publicOnly?: string, @Query('categoryId') categoryId?: string) {
-    return this.servicesService.findAll(publicOnly === 'true', categoryId);
+  @ApiOperation({ summary: 'Get all service categories (public)' })
+  findAll(@Query('public') publicOnly?: string) {
+    return this.service.findAll(publicOnly === 'true');
   }
 
   @Public()
   @Get('slug/:slug')
-  @ApiOperation({ summary: 'Get service by slug (public)' })
-  findBySlug(@Param('slug') slug: string) {
-    return this.servicesService.findBySlug(slug);
+  @ApiOperation({ summary: 'Get service category by slug (public)' })
+  findBySlug(@Param('slug') slug: string, @Query('public') publicOnly?: string) {
+    return this.service.findBySlug(slug, publicOnly === 'true');
   }
 
   @UseGuards(JwtAuthGuard, RbacGuard)
@@ -30,7 +30,7 @@ export class ServicesController {
   @RequirePermissions('content.read')
   @ApiBearerAuth()
   findAllAdmin() {
-    return this.servicesService.findAll(false);
+    return this.service.findAll(false);
   }
 
   @UseGuards(JwtAuthGuard, RbacGuard)
@@ -38,23 +38,23 @@ export class ServicesController {
   @RequirePermissions('content.read')
   @ApiBearerAuth()
   findOne(@Param('id') id: string) {
-    return this.servicesService.findOne(id);
+    return this.service.findOne(id);
   }
 
   @UseGuards(JwtAuthGuard, RbacGuard)
   @Post()
   @RequirePermissions('content.write')
   @ApiBearerAuth()
-  create(@Body() createDto: unknown) {
-    return this.servicesService.create(createDto);
+  create(@Body() dto: unknown) {
+    return this.service.create(dto);
   }
 
   @UseGuards(JwtAuthGuard, RbacGuard)
   @Patch(':id')
   @RequirePermissions('content.write')
   @ApiBearerAuth()
-  update(@Param('id') id: string, @Body() updateDto: unknown) {
-    return this.servicesService.update(id, updateDto);
+  update(@Param('id') id: string, @Body() dto: unknown) {
+    return this.service.update(id, dto);
   }
 
   @UseGuards(JwtAuthGuard, RbacGuard)
@@ -62,7 +62,7 @@ export class ServicesController {
   @RequirePermissions('content.write')
   @ApiBearerAuth()
   remove(@Param('id') id: string) {
-    return this.servicesService.delete(id);
+    return this.service.delete(id);
   }
 }
 

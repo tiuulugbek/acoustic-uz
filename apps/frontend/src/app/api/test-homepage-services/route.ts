@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
  * Proxy endpoint for test-api.html to avoid CORS issues
  * This route proxies requests from the frontend to the backend API
  */
-export async function GET(request: Request) {
+export async function GET(_request: Request) {
   try {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
     const backendUrl = `${apiUrl}/homepage/services`;

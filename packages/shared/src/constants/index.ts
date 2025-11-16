@@ -128,7 +128,7 @@ export const DEFAULT_MENUS = {
     },
     {
       id: 'menu-children',
-      title_uz: 'Bolalar va eshitish',
+      title_uz: 'Bolalar',
       title_ru: 'Дети и слух',
       href: '/children-hearing',
       order: 50,
