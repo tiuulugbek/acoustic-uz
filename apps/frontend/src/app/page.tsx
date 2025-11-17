@@ -6,8 +6,8 @@ import {
   getPublicBanners,
   getHomepageServices,
   getShowcase,
-  getHomepageHearingAidItems,
-  getHomepageNews,
+  getCatalogs,
+  getPosts,
   getPublicFaq,
   getHomepageJourney,
 } from '@/lib/api-server';
@@ -15,8 +15,8 @@ import type {
   BannerResponse,
   ServiceResponse,
   ShowcaseResponse,
-  HearingAidItemResponse,
-  HomepageNewsItemResponse,
+  CatalogResponse,
+  PostResponse,
   FaqResponse,
   HomepageJourneyStepResponse,
 } from '@/lib/api';
@@ -39,7 +39,7 @@ export default async function HomePage() {
     bannerData,
     serviceData,
     interacousticsData,
-    hearingItemsData,
+    catalogsData,
     journeyData,
     newsItemsData,
     faqData,
@@ -47,9 +47,9 @@ export default async function HomePage() {
     getPublicBanners(locale),
     getHomepageServices(locale),
     getShowcase('interacoustics', locale),
-    getHomepageHearingAidItems(locale),
+    getCatalogs(locale),
     getHomepageJourney(locale),
-    getHomepageNews(locale),
+    getPosts(locale, true),
     getPublicFaq(locale),
   ]);
 
@@ -71,23 +71,28 @@ export default async function HomePage() {
     };
   });
 
-  const hearingItems = (hearingItemsData || []).slice(0, 9).map((item, index) => {
-    const title = locale === 'ru' ? (item.title_ru || '') : (item.title_uz || '');
-    const description = locale === 'ru' ? (item.description_ru || '') : (item.description_uz || '');
-    let image = item.image?.url || '';
-    if (image && image.startsWith('/') && !image.startsWith('//')) {
-      const baseUrl = API_BASE_URL.replace('/api', '');
-      image = `${baseUrl}${image}`;
-    }
-    return {
-      id: item.id ?? `hearing-${index}`,
-      title: title || '',
-      description: description || '',
-      image: image || '',
-      link: item.link || '/catalog',
-      hasImage: !!item.image?.url,
-    };
-  });
+  // Filter catalogs by showOnHomepage and transform for display
+  const hearingItems = (catalogsData || [])
+    .filter((catalog) => catalog.showOnHomepage === true)
+    .slice(0, 9)
+    .map((catalog) => {
+      const title = locale === 'ru' ? (catalog.name_ru || '') : (catalog.name_uz || '');
+      const description = locale === 'ru' ? (catalog.description_ru || '') : (catalog.description_uz || '');
+      let image = catalog.image?.url || '';
+      if (image && image.startsWith('/') && !image.startsWith('//')) {
+        const baseUrl = API_BASE_URL.replace('/api', '');
+        image = `${baseUrl}${image}`;
+      }
+      const link = catalog.slug ? `/catalog/${catalog.slug}` : '/catalog';
+      return {
+        id: catalog.id,
+        title: title || '',
+        description: description || '',
+        image: image || '',
+        link: link,
+        hasImage: !!catalog.image?.url,
+      };
+    });
 
   const interacousticsProducts = (interacousticsData?.products || []).slice(0, 4).map((product, index) => {
     const title = locale === 'ru' ? (product.name_ru || '') : (product.name_uz || '');
@@ -119,7 +124,7 @@ export default async function HomePage() {
     title: locale === 'ru' ? (item.title_ru || '') : (item.title_uz || ''),
     excerpt: locale === 'ru' ? (item.excerpt_ru || '') : (item.excerpt_uz || ''),
     slug: item.slug || '#',
-    publishedAt: item.publishedAt,
+    publishedAt: item.publishAt,
   }));
 
   return (
@@ -128,7 +133,7 @@ export default async function HomePage() {
       <HeroSlider banners={bannerData} locale={locale} apiBaseUrl={API_BASE_URL} />
 
       {/* 2. Services Section */}
-      <section className="bg-white py-8">
+      <section className="bg-white py-12">
         <div className="mx-auto max-w-6xl px-4 md:px-6">
           <div className="mb-8">
             <h2 className="text-3xl font-bold text-foreground md:text-4xl" suppressHydrationWarning>
@@ -187,7 +192,7 @@ export default async function HomePage() {
       </section>
 
       {/* 3. Product Catalog Section (Eshitish aparatlari) - ALWAYS SHOW */}
-      <section className="border-t bg-white py-12">
+      <section className="bg-gray-50 py-16">
         <div className="mx-auto max-w-6xl space-y-6 px-4 md:px-6">
           <div className="space-y-1">
             <p className="text-sm font-semibold uppercase tracking-wide text-brand-primary" suppressHydrationWarning>
@@ -212,34 +217,35 @@ export default async function HomePage() {
                 <Link
                   key={item.id}
                   href={item.link}
-                  className="group flex flex-row items-start gap-4 rounded-lg border border-gray-200 bg-white p-4 transition hover:border-brand-primary/50 hover:shadow-sm"
+                  className="group flex flex-row items-start gap-3 rounded-lg border border-gray-200 bg-white p-4 transition hover:border-brand-primary/50 hover:shadow-sm"
                 >
-                  <div className="relative w-20 h-20 overflow-hidden rounded-lg bg-brand-primary flex items-center justify-center flex-shrink-0">
+                  <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl bg-brand-primary/10">
                     {item.hasImage && item.image ? (
                       <Image 
                         src={item.image} 
                         alt={item.title} 
                         fill 
-                        sizes="80px" 
+                        sizes="112px" 
                         className="object-cover transition-transform duration-300 group-hover:scale-105"
                         suppressHydrationWarning
                       />
                     ) : (
-                      <span className="text-white text-base font-bold">Acoustic</span>
+                      <div className="flex h-full w-full items-center justify-center bg-brand-primary">
+                        <span className="text-white text-xs font-bold">Acoustic</span>
+                      </div>
                     )}
                   </div>
-                  <div className="flex flex-col flex-1 space-y-2 min-w-0">
-                    <h3 className="text-base font-semibold text-foreground leading-tight group-hover:text-brand-primary transition-colors" suppressHydrationWarning>
+                  <div className="flex flex-col flex-1 space-y-1 min-w-0">
+                    <h3 className="text-base font-semibold text-brand-accent leading-tight group-hover:text-brand-primary transition-colors" suppressHydrationWarning>
                       {item.title}
                     </h3>
                     {item.description && (
-                      <p className="text-sm text-muted-foreground leading-relaxed" suppressHydrationWarning>
+                      <p className="text-sm text-muted-foreground leading-snug" suppressHydrationWarning>
                         {item.description}
                       </p>
                     )}
-                    <span className="inline-flex items-center gap-1 text-sm font-medium text-brand-primary group-hover:gap-2 transition-all mt-auto" suppressHydrationWarning>
-                      {locale === 'ru' ? 'Подробнее' : 'Batafsil'}
-                      <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+                    <span className="inline-flex items-center gap-1 pt-1 text-xs font-semibold text-brand-primary group-hover:text-brand-accent transition-all mt-auto" suppressHydrationWarning>
+                      {locale === 'ru' ? 'Подробнее' : 'Batafsil'} ↗
                     </span>
                   </div>
                 </Link>
@@ -259,7 +265,7 @@ export default async function HomePage() {
 
       {/* 4. Interacoustics Section */}
       {interacousticsProducts.length > 0 && (
-        <section className="border-t bg-white py-12">
+        <section className="bg-white py-16">
           <div className="mx-auto max-w-6xl space-y-6 px-4 md:px-6">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
               <div className="space-y-1">
@@ -332,7 +338,7 @@ export default async function HomePage() {
 
       {/* 5. Journey Section */}
       {journeySteps.length > 0 && (
-        <section className="border-t bg-white py-12">
+        <section className="bg-gray-50 py-16">
           <div className="mx-auto max-w-6xl space-y-8 px-4 md:px-6">
             <div className="space-y-1">
               <p className="text-sm font-semibold uppercase tracking-wide text-brand-primary" suppressHydrationWarning>
@@ -362,7 +368,7 @@ export default async function HomePage() {
       )}
 
       {/* 6. News Section - ALWAYS SHOW */}
-      <section className="border-t bg-muted/20 py-12">
+      <section className="bg-white py-16">
         <div className="mx-auto max-w-6xl space-y-8 px-4 md:px-6">
           <div className="space-y-1 text-center">
             <h2 className="text-3xl font-bold text-brand-primary md:text-4xl" suppressHydrationWarning>
@@ -371,16 +377,16 @@ export default async function HomePage() {
           </div>
           {newsItems.length > 0 ? (
             <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
-              {newsItems.map((item) => (
+              {newsItems.slice(0, 6).map((item) => (
                 <Link
                   key={item.id}
                   href={item.slug && item.slug !== '#' ? `/posts/${item.slug}` : '#'}
                   className="group flex flex-col gap-3 transition hover:opacity-80"
                 >
-                  <h3 className="text-lg font-semibold text-brand-primary group-hover:text-brand-accent" suppressHydrationWarning>
+                  <h3 className="text-base font-semibold text-brand-primary group-hover:text-brand-accent leading-snug" suppressHydrationWarning>
                     {item.title}
                   </h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed" suppressHydrationWarning>
+                  <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3" suppressHydrationWarning>
                     {item.excerpt}
                   </p>
                 </Link>

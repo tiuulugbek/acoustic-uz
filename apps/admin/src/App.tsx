@@ -14,6 +14,7 @@ import AboutPage from './pages/About';
 import BranchesPage from './pages/Branches';
 import BrandsPage from './pages/Brands';
 import MenusPage from './pages/Menus';
+import FAQPage from './pages/FAQ';
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
           <Route path="banners" element={<BannersPage />} />
           <Route path="menus" element={<MenusPage />} />
           <Route path="homepage" element={<HomepagePage />} />
+          <Route path="faq" element={<FAQPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

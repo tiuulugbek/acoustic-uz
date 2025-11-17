@@ -206,6 +206,48 @@ export const getProductCategories = (locale?: string) => {
   return fetchJson<ProductCategoryResponse[]>('/product-categories', locale);
 };
 
+export interface CatalogResponse {
+  id: string;
+  name_uz: string;
+  name_ru: string;
+  slug: string;
+  description_uz?: string | null;
+  description_ru?: string | null;
+  icon?: string | null;
+  image?: MediaResponse | null;
+  order: number;
+  status: string;
+  showOnHomepage?: boolean;
+}
+
+export const getCatalogs = (locale?: string, showOnHomepage?: boolean) => {
+  const params = new URLSearchParams();
+  params.append('public', 'true');
+  if (showOnHomepage !== undefined) {
+    params.append('showOnHomepage', showOnHomepage.toString());
+  }
+  return fetchJson<CatalogResponse[]>(`/catalogs?${params.toString()}`, locale);
+};
+
+export const getCatalogBySlug = async (slug: string, locale?: string): Promise<CatalogResponse | null> => {
+  try {
+    // First try direct API endpoint
+    const directResult = await fetchJson<CatalogResponse>(`/catalogs/slug/${slug}?public=true`, locale);
+    if (directResult) {
+      return directResult;
+    }
+  } catch {
+    // Fallback to searching all catalogs
+  }
+  
+  // Fallback: get all catalogs and find by slug
+  const catalogs = await getCatalogs(locale);
+  if (!catalogs || catalogs.length === 0) {
+    return null;
+  }
+  return catalogs.find((cat) => cat.slug === slug) ?? null;
+};
+
 export interface ServiceCategoryResponse {
   id: string;
   name_uz: string;
@@ -401,13 +443,24 @@ export interface ProductListParams {
   smartphoneCompatibility?: string;
   paymentOption?: string;
   availabilityStatus?: string;
+  limit?: number;
+  offset?: number;
+  sort?: 'newest' | 'price_asc' | 'price_desc';
 }
 
-export const getProducts = (params?: ProductListParams, locale?: string) => {
+export interface ProductListResponse {
+  items: ProductResponse[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export const getProducts = (params?: ProductListParams, locale?: string): Promise<ProductListResponse> => {
   const query = new URLSearchParams();
   if (params?.status) query.set('status', params.status);
   if (params?.brandId) query.set('brandId', params.brandId);
   if (params?.categoryId) query.set('categoryId', params.categoryId);
+  if (params?.catalogId) query.set('catalogId', params.catalogId);
   if (params?.search) query.set('search', params.search);
   if (params?.audience) query.set('audience', params.audience);
   if (params?.formFactor) query.set('formFactor', params.formFactor);
@@ -417,10 +470,13 @@ export const getProducts = (params?: ProductListParams, locale?: string) => {
   if (params?.smartphoneCompatibility) query.set('smartphoneCompatibility', params.smartphoneCompatibility);
   if (params?.paymentOption) query.set('paymentOption', params.paymentOption);
   if (params?.availabilityStatus) query.set('availabilityStatus', params.availabilityStatus);
+  if (params?.limit !== undefined) query.set('limit', params.limit.toString());
+  if (params?.offset !== undefined) query.set('offset', params.offset.toString());
+  if (params?.sort) query.set('sort', params.sort);
 
   const queryString = query.toString();
   const path = queryString ? `/products?${queryString}` : '/products';
-  return fetchJson<ProductResponse[]>(path, locale);
+  return fetchJson<ProductListResponse>(path, locale);
 };
 
 export interface HearingAidItemResponse {
@@ -453,6 +509,28 @@ export interface HomepageNewsItemResponse {
 
 export const getHomepageNews = (locale?: string) => {
   return fetchJson<HomepageNewsItemResponse[]>('/homepage/news', locale);
+};
+
+export interface PostResponse {
+  id: string;
+  title_uz: string;
+  title_ru: string;
+  body_uz: string;
+  body_ru: string;
+  slug: string;
+  excerpt_uz?: string | null;
+  excerpt_ru?: string | null;
+  cover?: MediaResponse | null;
+  tags: string[];
+  status: string;
+  publishAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const getPosts = (locale?: string, publicOnly = true) => {
+  const query = publicOnly ? '?public=true' : '';
+  return fetchJson<PostResponse[]>(`/posts${query}`, locale);
 };
 
 export interface FaqResponse {

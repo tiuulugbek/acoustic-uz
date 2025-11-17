@@ -2,8 +2,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 // Removed notFound import - we never crash, always show UI
 import type { Metadata } from 'next';
-import { getProducts, type ProductResponse, type BrandResponse } from '@/lib/api';
-import { getCategoryBySlug } from '@/lib/api-server';
+import { type ProductResponse, type BrandResponse } from '@/lib/api';
+import { getProducts, getCategoryBySlug, getCatalogBySlug, type ProductListResponse, type CatalogResponse } from '@/lib/api-server';
 import CatalogFilters from '@/components/catalog-filters';
 import CatalogSort from '@/components/catalog-sort';
 import CatalogBrandChips from '@/components/catalog-brand-chips';
@@ -100,28 +100,34 @@ function calculateFacetCounts(products: ProductResponse[]) {
 
 export async function generateMetadata({ params }: CatalogCategoryPageProps): Promise<Metadata> {
   const locale = detectLocale();
-  const category = await getCategoryBySlug(params.slug, locale);
-  if (!category) {
+  
+  // Try catalog first, then category
+  const catalog = await getCatalogBySlug(params.slug, locale);
+  const category = !catalog ? await getCategoryBySlug(params.slug, locale) : null;
+  
+  if (!catalog && !category) {
     return {
-      title: locale === 'ru' ? 'Категория не найдена — Acoustic.uz' : 'Kategoriya topilmadi — Acoustic.uz',
+      title: locale === 'ru' ? 'Каталог не найден — Acoustic.uz' : 'Katalog topilmadi — Acoustic.uz',
     };
   }
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
-  const categoryUrl = `${baseUrl}/catalog/${params.slug}`;
-  const categoryName = getBilingualText(category.name_uz, category.name_ru, locale);
+  const pageUrl = `${baseUrl}/catalog/${params.slug}`;
+  const pageName = catalog 
+    ? getBilingualText(catalog.name_uz, catalog.name_ru, locale)
+    : getBilingualText(category!.name_uz, category!.name_ru, locale);
 
   return {
-    title: `${categoryName} — ${locale === 'ru' ? 'Каталог' : 'Katalog'} — Acoustic.uz`,
+    title: `${pageName} — ${locale === 'ru' ? 'Каталог' : 'Katalog'} — Acoustic.uz`,
     description: locale === 'ru'
-      ? `Слуховые аппараты и решения в категории ${categoryName}.`
-      : `${categoryName} kategoriyasidagi eshitish apparatlari va yechimlari.`,
+      ? `Слуховые аппараты и решения ${catalog ? 'в каталоге' : 'в категории'} ${pageName}.`
+      : `${pageName} ${catalog ? 'katalogidagi' : 'kategoriyasidagi'} eshitish apparatlari va yechimlari.`,
     alternates: {
-      canonical: categoryUrl,
+      canonical: pageUrl,
       languages: {
-        uz: categoryUrl,
-        ru: categoryUrl,
-        'x-default': categoryUrl,
+        uz: pageUrl,
+        ru: pageUrl,
+        'x-default': pageUrl,
       },
     },
   };
@@ -130,18 +136,34 @@ export async function generateMetadata({ params }: CatalogCategoryPageProps): Pr
 export default async function CatalogCategoryPage({ params, searchParams }: CatalogCategoryPageProps) {
   const locale = detectLocale();
   
-  // Handle errors gracefully - getCategoryBySlug returns null if backend is down or category not found
-  // The api-server wrapper ensures this never throws, so we can safely await it
-  const category = await getCategoryBySlug(params.slug, locale);
+  // Optimized: Try catalog first (more common), then category
+  // Both work the same way - unified filtering logic
+  const catalog = await getCatalogBySlug(params.slug, locale);
+  const category = !catalog ? await getCategoryBySlug(params.slug, locale) : null;
+  
+  // Determine filter type for products query
+  const filterType = catalog ? 'catalog' : category ? 'category' : null;
+  const filterId = catalog?.id || category?.id || null;
 
-  // If category is null, show all products instead of error
-  // This handles cases where homepage links to categories that don't exist yet
+  // If both catalog and category are null, show all products instead of error
+  // This handles cases where homepage links to catalogs/categories that don't exist yet
   // Users can still browse all products and use filters
-  if (!category) {
-    // Fetch all products to show when category doesn't exist
-    const allProducts = await getProducts({ status: 'published' }, locale) || [];
+  // NOTE: For P0, we still use client-side filtering for the fallback case
+  // This will be improved in P1 when backend supports multi-value filters
+  if (!catalog && !category) {
+    // For P0: Fetch all products to show when category doesn't exist
+    // TODO (P1): Use backend pagination with filters once backend supports it
+    const allProductsResponse = await getProducts({ 
+      status: 'published',
+      limit: 1000, // Temporary: fetch many to support client-side filtering
+      offset: 0,
+      sort: (searchParams.sort as 'newest' | 'price_asc' | 'price_desc') || 'newest',
+    }, locale) || { items: [], total: 0, page: 1, pageSize: 12 };
     
-    // Apply filters even without category
+    // Safety check: ensure items is an array
+    const allProducts = allProductsResponse?.items || [];
+    
+    // Apply filters even without category (client-side for P0)
     const selectedBrands = searchParams.brand?.split(',').filter(Boolean) ?? [];
     const selectedAudience = searchParams.audience?.split(',').filter(Boolean) ?? [];
     const selectedForms = searchParams.form?.split(',').filter(Boolean) ?? [];
@@ -170,23 +192,7 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
       filteredProducts = filteredProducts.filter((p) => selectedLoss.some((l) => p.hearingLossLevels.includes(l)));
     }
 
-    // Sort products
-    const sortBy = searchParams.sort ?? 'newest';
-    if (sortBy === 'price_asc') {
-      filteredProducts.sort((a, b) => {
-        const priceA = a.price ? Number(a.price) : Infinity;
-        const priceB = b.price ? Number(b.price) : Infinity;
-        return priceA - priceB;
-      });
-    } else if (sortBy === 'price_desc') {
-      filteredProducts.sort((a, b) => {
-        const priceA = a.price ? Number(a.price) : Infinity;
-        const priceB = b.price ? Number(b.price) : Infinity;
-        return priceB - priceA;
-      });
-    }
-
-    // Pagination
+    // Client-side pagination (P0 fallback - will be removed in P1)
     const totalItems = filteredProducts.length;
     const totalPages = Math.max(1, Math.ceil(totalItems / PRODUCTS_PER_PAGE));
     const currentPage = Math.min(Math.max(1, parseInt(searchParams.page || '1', 10)), totalPages);
@@ -265,7 +271,12 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
               <div className="space-y-6">
                 {/* Brand Chips */}
                 {availableBrands.length > 0 && (
-                  <CatalogBrandChips categorySlug={params.slug} locale={locale} brands={availableBrands} selectedBrands={selectedBrands} />
+                  <CatalogBrandChips 
+                    categorySlug={params.slug} 
+                    locale={locale} 
+                    brands={availableBrands} 
+                    selectedBrands={searchParams.brand?.split(',').filter(Boolean) ?? []} 
+                  />
                 )}
 
                 {/* Sort & Results Count */}
@@ -323,7 +334,7 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
                     <CatalogPagination
                       categorySlug={params.slug}
                       locale={locale}
-                      currentPage={currentPage}
+                      currentPage={productsResponse?.page || 1}
                       totalPages={totalPages}
                       totalItems={totalItems}
                     />
@@ -348,161 +359,425 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
     );
   }
 
-  // Fetch all data with locale - returns empty array if backend is down
-  const allProducts = await getProducts({ status: 'published' }, locale) || [];
+  // Handle catalog or category
+  if (catalog) {
+    // Catalog: Use server-side pagination with catalogId filter
+    const sortBy = (searchParams.sort as 'newest' | 'price_asc' | 'price_desc') || 'newest';
+    const currentPage = Math.max(1, parseInt(searchParams.page || '1', 10));
+    const offset = (currentPage - 1) * PRODUCTS_PER_PAGE;
 
-  // Filter products by category - support both direct categoryId match and property-based matching
-  // This allows products to appear on catalog category pages based on their properties
-  // even if they're not directly assigned to that category
-  let filteredProducts = allProducts.filter((p) => {
-    // Direct category match (products assigned to this category via categoryId)
-    if (p.category?.id === category.id) {
-      return true;
-    }
-    
-    // Property-based matching for catalog categories (homepage hearing aid categories)
-    // This allows products to appear on catalog pages based on their properties
-    const categorySlug = category.slug;
-    
-    // Match products to catalog categories based on their properties
-    if (categorySlug === 'category-children' && p.audience?.includes('children')) {
-      return true;
-    }
-    if (categorySlug === 'category-seniors' && p.audience?.includes('elderly')) {
-      return true;
-    }
-    if (categorySlug === 'category-ai' && p.signalProcessing?.toLowerCase().includes('ai')) {
-      return true;
-    }
-    if (categorySlug === 'category-moderate-loss' && p.hearingLossLevels?.includes('moderate')) {
-      return true;
-    }
-    if (categorySlug === 'category-powerful' && (p.hearingLossLevels?.includes('severe') || p.hearingLossLevels?.includes('profound') || p.powerLevel?.toLowerCase().includes('power'))) {
-      return true;
-    }
-    if (categorySlug === 'category-tinnitus' && p.tinnitusSupport === true) {
-      return true;
-    }
-    if (categorySlug === 'category-smartphone' && (p.smartphoneCompatibility?.length > 0 || p.smartphoneCompatibility?.includes('iphone') || p.smartphoneCompatibility?.includes('android'))) {
-      return true;
-    }
-    if (categorySlug === 'category-invisible' && (p.formFactors?.includes('iic') || p.formFactors?.includes('cic') || p.formFactors?.includes('cic-iic'))) {
-      return true;
-    }
-    
-    return false;
-  });
+    // P0: Use server-side pagination for catalogs
+    const productsResponse = await getProducts({
+      status: 'published',
+      catalogId: catalog.id,
+      limit: PRODUCTS_PER_PAGE,
+      offset: offset,
+      sort: sortBy,
+    }, locale) || { items: [], total: 0, page: 1, pageSize: 12 };
 
-  // Apply filters (multiple values supported via comma-separated query params)
-  const selectedBrands = searchParams.brand?.split(',').filter(Boolean) ?? [];
-  const selectedAudience = searchParams.audience?.split(',').filter(Boolean) ?? [];
-  const selectedForms = searchParams.form?.split(',').filter(Boolean) ?? [];
-  const selectedSignal = searchParams.signal?.split(',').filter(Boolean) ?? [];
-  const selectedPower = searchParams.power?.split(',').filter(Boolean) ?? [];
-  const selectedLoss = searchParams.loss?.split(',').filter(Boolean) ?? [];
+    // Safety check: ensure items is an array and total is a number
+    const paginatedProducts = productsResponse?.items || [];
+    const totalItems = productsResponse?.total || 0;
+    const totalPages = Math.max(1, Math.ceil(totalItems / PRODUCTS_PER_PAGE));
 
-  if (selectedBrands.length > 0) {
-    filteredProducts = filteredProducts.filter((p) => p.brand && selectedBrands.includes(p.brand.slug));
-  }
+    // For facet counts, we need all products in catalog (before filters)
+    // P0: Fetch all catalog products for counts (P1 will provide counts from backend)
+    const allCatalogProductsResponse = await getProducts({
+      status: 'published',
+      catalogId: catalog.id,
+      limit: 1000, // Fetch all for counts
+      offset: 0,
+      sort: 'newest',
+    }, locale) || { items: [], total: 0, page: 1, pageSize: 12 };
 
-  if (selectedAudience.length > 0) {
-    filteredProducts = filteredProducts.filter((p) => selectedAudience.some((a) => p.audience.includes(a)));
-  }
+    // Safety check: ensure items is an array
+    const catalogProducts = allCatalogProductsResponse?.items || [];
+    const { brandCounts, audienceCounts, formCounts, powerCounts, lossCounts } = calculateFacetCounts(catalogProducts);
 
-  if (selectedForms.length > 0) {
-    filteredProducts = filteredProducts.filter((p) => selectedForms.some((f) => p.formFactors.includes(f)));
-  }
-
-  if (selectedSignal.length > 0) {
-    filteredProducts = filteredProducts.filter((p) => p.signalProcessing && selectedSignal.includes(p.signalProcessing));
-  }
-
-  if (selectedPower.length > 0) {
-    filteredProducts = filteredProducts.filter((p) => p.powerLevel && selectedPower.includes(p.powerLevel));
-  }
-
-  if (selectedLoss.length > 0) {
-    filteredProducts = filteredProducts.filter((p) => selectedLoss.some((l) => p.hearingLossLevels.includes(l)));
-  }
-
-  // Sort products
-  const sortBy = searchParams.sort ?? 'newest';
-  if (sortBy === 'price_asc') {
-    filteredProducts.sort((a, b) => {
-      const priceA = a.price ? Number(a.price) : Infinity;
-      const priceB = b.price ? Number(b.price) : Infinity;
-      return priceA - priceB;
+    // Get brands that appear in this catalog's products with counts
+    const brandMap = new Map<string, BrandResponse>();
+    catalogProducts.forEach((p) => {
+      if (p.brand) {
+        brandMap.set(p.brand.id, p.brand);
+      }
     });
-  } else if (sortBy === 'price_desc') {
-    filteredProducts.sort((a, b) => {
-      const priceA = a.price ? Number(a.price) : Infinity;
-      const priceB = b.price ? Number(b.price) : Infinity;
-      return priceB - priceA;
-    });
+    const availableBrands: Array<BrandResponse & { count?: number }> = Array.from(brandMap.values())
+      .map((brand) => ({
+        ...brand,
+        count: brandCounts[brand.slug] || 0,
+      }))
+      .sort((a, b) => (b.count || 0) - (a.count || 0));
+
+    const placeholderImage = `data:image/svg+xml,${encodeURIComponent(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect width="100%" height="100%" fill="#F07E22"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#fff" font-family="Arial" font-size="28">Acoustic</text></svg>`,
+    )}`;
+
+    const catalogName = getBilingualText(catalog.name_uz, catalog.name_ru, locale);
+
+    return (
+      <main className="min-h-screen bg-background">
+        {/* Breadcrumbs */}
+        <section className="bg-muted/40">
+          <div className="mx-auto max-w-6xl px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:px-6">
+            <Link href="/" className="hover:text-brand-primary" suppressHydrationWarning>
+              {locale === 'ru' ? 'Главная' : 'Bosh sahifa'}
+            </Link>
+            <span className="mx-2">›</span>
+            <Link href="/catalog" className="hover:text-brand-primary" suppressHydrationWarning>
+              {locale === 'ru' ? 'Каталог' : 'Katalog'}
+            </Link>
+            <span className="mx-2">›</span>
+            <span className="text-brand-primary" suppressHydrationWarning>{catalogName}</span>
+          </div>
+        </section>
+
+        {/* Header */}
+        <section className="bg-brand-accent text-white">
+          <div className="mx-auto max-w-6xl space-y-4 px-4 py-10 md:px-6">
+            <h1 className="text-3xl font-bold md:text-4xl" suppressHydrationWarning>{catalogName}</h1>
+            <p className="max-w-4xl text-base leading-relaxed text-white/90" suppressHydrationWarning>
+              {locale === 'ru'
+                ? `Все товары в каталоге "${catalogName}". Используйте фильтры для уточнения поиска.`
+                : `"${catalogName}" katalogidagi barcha mahsulotlar. Qidiruvni aniqlashtirish uchun filtrlardan foydalaning.`}
+            </p>
+          </div>
+        </section>
+
+        {/* Main Content */}
+        <section className="bg-white py-8">
+          <div className="mx-auto max-w-6xl px-4 md:px-6">
+            <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+              {/* Filter Sidebar */}
+              <aside className="hidden lg:block">
+                <CatalogFilters
+                  categorySlug={params.slug}
+                  locale={locale}
+                  brands={availableBrands}
+                  selectedBrands={searchParams.brand?.split(',').filter(Boolean) ?? []}
+                  selectedAudience={searchParams.audience?.split(',').filter(Boolean) ?? []}
+                  selectedForms={searchParams.form?.split(',').filter(Boolean) ?? []}
+                  selectedPower={searchParams.power?.split(',').filter(Boolean) ?? []}
+                  selectedLoss={searchParams.loss?.split(',').filter(Boolean) ?? []}
+                  audienceCounts={audienceCounts}
+                  formCounts={formCounts}
+                  powerCounts={powerCounts}
+                  lossCounts={lossCounts}
+                />
+              </aside>
+
+              {/* Product Grid */}
+              <div className="space-y-6">
+                {/* Brand Chips */}
+                {availableBrands.length > 0 && (
+                  <CatalogBrandChips 
+                    categorySlug={params.slug} 
+                    locale={locale} 
+                    brands={availableBrands} 
+                    selectedBrands={searchParams.brand?.split(',').filter(Boolean) ?? []} 
+                  />
+                )}
+
+                {/* Sort & Results Count */}
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm text-muted-foreground" suppressHydrationWarning>
+                    {locale === 'ru' ? `Найдено товаров: ${totalItems}` : `Topilgan mahsulotlar: ${totalItems}`}
+                  </p>
+                  <CatalogSort categorySlug={params.slug} locale={locale} currentSort={sortBy} />
+                </div>
+
+                {/* Products Grid */}
+                {paginatedProducts.length > 0 ? (
+                  <>
+                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                      {paginatedProducts.map((product) => {
+                        const mainImage = product.galleryUrls?.[0] ?? product.brand?.logo?.url ?? placeholderImage;
+                        const priceFormatted = formatPrice(product.price);
+                        const availability = product.availabilityStatus ? availabilityMap[product.availabilityStatus] : undefined;
+                        const productName = getBilingualText(product.name_uz, product.name_ru, locale);
+
+                        return (
+                          <Link
+                            key={product.id}
+                            href={`/products/${product.slug}`}
+                            className="group flex flex-col gap-4 rounded-2xl border border-border/60 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-brand-primary/50 hover:shadow-lg"
+                          >
+                            <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-brand-primary/5">
+                              <Image
+                                src={mainImage}
+                                alt={productName}
+                                fill
+                                className="object-contain transition-transform group-hover:scale-105"
+                                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                              />
+                            </div>
+                            <div className="flex flex-col gap-2">
+                              {product.brand && (
+                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                  {product.brand.name}
+                                </p>
+                              )}
+                              <h3 className="line-clamp-2 font-semibold leading-tight" suppressHydrationWarning>{productName}</h3>
+                              {priceFormatted && (
+                                <p className="text-lg font-bold text-brand-primary" suppressHydrationWarning>{priceFormatted}</p>
+                              )}
+                              {availability && (
+                                <span className={`inline-block w-fit rounded-full px-2 py-1 text-xs font-medium ${availability.color}`} suppressHydrationWarning>
+                                  {locale === 'ru' ? availability.ru : availability.uz}
+                                </span>
+                              )}
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                    <CatalogPagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      href={`/catalog/${params.slug}`}
+                      searchParams={searchParams}
+                    />
+                  </>
+                ) : (
+                  <div className="py-12 text-center">
+                    <p className="text-muted-foreground" suppressHydrationWarning>
+                      {locale === 'ru' ? 'Товары не найдены' : 'Mahsulotlar topilmadi'}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    );
   }
-  // newest is default (already sorted by createdAt desc from API)
 
-  // Calculate total items and pagination
-  const totalItems = filteredProducts.length;
-  const totalPages = Math.max(1, Math.ceil(totalItems / PRODUCTS_PER_PAGE));
-  const currentPage = Math.min(Math.max(1, parseInt(searchParams.page || '1', 10)), totalPages);
-  const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
-  const endIndex = startIndex + PRODUCTS_PER_PAGE;
-  const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
+  // Category logic (existing code)
+  // P0: Use server-side pagination for categories with direct categoryId
+  // Property-based matching (P1) will require backend filter support
+  // For now, we check if category uses property-based matching
+  const categorySlug = category!.slug;
+  const usesPropertyBasedMatching = [
+    'category-children',
+    'category-seniors',
+    'category-ai',
+    'category-moderate-loss',
+    'category-powerful',
+    'category-tinnitus',
+    'category-smartphone',
+    'category-invisible',
+  ].includes(categorySlug);
 
-  // Get all products in category (before filters) for facet counts
-  // Include both direct categoryId matches and property-based matches
-  const categoryProducts = allProducts.filter((p) => {
-    // Direct category match
-    if (p.category?.id === category.id) {
-      return true;
-    }
-    
-    // Property-based matching for catalog categories
-    const categorySlug = category.slug;
-    
-    if (categorySlug === 'category-children' && p.audience?.includes('children')) {
-      return true;
-    }
-    if (categorySlug === 'category-seniors' && p.audience?.includes('elderly')) {
-      return true;
-    }
-    if (categorySlug === 'category-ai' && p.signalProcessing?.toLowerCase().includes('ai')) {
-      return true;
-    }
-    if (categorySlug === 'category-moderate-loss' && p.hearingLossLevels?.includes('moderate')) {
-      return true;
-    }
-    if (categorySlug === 'category-powerful' && (p.hearingLossLevels?.includes('severe') || p.hearingLossLevels?.includes('profound') || p.powerLevel?.toLowerCase().includes('power'))) {
-      return true;
-    }
-    if (categorySlug === 'category-tinnitus' && p.tinnitusSupport === true) {
-      return true;
-    }
-    if (categorySlug === 'category-smartphone' && (p.smartphoneCompatibility?.length > 0 || p.smartphoneCompatibility?.includes('iphone') || p.smartphoneCompatibility?.includes('android'))) {
-      return true;
-    }
-    if (categorySlug === 'category-invisible' && (p.formFactors?.includes('iic') || p.formFactors?.includes('cic') || p.formFactors?.includes('cic-iic'))) {
-      return true;
-    }
-    
-    return false;
-  });
-  const { brandCounts, audienceCounts, formCounts, powerCounts, lossCounts } = calculateFacetCounts(categoryProducts);
+  // Calculate pagination params from URL
+  const sortBy = (searchParams.sort as 'newest' | 'price_asc' | 'price_desc') || 'newest';
+  const currentPage = Math.max(1, parseInt(searchParams.page || '1', 10));
+  const offset = (currentPage - 1) * PRODUCTS_PER_PAGE;
 
-  // Get brands that appear in this category's products with counts
-  const brandMap = new Map<string, BrandResponse>();
-  categoryProducts.forEach((p) => {
-    if (p.brand) {
-      brandMap.set(p.brand.id, p.brand);
+  let productsResponse: ProductListResponse;
+  let paginatedProducts: ProductResponse[];
+  let totalItems: number;
+  let totalPages: number;
+  let brandCounts: Record<string, number>;
+  let audienceCounts: Record<string, number>;
+  let formCounts: Record<string, number>;
+  let powerCounts: Record<string, number>;
+  let lossCounts: Record<string, number>;
+  let availableBrands: Array<BrandResponse & { count?: number }>;
+
+  if (usesPropertyBasedMatching) {
+    // P0: For property-based categories, still fetch all and filter client-side
+    // TODO (P1): Move to backend filters once backend supports property-based matching
+    const allProductsResponse = await getProducts({
+      status: 'published',
+      limit: 1000, // Temporary: fetch many to support client-side filtering
+      offset: 0,
+      sort: sortBy,
+    }, locale) || { items: [], total: 0, page: 1, pageSize: 12 };
+
+    // Filter by property-based matching
+    // Safety check: ensure items is an array
+    const allProducts = allProductsResponse?.items || [];
+    let filteredProducts = allProducts.filter((p) => {
+      // Direct category match (products assigned to this category via categoryId)
+      if (p.category?.id === category.id) {
+        return true;
+      }
+      
+      // Property-based matching for catalog categories
+      if (categorySlug === 'category-children' && p.audience?.includes('children')) {
+        return true;
+      }
+      if (categorySlug === 'category-seniors' && p.audience?.includes('elderly')) {
+        return true;
+      }
+      if (categorySlug === 'category-ai' && p.signalProcessing?.toLowerCase().includes('ai')) {
+        return true;
+      }
+      if (categorySlug === 'category-moderate-loss' && p.hearingLossLevels?.includes('moderate')) {
+        return true;
+      }
+      if (categorySlug === 'category-powerful' && (p.hearingLossLevels?.includes('severe') || p.hearingLossLevels?.includes('profound') || p.powerLevel?.toLowerCase().includes('power'))) {
+        return true;
+      }
+      if (categorySlug === 'category-tinnitus' && p.tinnitusSupport === true) {
+        return true;
+      }
+      if (categorySlug === 'category-smartphone' && (p.smartphoneCompatibility?.length > 0 || p.smartphoneCompatibility?.includes('iphone') || p.smartphoneCompatibility?.includes('android'))) {
+        return true;
+      }
+      if (categorySlug === 'category-invisible' && (p.formFactors?.includes('iic') || p.formFactors?.includes('cic') || p.formFactors?.includes('cic-iic'))) {
+        return true;
+      }
+      
+      return false;
+    });
+
+    // Apply filters (client-side for P0 - will move to backend in P1)
+    const selectedBrands = searchParams.brand?.split(',').filter(Boolean) ?? [];
+    const selectedAudience = searchParams.audience?.split(',').filter(Boolean) ?? [];
+    const selectedForms = searchParams.form?.split(',').filter(Boolean) ?? [];
+    const selectedSignal = searchParams.signal?.split(',').filter(Boolean) ?? [];
+    const selectedPower = searchParams.power?.split(',').filter(Boolean) ?? [];
+    const selectedLoss = searchParams.loss?.split(',').filter(Boolean) ?? [];
+
+    if (selectedBrands.length > 0) {
+      filteredProducts = filteredProducts.filter((p) => p.brand && selectedBrands.includes(p.brand.slug));
     }
-  });
-  const availableBrands: Array<BrandResponse & { count?: number }> = Array.from(brandMap.values())
-    .map((brand) => ({
-      ...brand,
-      count: brandCounts[brand.slug] || 0,
-    }))
-    .sort((a, b) => (b.count || 0) - (a.count || 0));
+    if (selectedAudience.length > 0) {
+      filteredProducts = filteredProducts.filter((p) => selectedAudience.some((a) => p.audience.includes(a)));
+    }
+    if (selectedForms.length > 0) {
+      filteredProducts = filteredProducts.filter((p) => selectedForms.some((f) => p.formFactors.includes(f)));
+    }
+    if (selectedSignal.length > 0) {
+      filteredProducts = filteredProducts.filter((p) => p.signalProcessing && selectedSignal.includes(p.signalProcessing));
+    }
+    if (selectedPower.length > 0) {
+      filteredProducts = filteredProducts.filter((p) => p.powerLevel && selectedPower.includes(p.powerLevel));
+    }
+    if (selectedLoss.length > 0) {
+      filteredProducts = filteredProducts.filter((p) => selectedLoss.some((l) => p.hearingLossLevels.includes(l)));
+    }
+
+    // Client-side pagination (P0 - will move to backend in P1)
+    totalItems = filteredProducts.length;
+    totalPages = Math.max(1, Math.ceil(totalItems / PRODUCTS_PER_PAGE));
+    const pageToUse = Math.min(currentPage, totalPages);
+    const startIndex = (pageToUse - 1) * PRODUCTS_PER_PAGE;
+    const endIndex = startIndex + PRODUCTS_PER_PAGE;
+    paginatedProducts = filteredProducts.slice(startIndex, endIndex);
+
+    productsResponse = {
+      items: paginatedProducts,
+      total: totalItems,
+      page: pageToUse,
+      pageSize: PRODUCTS_PER_PAGE,
+    };
+
+    // For property-based categories, use filtered products (before search params filters) for counts
+    // We need to get products that match the category property but before URL filter params are applied
+    const categoryMatchedProducts = allProducts.filter((p) => {
+      // Direct category match
+      if (p.category?.id === category.id) {
+        return true;
+      }
+      // Property-based matching
+      if (categorySlug === 'category-children' && p.audience?.includes('children')) {
+        return true;
+      }
+      if (categorySlug === 'category-seniors' && p.audience?.includes('elderly')) {
+        return true;
+      }
+      if (categorySlug === 'category-ai' && p.signalProcessing?.toLowerCase().includes('ai')) {
+        return true;
+      }
+      if (categorySlug === 'category-moderate-loss' && p.hearingLossLevels?.includes('moderate')) {
+        return true;
+      }
+      if (categorySlug === 'category-powerful' && (p.hearingLossLevels?.includes('severe') || p.hearingLossLevels?.includes('profound') || p.powerLevel?.toLowerCase().includes('power'))) {
+        return true;
+      }
+      if (categorySlug === 'category-tinnitus' && p.tinnitusSupport === true) {
+        return true;
+      }
+      if (categorySlug === 'category-smartphone' && (p.smartphoneCompatibility?.length > 0 || p.smartphoneCompatibility?.includes('iphone') || p.smartphoneCompatibility?.includes('android'))) {
+        return true;
+      }
+      if (categorySlug === 'category-invisible' && (p.formFactors?.includes('iic') || p.formFactors?.includes('cic') || p.formFactors?.includes('cic-iic'))) {
+        return true;
+      }
+      return false;
+    });
+
+    // Calculate counts from category-matched products (before URL filter params)
+    const counts = calculateFacetCounts(categoryMatchedProducts);
+    brandCounts = counts.brandCounts;
+    audienceCounts = counts.audienceCounts;
+    formCounts = counts.formCounts;
+    powerCounts = counts.powerCounts;
+    lossCounts = counts.lossCounts;
+
+    // Get brands that appear in this category's products with counts
+    const brandMap = new Map<string, BrandResponse>();
+    categoryMatchedProducts.forEach((p) => {
+      if (p.brand) {
+        brandMap.set(p.brand.id, p.brand);
+      }
+    });
+    availableBrands = Array.from(brandMap.values())
+      .map((brand) => ({
+        ...brand,
+        count: brandCounts[brand.slug] || 0,
+      }))
+      .sort((a, b) => (b.count || 0) - (a.count || 0));
+  } else {
+    // P0: Use server-side pagination for direct categoryId matches
+    productsResponse = await getProducts({
+      status: 'published',
+      categoryId: category.id,
+      limit: PRODUCTS_PER_PAGE,
+      offset: offset,
+      sort: sortBy,
+    }, locale) || { items: [], total: 0, page: 1, pageSize: 12 };
+
+    // Safety check: ensure items is an array and total is a number
+    paginatedProducts = productsResponse?.items || [];
+    totalItems = productsResponse?.total || 0;
+    totalPages = Math.max(1, Math.ceil(totalItems / PRODUCTS_PER_PAGE));
+
+    // For facet counts, we need all products in category (before filters)
+    // P0: Fetch all category products for counts (P1 will provide counts from backend)
+    const allCategoryProductsResponse = await getProducts({
+      status: 'published',
+      categoryId: category.id,
+      limit: 1000, // Fetch all for counts
+      offset: 0,
+      sort: 'newest',
+    }, locale) || { items: [], total: 0, page: 1, pageSize: 12 };
+
+    // Safety check: ensure items is an array
+    const categoryProducts = allCategoryProductsResponse?.items || [];
+    const counts = calculateFacetCounts(categoryProducts);
+    brandCounts = counts.brandCounts;
+    audienceCounts = counts.audienceCounts;
+    formCounts = counts.formCounts;
+    powerCounts = counts.powerCounts;
+    lossCounts = counts.lossCounts;
+
+    // Get brands that appear in this category's products with counts
+    const brandMap = new Map<string, BrandResponse>();
+    categoryProducts.forEach((p) => {
+      if (p.brand) {
+        brandMap.set(p.brand.id, p.brand);
+      }
+    });
+    availableBrands = Array.from(brandMap.values())
+      .map((brand) => ({
+        ...brand,
+        count: brandCounts[brand.slug] || 0,
+      }))
+      .sort((a, b) => (b.count || 0) - (a.count || 0));
+  }
 
   const placeholderImage = `data:image/svg+xml,${encodeURIComponent(
     `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect width="100%" height="100%" fill="#F07E22"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#fff" font-family="Arial" font-size="28">Acoustic</text></svg>`,
@@ -549,11 +824,11 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
                 categorySlug={params.slug}
                 locale={locale}
                 brands={availableBrands}
-                selectedBrands={selectedBrands}
-                selectedAudience={selectedAudience}
-                selectedForms={selectedForms}
-                selectedPower={selectedPower}
-                selectedLoss={selectedLoss}
+                selectedBrands={searchParams.brand?.split(',').filter(Boolean) ?? []}
+                selectedAudience={searchParams.audience?.split(',').filter(Boolean) ?? []}
+                selectedForms={searchParams.form?.split(',').filter(Boolean) ?? []}
+                selectedPower={searchParams.power?.split(',').filter(Boolean) ?? []}
+                selectedLoss={searchParams.loss?.split(',').filter(Boolean) ?? []}
                 audienceCounts={audienceCounts}
                 formCounts={formCounts}
                 powerCounts={powerCounts}
@@ -565,7 +840,12 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
             <div className="space-y-6">
               {/* Brand Chips */}
               {availableBrands.length > 0 && (
-                <CatalogBrandChips categorySlug={params.slug} locale={locale} brands={availableBrands} selectedBrands={selectedBrands} />
+                <CatalogBrandChips 
+                  categorySlug={params.slug} 
+                  locale={locale} 
+                  brands={availableBrands} 
+                  selectedBrands={searchParams.brand?.split(',').filter(Boolean) ?? []} 
+                />
               )}
 
               {/* Sort & Results Count */}
@@ -623,7 +903,7 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
                   <CatalogPagination
                     categorySlug={params.slug}
                     locale={locale}
-                    currentPage={currentPage}
+                    currentPage={productsResponse?.page || 1}
                     totalPages={totalPages}
                     totalItems={totalItems}
                   />

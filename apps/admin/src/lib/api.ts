@@ -555,6 +555,58 @@ export const deleteProductCategory = (id: string) =>
     method: 'DELETE',
   });
 
+// Catalog API
+export interface CatalogDto {
+  id: string;
+  name_uz: string;
+  name_ru: string;
+  slug: string;
+  description_uz?: string | null;
+  description_ru?: string | null;
+  icon?: string | null;
+  image?: {
+    id: string;
+    url: string;
+  } | null;
+  order: number;
+  status: 'published' | 'draft' | 'archived';
+  showOnHomepage: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CreateCatalogPayload = {
+  name_uz: string;
+  name_ru: string;
+  slug: string;
+  description_uz?: string | null;
+  description_ru?: string | null;
+  icon?: string | null;
+  imageId?: string | null;
+  order?: number;
+  status?: CatalogDto['status'];
+  showOnHomepage?: boolean;
+};
+
+export type UpdateCatalogPayload = Partial<CreateCatalogPayload>;
+
+export const getCatalogsAdmin = () => request<CatalogDto[]>('/catalogs/admin');
+export const getCatalogs = () => request<CatalogDto[]>('/catalogs?public=true');
+export const createCatalog = (payload: CreateCatalogPayload) =>
+  request<CatalogDto>('/catalogs', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+export const updateCatalog = (id: string, payload: UpdateCatalogPayload) =>
+  request<CatalogDto>(`/catalogs/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+export const deleteCatalog = (id: string) =>
+  request<void>(`/catalogs/${id}`, {
+    method: 'DELETE',
+  });
+
 export interface BrandDto {
   id: string;
   name: string;
@@ -600,6 +652,7 @@ export interface ProductDto {
   name_uz: string;
   name_ru: string;
   slug: string;
+  productType?: string | null;
   description_uz?: string | null;
   description_ru?: string | null;
   price?: string | null;
@@ -612,6 +665,7 @@ export interface ProductDto {
   galleryUrls: string[];
   brand?: BrandDto | null;
   category?: ProductCategoryDto | null;
+  catalogs?: CatalogDto[];
   createdAt: string;
   updatedAt: string;
   audience: string[];
@@ -643,12 +697,14 @@ export type CreateProductPayload = {
   name_uz: string;
   name_ru: string;
   slug: string;
+  productType?: string | null;
   description_uz?: string | null;
   description_ru?: string | null;
   price?: number | null;
   stock?: number | null;
   brandId?: string | null;
   categoryId?: string | null;
+  catalogIds?: string[];
   status?: ProductDto['status'];
   specsText?: string | null;
   galleryIds?: string[];
@@ -680,7 +736,8 @@ export type CreateProductPayload = {
 
 export type UpdateProductPayload = Partial<CreateProductPayload>;
 
-export const getProductsAdmin = () => request<ProductDto[]>('/products/admin');
+export const getProductsAdmin = () => 
+  request<{ items: ProductDto[]; total: number; page: number; pageSize: number }>('/products/admin');
 export const createProduct = (payload: CreateProductPayload) =>
   request<ProductDto>('/products', {
     method: 'POST',
@@ -695,6 +752,62 @@ export const deleteProduct = (id: string) =>
   request<void>(`/products/${id}`, {
     method: 'DELETE',
   });
+
+export interface ImportExcelResult {
+  success: number;
+  failed: number;
+  errors: Array<{ row: number; error: string }>;
+}
+
+export const importProductsFromExcel = async (file: File): Promise<ImportExcelResult> => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch(`${API_BASE}/products/import/excel`, {
+    method: 'POST',
+    credentials: 'include',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    let message = text || response.statusText;
+    try {
+      const parsed = text ? JSON.parse(text) : null;
+      if (parsed?.message) {
+        message = Array.isArray(parsed.message) ? parsed.message.join(', ') : parsed.message;
+      }
+    } catch (error) {
+      // ignore JSON parse errors
+    }
+    throw new ApiError(message || `Request failed with status ${response.status}`, response.status);
+  }
+
+  return response.json();
+};
+
+export const downloadExcelTemplate = async (): Promise<Blob> => {
+  const response = await fetch(`${API_BASE}/products/import/excel-template`, {
+    method: 'GET',
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    let message = text || response.statusText;
+    try {
+      const parsed = text ? JSON.parse(text) : null;
+      if (parsed?.message) {
+        message = Array.isArray(parsed.message) ? parsed.message.join(', ') : parsed.message;
+      }
+    } catch (error) {
+      // ignore JSON parse errors
+    }
+    throw new ApiError(message || `Request failed with status ${response.status}`, response.status);
+  }
+
+  return response.blob();
+};
 
 // FAQ interfaces and functions
 export interface FaqDto {

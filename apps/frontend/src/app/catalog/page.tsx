@@ -1,9 +1,10 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { getHomepageHearingAidItems, getProductCategories } from '@/lib/api-server';
-import type { HearingAidItemResponse } from '@/lib/api';
+import { getCatalogs, getPosts, getBrands } from '@/lib/api-server';
+import type { CatalogResponse, PostResponse, BrandResponse } from '@/lib/api';
 import { detectLocale } from '@/lib/locale-server';
 
 // Force dynamic rendering to ensure locale is always read from cookies
@@ -47,54 +48,76 @@ export default async function CatalogPage({
 
   const locale = detectLocale();
   
-  // Fetch data from backend - same source as homepage Product Catalog section
-  const [hearingItemsData, categoriesData] = await Promise.all([
-    getHomepageHearingAidItems(locale),
-    getProductCategories(locale),
+  // Fetch catalogs, posts, and brands from backend
+  const [catalogsData, postsData, brandsData] = await Promise.all([
+    getCatalogs(locale),
+    getPosts(locale, true),
+    getBrands(locale),
   ]);
 
-  // Transform hearing items from backend - same logic as homepage
-  // This ensures the catalog page shows the same items as the homepage Product Catalog section
-  const hearingItems = (hearingItemsData && hearingItemsData.length > 0 ? hearingItemsData : []).map((item, index) => {
-    const title = locale === 'ru' ? (item.title_ru || '') : (item.title_uz || '');
-    const description = locale === 'ru' ? (item.description_ru || '') : (item.description_uz || '');
+  // Filter brands to show only Oticon, ReSound, Signia
+  const mainBrands = brandsData?.filter((brand) => {
+    const brandName = brand.name?.toLowerCase() || '';
+    const brandSlug = brand.slug?.toLowerCase() || '';
+    return (
+      brandName.includes('oticon') ||
+      brandName.includes('resound') ||
+      brandName.includes('signia') ||
+      brandSlug.includes('oticon') ||
+      brandSlug.includes('resound') ||
+      brandSlug.includes('signia')
+    );
+  }) || [];
+
+  // Define other sections (accessories, earmolds, etc.)
+  const otherSections = [
+    {
+      id: 'accessories',
+      title_uz: 'Aksessuarlar',
+      title_ru: 'Аксессуары',
+      link: '/catalog/accessories',
+      icon: '📱',
+    },
+    {
+      id: 'earmolds',
+      title_uz: 'Quloq qo\'shimchalari',
+      title_ru: 'Ушные вкладыши',
+      link: '/catalog/earmolds',
+      icon: '👂',
+    },
+    {
+      id: 'batteries',
+      title_uz: 'Batareyalar',
+      title_ru: 'Батарейки',
+      link: '/catalog/batteries',
+      icon: '🔋',
+    },
+    {
+      id: 'care',
+      title_uz: 'Parvarish vositalari',
+      title_ru: 'Средства ухода',
+      link: '/catalog/care',
+      icon: '🧴',
+    },
+  ];
+
+  // Transform catalogs for display
+  const catalogItems = (catalogsData && catalogsData.length > 0 ? catalogsData : []).map((catalog) => {
+    const title = locale === 'ru' ? (catalog.name_ru || '') : (catalog.name_uz || '');
+    const description = locale === 'ru' ? (catalog.description_ru || '') : (catalog.description_uz || '');
     
     // Build image URL
-    let image = item.image?.url || '';
+    let image = catalog.image?.url || '';
     if (image && image.startsWith('/') && !image.startsWith('//')) {
       const baseUrl = API_BASE_URL.replace('/api', '');
       image = `${baseUrl}${image}`;
     }
     
-    // Try to find matching category, or use link from API
-    let link = item.link || '/catalog';
-    if (link === '/catalog' || link.startsWith('/catalog?category=')) {
-      // Try to find matching category by title
-      const matchingCategory = categoriesData.find((cat) => {
-        const catNameUz = (cat.name_uz || '').toLowerCase();
-        const catNameRu = (cat.name_ru || '').toLowerCase();
-        const itemTitleUz = (item.title_uz || '').toLowerCase();
-        const itemTitleRu = (item.title_ru || '').toLowerCase();
-        return catNameUz.includes(itemTitleUz) || 
-               catNameRu.includes(itemTitleRu) || 
-               itemTitleUz.includes(catNameUz) || 
-               itemTitleRu.includes(catNameRu);
-      });
-      if (matchingCategory?.slug) {
-        link = `/catalog/${matchingCategory.slug}`;
-      }
-    }
-    
-    // Convert old query-based links to path-based
-    if (link.startsWith('/catalog?category=')) {
-      const categorySlug = link.split('category=')[1]?.split('&')[0];
-      if (categorySlug) {
-        link = `/catalog/${categorySlug}`;
-      }
-    }
+    // Use catalog slug for link
+    const link = catalog.slug ? `/catalog/${catalog.slug}` : '/catalog';
 
     return {
-      id: item.id ?? `hearing-${index}`,
+      id: catalog.id,
       title: title || '',
       description: description || '',
       image: image || '',
@@ -130,53 +153,176 @@ export default async function CatalogPage({
         </div>
       </section>
 
-      <section className="bg-white py-12">
-        <div className="mx-auto max-w-6xl space-y-8 px-4 md:px-6">
-          {hearingItems.length > 0 ? (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {hearingItems.map((item) => (
-              <Link
-                key={item.id}
-                href={item.link}
-                className="group flex h-full items-start gap-3 rounded-2xl border border-border/60 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-brand-primary/50 hover:shadow-lg"
-              >
-                <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl bg-brand-primary/10">
-                  {item.image ? (
-                    <Image 
-                      src={item.image} 
-                      alt={item.title} 
-                      fill 
-                      sizes="112px" 
-                      className="object-cover transition-transform duration-300 group-hover:scale-105"
-                      suppressHydrationWarning
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-brand-primary">
-                      <span className="text-white text-xs font-bold">Acoustic</span>
-                    </div>
-                  )}
+      {/* Main Content with Sidebar */}
+      <section className="bg-white py-16">
+        <div className="mx-auto max-w-7xl px-4 md:px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            {/* Main Content - 3 columns on large screens */}
+            <div className="lg:col-span-3">
+              {catalogItems.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {catalogItems.map((item) => (
+                    <Link
+                      key={item.id}
+                      href={item.link}
+                      className="group flex flex-row items-start gap-3 rounded-lg border border-gray-200 bg-white p-4 transition hover:border-brand-primary/50 hover:shadow-sm"
+                    >
+                      {/* Image - Same size as homepage */}
+                      <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl bg-brand-primary/10">
+                        {item.image ? (
+                          <Image 
+                            src={item.image} 
+                            alt={item.title} 
+                            fill 
+                            sizes="112px"
+                            className="object-cover transition-transform duration-300 group-hover:scale-105"
+                            suppressHydrationWarning
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center bg-brand-primary">
+                            <span className="text-white text-xs font-bold">Acoustic</span>
+                          </div>
+                        )}
+                      </div>
+                      {/* Content */}
+                      <div className="flex flex-col flex-1 space-y-1 min-w-0">
+                        <h3 className="text-base font-semibold text-brand-accent leading-tight group-hover:text-brand-primary transition-colors" suppressHydrationWarning>
+                          {item.title}
+                        </h3>
+                        {item.description && (
+                          <p className="text-sm text-muted-foreground leading-snug" suppressHydrationWarning>
+                            {item.description}
+                          </p>
+                        )}
+                        <span className="inline-flex items-center gap-1 pt-1 text-xs font-semibold text-brand-primary group-hover:text-brand-accent transition-all mt-auto" suppressHydrationWarning>
+                          {locale === 'ru' ? 'Подробнее' : 'Batafsil'} ↗
+                        </span>
+                      </div>
+                    </Link>
+                  ))}
                 </div>
-                <div className="space-y-1">
-                  <h3 className="text-base font-semibold text-brand-accent group-hover:text-brand-primary">{item.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-snug">{item.description}</p>
-                  <span className="inline-flex items-center gap-1 pt-1 text-xs font-semibold text-brand-primary group-hover:text-brand-accent">
-                    {locale === 'ru' ? 'Подробнее' : 'Batafsil'} ↗
-                  </span>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground" suppressHydrationWarning>
+                    {locale === 'ru' 
+                      ? 'Каталог продуктов пуст. Товары будут добавлены в ближайшее время.' 
+                      : 'Mahsulotlar katalogi bo\'sh. Mahsulotlar tez orada qo\'shiladi.'}
+                  </p>
                 </div>
-              </Link>
-              ))}
+              )}
             </div>
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground" suppressHydrationWarning>
-                {locale === 'ru' 
-                  ? 'Каталог продуктов пуст. Товары будут добавлены в ближайшее время.' 
-                  : 'Mahsulotlar katalogi bo\'sh. Mahsulotlar tez orada qo\'shiladi.'}
-              </p>
-            </div>
-          )}
+
+            {/* Sidebar - 1 column on large screens */}
+            <aside className="lg:col-span-1 space-y-8">
+              {/* Other Sections */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                <h3 className="text-lg font-semibold text-foreground mb-4" suppressHydrationWarning>
+                  {locale === 'ru' ? 'Другие разделы' : 'Boshqa bo\'limlar'}
+                </h3>
+                <nav className="space-y-2">
+                  {otherSections.map((section) => {
+                    const title = locale === 'ru' ? section.title_ru : section.title_uz;
+                    return (
+                      <Link
+                        key={section.id}
+                        href={section.link}
+                        className="flex items-center gap-3 p-3 rounded-md hover:bg-gray-50 transition-colors group"
+                      >
+                        <span className="text-xl">{section.icon}</span>
+                        <span className="text-sm font-medium text-foreground group-hover:text-brand-primary transition-colors" suppressHydrationWarning>
+                          {title}
+                        </span>
+                      </Link>
+                    );
+                  })}
+                </nav>
+              </div>
+
+              {/* Brands Section - Only Oticon, ReSound, Signia */}
+              {mainBrands.length > 0 && (
+                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                  <h3 className="text-lg font-semibold text-foreground mb-4" suppressHydrationWarning>
+                    {locale === 'ru' ? 'Бренды' : 'Brendlar'}
+                  </h3>
+                  <div className="space-y-4">
+                    {mainBrands.map((brand) => {
+                      const brandName = brand.name || '';
+                      const brandLogo = brand.logo?.url || '';
+                      let logoUrl = brandLogo;
+                      if (logoUrl && logoUrl.startsWith('/') && !logoUrl.startsWith('//')) {
+                        const baseUrl = API_BASE_URL.replace('/api', '');
+                        logoUrl = `${baseUrl}${logoUrl}`;
+                      }
+                      return (
+                        <div
+                          key={brand.id}
+                          className="flex items-center justify-center p-4 border border-gray-200 rounded-lg hover:border-brand-primary/50 transition-colors bg-gray-50"
+                        >
+                          {logoUrl ? (
+                            <Image
+                              src={logoUrl}
+                              alt={brandName}
+                              width={120}
+                              height={40}
+                              className="object-contain max-h-10"
+                              suppressHydrationWarning
+                            />
+                          ) : (
+                            <span className="text-sm font-medium text-muted-foreground" suppressHydrationWarning>
+                              {brandName}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </aside>
+          </div>
         </div>
       </section>
+
+      {/* Useful Articles Section */}
+      {postsData && postsData.length > 0 && (
+        <section className="bg-gray-50 py-16">
+          <div className="mx-auto max-w-6xl space-y-8 px-4 md:px-6">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-foreground md:text-3xl" suppressHydrationWarning>
+                {locale === 'ru' ? 'Полезные статьи' : 'Foydali maqolalar'}
+              </h2>
+              <div className="h-px w-20 bg-brand-primary"></div>
+            </div>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+              {postsData.slice(0, 4).map((post) => {
+                const title = locale === 'ru' ? (post.title_ru || '') : (post.title_uz || '');
+                const excerpt = locale === 'ru' ? (post.excerpt_ru || '') : (post.excerpt_uz || '');
+                const link = post.slug ? `/posts/${post.slug}` : '#';
+                return (
+                  <Link
+                    key={post.id}
+                    href={link}
+                    className="group flex flex-col gap-3 p-4 rounded-lg bg-white border border-gray-200 hover:border-brand-primary/50 hover:shadow-md transition-all"
+                  >
+                    <h3 className="text-base font-semibold text-brand-primary group-hover:text-brand-accent leading-snug line-clamp-2" suppressHydrationWarning>
+                      {title}
+                    </h3>
+                    {excerpt && (
+                      <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3" suppressHydrationWarning>
+                        {excerpt}
+                      </p>
+                    )}
+                    <span className="inline-flex items-center gap-1 text-xs font-medium text-brand-primary group-hover:gap-2 transition-all mt-auto" suppressHydrationWarning>
+                      {locale === 'ru' ? 'Читать' : "O'qish"}
+                      <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
     </main>
   );
 }

@@ -12,6 +12,7 @@ import {
   EnvironmentOutlined,
   PictureOutlined,
   OrderedListOutlined,
+  QuestionCircleOutlined,
 } from '@ant-design/icons';
 import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import type { MenuProps } from 'antd';
@@ -74,7 +75,7 @@ const menuItems: MenuProps['items'] = [
   {
     key: '/posts',
     icon: <FileTextOutlined />,
-    label: 'Maqolalar',
+    label: 'Yangiliklar',
   },
   {
     key: '/banners',
@@ -85,6 +86,11 @@ const menuItems: MenuProps['items'] = [
     key: '/menus',
     icon: <OrderedListOutlined />,
     label: 'Menyu',
+  },
+  {
+    key: '/faq',
+    icon: <QuestionCircleOutlined />,
+    label: 'Savol-Javob',
   },
   {
     key: '/homepage',

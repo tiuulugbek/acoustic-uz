@@ -16,6 +16,7 @@ import { ServicesModule } from './services/services.module';
 import { BrandsModule } from './brands/brands.module';
 import { ProductCategoriesModule } from './product-categories/product-categories.module';
 import { ServiceCategoriesModule } from './service-categories/service-categories.module';
+import { CatalogsModule } from './catalogs/catalogs.module';
 import { ProductsModule } from './products/products.module';
 import { ShowcasesModule } from './showcases/showcases.module';
 import { PostsModule } from './posts/posts.module';
@@ -84,6 +85,7 @@ import { LocaleCacheInterceptor } from './common/interceptors/locale-cache.inter
     BrandsModule,
     ProductCategoriesModule,
     ServiceCategoriesModule,
+    CatalogsModule,
     ProductsModule,
     ShowcasesModule,
     PostsModule,

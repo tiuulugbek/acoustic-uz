@@ -17,7 +17,7 @@ import {
   Info,
   MapPin,
 } from 'lucide-react';
-import { getProductCategories, getMenu, type MenuItemResponse, type ProductCategoryResponse } from '@/lib/api';
+import { getCatalogs, getMenu, type MenuItemResponse, type CatalogResponse } from '@/lib/api';
 // Removed DEFAULT_MENUS fallback - frontend fully depends on backend
 import LanguageSwitcher, { LanguageSwitcherMobile } from '@/components/language-switcher';
 import { getBilingualText, DEFAULT_LOCALE, type Locale } from '@/lib/locale';
@@ -147,13 +147,13 @@ export default function SiteHeader() {
           setDisplayLocale(domLocale);
           // Force menu refresh with new locale
           setMenuRefreshKey(prev => prev + 1);
-          // Remove ALL menu and category queries (including old locale caches)
+          // Remove ALL menu and catalog queries (including old locale caches)
           queryClient.removeQueries({ queryKey: ['menu'] });
-          queryClient.removeQueries({ queryKey: ['product-categories'] });
+          queryClient.removeQueries({ queryKey: ['catalogs'] });
           // Small delay to ensure state update completes before refetch
           setTimeout(() => {
             queryClient.refetchQueries({ queryKey: ['menu', 'header', domLocale] });
-            queryClient.refetchQueries({ queryKey: ['product-categories', domLocale] });
+            queryClient.refetchQueries({ queryKey: ['catalogs', domLocale] });
             setLocaleChangeInProgress(false);
           }, 50);
           // Reset counter after successful change
@@ -210,14 +210,14 @@ export default function SiteHeader() {
     };
   }, [displayLocale, queryClient, localeChangeInProgress]);
 
-  const { data: catalogCategoriesData, isLoading: isLoadingCategories } = useQuery<ProductCategoryResponse[]>({
-    queryKey: ['product-categories', displayLocale, menuRefreshKey],
+  const { data: catalogsData, isLoading: isLoadingCatalogs } = useQuery<CatalogResponse[]>({
+    queryKey: ['catalogs', displayLocale, menuRefreshKey],
     queryFn: async () => {
       const timestamp = new Date().toISOString();
       const currentLocale = displayLocale || getLocaleFromDOM(); // Ensure we always have a locale
-      console.log(`[SiteHeader] 🔄 [${timestamp}] Fetching product categories with locale: ${currentLocale} (displayLocale: ${displayLocale})`);
-      const result = await getProductCategories(currentLocale);
-      console.log(`[SiteHeader] ✅ [${timestamp}] Received product categories:`, result?.length || 0);
+      console.log(`[SiteHeader] 🔄 [${timestamp}] Fetching catalogs with locale: ${currentLocale} (displayLocale: ${displayLocale})`);
+      const result = await getCatalogs(currentLocale);
+      console.log(`[SiteHeader] ✅ [${timestamp}] Received catalogs:`, result?.length || 0);
       return result;
     },
     enabled: !!displayLocale, // Don't run query until locale is set
@@ -233,13 +233,13 @@ export default function SiteHeader() {
 
   const catalogMenuItems = useMemo(
     () =>
-      (catalogCategoriesData?.length ? catalogCategoriesData : [])
+      (catalogsData?.length ? catalogsData : [])
         .slice(0, 8)
-        .map((category) => ({
-          href: `/catalog#category-${category.slug}`,
-          label: getBilingualText(category.name_uz, category.name_ru, displayLocale),
+        .map((catalog) => ({
+          href: `/catalog/${catalog.slug}`,
+          label: getBilingualText(catalog.name_uz, catalog.name_ru, displayLocale),
         })),
-    [catalogCategoriesData, displayLocale],
+    [catalogsData, displayLocale],
   );
 
   const { data: headerMenu, refetch: refetchMenu, isLoading: isLoadingMenu } = useQuery({
@@ -301,7 +301,7 @@ export default function SiteHeader() {
         const currentLocale = displayLocale;
         console.log('[SiteHeader] ✅ Refetching menu with locale:', currentLocale);
         refetchMenu();
-        queryClient.refetchQueries({ queryKey: ['product-categories', currentLocale] });
+        queryClient.refetchQueries({ queryKey: ['catalogs', currentLocale] });
         refetchTimeoutRef.current = null;
       }, 100);
     }
@@ -347,15 +347,18 @@ export default function SiteHeader() {
     const items = headerMenuItems.map((item) => {
       const label = getBilingualText(item.title_uz, item.title_ru, displayLocale);
       console.log('[SiteHeader] Menu item:', { title_uz: item.title_uz, title_ru: item.title_ru, locale: displayLocale, label });
-      const sortedChildren = item.children ? [...item.children].sort((a, b) => a.order - b.order) : [];
+      
+      // For /catalog, always use catalogs instead of menu children (categories are only for filters)
       const dropdownChildren =
-        sortedChildren.length > 0
-          ? sortedChildren.map((child) => ({
-              href: child.href,
-              label: getBilingualText(child.title_uz, child.title_ru, displayLocale),
-            }))
-          : item.href === '/catalog'
-            ? catalogMenuItems
+        item.href === '/catalog'
+          ? catalogMenuItems
+          : item.children && item.children.length > 0
+            ? item.children
+                .sort((a, b) => a.order - b.order)
+                .map((child) => ({
+                  href: child.href,
+                  label: getBilingualText(child.title_uz, child.title_ru, displayLocale),
+                }))
             : [];
 
       if (dropdownChildren.length > 0) {
@@ -438,7 +441,7 @@ export default function SiteHeader() {
       <div className="bg-brand-primary">
         <div className="mx-auto hidden max-w-6xl items-center px-4 md:px-6 lg:flex">
           <nav key={`nav-${displayLocale}`} className="flex w-full items-stretch min-h-[52px]">
-            {navItems.length === 0 && (isLoadingMenu || isLoadingCategories) && !headerMenu ? (
+            {navItems.length === 0 && (isLoadingMenu || isLoadingCatalogs) && !headerMenu ? (
               // Show skeleton menu items while loading to maintain layout (only if no cached data)
               Array.from({ length: 6 }).map((_, index) => (
                 <div
@@ -512,7 +515,7 @@ export default function SiteHeader() {
             >
               <Phone size={16} /> 1385
             </Link>
-            {navItems.length === 0 && (isLoadingMenu || isLoadingCategories) && !headerMenu ? (
+            {navItems.length === 0 && (isLoadingMenu || isLoadingCatalogs) && !headerMenu ? (
               // Show skeleton menu items while loading for mobile (only if no cached data)
               Array.from({ length: 5 }).map((_, index) => (
                 <div key={`mobile-skeleton-${index}`} className="space-y-2 rounded-lg border border-white/20 p-3 animate-pulse">

@@ -11,16 +11,16 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  fullName  String?
-  roleId    String
-  role      Role     @relation(fields: [roleId], references: [id], onDelete: Restrict)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  isActive  Boolean  @default(true)
-  mustChangePassword Boolean @default(false)
+  id                 String   @id @default(cuid())
+  email              String   @unique
+  password           String
+  fullName           String?
+  roleId             String
+  role               Role     @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  isActive           Boolean  @default(true)
+  mustChangePassword Boolean  @default(false)
 
   @@index([email])
   @@index([roleId])
@@ -46,70 +46,71 @@ model Media {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  banners  Banner[]
-  services Service[]
-  brands   Brand[]
-  posts    Post[]
-  branches Branch[]
+  banners             Banner[]
+  services            Service[]
+  brands              Brand[]
+  posts               Post[]
+  branches            Branch[]
   homepageHearingAids HomepageHearingAid[]
   homepageServices    HomepageService[]
-  productCategories ProductCategory[]
-  serviceCategories ServiceCategory[]
+  productCategories   ProductCategory[]
+  serviceCategories   ServiceCategory[]
+  catalogs            Catalog[]
 
   @@index([url])
 }
 
 model Setting {
-  id                String  @id @default("singleton")
-  phonePrimary      String? @default("1385")
-  phoneSecondary    String? @default("+998 71 202 14 41")
-  email             String?
-  telegramBotToken  String?
-  telegramChatId    String?
-  brandPrimary      String? @default("#F07E22")
-  brandAccent       String? @default("#3F3091")
-  featureFlags      Json?   // see §11
-  socialLinks       Json?   // { facebook, instagram, telegram, etc. }
-  updatedAt         DateTime @updatedAt
+  id               String   @id @default("singleton")
+  phonePrimary     String?  @default("1385")
+  phoneSecondary   String?  @default("+998 71 202 14 41")
+  email            String?
+  telegramBotToken String?
+  telegramChatId   String?
+  brandPrimary     String?  @default("#F07E22")
+  brandAccent      String?  @default("#3F3091")
+  featureFlags     Json? // see §11
+  socialLinks      Json? // { facebook, instagram, telegram, etc. }
+  updatedAt        DateTime @updatedAt
 }
 
 model Banner {
-  id        String   @id @default(cuid())
-  title_uz  String
-  title_ru  String
-  text_uz   String?
-  text_ru   String?
+  id         String   @id @default(cuid())
+  title_uz   String
+  title_ru   String
+  text_uz    String?
+  text_ru    String?
   ctaText_uz String?
   ctaText_ru String?
-  ctaLink   String?
-  imageId   String?
-  image     Media?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
-  order     Int      @default(0)
-  status    String   @default("published") // published, draft, archived
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  ctaLink    String?
+  imageId    String?
+  image      Media?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
+  order      Int      @default(0)
+  status     String   @default("published") // published, draft, archived
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@index([status, order])
 }
 
 model ServiceCategory {
-  id            String   @id @default(cuid())
-  name_uz       String
-  name_ru       String
-  slug          String   @unique
+  id             String            @id @default(cuid())
+  name_uz        String
+  name_ru        String
+  slug           String            @unique
   description_uz String?
   description_ru String?
-  icon          String?
-  imageId       String?
-  image         Media?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
-  parentId      String?
-  parent        ServiceCategory? @relation("ServiceCategoryToParent", fields: [parentId], references: [id], onDelete: Cascade)
-  children      ServiceCategory[] @relation("ServiceCategoryToParent")
-  services      Service[]
-  order         Int      @default(0)
-  status        String   @default("published")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  icon           String?
+  imageId        String?
+  image          Media?            @relation(fields: [imageId], references: [id], onDelete: SetNull)
+  parentId       String?
+  parent         ServiceCategory?  @relation("ServiceCategoryToParent", fields: [parentId], references: [id], onDelete: Cascade)
+  children       ServiceCategory[] @relation("ServiceCategoryToParent")
+  services       Service[]
+  order          Int               @default(0)
+  status         String            @default("published")
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
 
   @@index([slug])
   @@index([parentId])
@@ -118,22 +119,22 @@ model ServiceCategory {
 }
 
 model Service {
-  id          String   @id @default(cuid())
-  title_uz    String
-  title_ru    String
-  excerpt_uz  String?
-  excerpt_ru  String?
-  body_uz     String?
-  body_ru     String?
-  slug        String   @unique
-  categoryId  String?
-  category    ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  coverId     String?
-  cover       Media?   @relation(fields: [coverId], references: [id], onDelete: SetNull)
-  order       Int      @default(0)
-  status      String   @default("published")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String           @id @default(cuid())
+  title_uz   String
+  title_ru   String
+  excerpt_uz String?
+  excerpt_ru String?
+  body_uz    String?
+  body_ru    String?
+  slug       String           @unique
+  categoryId String?
+  category   ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  coverId    String?
+  cover      Media?           @relation(fields: [coverId], references: [id], onDelete: SetNull)
+  order      Int              @default(0)
+  status     String           @default("published")
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
 
   @@index([slug])
   @@index([categoryId])
@@ -141,111 +142,135 @@ model Service {
 }
 
 model Brand {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  slug      String   @unique
-  logoId    String?
-  logo      Media?   @relation(fields: [logoId], references: [id], onDelete: SetNull)
-  desc_uz   String?
-  desc_ru   String?
-  products  Product[]
+  id       String    @id @default(cuid())
+  name     String    @unique
+  slug     String    @unique
+  logoId   String?
+  logo     Media?    @relation(fields: [logoId], references: [id], onDelete: SetNull)
+  desc_uz  String?
+  desc_ru  String?
+  products Product[]
 
   @@index([slug])
 }
 
 model ProductCategory {
-  id            String   @id @default(cuid())
-  name_uz       String
-  name_ru       String
-  slug          String   @unique
+  id             String            @id @default(cuid())
+  name_uz        String
+  name_ru        String
+  slug           String            @unique
   description_uz String?
   description_ru String?
-  icon          String?
-  imageId       String?
-  image         Media?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
-  parentId      String?
-  parent        ProductCategory? @relation("CategoryToParent", fields: [parentId], references: [id], onDelete: Cascade)
-  children      ProductCategory[] @relation("CategoryToParent")
-  products      Product[]
-  order         Int      @default(0)
+  icon           String?
+  imageId        String?
+  image          Media?            @relation(fields: [imageId], references: [id], onDelete: SetNull)
+  parentId       String?
+  parent         ProductCategory?  @relation("CategoryToParent", fields: [parentId], references: [id], onDelete: Cascade)
+  children       ProductCategory[] @relation("CategoryToParent")
+  products       Product[]
+  order          Int               @default(0)
 
   @@index([slug])
   @@index([parentId])
   @@index([order])
 }
 
+model Catalog {
+  id             String    @id @default(cuid())
+  name_uz        String
+  name_ru        String
+  slug           String    @unique
+  description_uz String?
+  description_ru String?
+  icon           String?
+  imageId        String?
+  image          Media?    @relation(fields: [imageId], references: [id], onDelete: SetNull)
+  products       Product[] @relation("ProductToCatalog")
+  order          Int       @default(0)
+  status         String    @default("published") // published, draft, archived
+  showOnHomepage Boolean   @default(false) // Bosh sahifada ko'rsatish
+
+  @@index([slug])
+  @@index([order])
+  @@index([status])
+  @@index([showOnHomepage])
+}
+
 model Product {
-  id            String   @id @default(cuid())
-  name_uz       String
-  name_ru       String
-  slug          String   @unique
-  description_uz String? @db.Text
-  description_ru String? @db.Text
-  price         Decimal? @db.Decimal(14, 2)
-  stock         Int?     @default(0)
-  brandId       String?
-  brand         Brand?   @relation(fields: [brandId], references: [id], onDelete: SetNull)
-  categoryId    String?
-  category      ProductCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  specsText     String? @db.Text
-  galleryIds    String[] // Array of Media IDs
-  audience      String[] @default([])
-  formFactors   String[] @default([])
-  signalProcessing String?
-  powerLevel    String?
-  hearingLossLevels String[] @default([])
-  smartphoneCompatibility String[] @default([])
-  tinnitusSupport Boolean? @default(false)
-  paymentOptions String[] @default([])
-  availabilityStatus String?
-  intro_uz      String? @db.Text
-  intro_ru      String? @db.Text
-  features_uz   String[] @default([])
-  features_ru   String[] @default([])
-  benefits_uz   String[] @default([])
-  benefits_ru   String[] @default([])
-  tech_uz       String? @db.Text
-  tech_ru       String? @db.Text
-  fittingRange_uz String? @db.Text
-  fittingRange_ru String? @db.Text
-  regulatoryNote_uz String? @db.Text
-  regulatoryNote_ru String? @db.Text
-  galleryUrls   String[] @default([])
-  relatedProductIds String[] @default([])
-  usefulArticleSlugs String[] @default([])
-  status        String   @default("published")
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                      String           @id @default(cuid())
+  name_uz                 String
+  name_ru                 String
+  slug                    String           @unique
+  productType             String?          // hearing-aids, accessories, interacoustics
+  description_uz          String?          @db.Text
+  description_ru          String?          @db.Text
+  price                   Decimal?         @db.Decimal(14, 2)
+  stock                   Int?             @default(0)
+  brandId                 String?
+  brand                   Brand?           @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  categoryId              String?
+  category                ProductCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  catalogs                Catalog[]        @relation("ProductToCatalog")
+  specsText               String?          @db.Text
+  galleryIds              String[] // Array of Media IDs
+  audience                String[]         @default([])
+  formFactors             String[]         @default([])
+  signalProcessing        String?
+  powerLevel              String?
+  hearingLossLevels       String[]         @default([])
+  smartphoneCompatibility String[]         @default([])
+  tinnitusSupport         Boolean?         @default(false)
+  paymentOptions          String[]         @default([])
+  availabilityStatus      String?
+  intro_uz                String?          @db.Text
+  intro_ru                String?          @db.Text
+  features_uz             String[]         @default([])
+  features_ru             String[]         @default([])
+  benefits_uz             String[]         @default([])
+  benefits_ru             String[]         @default([])
+  tech_uz                 String?          @db.Text
+  tech_ru                 String?          @db.Text
+  fittingRange_uz         String?          @db.Text
+  fittingRange_ru         String?          @db.Text
+  regulatoryNote_uz       String?          @db.Text
+  regulatoryNote_ru       String?          @db.Text
+  galleryUrls             String[]         @default([])
+  relatedProductIds       String[]         @default([])
+  usefulArticleSlugs      String[]         @default([])
+  status                  String           @default("published")
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
 
   @@index([slug])
   @@index([brandId])
   @@index([categoryId])
   @@index([status])
+  @@index([productType])
 }
 
 model Showcase {
-  id        String   @id @default(cuid())
-  type      String   @unique // "interacoustics" or "cochlear"
+  id         String   @id @default(cuid())
+  type       String   @unique // "interacoustics" or "cochlear"
   productIds String[] // Array of Product IDs in order
-  updatedAt DateTime @updatedAt
+  updatedAt  DateTime @updatedAt
 }
 
 model Post {
-  id        String   @id @default(cuid())
-  title_uz  String
-  title_ru  String
-  body_uz   String   @db.Text
-  body_ru   String   @db.Text
-  slug      String   @unique
-  excerpt_uz String? @db.Text
-  excerpt_ru String? @db.Text
-  coverId   String?
-  cover     Media?   @relation(fields: [coverId], references: [id], onDelete: SetNull)
-  tags      String[]
-  status    String   @default("published")
-  publishAt DateTime @default(now())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String             @id @default(cuid())
+  title_uz          String
+  title_ru          String
+  body_uz           String             @db.Text
+  body_ru           String             @db.Text
+  slug              String             @unique
+  excerpt_uz        String?            @db.Text
+  excerpt_ru        String?            @db.Text
+  coverId           String?
+  cover             Media?             @relation(fields: [coverId], references: [id], onDelete: SetNull)
+  tags              String[]
+  status            String             @default("published")
+  publishAt         DateTime           @default(now())
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
   homepageNewsItems HomepageNewsItem[]
 
   @@index([slug])
@@ -268,37 +293,37 @@ model Faq {
 }
 
 model Branch {
-  id          String   @id @default(cuid())
-  name_uz     String
-  name_ru     String
-  address_uz  String
-  address_ru  String
-  phone       String
-  phones      String[] // Additional phones
-  imageId     String?
-  image       Media?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
-  map_iframe  String?  @db.Text
-  order       Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  name_uz    String
+  name_ru    String
+  address_uz String
+  address_ru String
+  phone      String
+  phones     String[] // Additional phones
+  imageId    String?
+  image      Media?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
+  map_iframe String?  @db.Text
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@index([order])
 }
 
 model Page {
-  id        String   @id @default(cuid())
-  slug      String   @unique
-  title_uz  String
-  title_ru  String
-  body_uz   String?  @db.Text
-  body_ru   String?  @db.Text
-  metaTitle_uz String?
-  metaTitle_ru String?
+  id                 String   @id @default(cuid())
+  slug               String   @unique
+  title_uz           String
+  title_ru           String
+  body_uz            String?  @db.Text
+  body_ru            String?  @db.Text
+  metaTitle_uz       String?
+  metaTitle_ru       String?
   metaDescription_uz String?
   metaDescription_ru String?
-  status    String   @default("published")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  status             String   @default("published")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   @@index([slug])
   @@index([status])
@@ -309,9 +334,9 @@ model Lead {
   name      String
   phone     String
   email     String?
-  source    String?  // Form source: "home", "contact", "product", etc.
+  source    String? // Form source: "home", "contact", "product", etc.
   message   String?  @db.Text
-  productId String?  // If from product page
+  productId String? // If from product page
   status    String   @default("new") // new, contacted, converted, archived
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -324,10 +349,10 @@ model AuditLog {
   id        String   @id @default(cuid())
   userId    String?
   userEmail String?
-  entity    String   // Model name
-  entityId  String   // Model ID
-  action    String   // create, update, delete
-  changes   Json?    // Diff snapshot
+  entity    String // Model name
+  entityId  String // Model ID
+  action    String // create, update, delete
+  changes   Json? // Diff snapshot
   ipAddress String?
   userAgent String?
   createdAt DateTime @default(now())
@@ -340,7 +365,7 @@ model AuditLog {
 model Menu {
   id        String   @id @default(cuid())
   name      String   @unique // "header" or "footer"
-  items     Json     // Menu items structure
+  items     Json // Menu items structure
   updatedAt DateTime @updatedAt
 }
 
@@ -376,38 +401,37 @@ model HomepageJourneyStep {
 }
 
 model HomepageNewsItem {
-  id           String   @id @default(cuid())
-  postId       String?
-  post         Post?    @relation(fields: [postId], references: [id], onDelete: SetNull)
-  title_uz     String
-  title_ru     String
-  excerpt_uz   String?
-  excerpt_ru   String?
-  slug         String?
-  publishedAt  DateTime?
-  order        Int      @default(0)
-  status       String   @default("published")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id          String    @id @default(cuid())
+  postId      String?
+  post        Post?     @relation(fields: [postId], references: [id], onDelete: SetNull)
+  title_uz    String
+  title_ru    String
+  excerpt_uz  String?
+  excerpt_ru  String?
+  slug        String?
+  publishedAt DateTime?
+  order       Int       @default(0)
+  status      String    @default("published")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([status, order])
   @@index([postId])
 }
 
 model HomepageService {
-  id           String   @id @default(cuid())
-  title_uz     String
-  title_ru     String
-  excerpt_uz   String?
-  excerpt_ru   String?
-  slug         String?
-  imageId      String?
-  image        Media?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
-  order        Int      @default(0)
-  status       String   @default("published")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id         String   @id @default(cuid())
+  title_uz   String
+  title_ru   String
+  excerpt_uz String?
+  excerpt_ru String?
+  slug       String?
+  imageId    String?
+  image      Media?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
+  order      Int      @default(0)
+  status     String   @default("published")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@index([status, order])
 }
-

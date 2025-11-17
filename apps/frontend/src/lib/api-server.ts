@@ -6,6 +6,8 @@
 
 import {
   getCategoryBySlug as getCategoryBySlugApi,
+  getCatalogBySlug as getCatalogBySlugApi,
+  getCatalogs as getCatalogsApi,
   getServiceBySlug as getServiceBySlugApi,
   getProductBySlug as getProductBySlugApi,
   getProducts as getProductsApi,
@@ -16,34 +18,45 @@ import {
   getShowcase as getShowcaseApi,
   getHomepageHearingAidItems as getHomepageHearingAidItemsApi,
   getHomepageNews as getHomepageNewsApi,
+  getPosts as getPostsApi,
   getPublicFaq as getPublicFaqApi,
   getHomepageJourney as getHomepageJourneyApi,
   getServiceCategories as getServiceCategoriesApi,
   getServiceCategoryBySlug as getServiceCategoryBySlugApi,
+  getBrands as getBrandsApi,
   type ProductCategoryResponse,
+  type CatalogResponse,
   type ServiceCategoryResponse,
   type ServiceDetailResponse,
   type ProductResponse,
+  type ProductListResponse,
   type BannerResponse,
   type ServiceResponse,
   type ShowcaseResponse,
   type HearingAidItemResponse,
   type HomepageNewsItemResponse,
+  type PostResponse,
   type FaqResponse,
   type HomepageJourneyStepResponse,
+  type BrandResponse,
 } from './api';
 
 // Re-export types for use in pages
 export type { 
-  ProductCategoryResponse, 
+  ProductCategoryResponse,
+  CatalogResponse,
   ServiceCategoryResponse,
+  ProductResponse,
+  ProductListResponse,
   BannerResponse,
   ServiceResponse,
   ShowcaseResponse,
   HearingAidItemResponse,
   HomepageNewsItemResponse,
+  PostResponse,
   FaqResponse,
   HomepageJourneyStepResponse,
+  BrandResponse,
 } from './api';
 
 /**
@@ -93,6 +106,32 @@ export async function getCategoryBySlug(
 }
 
 /**
+ * Get all catalogs - returns empty array if backend is down
+ */
+export async function getCatalogs(locale?: string): Promise<CatalogResponse[]> {
+  return safeApiCall(
+    () => getCatalogsApi(locale),
+    [],
+    'Failed to fetch catalogs',
+  );
+}
+
+/**
+ * Get catalog by slug - returns null if not found or backend is down
+ * This allows pages to distinguish between "not found" and "backend down"
+ */
+export async function getCatalogBySlug(
+  slug: string,
+  locale?: string,
+): Promise<CatalogResponse | null> {
+  return safeApiCall(
+    () => getCatalogBySlugApi(slug, locale),
+    null,
+    `Failed to fetch catalog: ${slug}`,
+  );
+}
+
+/**
  * Get service by slug - returns null if not found or backend is down
  */
 export async function getServiceBySlug(
@@ -121,15 +160,15 @@ export async function getProductBySlug(
 }
 
 /**
- * Get products - returns empty array if backend is down
+ * Get products - returns paginated response, or empty response if backend is down
  */
 export async function getProducts(
   params?: Parameters<typeof getProductsApi>[0],
   locale?: string,
-): Promise<ProductResponse[]> {
+): Promise<ProductListResponse> {
   return safeApiCall(
     () => getProductsApi(params, locale),
-    [],
+    { items: [], total: 0, page: 1, pageSize: 12 },
     'Failed to fetch products',
   );
 }
@@ -227,6 +266,20 @@ export async function getHomepageNews(
 }
 
 /**
+ * Get posts - returns empty array if backend is down
+ */
+export async function getPosts(
+  locale?: string,
+  publicOnly = true,
+): Promise<PostResponse[]> {
+  return safeApiCall(
+    () => getPostsApi(locale, publicOnly),
+    [],
+    'Failed to fetch posts',
+  );
+}
+
+/**
  * Get public FAQ - returns empty array if backend is down
  */
 export async function getPublicFaq(
@@ -276,6 +329,19 @@ export async function getServiceCategoryBySlug(
     () => getServiceCategoryBySlugApi(slug, locale),
     null,
     `Failed to fetch service category: ${slug}`,
+  );
+}
+
+/**
+ * Get brands - returns empty array if backend is down
+ */
+export async function getBrands(
+  locale?: string,
+): Promise<BrandResponse[]> {
+  return safeApiCall(
+    () => getBrandsApi(locale),
+    [],
+    'Failed to fetch brands',
   );
 }
 

@@ -13,6 +13,7 @@ async function clearDatabase() {
   await prisma.post.deleteMany();
   await prisma.showcase.deleteMany();
   await prisma.product.deleteMany();
+  await prisma.catalog.deleteMany();
   await prisma.productCategory.deleteMany();
   await prisma.brand.deleteMany();
   await prisma.service.deleteMany();
@@ -174,13 +175,13 @@ async function seedBrandsAndCategories() {
     {
       name: 'Interacoustics',
       slug: 'interacoustics',
-      desc_uz: 'Interacoustics — diagnostika va eshitish uskunalari bo‘yicha yetakchi brend.',
+      desc_uz: "Interacoustics — diagnostika va eshitish uskunalari bo'yicha yetakchi brend.",
       desc_ru: 'Interacoustics — ведущий бренд в области диагностики и слуховых решений.',
     },
     {
       name: 'Cochlear',
       slug: 'cochlear',
-      desc_uz: 'Cochlear — koxlear implantlar bo‘yicha jahonda yetakchi.',
+      desc_uz: "Cochlear — koxlear implantlar bo'yicha jahonda yetakchi.",
       desc_ru: 'Cochlear — мировой лидер в области кохлеарных имплантов.',
     },
     {
@@ -198,7 +199,7 @@ async function seedBrandsAndCategories() {
     {
       name: 'Widex',
       slug: 'widex',
-      desc_uz: 'Widex — tabiiy tovush va sun’iy intellekt asosidagi apparatlar.',
+      desc_uz: "Widex — tabiiy tovush va sun'iy intellekt asosidagi apparatlar.",
       desc_ru: 'Widex — естественное звучание и ИИ в каждом аппарате.',
     },
     {
@@ -232,6 +233,108 @@ async function seedBrandsAndCategories() {
     brands: await prisma.brand.findMany(),
     categories: await prisma.productCategory.findMany(),
   };
+}
+
+async function seedCatalogs() {
+  const catalogsData = [
+    {
+      name_uz: "Ko'rinmas quloq orqasidagi",
+      name_ru: 'Незаметные заушные',
+      slug: 'ko-rinmas-quloq-orqasidagi',
+      description_uz: "Quloq orqasida qulay joylashadigan, deyarli ko'rinmaydigan modellar. Qulay boshqaruvli va parvarish qilish oson.",
+      description_ru: 'Простые в уходе и управлении модели легко скрываются за ушной раковиной и волосами.',
+      order: 1,
+      status: 'published',
+      showOnHomepage: true,
+    },
+    {
+      name_uz: 'Keksalar uchun',
+      name_ru: 'Для пожилых людей',
+      slug: 'keksalar-uchun',
+      description_uz: "Ishonchli, bardoshli va parvarish qilish oson eshitish yechimlari keksalar uchun.",
+      description_ru: 'Надежные, долговечные и простые в уходе слуховые решения для людей пожилого возраста.',
+      order: 2,
+      status: 'published',
+      showOnHomepage: true,
+    },
+    {
+      name_uz: "Ko'rinmas",
+      name_ru: 'Невидимые',
+      slug: 'ko-rinmas',
+      description_uz: "Eshitish muammosiga sezilmaydigan yechim, u bilan siz uyatchanlikni unutasiz.",
+      description_ru: 'Незаметное решение проблемы со слухом, с которым вы забудете о стеснении.',
+      order: 3,
+      status: 'published',
+      showOnHomepage: true,
+    },
+    {
+      name_uz: "Ikkinchi darajadagi eshitish yo'qotilishi",
+      name_ru: 'При тугоухости 2 степени',
+      slug: 'ikkinchi-darajadagi-eshitish-yo-qotilishi',
+      description_uz: "O'rtacha eshitish yo'qotilishi uchun keng tanlov.",
+      description_ru: 'Большой выбор моделей для помощи при нарушениях слуха умеренной степени.',
+      order: 4,
+      status: 'published',
+      showOnHomepage: true,
+    },
+    {
+      name_uz: 'AI texnologiyalari',
+      name_ru: 'C Al-технологиями',
+      slug: 'ai-texnologiyalari',
+      description_uz: "Sun'iy intellekt asosidagi aqlli eshitish texnologiyalari.",
+      description_ru: 'Умные слуховые технологии на базе искусственного интеллекта.',
+      order: 5,
+      status: 'published',
+      showOnHomepage: true,
+    },
+    {
+      name_uz: "Bolalar va o'smirlar uchun",
+      name_ru: 'Для детей и подростков',
+      slug: 'bolalar-va-osmirlar-uchun',
+      description_uz: "Bolalarning nutq ko'nikmalarini normal rivojlantirishga yordam beradigan eshitish yechimlari.",
+      description_ru: 'Слуховые решения, которые помогут обеспечить ребенку нормальное развитие речевых навыков.',
+      order: 6,
+      status: 'published',
+      showOnHomepage: true,
+    },
+    {
+      name_uz: "Quloqdagi shovqinni boshqarish",
+      name_ru: 'Управление шумом в ушах',
+      slug: 'quloqdagi-shovqinni-boshqarish',
+      description_uz: "Samarali tovush terapiyasi quloq shovqinini niqoblaydi va darhol yengillik beradi.",
+      description_ru: 'Эффективная звуковая терапия маскирует ушной шум и приносит моментальное облегчение.',
+      order: 7,
+      status: 'published',
+      showOnHomepage: true,
+    },
+    {
+      name_uz: 'Smartfon uchun',
+      name_ru: 'Для смартфона',
+      slug: 'smartfon-uchun',
+      description_uz: "Smartfoningizdan to'g'ridan-to'g'ri eshitish apparatlariga yuqori sifatli ovoz.",
+      description_ru: 'Звук высокого качества с вашего смартфона напрямую в слуховые аппараты.',
+      order: 8,
+      status: 'published',
+      showOnHomepage: true,
+    },
+    {
+      name_uz: 'Kuchli va superkuchli',
+      name_ru: 'Мощные и супермощные',
+      slug: 'kuchli-va-superkuchli',
+      description_uz: "3 va 4 darajadagi eshitish yo'qotilishi uchun universal yechimlar.",
+      description_ru: 'Универсальные решения для улучшения слуха при 3 и 4 степени тугоухости.',
+      order: 9,
+      status: 'published',
+      showOnHomepage: true,
+    },
+  ];
+
+  await prisma.catalog.createMany({
+    data: catalogsData,
+    skipDuplicates: true,
+  });
+
+  console.log(`✅ Created ${catalogsData.length} catalogs`);
 }
 
 async function seedProducts() {
@@ -585,51 +688,169 @@ async function seedShowcases() {
 }
 
 async function seedPosts() {
-  const posts = Array.from({ length: 3 }).map((_, index) => ({
-    title_uz: `Maqola ${index + 1} - O'zbek`,
-    title_ru: `Статья ${index + 1} - Русский`,
-    body_uz: `Maqola ${index + 1} matni - O'zbek`,
-    body_ru: `Текст статьи ${index + 1} - Русский`,
-    excerpt_uz: `Maqola ${index + 1} qisqacha matn - O'zbek`,
-    excerpt_ru: `Краткое описание статьи ${index + 1} - Русский`,
-    slug: `post-${index + 1}`,
-    tags: ['eshitish', 'maslahat'],
-    status: 'published',
-    publishAt: new Date(),
-  }));
+  const posts = [
+    {
+      title_uz: 'Oticon More 1 - Yangi avlod eshitish apparati',
+      title_ru: 'Oticon More 1 - Слуховой аппарат нового поколения',
+      body_uz: 'Oticon More 1 - sun\'iy intellekt bilan jihozlangan yangi avlod eshitish apparati. Bu model eng yaxshi eshitish tajribasini ta\'minlaydi va kundalik hayotda qulaylik yaratadi.',
+      body_ru: 'Oticon More 1 - слуховой аппарат нового поколения с искусственным интеллектом. Эта модель обеспечивает лучший слуховой опыт и создает комфорт в повседневной жизни.',
+      excerpt_uz: 'Oticon More 1 - sun\'iy intellekt bilan jihozlangan yangi avlod eshitish apparati. Bu model eng yaxshi eshitish tajribasini ta\'minlaydi va kundalik hayotda qulaylik yaratadi.',
+      excerpt_ru: 'Oticon More 1 - слуховой аппарат нового поколения с искусственным интеллектом. Эта модель обеспечивает лучший слуховой опыт и создает комфорт в повседневной жизни.',
+      slug: 'oticon-more-1-yangi-avlod',
+      tags: ['oticon', 'yangi-model', 'ai'],
+      status: 'published',
+      publishAt: new Date(),
+    },
+    {
+      title_uz: 'Phonak Audéo Lumity - Smartfon bilan integratsiya',
+      title_ru: 'Phonak Audéo Lumity - Интеграция со смартфоном',
+      body_uz: 'Phonak Audéo Lumity smartfon ilovalari orqali to\'liq boshqariladi. Telefon qo\'ng\'iroqlari, musiqa va video eshitish apparatiga to\'g\'ridan-to\'g\'ri uzatiladi.',
+      body_ru: 'Phonak Audéo Lumity полностью управляется через приложения для смартфона. Телефонные звонки, музыка и видео передаются напрямую в слуховой аппарат.',
+      excerpt_uz: 'Phonak Audéo Lumity smartfon ilovalari orqali to\'liq boshqariladi. Telefon qo\'ng\'iroqlari, musiqa va video eshitish apparatiga to\'g\'ridan-to\'g\'ri uzatiladi.',
+      excerpt_ru: 'Phonak Audéo Lumity полностью управляется через приложения для смартфона. Телефонные звонки, музыка и видео передаются напрямую в слуховой аппарат.',
+      slug: 'phonak-audeo-lumity-smartfon',
+      tags: ['phonak', 'smartfon', 'bluetooth'],
+      status: 'published',
+      publishAt: new Date(),
+    },
+    {
+      title_uz: 'Bolalar uchun eshitish apparatlari - Maxsus dizayn',
+      title_ru: 'Слуховые аппараты для детей - Специальный дизайн',
+      body_uz: 'Bolalar uchun eshitish apparatlari mustahkam, suv o\'tkazmaydi va xavfsiz materiallardan tayyorlangan. Ular bolalar eshitish xususiyatlariga moslashtirilgan va kundalik faollik uchun qulay.',
+      body_ru: 'Слуховые аппараты для детей прочные, водонепроницаемые и изготовлены из безопасных материалов. Они адаптированы к особенностям слуха детей и удобны для повседневной активности.',
+      excerpt_uz: 'Bolalar uchun eshitish apparatlari mustahkam, suv o\'tkazmaydi va xavfsiz materiallardan tayyorlangan. Ular bolalar eshitish xususiyatlariga moslashtirilgan.',
+      excerpt_ru: 'Слуховые аппараты для детей прочные, водонепроницаемые и изготовлены из безопасных материалов. Они адаптированы к особенностям слуха детей.',
+      slug: 'bolalar-uchun-eshitish-apparatlari',
+      tags: ['bolalar', 'maxsus-dizayn', 'xavfsiz'],
+      status: 'published',
+      publishAt: new Date(),
+    },
+    {
+      title_uz: 'Eshitish yo\'qotilishi va demensiya o\'rtasidagi bog\'liqlik',
+      title_ru: 'Связь между потерей слуха и деменцией',
+      body_uz: 'Tadqiqotlar shuni ko\'rsatadiki, eshitish yo\'qotilishi demensiya rivojlanishi xavfini oshiradi. Eshitish apparatlaridan foydalanish bu xavfni kamaytirishga yordam beradi va miya faolligini saqlab qoladi.',
+      body_ru: 'Исследования показывают, что потеря слуха увеличивает риск развития деменции. Использование слуховых аппаратов помогает снизить этот риск и сохранить активность мозга.',
+      excerpt_uz: 'Tadqiqotlar shuni ko\'rsatadiki, eshitish yo\'qotilishi demensiya rivojlanishi xavfini oshiradi. Eshitish apparatlaridan foydalanish bu xavfni kamaytirishga yordam beradi.',
+      excerpt_ru: 'Исследования показывают, что потеря слуха увеличивает риск развития деменции. Использование слуховых аппаратов помогает снизить этот риск.',
+      slug: 'eshitish-yoqotilishi-demensiya',
+      tags: ['tadqiqot', 'sogliq', 'demensiya'],
+      status: 'published',
+      publishAt: new Date(),
+    },
+    {
+      title_uz: '0% muddatli to\'lov - Qulay shartlar',
+      title_ru: 'Рассрочка 0% - Удобные условия',
+      body_uz: 'Acoustic.uz markazlarida eshitish apparatlarini 0% muddatli to\'lov bilan sotib olishingiz mumkin. Qulay shartlar va uzun muddatli to\'lov imkoniyatlari mavjud.',
+      body_ru: 'В центрах Acoustic.uz вы можете приобрести слуховые аппараты в рассрочку 0%. Доступны удобные условия и долгосрочные варианты оплаты.',
+      excerpt_uz: 'Acoustic.uz markazlarida eshitish apparatlarini 0% muddatli to\'lov bilan sotib olishingiz mumkin. Qulay shartlar va uzun muddatli to\'lov imkoniyatlari mavjud.',
+      excerpt_ru: 'В центрах Acoustic.uz вы можете приобрести слуховые аппараты в рассрочку 0%. Доступны удобные условия и долгосрочные варианты оплаты.',
+      slug: '0-muddatli-tolov',
+      tags: ['tolov', 'muddatli', 'qulay'],
+      status: 'published',
+      publishAt: new Date(),
+    },
+    {
+      title_uz: 'Qanday diabet va eshitish yo\'qotilishi bog\'liq?',
+      title_ru: 'Как связаны диабет и потеря слуха?',
+      body_uz: 'Qanday diabet eshitish yo\'qotilishi rivojlanishi uchun xavf omili bo\'lishi mumkin. Muntazam tekshiruvlar va eshitish apparatlaridan foydalanish diabet bilan og\'rigan bemorlar uchun muhimdir.',
+      body_ru: 'Сахарный диабет может быть фактором риска развития потери слуха. Регулярные проверки и использование слуховых аппаратов важны для пациентов с диабетом.',
+      excerpt_uz: 'Qanday diabet eshitish yo\'qotilishi rivojlanishi uchun xavf omili bo\'lishi mumkin. Muntazam tekshiruvlar va eshitish apparatlaridan foydalanish muhimdir.',
+      excerpt_ru: 'Сахарный диабет может быть фактором риска развития потери слуха. Регулярные проверки и использование слуховых аппаратов важны.',
+      slug: 'diabet-eshitish-yoqotilishi',
+      tags: ['diabet', 'sogliq', 'tadqiqot'],
+      status: 'published',
+      publishAt: new Date(),
+    },
+  ];
 
   await prisma.post.createMany({ data: posts });
 }
 
 async function seedFaq() {
-  const faqData = [
+  const faqs = [
     {
-      question_uz: "Quloq apparatini qanday tanlash kerak?",
-      question_ru: 'Как подобрать слуховой аппарат?',
-      answer_uz: "Mutaxassislarimiz maxsus testlar asosida tavsiya berishadi.",
-      answer_ru: 'Наши специалисты подбирают решение после диагностики.',
+      question_uz: 'Eshitish apparati qanday ishlaydi?',
+      question_ru: 'Как работает слуховой аппарат?',
+      answer_uz: 'Eshitish apparati mikrofondan tovushlarni qabul qiladi, ularni raqamli signalga aylantiradi va qayta ishlaydi. Keyin kuchaytirilgan tovush quloq ichiga uzatiladi. Zamonaviy apparatlar AI texnologiyasi yordamida nutqni shovqindan ajratadi va eng yaxshi eshitishni ta\'minlaydi.',
+      answer_ru: 'Слуховой аппарат принимает звуки через микрофон, преобразует их в цифровой сигнал и обрабатывает. Затем усиленный звук передается в ухо. Современные аппараты используют технологию ИИ для отделения речи от шума и обеспечения наилучшего слуха.',
       order: 1,
       status: 'published',
     },
     {
-      question_uz: 'Garantiya muddati qancha?',
-      question_ru: 'Какой срок гарантии?',
-      answer_uz: 'Har bir apparat uchun 12 oygacha kafolat beriladi.',
-      answer_ru: 'На каждый аппарат предоставляется гарантия до 12 месяцев.',
+      question_uz: 'Eshitish apparatini qancha vaqt davomida kiyish mumkin?',
+      question_ru: 'Как долго можно носить слуховой аппарат?',
+      answer_uz: 'Eshitish apparatini kun davomida kiyish mumkin. Dastlabki kunlarda qisqa vaqt (2-3 soat) kiyib, keyin vaqtni asta-sekin oshirish tavsiya etiladi. Quloq apparatiga moslashish uchun 1-2 hafta kerak bo\'lishi mumkin.',
+      answer_ru: 'Слуховой аппарат можно носить в течение всего дня. В первые дни рекомендуется носить его короткое время (2-3 часа), постепенно увеличивая продолжительность. Для адаптации к аппарату может потребоваться 1-2 недели.',
       order: 2,
       status: 'published',
     },
     {
-      question_uz: "Servis xizmatlari mavjudmi?",
-      question_ru: 'Есть ли сервисное обслуживание?',
-      answer_uz: "Ha, muntazam texnik xizmat ko'rsatish mavjud.",
-      answer_ru: 'Да, доступно регулярное сервисное обслуживание.',
+      question_uz: 'Eshitish apparati qancha narxda?',
+      question_ru: 'Сколько стоит слуховой аппарат?',
+      answer_uz: 'Eshitish apparatlari narxi model, funksiyalar va texnologiyalariga qarab 5 milliondan 30 million so\'mgacha o\'zgaradi. Bizda 0% muddatli to\'lov va turli xil to\'lov shartlari mavjud. Bepul konsultatsiya va sinov uchun bizga murojaat qiling.',
+      answer_ru: 'Стоимость слуховых аппаратов варьируется от 5 до 30 миллионов сум в зависимости от модели, функций и технологий. У нас доступна рассрочка 0% и различные условия оплаты. Обратитесь к нам для бесплатной консультации и примерки.',
       order: 3,
+      status: 'published',
+    },
+    {
+      question_uz: 'Bolalar uchun eshitish apparatlari mavjudmi?',
+      question_ru: 'Есть ли слуховые аппараты для детей?',
+      answer_uz: 'Ha, bizda bolalar uchun maxsus dizayn qilingan eshitish apparatlari mavjud. Ular mustahkam, suv o\'tkazmaydi va bolalar uchun xavfsiz materiallardan tayyorlangan. Bolalar uchun apparatlar kattalar uchun modellardan farqli ravishda bolalar eshitish xususiyatlariga moslashtirilgan.',
+      answer_ru: 'Да, у нас есть слуховые аппараты, специально разработанные для детей. Они прочные, водонепроницаемые и изготовлены из безопасных для детей материалов. Детские аппараты адаптированы к особенностям слуха детей, в отличие от моделей для взрослых.',
+      order: 4,
+      status: 'published',
+    },
+    {
+      question_uz: 'Eshitish apparatini smartfon bilan boshqarish mumkinmi?',
+      question_ru: 'Можно ли управлять слуховым аппаратом через смартфон?',
+      answer_uz: 'Ha, ko\'pchilik zamonaviy eshitish apparatlari smartfon ilovalari orqali boshqariladi. Ilova orqali ovoz balandligini sozlash, rejimlarni o\'zgartirish va hatto telefon qo\'ng\'iroqlarini to\'g\'ridan-to\'g\'ri eshitish apparatiga uzatish mumkin.',
+      answer_ru: 'Да, большинство современных слуховых аппаратов управляются через приложения для смартфона. Через приложение можно регулировать громкость, менять режимы и даже передавать телефонные звонки напрямую в слуховой аппарат.',
+      order: 5,
+      status: 'published',
+    },
+    {
+      question_uz: 'Eshitish apparatini qanday parvarish qilish kerak?',
+      question_ru: 'Как ухаживать за слуховым аппаратом?',
+      answer_uz: 'Eshitish apparatini har kuni quruq mato bilan tozalash, namlikdan saqlash va batareyani muntazam almashtirish kerak. Kechasi apparatni yopiq idishda saqlash va namlikni yutuvchi vositalardan foydalanish tavsiya etiladi.',
+      answer_ru: 'Слуховой аппарат следует ежедневно очищать сухой тканью, защищать от влаги и регулярно менять батарею. Рекомендуется хранить аппарат в закрытом контейнере на ночь и использовать влагопоглощающие средства.',
+      order: 6,
+      status: 'published',
+    },
+    {
+      question_uz: 'Eshitish apparatini qancha vaqt ishlatish mumkin?',
+      question_ru: 'Как долго можно использовать слуховой аппарат?',
+      answer_uz: 'Zamonaviy eshitish apparatlari odatda 5-7 yil davomida ishlaydi. Muntazam parvarish va texnik xizmat ko\'rsatish bilan bu muddat yanada uzoq bo\'lishi mumkin. Har yili apparatni tekshirish va sozlash tavsiya etiladi.',
+      answer_ru: 'Современные слуховые аппараты обычно служат 5-7 лет. При регулярном уходе и техническом обслуживании этот срок может быть еще дольше. Рекомендуется ежегодно проверять и настраивать аппарат.',
+      order: 7,
+      status: 'published',
+    },
+    {
+      question_uz: 'Eshitish apparati quloqni shikastlaydimi?',
+      question_ru: 'Вредит ли слуховой аппарат уху?',
+      answer_uz: 'Yo\'q, to\'g\'ri sozlangan eshitish apparati quloqni shikastlamaydi. Aksincha, u eshitish qobiliyatini yaxshilaydi va miyada eshitish markazlarini faollashtiradi. Muhimi - apparatni mutaxassis tomonidan to\'g\'ri sozlash va muntazam tekshirish.',
+      answer_ru: 'Нет, правильно настроенный слуховой аппарат не вредит уху. Наоборот, он улучшает слух и активирует слуховые центры в мозге. Важно правильно настроить аппарат специалистом и регулярно проверять его.',
+      order: 8,
+      status: 'published',
+    },
+    {
+      question_uz: 'Eshitish apparatini uxlashda ham kiyish mumkinmi?',
+      question_ru: 'Можно ли носить слуховой аппарат во время сна?',
+      answer_uz: 'Umuman olganda, uxlashda eshitish apparatini kiyish tavsiya etilmaydi. Bu quloq terisini qizdiradi va qulflanishga olib kelishi mumkin. Kechasi apparatni yopiq idishda saqlash va batareyani olib tashlash yaxshiroq.',
+      answer_ru: 'В целом, носить слуховой аппарат во время сна не рекомендуется. Это может нагревать кожу уха и привести к дискомфорту. Лучше хранить аппарат в закрытом контейнере на ночь и вынимать батарею.',
+      order: 9,
+      status: 'published',
+    },
+    {
+      question_uz: 'Eshitish apparatini qayerdan sotib olish mumkin?',
+      question_ru: 'Где можно купить слуховой аппарат?',
+      answer_uz: 'Acoustic.uz markazlarida siz eshitish apparatlarini sotib olishingiz va bepul konsultatsiya olishingiz mumkin. Bizda barcha yetakchi brendlar (Oticon, Phonak, Widex, Signia) mavjud. Bepul sinov va sozlash xizmatlari ham mavjud.',
+      answer_ru: 'В центрах Acoustic.uz вы можете приобрести слуховые аппараты и получить бесплатную консультацию. У нас представлены все ведущие бренды (Oticon, Phonak, Widex, Signia). Также доступны бесплатные примерка и настройка.',
+      order: 10,
       status: 'published',
     },
   ];
 
-  await prisma.faq.createMany({ data: faqData });
+  await prisma.faq.createMany({ data: faqs });
 }
 
 async function seedBranches() {
@@ -680,6 +901,7 @@ async function main() {
   await seedBanners();
   await seedServices();
   await seedBrandsAndCategories();
+  await seedCatalogs();
   await seedProducts();
   await seedShowcases();
   await seedPosts();

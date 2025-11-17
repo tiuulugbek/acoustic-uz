@@ -12,42 +12,24 @@ import {
   Select,
   Popconfirm,
   message,
-  DatePicker,
   Upload,
   Image,
   Row,
   Col,
   Transfer,
+  Switch,
 } from 'antd';
 import { UploadOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { TabsProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { UploadProps } from 'antd';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import dayjs from 'dayjs';
 import {
-  getHomepageHearingAids,
-  createHomepageHearingAid,
-  updateHomepageHearingAid,
-  deleteHomepageHearingAid,
-  getHomepageJourneySteps,
-  createHomepageJourneyStep,
-  updateHomepageJourneyStep,
-  deleteHomepageJourneyStep,
-  getHomepageNewsItems,
-  createHomepageNewsItem,
-  updateHomepageNewsItem,
-  deleteHomepageNewsItem,
   getHomepageServices,
   createHomepageService,
   updateHomepageService,
   deleteHomepageService,
-  HomepageHearingAidDto,
-  HomepageJourneyStepDto,
-  HomepageNewsItemDto,
   HomepageServiceDto,
-  getPosts,
-  PostDto,
   ApiError,
   getBannersAdmin,
   createBanner,
@@ -61,13 +43,13 @@ import {
   type MediaDto,
   type CreateHomepageServicePayload,
   type UpdateHomepageServicePayload,
-  getProductCategoriesAdmin,
-  createProductCategory,
-  updateProductCategory,
-  deleteProductCategory,
-  type ProductCategoryDto,
-  type CreateProductCategoryPayload,
-  type UpdateProductCategoryPayload,
+  getCatalogsAdmin,
+  createCatalog,
+  updateCatalog,
+  deleteCatalog,
+  type CatalogDto,
+  type CreateCatalogPayload,
+  type UpdateCatalogPayload,
   getShowcase,
   updateShowcase,
   type ShowcaseDto,
@@ -556,12 +538,12 @@ function HomepageServicesTab() {
   );
 }
 
-// Hearing Aid Categories Tab (Product Categories)
-function CategoriesTab() {
+// Hearing Aid Catalogs Tab (Catalogs for Homepage)
+function CatalogsTab() {
   const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery<ProductCategoryDto[], ApiError>({
-    queryKey: ['product-categories-admin'],
-    queryFn: getProductCategoriesAdmin,
+  const { data, isLoading } = useQuery<CatalogDto[], ApiError>({
+    queryKey: ['catalogs-admin'],
+    queryFn: getCatalogsAdmin,
   });
 
   const { data: mediaList } = useQuery<MediaDto[], ApiError>({
@@ -570,39 +552,39 @@ function CategoriesTab() {
   });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingCategory, setEditingCategory] = useState<ProductCategoryDto | null>(null);
+  const [editingCatalog, setEditingCatalog] = useState<CatalogDto | null>(null);
   const [form] = Form.useForm();
   const [uploading, setUploading] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const createMutation = useMutation({
-    mutationFn: createProductCategory,
+    mutationFn: createCatalog,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['product-categories-admin'] });
-      message.success('Kategoriya saqlandi');
+      queryClient.invalidateQueries({ queryKey: ['catalogs-admin'] });
+      message.success('Katalog saqlandi');
     },
     onError: (error: ApiError) => message.error(error.message || 'Xatolik yuz berdi'),
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: UpdateProductCategoryPayload }) => updateProductCategory(id, payload),
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateCatalogPayload }) => updateCatalog(id, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['product-categories-admin'] });
-      message.success('Kategoriya yangilandi');
+      queryClient.invalidateQueries({ queryKey: ['catalogs-admin'] });
+      message.success('Katalog yangilandi');
     },
     onError: (error: ApiError) => message.error(error.message || 'Xatolik yuz berdi'),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: deleteProductCategory,
+    mutationFn: deleteCatalog,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['product-categories-admin'] });
-      message.success("Kategoriya o'chirildi");
+      queryClient.invalidateQueries({ queryKey: ['catalogs-admin'] });
+      message.success("Katalog o'chirildi");
     },
     onError: (error: ApiError) => message.error(error.message || "O'chirishda xatolik"),
   });
 
-  const columns: ColumnsType<ProductCategoryDto> = useMemo(
+  const columns: ColumnsType<CatalogDto> = useMemo(
     () => [
       {
         title: 'Rasm',
@@ -640,14 +622,22 @@ function CategoriesTab() {
         key: 'slug',
       },
       {
-        title: 'Tavsif',
-        key: 'description',
-        render: (_, record) => (
-          <div>
-            {record.description_uz && <div style={{ fontSize: 12, color: '#666' }}>{record.description_uz.substring(0, 50)}...</div>}
-            {record.description_ru && <div style={{ fontSize: 12, color: '#999' }}>{record.description_ru.substring(0, 50)}...</div>}
-          </div>
+        title: 'Bosh sahifada',
+        dataIndex: 'showOnHomepage',
+        key: 'showOnHomepage',
+        width: 120,
+        render: (value: boolean) => (
+          <Tag color={value ? 'green' : 'default'}>{value ? 'Ha' : 'Yo\'q'}</Tag>
         ),
+      },
+      {
+        title: 'Holati',
+        dataIndex: 'status',
+        key: 'status',
+        render: (value: CatalogDto['status']) => {
+          const color = value === 'published' ? 'green' : value === 'draft' ? 'orange' : 'default';
+          return <Tag color={color}>{value}</Tag>;
+        },
       },
       {
         title: 'Tartib',
@@ -658,12 +648,12 @@ function CategoriesTab() {
       {
         title: 'Amallar',
         key: 'actions',
-        render: (_: unknown, record: ProductCategoryDto) => (
+        render: (_: unknown, record: CatalogDto) => (
           <Space>
             <Button
               size="small"
               onClick={() => {
-                setEditingCategory(record);
+                setEditingCatalog(record);
                 form.setFieldsValue({
                   name_uz: record.name_uz,
                   name_ru: record.name_ru,
@@ -672,8 +662,9 @@ function CategoriesTab() {
                   description_ru: record.description_ru ?? undefined,
                   icon: record.icon,
                   imageId: record.image?.id ?? undefined,
-                  parentId: record.parentId,
                   order: record.order ?? 0,
+                  status: record.status,
+                  showOnHomepage: record.showOnHomepage,
                 });
                 setPreviewImage(record.image?.url ?? null);
                 setIsModalOpen(true);
@@ -681,7 +672,7 @@ function CategoriesTab() {
             >
               Tahrirlash
             </Button>
-            <Popconfirm title="Kategoriyani o'chirish" description="Haqiqatan ham o'chirilsinmi?" onConfirm={() => deleteMutation.mutate(record.id)} okText="Ha" cancelText="Yo'q">
+            <Popconfirm title="Katalogni o'chirish" description="Haqiqatan ham o'chirilsinmi?" onConfirm={() => deleteMutation.mutate(record.id)} okText="Ha" cancelText="Yo'q">
               <Button danger size="small" loading={deleteMutation.isPending}>
                 O'chirish
               </Button>
@@ -694,10 +685,10 @@ function CategoriesTab() {
   );
 
   const openCreateModal = () => {
-    setEditingCategory(null);
+    setEditingCatalog(null);
     setPreviewImage(null);
     form.resetFields();
-    form.setFieldsValue({ order: 0 });
+    form.setFieldsValue({ order: 0, status: 'published', showOnHomepage: false });
     setIsModalOpen(true);
   };
 
@@ -736,7 +727,7 @@ function CategoriesTab() {
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
-      const payload: CreateProductCategoryPayload = {
+      const payload: CreateCatalogPayload = {
         name_uz: values.name_uz,
         name_ru: values.name_ru,
         slug: values.slug,
@@ -744,12 +735,13 @@ function CategoriesTab() {
         description_ru: values.description_ru || undefined,
         icon: values.icon || undefined,
         imageId: values.imageId || undefined,
-        parentId: values.parentId || undefined,
         order: typeof values.order === 'number' ? values.order : Number(values.order ?? 0),
+        status: values.status,
+        showOnHomepage: values.showOnHomepage ?? false,
       };
 
-      if (editingCategory) {
-        await updateMutation.mutateAsync({ id: editingCategory.id, payload });
+      if (editingCatalog) {
+        await updateMutation.mutateAsync({ id: editingCatalog.id, payload });
       } else {
         await createMutation.mutateAsync(payload);
       }
@@ -762,18 +754,18 @@ function CategoriesTab() {
     }
   };
 
-  const categories = data ?? [];
+  const catalogs = data ?? [];
 
   return (
     <div>
       <Space style={{ marginBottom: 16 }}>
         <Button type="primary" onClick={openCreateModal}>
-          Yangi kategoriya
+          Yangi katalog
         </Button>
       </Space>
-      <Table rowKey="id" loading={isLoading} dataSource={categories} columns={columns} pagination={false} />
+      <Table rowKey="id" loading={isLoading} dataSource={catalogs} columns={columns} pagination={false} />
 
-      <Modal title={editingCategory ? 'Kategoriyani tahrirlash' : 'Yangi kategoriya'} open={isModalOpen} onCancel={() => setIsModalOpen(false)} onOk={handleSubmit} confirmLoading={createMutation.isPending || updateMutation.isPending} okText="Saqlash" cancelText="Bekor qilish" width={800}>
+      <Modal title={editingCatalog ? 'Katalogni tahrirlash' : 'Yangi katalog'} open={isModalOpen} onCancel={() => setIsModalOpen(false)} onOk={handleSubmit} confirmLoading={createMutation.isPending || updateMutation.isPending} okText="Saqlash" cancelText="Bekor qilish" width={800}>
         <Form layout="vertical" form={form}>
           <Form.Item label="Nomi (uz)" name="name_uz" rules={[{ required: true }]}>
             <Input />
@@ -782,15 +774,15 @@ function CategoriesTab() {
             <Input />
           </Form.Item>
           <Form.Item label="Slug" name="slug" rules={[{ required: true }]}>
-            <Input placeholder="category-slug" />
+            <Input placeholder="catalog-slug" />
           </Form.Item>
-          <Form.Item label="Tavsif (uz)" name="description_uz" extra="Bosh sahifadagi kategoriya kartasida ko'rinadigan qisqa tavsif">
-            <Input.TextArea rows={2} placeholder="Masalan, Quloq orqasida qulay joylashadigan, deyarli ko'rinmaydigan modelllar." />
+          <Form.Item label="Tavsif (uz)" name="description_uz" extra="Bosh sahifadagi katalog kartasida ko'rinadigan qisqa tavsif">
+            <Input.TextArea rows={2} placeholder="Masalan, Ko'rinmas quloq apparatlari" />
           </Form.Item>
-          <Form.Item label="Tavsif (ru)" name="description_ru" extra="Краткое описание, которое отображается на карточке категории на главной странице">
-            <Input.TextArea rows={2} placeholder="Например, Комфортные модели, которые легко скрываются за ухом." />
+          <Form.Item label="Tavsif (ru)" name="description_ru" extra="Краткое описание, которое отображается на карточке каталога на главной странице">
+            <Input.TextArea rows={2} placeholder="Например, Невидимые слуховые аппараты" />
           </Form.Item>
-          <Form.Item label="Rasm" name="imageId" extra="Bosh sahifadagi kategoriya kartasida ko'rinadigan rasm. Agar rasm tanlanmasa, 'Acoustic' matni ko'rinadi.">
+          <Form.Item label="Rasm" name="imageId" extra="Bosh sahifadagi katalog kartasida ko'rinadigan rasm">
             <div>
               <Row gutter={16}>
                 <Col span={12}>
@@ -821,7 +813,7 @@ function CategoriesTab() {
               
               {(previewImage || currentMedia?.url) && (
                 <div style={{ marginTop: 16, textAlign: 'center' }}>
-                  <div style={{ marginBottom: 8, fontSize: 12, color: '#666' }}>Tanlangan rasm (kategoriya kartasida ko'rinadi):</div>
+                  <div style={{ marginBottom: 8, fontSize: 12, color: '#666' }}>Tanlangan rasm (katalog kartasida ko'rinadi):</div>
                   <Image
                     src={previewImage || currentMedia?.url || ''}
                     alt="Preview"
@@ -865,17 +857,13 @@ function CategoriesTab() {
           <Form.Item label="Icon" name="icon" extra="Icon nomi (ixtiyoriy)">
             <Input placeholder="Icon nomi" />
           </Form.Item>
-          <Form.Item label="Ota kategoriya" name="parentId" extra="Agar kategoriya boshqa kategoriyaning ichida bo'lsa, ota kategoriyani tanlang">
-            <Select
-              allowClear
-              placeholder="Ota kategoriyani tanlang"
-              options={categories.filter((cat) => cat.id !== editingCategory?.id).map((cat) => ({
-                label: `${cat.name_uz} / ${cat.name_ru}`,
-                value: cat.id,
-              }))}
-            />
+          <Form.Item label="Bosh sahifada ko'rsatish" name="showOnHomepage" valuePropName="checked" extra="Agar belgilansa, katalog bosh sahifada ko'rinadi">
+            <Switch />
           </Form.Item>
-          <Form.Item label="Tartib" name="order" initialValue={0} extra="Kategoriyalarning ko'rinish tartibi (kichik raqam birinchi)">
+          <Form.Item label="Holati" name="status" initialValue="published">
+            <Select options={statusOptions} />
+          </Form.Item>
+          <Form.Item label="Tartib" name="order" initialValue={0} extra="Kataloglarning ko'rinish tartibi (kichik raqam birinchi)">
             <InputNumber style={{ width: '100%' }} min={0} />
           </Form.Item>
         </Form>
@@ -891,7 +879,7 @@ function InteracousticsTab() {
     queryKey: ['showcase-interacoustics'],
     queryFn: () => getShowcase('interacoustics'),
   });
-  const { data: products } = useQuery<ProductDto[], ApiError>({
+  const { data: productsResponse } = useQuery<{ items: ProductDto[]; total: number; page: number; pageSize: number }, ApiError>({
     queryKey: ['products-admin'],
     queryFn: getProductsAdmin,
   });
@@ -929,7 +917,7 @@ function InteracousticsTab() {
     }
   };
 
-  const allProducts = products ?? [];
+  const allProducts = productsResponse?.items ?? [];
   const dataSource = allProducts.map((product) => ({
     key: product.id,
     title: `${product.name_uz} / ${product.name_ru}`,
@@ -1161,494 +1149,6 @@ function FAQsTab() {
   );
 }
 
-// Existing tabs (Hearing Aids, Journey, News)
-function HearingAidsTab() {
-  const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery({
-    queryKey: ['homepage-hearing-admin'],
-    queryFn: getHomepageHearingAids,
-  });
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<HomepageHearingAidDto | null>(null);
-  const [form] = Form.useForm();
-
-  const createMutation = useMutation({
-    mutationFn: createHomepageHearingAid,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['homepage-hearing-admin'] });
-      message.success('Kartochka saqlandi');
-    },
-    onError: (error: ApiError) => message.error(error.message || 'Xatolik yuz berdi'),
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: Parameters<typeof updateHomepageHearingAid>[1] }) => updateHomepageHearingAid(id, payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['homepage-hearing-admin'] });
-      message.success('Kartochka yangilandi');
-    },
-    onError: (error: ApiError) => message.error(error.message || 'Xatolik yuz berdi'),
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: deleteHomepageHearingAid,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['homepage-hearing-admin'] });
-      message.success("Kartochka o'chirildi");
-    },
-    onError: (error: ApiError) => message.error(error.message || "O'chirishda xatolik"),
-  });
-
-  const columns: ColumnsType<HomepageHearingAidDto> = useMemo(
-    () => [
-      {
-        title: 'Sarlavha (uz)',
-        dataIndex: 'title_uz',
-        key: 'title_uz',
-      },
-      {
-        title: 'Sarlavha (ru)',
-        dataIndex: 'title_ru',
-        key: 'title_ru',
-      },
-      {
-        title: 'Tartib',
-        dataIndex: 'order',
-        key: 'order',
-      },
-      {
-        title: 'Holati',
-        dataIndex: 'status',
-        key: 'status',
-      },
-      {
-        title: 'Amallar',
-        key: 'actions',
-        render: (_: unknown, record: HomepageHearingAidDto) => (
-          <Space>
-            <Button
-              size="small"
-              onClick={() => {
-                setEditingItem(record);
-                form.setFieldsValue({
-                  title_uz: record.title_uz,
-                  title_ru: record.title_ru,
-                  description_uz: record.description_uz,
-                  description_ru: record.description_ru,
-                  link: record.link,
-                  status: record.status,
-                  order: record.order,
-                  imageId: record.image?.id,
-                });
-                setIsModalOpen(true);
-              }}
-            >
-              Tahrirlash
-            </Button>
-            <Popconfirm title="Kartochkani o'chirish" description="Haqiqatan ham o'chirilsinmi?" onConfirm={() => deleteMutation.mutate(record.id)} okText="Ha" cancelText="Yo'q">
-              <Button danger size="small" loading={deleteMutation.isPending}>
-                O'chirish
-              </Button>
-            </Popconfirm>
-          </Space>
-        ),
-      },
-    ],
-    [deleteMutation.isPending, form],
-  );
-
-  const openCreateModal = () => {
-    setEditingItem(null);
-    form.resetFields();
-    form.setFieldsValue({ status: 'published', order: 0 });
-    setIsModalOpen(true);
-  };
-
-  const handleSubmit = async () => {
-    try {
-      const values = await form.validateFields();
-      if (editingItem) {
-        await updateMutation.mutateAsync({ id: editingItem.id, payload: values });
-      } else {
-        await createMutation.mutateAsync(values);
-      }
-      setIsModalOpen(false);
-      form.resetFields();
-    } catch (error) {
-      // validation error
-    }
-  };
-
-  return (
-    <div>
-      <Space style={{ marginBottom: 16 }}>
-        <Button type="primary" onClick={openCreateModal}>
-          Yangi kartochka
-        </Button>
-      </Space>
-      <Table rowKey="id" loading={isLoading} dataSource={data ?? []} columns={columns} pagination={false} />
-
-      <Modal title={editingItem ? 'Kartochkani tahrirlash' : 'Yangi kartochka'} open={isModalOpen} onCancel={() => setIsModalOpen(false)} onOk={handleSubmit} confirmLoading={createMutation.isPending || updateMutation.isPending} okText="Saqlash" cancelText="Bekor qilish">
-        <Form layout="vertical" form={form}>
-          <Form.Item label="Sarlavha (uz)" name="title_uz" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item label="Sarlavha (ru)" name="title_ru" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item label="Tavsif (uz)" name="description_uz">
-            <Input.TextArea rows={3} />
-          </Form.Item>
-          <Form.Item label="Tavsif (ru)" name="description_ru">
-            <Input.TextArea rows={3} />
-          </Form.Item>
-          <Form.Item label="Havola" name="link">
-            <Input placeholder="https://" />
-          </Form.Item>
-          <Form.Item label="Holati" name="status" initialValue="published">
-            <Select options={statusOptions} />
-          </Form.Item>
-          <Form.Item label="Tartib" name="order" initialValue={0}>
-            <InputNumber style={{ width: '100%' }} />
-          </Form.Item>
-          <Form.Item label="Rasm ID" name="imageId">
-            <Input placeholder="Media ID" />
-          </Form.Item>
-        </Form>
-      </Modal>
-    </div>
-  );
-}
-
-function JourneyTab() {
-  const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery({
-    queryKey: ['homepage-journey-admin'],
-    queryFn: getHomepageJourneySteps,
-  });
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<HomepageJourneyStepDto | null>(null);
-  const [form] = Form.useForm();
-
-  const createMutation = useMutation({
-    mutationFn: createHomepageJourneyStep,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['homepage-journey-admin'] });
-      message.success('Bosqich saqlandi');
-    },
-    onError: (error: ApiError) => message.error(error.message || 'Xatolik yuz berdi'),
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: Parameters<typeof updateHomepageJourneyStep>[1] }) => updateHomepageJourneyStep(id, payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['homepage-journey-admin'] });
-      message.success('Bosqich yangilandi');
-    },
-    onError: (error: ApiError) => message.error(error.message || 'Xatolik yuz berdi'),
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: deleteHomepageJourneyStep,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['homepage-journey-admin'] });
-      message.success("Bosqich o'chirildi");
-    },
-    onError: (error: ApiError) => message.error(error.message || "O'chirishda xatolik"),
-  });
-
-  const columns: ColumnsType<HomepageJourneyStepDto> = useMemo(
-    () => [
-      {
-        title: 'Sarlavha (uz)',
-        dataIndex: 'title_uz',
-        key: 'title_uz',
-      },
-      {
-        title: 'Sarlavha (ru)',
-        dataIndex: 'title_ru',
-        key: 'title_ru',
-      },
-      {
-        title: 'Tartib',
-        dataIndex: 'order',
-        key: 'order',
-      },
-      {
-        title: 'Holati',
-        dataIndex: 'status',
-        key: 'status',
-      },
-      {
-        title: 'Amallar',
-        key: 'actions',
-        render: (_: unknown, record: HomepageJourneyStepDto) => (
-          <Space>
-            <Button
-              size="small"
-              onClick={() => {
-                setEditingItem(record);
-                form.setFieldsValue({
-                  title_uz: record.title_uz,
-                  title_ru: record.title_ru,
-                  description_uz: record.description_uz,
-                  description_ru: record.description_ru,
-                  status: record.status,
-                  order: record.order,
-                });
-                setIsModalOpen(true);
-              }}
-            >
-              Tahrirlash
-            </Button>
-            <Popconfirm title="Bosqichni o'chirish" description="Haqiqatan ham o'chirilsinmi?" onConfirm={() => deleteMutation.mutate(record.id)} okText="Ha" cancelText="Yo'q">
-              <Button danger size="small" loading={deleteMutation.isPending}>
-                O'chirish
-              </Button>
-            </Popconfirm>
-          </Space>
-        ),
-      },
-    ],
-    [deleteMutation.isPending, form],
-  );
-
-  const openCreateModal = () => {
-    setEditingItem(null);
-    form.resetFields();
-    form.setFieldsValue({ status: 'published', order: 0 });
-    setIsModalOpen(true);
-  };
-
-  const handleSubmit = async () => {
-    try {
-      const values = await form.validateFields();
-      if (editingItem) {
-        await updateMutation.mutateAsync({ id: editingItem.id, payload: values });
-      } else {
-        await createMutation.mutateAsync(values);
-      }
-      setIsModalOpen(false);
-      form.resetFields();
-    } catch (error) {
-      // validation error
-    }
-  };
-
-  return (
-    <div>
-      <Space style={{ marginBottom: 16 }}>
-        <Button type="primary" onClick={openCreateModal}>
-          Yangi bosqich
-        </Button>
-      </Space>
-      <Table rowKey="id" loading={isLoading} dataSource={data ?? []} columns={columns} pagination={false} />
-
-      <Modal title={editingItem ? 'Bosqichni tahrirlash' : 'Yangi bosqich'} open={isModalOpen} onCancel={() => setIsModalOpen(false)} onOk={handleSubmit} confirmLoading={createMutation.isPending || updateMutation.isPending} okText="Saqlash" cancelText="Bekor qilish">
-        <Form layout="vertical" form={form}>
-          <Form.Item label="Sarlavha (uz)" name="title_uz" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item label="Sarlavha (ru)" name="title_ru" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item label="Tavsif (uz)" name="description_uz">
-            <Input.TextArea rows={3} />
-          </Form.Item>
-          <Form.Item label="Tavsif (ru)" name="description_ru">
-            <Input.TextArea rows={3} />
-          </Form.Item>
-          <Form.Item label="Holati" name="status" initialValue="published">
-            <Select options={statusOptions} />
-          </Form.Item>
-          <Form.Item label="Tartib" name="order" initialValue={0}>
-            <InputNumber style={{ width: '100%' }} />
-          </Form.Item>
-        </Form>
-      </Modal>
-    </div>
-  );
-}
-
-function NewsTab() {
-  const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery({
-    queryKey: ['homepage-news-admin'],
-    queryFn: getHomepageNewsItems,
-  });
-  const { data: postsData } = useQuery({
-    queryKey: ['posts-for-news'],
-    queryFn: getPosts,
-  });
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<HomepageNewsItemDto | null>(null);
-  const [form] = Form.useForm();
-
-  const createMutation = useMutation({
-    mutationFn: createHomepageNewsItem,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['homepage-news-admin'] });
-      message.success('Yangilik saqlandi');
-    },
-    onError: (error: ApiError) => message.error(error.message || 'Xatolik yuz berdi'),
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: Parameters<typeof updateHomepageNewsItem>[1] }) => updateHomepageNewsItem(id, payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['homepage-news-admin'] });
-      message.success('Yangilik yangilandi');
-    },
-    onError: (error: ApiError) => message.error(error.message || 'Xatolik yuz berdi'),
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: deleteHomepageNewsItem,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['homepage-news-admin'] });
-      message.success("Yangilik o'chirildi");
-    },
-    onError: (error: ApiError) => message.error(error.message || "O'chirishda xatolik"),
-  });
-
-  const columns: ColumnsType<HomepageNewsItemDto> = useMemo(
-    () => [
-      {
-        title: 'Sarlavha (uz)',
-        dataIndex: 'title_uz',
-        key: 'title_uz',
-      },
-      {
-        title: 'Sarlavha (ru)',
-        dataIndex: 'title_ru',
-        key: 'title_ru',
-      },
-      {
-        title: 'Tartib',
-        dataIndex: 'order',
-        key: 'order',
-      },
-      {
-        title: 'Holati',
-        dataIndex: 'status',
-        key: 'status',
-      },
-      {
-        title: 'Amallar',
-        key: 'actions',
-        render: (_: unknown, record: HomepageNewsItemDto) => (
-          <Space>
-            <Button
-              size="small"
-              onClick={() => {
-                setEditingItem(record);
-                form.setFieldsValue({
-                  title_uz: record.title_uz,
-                  title_ru: record.title_ru,
-                  excerpt_uz: record.excerpt_uz,
-                  excerpt_ru: record.excerpt_ru,
-                  slug: record.slug,
-                  postId: record.post?.id,
-                  status: record.status,
-                  order: record.order,
-                  publishedAt: record.publishedAt ? dayjs(record.publishedAt) : undefined,
-                });
-                setIsModalOpen(true);
-              }}
-            >
-              Tahrirlash
-            </Button>
-            <Popconfirm title="Yangilikni o'chirish" description="Haqiqatan ham o'chirilsinmi?" onConfirm={() => deleteMutation.mutate(record.id)} okText="Ha" cancelText="Yo'q">
-              <Button danger size="small" loading={deleteMutation.isPending}>
-                O'chirish
-              </Button>
-            </Popconfirm>
-          </Space>
-        ),
-      },
-    ],
-    [deleteMutation.isPending, form],
-  );
-
-  const openCreateModal = () => {
-    setEditingItem(null);
-    form.resetFields();
-    form.setFieldsValue({ status: 'published', order: 0 });
-    setIsModalOpen(true);
-  };
-
-  const handleSubmit = async () => {
-    try {
-      const values = await form.validateFields();
-      const payload = {
-        ...values,
-        publishedAt: values.publishedAt ? values.publishedAt.toISOString() : undefined,
-      };
-      if (editingItem) {
-        await updateMutation.mutateAsync({ id: editingItem.id, payload });
-      } else {
-        await createMutation.mutateAsync(payload);
-      }
-      setIsModalOpen(false);
-      form.resetFields();
-    } catch (error) {
-      // validation error
-    }
-  };
-
-  return (
-    <div>
-      <Space style={{ marginBottom: 16 }}>
-        <Button type="primary" onClick={openCreateModal}>
-          Yangi yangilik
-        </Button>
-      </Space>
-      <Table rowKey="id" loading={isLoading} dataSource={data ?? []} columns={columns} pagination={false} />
-
-      <Modal title={editingItem ? 'Yangilikni tahrirlash' : 'Yangi yangilik'} open={isModalOpen} onCancel={() => setIsModalOpen(false)} onOk={handleSubmit} confirmLoading={createMutation.isPending || updateMutation.isPending} okText="Saqlash" cancelText="Bekor qilish">
-        <Form layout="vertical" form={form}>
-          <Form.Item label="Bog'lanadigan post" name="postId">
-            <Select
-              allowClear
-              placeholder="Post tanlang"
-              options={(postsData ?? []).map((post: PostDto) => ({
-                label: `${post.title_uz} / ${post.title_ru}`,
-                value: post.id,
-              }))}
-            />
-          </Form.Item>
-          <Form.Item label="Sarlavha (uz)" name="title_uz" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item label="Sarlavha (ru)" name="title_ru" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item label="Qisqa matn (uz)" name="excerpt_uz">
-            <Input.TextArea rows={3} />
-          </Form.Item>
-          <Form.Item label="Qisqa matn (ru)" name="excerpt_ru">
-            <Input.TextArea rows={3} />
-          </Form.Item>
-          <Form.Item label="Slug" name="slug">
-            <Input placeholder="yangilik-slug" />
-          </Form.Item>
-          <Form.Item label="Nashr sanasi" name="publishedAt">
-            <DatePicker showTime style={{ width: '100%' }} />
-          </Form.Item>
-          <Form.Item label="Holati" name="status" initialValue="published">
-            <Select options={statusOptions} />
-          </Form.Item>
-          <Form.Item label="Tartib" name="order" initialValue={0}>
-            <InputNumber style={{ width: '100%' }} />
-          </Form.Item>
-        </Form>
-      </Modal>
-    </div>
-  );
-}
 
 export default function HomepagePage() {
   const items: TabsProps['items'] = [
@@ -1663,9 +1163,9 @@ export default function HomepagePage() {
       children: <HomepageServicesTab />,
     },
     {
-      key: 'categories',
-      label: 'Eshitish apparatlari kategoriyalari',
-      children: <CategoriesTab />,
+      key: 'catalogs',
+      label: 'Eshitish moslamalari kataloglari',
+      children: <CatalogsTab />,
     },
     {
       key: 'interacoustics',
@@ -1676,21 +1176,6 @@ export default function HomepagePage() {
       key: 'faqs',
       label: 'Savol-javoblar',
       children: <FAQsTab />,
-    },
-    {
-      key: 'hearing-aids',
-      label: 'Eshitish apparatlari kartochkalari',
-      children: <HearingAidsTab />,
-    },
-    {
-      key: 'journey',
-      label: "Yo'l bosqichlari",
-      children: <JourneyTab />,
-    },
-    {
-      key: 'news',
-      label: 'Yangiliklar vitrinasi',
-      children: <NewsTab />,
     },
   ];
 

@@ -52,6 +52,12 @@ const statusOptions = [
   { label: 'Arxiv', value: 'archived' },
 ];
 
+const productTypeOptions = [
+  { label: 'Eshitish moslamalari', value: 'hearing-aids' },
+  { label: 'Qo\'shimcha mahsulotlar', value: 'accessories' },
+  { label: 'Interacoustic mahsulotlari', value: 'interacoustics' },
+];
+
 const audienceOptions = [
   { label: 'Bolalar uchun', value: 'children' },
   { label: 'Kattalar uchun', value: 'adults' },
@@ -261,10 +267,11 @@ export default function ProductsPage() {
 
   const openEditModal = (product: ProductDto) => {
     setEditingProduct(product);
-    form.setFieldsValue({
+      form.setFieldsValue({
       name_uz: product.name_uz,
       name_ru: product.name_ru,
       slug: product.slug,
+      productType: product.productType ?? undefined,
       description_uz: product.description_uz ?? undefined,
       description_ru: product.description_ru ?? undefined,
       price: product.price ? Number(product.price) : undefined,
@@ -321,6 +328,7 @@ export default function ProductsPage() {
         name_uz: values.name_uz,
         name_ru: values.name_ru,
         slug: values.slug,
+        productType: values.productType || undefined,
         description_uz: values.description_uz || undefined,
         description_ru: values.description_ru || undefined,
         price:
@@ -525,6 +533,15 @@ export default function ProductsPage() {
 
           <Row gutter={16}>
             <Col span={12}>
+              <Form.Item label="Mahsulot turi" name="productType">
+                <Select
+                  allowClear
+                  placeholder="Mahsulot turini tanlang"
+                  options={productTypeOptions}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
               <Form.Item label="Brend" name="brandId">
                 <Select
                   allowClear
@@ -535,6 +552,9 @@ export default function ProductsPage() {
                 />
               </Form.Item>
             </Col>
+          </Row>
+
+          <Row gutter={16}>
             <Col span={12}>
               <Form.Item label="Kategoriya" name="categoryId">
                 <Select
@@ -544,6 +564,11 @@ export default function ProductsPage() {
                   showSearch
                   optionFilterProp="label"
                 />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="Holat" name="status">
+                <Select options={statusOptions} />
               </Form.Item>
             </Col>
           </Row>
@@ -600,18 +625,9 @@ export default function ProductsPage() {
             </Col>
           </Row>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item label="Mavjudlik" name="availabilityStatus">
-                <Select allowClear options={availabilityOptions} placeholder="Holatni tanlang" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="Holati" name="status" initialValue="published">
-                <Select options={statusOptions} />
-              </Form.Item>
-            </Col>
-          </Row>
+          <Form.Item label="Mavjudlik" name="availabilityStatus">
+            <Select allowClear options={availabilityOptions} placeholder="Holatni tanlang" />
+          </Form.Item>
 
           <Divider orientation="left">Mahsulot matni</Divider>
 
