@@ -40,6 +40,40 @@ export function getLocaleFromCookie(): Locale {
 }
 
 /**
+ * Get locale from DOM (available on client)
+ * ALWAYS prioritizes DOM attributes over cookies to prevent reverting to stale values
+ */
+export function getLocaleFromDOM(): Locale {
+  if (typeof document === 'undefined') return DEFAULT_LOCALE;
+  
+  // Priority 1: Read from HTML data attribute (set by server) - MOST RELIABLE
+  // This is set in layout.tsx and reflects the actual server-detected locale
+  const htmlLocale = document.documentElement.getAttribute('data-locale');
+  if (htmlLocale === 'ru' || htmlLocale === 'uz') {
+    return htmlLocale as Locale;
+  }
+  
+  // Priority 2: Read from window.__NEXT_LOCALE__ (set by inline script before React)
+  // This is set by the server and matches the data-locale attribute
+  if (typeof window !== 'undefined' && (window as any).__NEXT_LOCALE__) {
+    const locale = (window as any).__NEXT_LOCALE__;
+    if (locale === 'ru' || locale === 'uz') {
+      return locale as Locale;
+    }
+  }
+  
+  // Priority 3: Read from cookie ONLY as last resort
+  // We don't trust cookies if DOM attributes are missing, as they might be stale
+  // But we need a fallback for the initial render before server sets DOM attributes
+  const cookieLocale = getLocaleFromCookie();
+  if (cookieLocale && cookieLocale !== DEFAULT_LOCALE) {
+    return cookieLocale;
+  }
+  
+  return DEFAULT_LOCALE;
+}
+
+/**
  * Set locale cookie (client-side)
  */
 export function setLocaleCookie(locale: Locale) {

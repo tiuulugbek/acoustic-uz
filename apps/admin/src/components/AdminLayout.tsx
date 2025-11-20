@@ -46,7 +46,7 @@ const menuItems: MenuProps['items'] = [
   {
     key: '/doctors',
     icon: <TeamOutlined />,
-    label: 'Shifokorlar',
+    label: 'Mutaxassislar',
   },
   {
     key: '/patients',

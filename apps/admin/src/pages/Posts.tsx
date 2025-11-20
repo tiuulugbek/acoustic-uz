@@ -28,6 +28,7 @@ import {
   CreatePostPayload,
   UpdatePostPayload,
 } from '../lib/api';
+import { createSlug } from '../utils/slug';
 import { ApiError } from '../lib/api';
 
 const statusOptions = [
@@ -235,7 +236,16 @@ export default function PostsPage() {
             name="title_uz"
             rules={[{ required: true, message: 'Iltimos sarlavha kiriting' }]}
           >
-            <Input placeholder="Masalan, Bepul maslahat" />
+            <Input 
+              placeholder="Masalan, Bepul maslahat"
+              onChange={(e) => {
+                const title = e.target.value;
+                const currentSlug = form.getFieldValue('slug');
+                if (!currentSlug || currentSlug === createSlug(form.getFieldValue('title_uz') || '')) {
+                  form.setFieldsValue({ slug: createSlug(title) });
+                }
+              }}
+            />
           </Form.Item>
           <Form.Item
             label="Sarlavha (ru)"
@@ -262,8 +272,9 @@ export default function PostsPage() {
             label="Slug"
             name="slug"
             rules={[{ required: true, message: 'Slug kiriting' }]}
+            extra="URL uchun qisqa nom (avtomatik yaratiladi yoki qo'lda kiriting)"
           >
-            <Input placeholder="masalan, bepul-maslahat" />
+            <Input placeholder="Avtomatik yaratiladi..." />
           </Form.Item>
           <Form.Item label="Teglar" name="tags">
             <Input placeholder="tag1, tag2, tag3" />

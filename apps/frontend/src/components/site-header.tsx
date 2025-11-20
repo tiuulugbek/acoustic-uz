@@ -231,16 +231,47 @@ export default function SiteHeader() {
     placeholderData: (previousData) => previousData, // Keep previous data while loading to prevent menu from disappearing
   });
 
-  const catalogMenuItems = useMemo(
-    () =>
-      (catalogsData?.length ? catalogsData : [])
-        .slice(0, 8)
-        .map((catalog) => ({
-          href: `/catalog/${catalog.slug}`,
-          label: getBilingualText(catalog.name_uz, catalog.name_ru, displayLocale),
-        })),
-    [catalogsData, displayLocale],
-  );
+  const catalogMenuItems = useMemo(() => {
+    const mainSections = [
+      {
+        href: '/catalog?productType=hearing-aids',
+        label: displayLocale === 'ru' ? 'Слуховые аппараты' : 'Eshitish moslamalari',
+      },
+      {
+        href: '/catalog?productType=hearing-aids&filter=children',
+        label: displayLocale === 'ru' ? 'Детские' : 'Bolalar uchun',
+      },
+      {
+        href: '/catalog?productType=accessories&filter=wireless',
+        label: displayLocale === 'ru' ? 'Беспроводные аксессуары' : 'Simsiz aksessuarlar',
+      },
+      {
+        href: '/catalog?productType=interacoustics',
+        label: 'Interacoustics',
+      },
+    ];
+
+    const otherSections = [
+      {
+        href: '/catalog?productType=accessories',
+        label: displayLocale === 'ru' ? 'Аксессуары' : 'Aksessuarlar',
+      },
+      {
+        href: '/catalog/earmolds',
+        label: displayLocale === 'ru' ? 'Ушные вкладыши' : "Quloq qo'shimchalari",
+      },
+      {
+        href: '/catalog/batteries',
+        label: displayLocale === 'ru' ? 'Батарейки' : 'Batareyalar',
+      },
+      {
+        href: '/catalog/care',
+        label: displayLocale === 'ru' ? 'Средства ухода' : 'Parvarish vositalari',
+      },
+    ];
+
+    return [...mainSections, ...otherSections];
+  }, [displayLocale]);
 
   const { data: headerMenu, refetch: refetchMenu, isLoading: isLoadingMenu } = useQuery({
     queryKey: ['menu', 'header', displayLocale, menuRefreshKey],

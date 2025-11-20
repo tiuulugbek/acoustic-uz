@@ -14,8 +14,14 @@ export class ServiceCategoriesController {
   @Public()
   @Get()
   @ApiOperation({ summary: 'Get all service categories (public)' })
-  findAll(@Query('public') publicOnly?: string) {
-    return this.service.findAll(publicOnly === 'true');
+  findAll(
+    @Query('public') publicOnly?: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ) {
+    const limitNum = limit ? parseInt(limit, 10) : undefined;
+    const offsetNum = offset ? parseInt(offset, 10) : undefined;
+    return this.service.findAll(publicOnly === 'true', limitNum, offsetNum);
   }
 
   @Public()

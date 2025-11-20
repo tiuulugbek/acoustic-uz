@@ -217,37 +217,44 @@ export default async function HomePage() {
                 <Link
                   key={item.id}
                   href={item.link}
-                  className="group flex flex-row items-start gap-3 rounded-lg border border-gray-200 bg-white p-4 transition hover:border-brand-primary/50 hover:shadow-sm"
+                  className="group flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4 transition hover:border-brand-primary/50 hover:shadow-sm"
                 >
-                  <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl bg-brand-primary/10">
-                    {item.hasImage && item.image ? (
-                      <Image 
-                        src={item.image} 
-                        alt={item.title} 
-                        fill 
-                        sizes="112px" 
-                        className="object-cover transition-transform duration-300 group-hover:scale-105"
-                        suppressHydrationWarning
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-brand-primary">
-                        <span className="text-white text-xs font-bold">Acoustic</span>
-                      </div>
-                    )}
+                  {/* Rasm va nom bir xil qatorda */}
+                  <div className="flex gap-3">
+                    {/* Rasm - chapda */}
+                    <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl bg-brand-primary/10">
+                      {item.hasImage && item.image ? (
+                        <Image 
+                          src={item.image} 
+                          alt={item.title} 
+                          fill 
+                          sizes="112px" 
+                          className="object-cover transition-transform duration-300 group-hover:scale-105"
+                          suppressHydrationWarning
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center bg-brand-primary">
+                          <span className="text-white text-xs font-bold">Acoustic</span>
+                        </div>
+                      )}
+                    </div>
+                    {/* Nom - rasm yonida */}
+                    <div className="flex flex-col flex-1 min-w-0">
+                      <h3 className="text-base font-semibold text-brand-accent leading-tight group-hover:text-brand-primary transition-colors" suppressHydrationWarning>
+                        {item.title}
+                      </h3>
+                    </div>
                   </div>
-                  <div className="flex flex-col flex-1 space-y-1 min-w-0">
-                    <h3 className="text-base font-semibold text-brand-accent leading-tight group-hover:text-brand-primary transition-colors" suppressHydrationWarning>
-                      {item.title}
-                    </h3>
-                    {item.description && (
-                      <p className="text-sm text-muted-foreground leading-snug" suppressHydrationWarning>
-                        {item.description}
-                      </p>
-                    )}
-                    <span className="inline-flex items-center gap-1 pt-1 text-xs font-semibold text-brand-primary group-hover:text-brand-accent transition-all mt-auto" suppressHydrationWarning>
-                      {locale === 'ru' ? 'Подробнее' : 'Batafsil'} ↗
-                    </span>
-                  </div>
+                  {/* Tavsif - rasm tagida */}
+                  {item.description && (
+                    <p className="text-sm text-muted-foreground leading-snug line-clamp-2" suppressHydrationWarning>
+                      {item.description}
+                    </p>
+                  )}
+                  {/* Batafsil link */}
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-brand-primary group-hover:text-brand-accent transition-all" suppressHydrationWarning>
+                    {locale === 'ru' ? 'Подробнее' : 'Batafsil'} ↗
+                  </span>
                 </Link>
               ))}
             </div>

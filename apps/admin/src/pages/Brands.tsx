@@ -194,10 +194,24 @@ export default function BrandsPage() {
       >
         <Form layout="vertical" form={form}>
           <Form.Item label="Nomi" name="name" rules={[{ required: true, message: 'Nomi majburiy' }]}>
-            <Input placeholder="Masalan, Oticon" />
+            <Input 
+              placeholder="Masalan, Oticon"
+              onChange={(e) => {
+                const name = e.target.value;
+                const currentSlug = form.getFieldValue('slug');
+                if (!currentSlug || currentSlug === createSlug(form.getFieldValue('name') || '')) {
+                  form.setFieldsValue({ slug: createSlug(name) });
+                }
+              }}
+            />
           </Form.Item>
-          <Form.Item label="Slug" name="slug" rules={[{ required: true, message: 'Slug majburiy' }]}>
-            <Input placeholder="oticon" />
+          <Form.Item 
+            label="Slug" 
+            name="slug" 
+            rules={[{ required: true, message: 'Slug majburiy' }]}
+            extra="URL uchun qisqa nom (avtomatik yaratiladi yoki qo'lda kiriting)"
+          >
+            <Input placeholder="Avtomatik yaratiladi..." />
           </Form.Item>
           <Form.Item label="Ta'rif (uz)" name="desc_uz">
             <Input.TextArea rows={3} placeholder="Brend haqida qisqa maʼlumot" />

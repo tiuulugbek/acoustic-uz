@@ -58,6 +58,7 @@ import {
   type MediaDto,
 } from '../lib/api';
 import RichTextEditor from '../components/RichTextEditor';
+import { createSlug } from '../utils/slug';
 
 const statusOptions = [
   { label: 'Nashr etilgan', value: 'published' },
@@ -422,7 +423,17 @@ function CatalogManager() {
             name="name_uz"
             rules={[{ required: true, message: 'Iltimos, katalog nomini kiriting' }]}
           >
-            <Input placeholder="Masalan, Ko'rinmas quloq apparatlari" />
+            <Input 
+              placeholder="Masalan, Ko'rinmas quloq apparatlari"
+              onChange={(e) => {
+                const name = e.target.value;
+                const currentSlug = form.getFieldValue('slug');
+                // Only auto-generate slug if it's empty or was auto-generated
+                if (!currentSlug || currentSlug === createSlug(form.getFieldValue('name_uz') || '')) {
+                  form.setFieldsValue({ slug: createSlug(name) });
+                }
+              }}
+            />
           </Form.Item>
           <Form.Item
             label="Nomi (ru)"
@@ -435,9 +446,9 @@ function CatalogManager() {
             label="Slug"
             name="slug"
             rules={[{ required: true, message: 'Slug maydoni majburiy' }]}
-            extra="URL uchun qisqa nom"
+            extra="URL uchun qisqa nom (avtomatik yaratiladi yoki qo'lda kiriting)"
           >
-            <Input placeholder="ko-rinmas-quloq-apparatlari" />
+            <Input placeholder="Avtomatik yaratiladi..." />
           </Form.Item>
           <Form.Item label="Tavsif (uz)" name="description_uz">
             <Input.TextArea rows={3} placeholder="Katalog haqida qisqa ma'lumot" />
@@ -721,7 +732,16 @@ function CategoryManager() {
             name="name_uz"
             rules={[{ required: true, message: 'Iltimos, kategoriya nomini kiriting' }]}
           >
-            <Input placeholder="Masalan, Quloq apparatlari" />
+            <Input 
+              placeholder="Masalan, Quloq apparatlari"
+              onChange={(e) => {
+                const name = e.target.value;
+                const currentSlug = form.getFieldValue('slug');
+                if (!currentSlug || currentSlug === createSlug(form.getFieldValue('name_uz') || '')) {
+                  form.setFieldsValue({ slug: createSlug(name) });
+                }
+              }}
+            />
           </Form.Item>
           <Form.Item
             label="Nomi (ru)"
@@ -734,9 +754,9 @@ function CategoryManager() {
             label="Slug"
             name="slug"
             rules={[{ required: true, message: 'Slug maydoni majburiy' }]}
-            extra="URL uchun qisqa nom"
+            extra="URL uchun qisqa nom (avtomatik yaratiladi yoki qo'lda kiriting)"
           >
-            <Input placeholder="quloq-apparatlari" />
+            <Input placeholder="Avtomatik yaratiladi..." />
           </Form.Item>
           <Form.Item label="Ikonka (ixtiyoriy)" name="icon">
             <Input placeholder="Ant Design ikonkasi yoki o‘z belgingiz" />
@@ -1264,7 +1284,16 @@ function ProductManager({ productTypeFilter }: { productTypeFilter?: string }) {
               name="name_uz"
               rules={[{ required: true, message: 'Iltimos, mahsulot nomini kiriting' }]}
             >
-              <Input placeholder="Masalan, Oticon More 1" />
+              <Input 
+                placeholder="Masalan, Oticon More 1"
+                onChange={(e) => {
+                  const name = e.target.value;
+                  const currentSlug = form.getFieldValue('slug');
+                  if (!currentSlug || currentSlug === createSlug(form.getFieldValue('name_uz') || '')) {
+                    form.setFieldsValue({ slug: createSlug(name) });
+                  }
+                }}
+              />
             </Form.Item>
             <Form.Item
               label="Nomi (ru)"
@@ -1278,9 +1307,9 @@ function ProductManager({ productTypeFilter }: { productTypeFilter?: string }) {
             label="Slug"
             name="slug"
             rules={[{ required: true, message: 'Slug maydoni majburiy' }]}
-            extra="URL uchun qisqa nom (avtomatik yaratiladi)"
+            extra="URL uchun qisqa nom (avtomatik yaratiladi yoki qo'lda kiriting)"
           >
-            <Input placeholder="oticon-more-1" />
+            <Input placeholder="Avtomatik yaratiladi..." />
           </Form.Item>
 
           {/* Classification */}

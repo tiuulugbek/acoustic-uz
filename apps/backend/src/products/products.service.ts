@@ -13,6 +13,7 @@ export class ProductsService {
     brandId?: string;
     categoryId?: string;
     catalogId?: string;
+    productType?: string;
     search?: string;
     audience?: string;
     formFactor?: string;
@@ -30,6 +31,7 @@ export class ProductsService {
     if (filters?.status) where.status = filters.status;
     if (filters?.brandId) where.brandId = filters.brandId;
     if (filters?.categoryId) where.categoryId = filters.categoryId;
+    if (filters?.productType) where.productType = filters.productType;
     if (filters?.catalogId) {
       where.catalogs = {
         some: {

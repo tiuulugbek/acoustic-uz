@@ -29,6 +29,7 @@ import {
   UpdateServiceCategoryPayload,
   ApiError,
 } from '../lib/api';
+import { createSlug } from '../utils/slug';
 
 const statusOptions = [
   { label: 'Nashr etilgan', value: 'published' },
@@ -263,7 +264,16 @@ export default function ServiceCategoriesPage() {
             name="name_uz"
             rules={[{ required: true, message: 'Iltimos nomini kiriting' }]}
           >
-            <Input placeholder="Masalan, Eshitish diagnostikasi" />
+            <Input 
+              placeholder="Masalan, Eshitish diagnostikasi"
+              onChange={(e) => {
+                const name = e.target.value;
+                const currentSlug = form.getFieldValue('slug');
+                if (!currentSlug || currentSlug === createSlug(form.getFieldValue('name_uz') || '')) {
+                  form.setFieldsValue({ slug: createSlug(name) });
+                }
+              }}
+            />
           </Form.Item>
           <Form.Item
             label="Nomi (ru)"
@@ -282,9 +292,9 @@ export default function ServiceCategoriesPage() {
             label="Slug"
             name="slug"
             rules={[{ required: true, message: 'Slug maydoni majburiy' }]}
-            extra="URL uchun qisqa nom, masalan, eshitish-diagnostikasi"
+            extra="URL uchun qisqa nom (avtomatik yaratiladi yoki qo'lda kiriting)"
           >
-            <Input />
+            <Input placeholder="Avtomatik yaratiladi..." />
           </Form.Item>
           <Form.Item label="Ota kategoriya" name="parentId" extra="Ixtiyoriy - boshqa kategoriya ichida kategoriya yaratish">
             <Select

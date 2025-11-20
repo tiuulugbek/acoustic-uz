@@ -28,6 +28,7 @@ import { SearchModule } from './search/search.module';
 import { MenusModule } from './menus/menus.module';
 import { AuditLogModule } from './audit-log/audit-log.module';
 import { HomepageModule } from './homepage/homepage.module';
+import { DoctorsModule } from './doctors/doctors.module';
 import { LocaleCacheInterceptor } from './common/interceptors/locale-cache.interceptor';
 
 @Module({
@@ -97,6 +98,7 @@ import { LocaleCacheInterceptor } from './common/interceptors/locale-cache.inter
     MenusModule,
     AuditLogModule,
     HomepageModule,
+    DoctorsModule,
   ],
   providers: [
     {

@@ -2,7 +2,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { detectLocale } from '@/lib/locale-server';
-import { getServiceCategories } from '@/lib/api-server';
+import { getServiceCategories, getBranches } from '@/lib/api-server';
+import BranchesSidebar from '@/components/branches-sidebar';
+import PageHeader from '@/components/page-header';
 
 // Force dynamic rendering to ensure locale is always read from cookies
 export const dynamic = 'force-dynamic';
@@ -34,11 +36,16 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function ServicesPage() {
   const locale = detectLocale();
 
-  // Fetch all published service categories
+  // Fetch all published service categories (with pagination support)
   const categoriesData = await getServiceCategories(locale);
+  
+  // Fetch branches for sidebar map
+  const branches = await getBranches(locale);
 
-  // Filter top-level categories (no parent)
-  const topLevelCategories = (categoriesData || []).filter((cat) => !cat.parentId);
+  // Filter top-level categories (no parent) and published only
+  const topLevelCategories = (categoriesData || []).filter(
+    (cat) => !cat.parentId && cat.status === 'published'
+  );
 
   // Transform categories for display
   const categories = topLevelCategories.map((category) => {
@@ -67,98 +74,81 @@ export default async function ServicesPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      {/* Breadcrumbs */}
-      <section className="bg-muted/40">
-        <div className="mx-auto max-w-6xl px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:px-6">
-          <Link href="/" className="hover:text-brand-primary" suppressHydrationWarning>
-            {locale === 'ru' ? 'Главная' : 'Bosh sahifa'}
-          </Link>
-          <span className="mx-2">›</span>
-          <span className="text-brand-primary" suppressHydrationWarning>{locale === 'ru' ? 'Услуги' : 'Xizmatlar'}</span>
-        </div>
-      </section>
-
-      {/* Header Section */}
-      <section className="bg-brand-accent text-white">
-        <div className="mx-auto max-w-6xl space-y-4 px-4 py-10 md:px-6">
-          <h1 className="text-3xl font-bold md:text-4xl" suppressHydrationWarning>
-            {locale === 'ru' ? 'Услуги' : 'Xizmatlar'}
-          </h1>
-          <p className="max-w-4xl text-base leading-relaxed text-white/90" suppressHydrationWarning>
-            {locale === 'ru'
-              ? 'Все услуги сурдолога в одном месте. Профессиональная помощь людям с тугоухостью. Диагностика, лечение и коррекция нарушений слуха у взрослых и детей с самого рождения.'
-              : "Barcha surdolog xizmatlari bir joyda. Eshitish qobiliyati buzilgan odamlarga professional yordam. Kattalar va bolalarda eshitishning diagnostikasi, davolanishi va korreksiyasi."}
-          </p>
-        </div>
-      </section>
+      <PageHeader
+        locale={locale}
+        breadcrumbs={[
+          { label: locale === 'ru' ? 'Главная' : 'Bosh sahifa', href: '/' },
+          { label: locale === 'ru' ? 'Услуги' : 'Xizmatlar' },
+        ]}
+        title={locale === 'ru' ? 'Услуги' : 'Xizmatlar'}
+        description={locale === 'ru'
+          ? 'Все услуги сурдолога в одном месте. Профессиональная помощь людям с тугоухостью. Диагностика, лечение и коррекция нарушений слуха у взрослых и детей с самого рождения.'
+          : "Barcha surdolog xizmatlari bir joyda. Eshitish qobiliyati buzilgan odamlarga professional yordam. Kattalar va bolalarda eshitishning diagnostikasi, davolanishi va korreksiyasi."}
+      />
 
       {/* Service Categories Grid Section */}
-      <section className="bg-white py-12">
+      <section className="bg-white py-8">
         <div className="mx-auto max-w-6xl px-4 md:px-6">
-          {categories.length > 0 ? (
-            <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {categories.map((category) => (
+          <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+            <div>
+              {categories.length > 0 ? (
+                <div className="grid gap-6 sm:grid-cols-2">
+              {/* Optimize images with priority for above-the-fold items */}
+              {categories.map((category, index) => (
                 <Link
                   key={category.id}
                   href={category.slug && category.slug !== '#' ? `/services/${category.slug}` : '#'}
-                  className="group flex flex-col overflow-hidden rounded-lg bg-white shadow-sm transition hover:shadow-md"
+                  className="group flex gap-4 rounded-lg bg-white p-4 transition hover:bg-gray-50"
                 >
-                  <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted/20">
+                  {/* Rasm - chapda */}
+                  <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-muted/20">
                     {category.image ? (
                       <Image
                         src={category.image}
                         alt={category.name}
                         fill
+                        sizes="96px"
                         className="object-cover transition-transform duration-300 group-hover:scale-105"
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                        loading={index < 4 ? 'eager' : 'lazy'}
+                        priority={index < 4}
                         suppressHydrationWarning
                       />
                     ) : (
-                      <div className="flex h-full items-center justify-center bg-brand-primary">
-                        <span className="text-white text-lg font-bold">Acoustic</span>
+                      <div className="flex h-full w-full items-center justify-center bg-brand-primary">
+                        <span className="text-white text-xs font-bold">Acoustic</span>
                       </div>
                     )}
                   </div>
-                  <div className="flex flex-1 flex-col p-5">
-                    <h3 className="mb-2 text-lg font-semibold text-foreground group-hover:text-brand-primary transition-colors" suppressHydrationWarning>
+                  {/* Matn - o'ngda */}
+                  <div className="flex flex-col flex-1 min-w-0">
+                    <h3 className="mb-2 text-base font-semibold text-foreground group-hover:text-brand-primary transition-colors" suppressHydrationWarning>
                       {category.name}
                     </h3>
                     {category.description && (
-                      <p className="mb-4 flex-1 text-sm leading-relaxed text-muted-foreground line-clamp-2" suppressHydrationWarning>
+                      <p className="text-sm leading-relaxed text-muted-foreground line-clamp-3" suppressHydrationWarning>
                         {category.description}
                       </p>
                     )}
-                    {category.serviceCount > 0 && (
-                      <p className="mb-2 text-xs text-muted-foreground" suppressHydrationWarning>
-                        {locale === 'ru' 
-                          ? `${category.serviceCount} ${category.serviceCount === 1 ? 'услуга' : category.serviceCount < 5 ? 'услуги' : 'услуг'}`
-                          : `${category.serviceCount} ${category.serviceCount === 1 ? 'xizmat' : 'xizmatlar'}`}
-                      </p>
-                    )}
-                    <span className="inline-flex items-center gap-1 text-sm font-medium text-brand-primary group-hover:gap-2 transition-all" suppressHydrationWarning>
-                      {locale === 'ru' ? 'Подробнее' : 'Batafsil'}
-                      <svg
-                        className="h-4 w-4 transition-transform group-hover:translate-x-1"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </span>
                   </div>
                 </Link>
               ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground" suppressHydrationWarning>
+                    {locale === 'ru'
+                      ? 'Категории услуг будут добавлены в ближайшее время.'
+                      : 'Xizmat kategoriyalari tez orada qo\'shiladi.'}
+                  </p>
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground" suppressHydrationWarning>
-                {locale === 'ru'
-                  ? 'Категории услуг будут добавлены в ближайшее время.'
-                  : 'Xizmat kategoriyalari tez orada qo\'shiladi.'}
-              </p>
-            </div>
-          )}
+
+            {/* Sidebar */}
+            <aside className="space-y-6">
+              <BranchesSidebar locale={locale} branches={branches || []} />
+            </aside>
+          </div>
         </div>
       </section>
     </main>

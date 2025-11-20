@@ -17,7 +17,8 @@
     "dev:migrate": "pnpm --filter @acoustic/backend exec prisma migrate deploy --schema=../../prisma/schema.prisma",
     "dev:seed": "pnpm --filter @acoustic/backend db:seed",
     "dev:reset": "pnpm exec prisma migrate reset --schema=prisma/schema.prisma",
-    "dev:stack": "pnpm run dev:db && pnpm run dev:migrate && pnpm --filter @acoustic/backend build && pnpm --filter @acoustic/backend dev"
+    "dev:stack": "pnpm run dev:db && pnpm run dev:migrate && pnpm --filter @acoustic/backend build && pnpm --filter @acoustic/backend dev",
+    "restart:backend": "pkill -f 'nest start' 2>/dev/null; pkill -f '@acoustic/backend' 2>/dev/null; sleep 2; pnpm --filter @acoustic/backend dev"
   },
   "devDependencies": {
     "@turbo/gen": "^1.10.12",

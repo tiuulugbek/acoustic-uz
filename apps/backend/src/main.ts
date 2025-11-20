@@ -35,8 +35,8 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
-      whitelist: true,
-      forbidNonWhitelisted: true,
+      whitelist: false, // Disable whitelist to allow all fields from Prisma
+      forbidNonWhitelisted: false,
       transformOptions: {
         enableImplicitConversion: true,
       },

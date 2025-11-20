@@ -278,6 +278,9 @@ importers:
       '@acoustic/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@react-map/uzbekistan':
+        specifier: 1.0.9
+        version: 1.0.9(react-dom@18.3.1)(react@18.3.1)
       '@tanstack/react-query':
         specifier: ^5.17.0
         version: 5.90.7(react@18.3.1)
@@ -2135,6 +2138,16 @@ packages:
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
       react-is: 18.3.1
+    dev: false
+
+  /@react-map/uzbekistan@1.0.9(react-dom@18.3.1)(react@18.3.1):
+    resolution: {integrity: sha512-TLMgezpPyjp3KFJ9EpNhG81c1G4oXZjAsB8Sm0HwpU2j29VXiZLVlr9HtXTDjF6awKi6zwwyc2qPeP+FeKlorA==}
+    peerDependencies:
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
+    dependencies:
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
     dev: false
 
   /@remix-run/router@1.23.0:

@@ -5,6 +5,8 @@ import { getServiceBySlug, getServiceCategoryBySlug } from '@/lib/api-server';
 import { detectLocale } from '@/lib/locale-server';
 import { getBilingualText } from '@/lib/locale';
 import ServiceContent from '@/components/service-content';
+import ServiceTableOfContents from '@/components/service-table-of-contents';
+import PageHeader from '@/components/page-header';
 
 // Force dynamic rendering to always fetch fresh data from admin
 export const dynamic = 'force-dynamic';
@@ -76,46 +78,33 @@ export default async function ServiceSlugPage({ params }: ServicePageProps) {
     
     return (
       <main className="min-h-screen bg-background">
-        {/* Breadcrumbs */}
-        <section className="bg-muted/40">
-          <div className="mx-auto max-w-6xl px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:px-6">
-            <Link href="/" className="hover:text-brand-primary" suppressHydrationWarning>
-              {locale === 'ru' ? 'Главная' : 'Bosh sahifa'}
-            </Link>
-            <span className="mx-2">›</span>
-            <Link href="/services" className="hover:text-brand-primary" suppressHydrationWarning>
-              {locale === 'ru' ? 'Услуги' : 'Xizmatlar'}
-            </Link>
-            <span className="mx-2">›</span>
-            <span className="text-brand-primary" suppressHydrationWarning>{categoryTitle}</span>
-          </div>
-        </section>
-
-        {/* Category Header */}
-        <section className="bg-brand-accent text-white">
-          <div className="mx-auto max-w-6xl space-y-4 px-4 py-10 md:px-6">
-            {categoryImage && (
-              <div className="relative aspect-[3/1] w-full overflow-hidden rounded-lg bg-white/10">
+        <PageHeader
+          locale={locale}
+          breadcrumbs={[
+            { label: locale === 'ru' ? 'Главная' : 'Bosh sahifa', href: '/' },
+            { label: locale === 'ru' ? 'Услуги' : 'Xizmatlar', href: '/services' },
+            { label: categoryTitle },
+          ]}
+          title={categoryTitle}
+          description={categoryDescription}
+        />
+        
+        {categoryImage && (
+          <section className="bg-white py-8">
+            <div className="mx-auto max-w-6xl px-4 md:px-6">
+              <div className="relative aspect-[3/1] w-full overflow-hidden rounded-lg bg-muted/40">
                 <Image
                   src={categoryImage}
                   alt={categoryTitle}
                   fill
-                  className="object-cover opacity-80"
+                  className="object-cover"
                   sizes="(max-width: 768px) 100vw, 1200px"
                   suppressHydrationWarning
                 />
               </div>
-            )}
-            <h1 className="text-3xl font-bold md:text-4xl" suppressHydrationWarning>
-              {categoryTitle}
-            </h1>
-            {categoryDescription && (
-              <p className="max-w-4xl text-base leading-relaxed text-white/90" suppressHydrationWarning>
-                {categoryDescription}
-              </p>
-            )}
-          </div>
-        </section>
+            </div>
+          </section>
+        )}
 
         {/* Services Grid */}
         <section className="bg-white py-12">
@@ -202,7 +191,7 @@ export default async function ServiceSlugPage({ params }: ServicePageProps) {
   if (!service) {
     return (
       <main className="min-h-screen bg-background">
-        <div className="mx-auto max-w-4xl px-4 py-10 md:px-6">
+        <div className="mx-auto max-w-6xl px-4 py-10 md:px-6">
           <Link href="/services" className="text-sm font-semibold text-brand-primary" suppressHydrationWarning>
             {locale === 'ru' ? '← Вернуться к услугам' : '← Xizmatlarga qaytish'}
           </Link>
@@ -242,42 +231,171 @@ export default async function ServiceSlugPage({ params }: ServicePageProps) {
   
   breadcrumbItems.push({ label: title, href: `/services/${service.slug}` });
 
+  // Extract table of contents from body content (headings)
+  const extractTableOfContents = (content: string) => {
+    if (!content) return [];
+    
+    // Check if content is HTML
+    const isHTML = /<[a-z][\s\S]*>/i.test(content);
+    
+    if (isHTML) {
+      // Extract headings from HTML (same order as ServiceContent component)
+      const toc: Array<{ id: string; title: string; level: number }> = [];
+      let headingIndex = 0;
+      
+      // Extract all headings in order (H2 first, then H3)
+      const allHeadingsRegex = /<(h[23])[^>]*>(.*?)<\/h[23]>/gi;
+      let match;
+      
+      while ((match = allHeadingsRegex.exec(content)) !== null) {
+        const tag = match[1]; // h2 or h3
+        const title = match[2].replace(/<[^>]*>/g, '').trim(); // Remove HTML tags
+        if (title) {
+          const level = tag === 'h2' ? 2 : 3;
+          const id = `section-${headingIndex++}`;
+          toc.push({ id, title, level });
+        }
+      }
+      
+      return toc;
+    }
+    
+    // Otherwise, process as markdown
+    const lines = content.split('\n');
+    const toc: Array<{ id: string; title: string; level: number }> = [];
+    lines.forEach((line, index) => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('## ')) {
+        const title = trimmed.substring(3);
+        const id = `section-${index}`;
+        toc.push({ id, title, level: 2 });
+      } else if (trimmed.startsWith('### ')) {
+        const title = trimmed.substring(4);
+        const id = `section-${index}`;
+        toc.push({ id, title, level: 3 });
+      }
+    });
+    return toc;
+  };
+
+  const tableOfContents = extractTableOfContents(body || '');
+
+  // Get related services from the same category
+  let relatedServices: Array<{ id: string; title_uz: string; title_ru: string; slug: string; cover?: { url: string } | null }> = [];
+  if (service.category) {
+    const category = await getServiceCategoryBySlug(service.category.slug, locale);
+    if (category?.services) {
+      relatedServices = category.services
+        .filter(s => s.id !== service.id && s.status === 'published')
+        .slice(0, 6)
+        .map(s => ({
+          id: s.id,
+          title_uz: s.title_uz,
+          title_ru: s.title_ru,
+          slug: s.slug,
+          cover: s.cover,
+        }));
+    }
+  }
+
+  // Build cover image URL
+  let coverImageUrl = service.cover?.url || '';
+  if (coverImageUrl && coverImageUrl.startsWith('/') && !coverImageUrl.startsWith('//')) {
+    const baseUrl = API_BASE_URL.replace('/api', '');
+    coverImageUrl = `${baseUrl}${coverImageUrl}`;
+  }
+
   return (
     <main className="min-h-screen bg-background">
-      {/* Breadcrumbs */}
-      <section className="bg-muted/40">
-        <div className="mx-auto max-w-4xl px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:px-6">
-          {breadcrumbItems.map((item, index) => (
-            <span key={item.href}>
-              {index > 0 && <span className="mx-2">›</span>}
-              {index < breadcrumbItems.length - 1 ? (
-                <Link href={item.href} className="hover:text-brand-primary" suppressHydrationWarning>
-                  {item.label}
-                </Link>
-              ) : (
-                <span className="text-brand-primary" suppressHydrationWarning>{item.label}</span>
+      <PageHeader
+        locale={locale}
+        breadcrumbs={breadcrumbItems.map(item => ({
+          label: item.label,
+          href: item.href !== '#' ? item.href : undefined,
+        }))}
+        title={title}
+        description={description}
+      />
+
+      {/* Main Content with Sidebar */}
+      <div className="mx-auto max-w-6xl px-4 py-10 md:px-6">
+        <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
+          {/* Main Content */}
+          <article className="min-w-0">
+            <div className="mb-6 space-y-4">
+              <h1 className="text-3xl font-bold text-foreground md:text-4xl lg:text-5xl">{title}</h1>
+              {description && (
+                <p className="text-lg leading-relaxed text-muted-foreground">{description}</p>
               )}
-            </span>
-          ))}
-        </div>
-      </section>
+            </div>
 
-      <div className="mx-auto max-w-4xl px-4 py-10 md:px-6">
-        <div className="mt-6 space-y-4">
-          <h1 className="text-3xl font-bold text-foreground md:text-4xl">{title}</h1>
-          {description && (
-            <p className="text-lg text-muted-foreground">{description}</p>
-          )}
-        </div>
+            {coverImageUrl && (
+              <div className="relative mb-10 w-full overflow-hidden rounded-xl bg-muted/40 shadow-lg">
+                <div className="relative aspect-[21/9] w-full">
+                  <Image 
+                    src={coverImageUrl} 
+                    alt={coverAlt} 
+                    fill 
+                    className="object-cover" 
+                    priority
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 100vw, 66vw"
+                  />
+                </div>
+              </div>
+            )}
 
-        {service.cover?.url && (
-          <div className="relative mt-8 aspect-[3/2] w-full overflow-hidden rounded-3xl bg-muted/40">
-            <Image src={service.cover.url} alt={coverAlt} fill className="object-cover" priority />
-          </div>
-        )}
+            <ServiceContent content={body || ''} locale={locale} />
+          </article>
 
-        <div className="mt-10">
-          <ServiceContent content={body || ''} locale={locale} />
+          {/* Sidebar */}
+          <aside className="sticky top-6 h-fit space-y-6">
+            {/* Table of Contents */}
+            <ServiceTableOfContents items={tableOfContents} locale={locale} />
+
+            {/* Related Services */}
+            {relatedServices.length > 0 && (
+              <div className="rounded-lg border border-border bg-card p-6">
+                <h3 className="mb-4 text-lg font-semibold text-foreground">
+                  {locale === 'ru' ? 'Полезные статьи' : 'Foydali maqolalar'}
+                </h3>
+                <ul className="space-y-4">
+                  {relatedServices.map((relatedService) => {
+                    const relatedTitle = getBilingualText(relatedService.title_uz, relatedService.title_ru, locale);
+                    let relatedImageUrl = relatedService.cover?.url || '';
+                    if (relatedImageUrl && relatedImageUrl.startsWith('/') && !relatedImageUrl.startsWith('//')) {
+                      const baseUrl = API_BASE_URL.replace('/api', '');
+                      relatedImageUrl = `${baseUrl}${relatedImageUrl}`;
+                    }
+                    return (
+                      <li key={relatedService.id}>
+                        <Link
+                          href={`/services/${relatedService.slug}`}
+                          className="group flex gap-3 transition-opacity hover:opacity-80"
+                        >
+                          {relatedImageUrl && (
+                            <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded bg-muted/20">
+                              <Image
+                                src={relatedImageUrl}
+                                alt={relatedTitle}
+                                fill
+                                className="object-cover"
+                                sizes="64px"
+                              />
+                            </div>
+                          )}
+                          <div className="flex-1">
+                            <h4 className="text-sm font-medium leading-snug text-foreground group-hover:text-brand-primary transition-colors">
+                              {relatedTitle}
+                            </h4>
+                          </div>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+          </aside>
         </div>
       </div>
     </main>

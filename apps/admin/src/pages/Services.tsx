@@ -12,7 +12,11 @@ import {
   Popconfirm,
   message,
   Tabs,
+  Upload,
+  Image,
 } from 'antd';
+import { UploadOutlined, DeleteOutlined } from '@ant-design/icons';
+import type { UploadProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
   useQuery,
@@ -30,8 +34,13 @@ import {
   ApiError,
   getServiceCategoriesAdmin,
   ServiceCategoryDto,
+  getMedia,
+  uploadMedia,
+  type MediaDto,
 } from '../lib/api';
 import ServiceCategoriesPage from './ServiceCategories';
+import RichTextEditor from '../components/RichTextEditor';
+import { createSlug } from '../utils/slug';
 
 const statusOptions = [
   { label: 'Nashr etilgan', value: 'published' },
@@ -68,15 +77,29 @@ function ServicesManager() {
   });
 
   // Fetch service categories for the dropdown
-  const { data: categoriesData, isLoading: isLoadingCategories } = useQuery<ServiceCategoryDto[], ApiError>({
+  const { data: categoriesDataRaw, isLoading: isLoadingCategories } = useQuery<ServiceCategoryDto[] | { items: ServiceCategoryDto[] }, ApiError>({
     queryKey: ['service-categories-admin'],
     queryFn: getServiceCategoriesAdmin,
+    retry: false,
+  });
+
+  // Handle both array and paginated response formats
+  const categoriesData = Array.isArray(categoriesDataRaw) 
+    ? categoriesDataRaw 
+    : (categoriesDataRaw as any)?.items || [];
+
+  // Fetch media list for image selection
+  const { data: mediaList } = useQuery<MediaDto[], ApiError>({
+    queryKey: ['media'],
+    queryFn: getMedia,
     retry: false,
   });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingService, setEditingService] = useState<ServiceDto | null>(null);
   const [form] = Form.useForm();
+  const [uploading, setUploading] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
 
   const { mutateAsync: createServiceMutation, isPending: isCreating } = useMutation<ServiceDto, ApiError, CreateServicePayload>({
     mutationFn: createService,
@@ -108,6 +131,7 @@ function ServicesManager() {
   const openCreateModal = () => {
     setEditingService(null);
     form.resetFields();
+    setPreviewImage(null);
     form.setFieldsValue({
       status: 'published',
       order: 0,
@@ -117,6 +141,7 @@ function ServicesManager() {
 
   const openEditModal = (service: ServiceDto) => {
     setEditingService(service);
+    setPreviewImage(service.cover?.url || null);
     form.setFieldsValue({
       title_uz: service.title_uz,
       title_ru: service.title_ru,
@@ -128,10 +153,41 @@ function ServicesManager() {
       status: service.status,
       order: service.order,
       coverId: service.cover?.id,
-      categoryId: (service as any).categoryId || (service as any).category?.id,
+      categoryId: service.categoryId || service.category?.id,
     });
     setIsModalOpen(true);
   };
+
+  const handleUpload: UploadProps['customRequest'] = async (options) => {
+    const { file, onSuccess, onError } = options;
+    setUploading(true);
+    try {
+      const media = await uploadMedia(file as File);
+      form.setFieldsValue({ coverId: media.id });
+      setPreviewImage(media.url);
+      message.success('Rasm yuklandi');
+      queryClient.invalidateQueries({ queryKey: ['media'] });
+      onSuccess?.(media);
+    } catch (error) {
+      const apiError = error as ApiError;
+      message.error(apiError.message || 'Rasm yuklashda xatolik');
+      onError?.(error as Error);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    form.setFieldsValue({ coverId: undefined });
+    setPreviewImage(null);
+  };
+
+  const handleSelectExistingMedia = (mediaId: string, mediaUrl: string) => {
+    form.setFieldsValue({ coverId: mediaId });
+    setPreviewImage(mediaUrl);
+  };
+
+  const currentImageId = Form.useWatch('coverId', form);
 
   const handleDelete = async (service: ServiceDto) => {
     await deleteServiceMutation(service.id);
@@ -162,6 +218,7 @@ function ServicesManager() {
 
       setIsModalOpen(false);
       form.resetFields();
+      setPreviewImage(null);
     } catch (error) {
       // validation handled by antd
     }
@@ -187,9 +244,9 @@ function ServicesManager() {
               {record.title_ru ? (
                 <div style={{ fontSize: 12, color: '#6b7280' }}>{record.title_ru}</div>
               ) : null}
-              {(record as any).category?.name_uz && (
+              {record.category?.name_uz && (
                 <div style={{ fontSize: 12, color: '#9ca3af' }}>
-                  Kategoriya: {(record as any).category.name_uz}
+                  Kategoriya: {record.category.name_uz}
                 </div>
               )}
             </div>
@@ -261,10 +318,13 @@ function ServicesManager() {
       <Modal
         title={editingService ? 'Xizmatni tahrirlash' : 'Yangi xizmat'}
         open={isModalOpen}
-        onCancel={() => setIsModalOpen(false)}
+        onCancel={() => {
+          setIsModalOpen(false);
+          setPreviewImage(null);
+        }}
         onOk={handleSubmit}
         confirmLoading={isCreating || isUpdating}
-        width={720}
+        width={900}
         okText="Saqlash"
         cancelText="Bekor qilish"
       >
@@ -274,7 +334,17 @@ function ServicesManager() {
             name="title_uz"
             rules={[{ required: true, message: 'Iltimos sarlavhani kiriting' }]}
           >
-            <Input placeholder="Masalan, Eshitish diagnostikasi" />
+            <Input 
+              placeholder="Masalan, Eshitish diagnostikasi"
+              onChange={(e) => {
+                const title = e.target.value;
+                const currentSlug = form.getFieldValue('slug');
+                // Only auto-generate slug if it's empty or was auto-generated
+                if (!currentSlug || currentSlug === createSlug(form.getFieldValue('title_uz') || '')) {
+                  form.setFieldsValue({ slug: createSlug(title) });
+                }
+              }}
+            />
           </Form.Item>
           <Form.Item
             label="Sarlavha (ru)"
@@ -289,28 +359,112 @@ function ServicesManager() {
           <Form.Item label="Qisqa tavsif (ru)" name="excerpt_ru">
             <Input.TextArea rows={2} placeholder="Краткая информация о сервисе" />
           </Form.Item>
-          <Form.Item label="Batafsil mazmun (uz)" name="body_uz">
-            <Input.TextArea rows={4} placeholder="Xizmat tafsilotlari" />
+          <Form.Item 
+            label="Batafsil mazmun (uz)" 
+            name="body_uz"
+            valuePropName="value"
+            trigger="onChange"
+          >
+            <RichTextEditor placeholder="Xizmat tafsilotlari" />
           </Form.Item>
-          <Form.Item label="Batafsil mazmun (ru)" name="body_ru">
-            <Input.TextArea rows={4} placeholder="Подробности услуги" />
+          <Form.Item 
+            label="Batafsil mazmun (ru)" 
+            name="body_ru"
+            valuePropName="value"
+            trigger="onChange"
+          >
+            <RichTextEditor placeholder="Подробности услуги" />
           </Form.Item>
           <Form.Item
             label="Slug"
             name="slug"
             rules={[{ required: true, message: 'Slug maydoni majburiy' }]}
-            extra="URL uchun qisqa nom, masalan, eshitish-diagnostikasi"
+            extra="URL uchun qisqa nom (avtomatik yaratiladi yoki qo'lda kiriting)"
           >
-            <Input />
+            <Input placeholder="Avtomatik yaratiladi..." />
+          </Form.Item>
+          <Form.Item label="Cover rasm" name="coverId" extra="Xizmat uchun asosiy rasm">
+            <div>
+              {previewImage ? (
+                <div style={{ marginBottom: 16, position: 'relative', display: 'inline-block' }}>
+                  <Image
+                    src={previewImage}
+                    alt="Preview"
+                    width={200}
+                    height={150}
+                    style={{ objectFit: 'cover', borderRadius: 8 }}
+                    preview={false}
+                  />
+                  <Button
+                    type="text"
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={handleRemoveImage}
+                    style={{ position: 'absolute', top: 8, right: 8 }}
+                  >
+                    O'chirish
+                  </Button>
+                </div>
+              ) : null}
+              <Upload
+                customRequest={handleUpload}
+                showUploadList={false}
+                accept="image/*"
+                disabled={uploading}
+              >
+                <Button icon={<UploadOutlined />} loading={uploading}>
+                  {previewImage ? 'Rasmni almashtirish' : 'Rasm yuklash'}
+                </Button>
+              </Upload>
+              {mediaList && mediaList.length > 0 && (
+                <div style={{ marginTop: 16 }}>
+                  <div style={{ marginBottom: 8, fontSize: 12, color: '#666' }}>
+                    Yoki mavjud rasmni tanlang:
+                  </div>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))',
+                      gap: 8,
+                      maxHeight: 200,
+                      overflowY: 'auto',
+                      padding: 8,
+                      border: '1px solid #d9d9d9',
+                      borderRadius: 4,
+                    }}
+                  >
+                    {mediaList.slice(0, 20).map((media) => (
+                      <div
+                        key={media.id}
+                        onClick={() => handleSelectExistingMedia(media.id, media.url)}
+                        style={{
+                          width: '100%',
+                          aspectRatio: '1',
+                          border: currentImageId === media.id ? '2px solid #1890ff' : '1px solid #d9d9d9',
+                          borderRadius: 4,
+                          cursor: 'pointer',
+                          overflow: 'hidden',
+                          position: 'relative',
+                          backgroundColor: currentImageId === media.id ? '#e6f7ff' : '#fff',
+                        }}
+                      >
+                        <img
+                          src={media.url}
+                          alt={media.alt_uz || media.filename}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </Form.Item>
           <Form.Item label="Tartib" name="order" initialValue={0}>
             <InputNumber style={{ width: '100%' }} />
           </Form.Item>
           <Form.Item label="Holat" name="status" initialValue="published">
             <Select options={statusOptions} />
-          </Form.Item>
-          <Form.Item label="Cover ID" name="coverId" extra="Media ID (ixtiyoriy)">
-            <Input placeholder="Media ID" />
           </Form.Item>
           <Form.Item label="Kategoriya" name="categoryId" extra="Xizmat kategoriyasini tanlang (ixtiyoriy)">
             <Select

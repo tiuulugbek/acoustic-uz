@@ -3,7 +3,7 @@ import Link from 'next/link';
 // Removed notFound import - we never crash, always show UI
 import type { Metadata } from 'next';
 import { type ProductResponse, type BrandResponse } from '@/lib/api';
-import { getProducts, getCategoryBySlug, getCatalogBySlug, type ProductListResponse, type CatalogResponse } from '@/lib/api-server';
+import { getProducts, getCategoryBySlug, getCatalogBySlug, getBrands, type ProductListResponse, type CatalogResponse } from '@/lib/api-server';
 import CatalogFilters from '@/components/catalog-filters';
 import CatalogSort from '@/components/catalog-sort';
 import CatalogBrandChips from '@/components/catalog-brand-chips';
@@ -136,16 +136,35 @@ export async function generateMetadata({ params }: CatalogCategoryPageProps): Pr
 export default async function CatalogCategoryPage({ params, searchParams }: CatalogCategoryPageProps) {
   const locale = detectLocale();
   
+  // Check if slug is a brand slug
+  const brands = await getBrands(locale);
+  let brand = brands.find(b => b.slug === params.slug);
+  
+  // If Signia is not found in backend, add it manually (same as in catalog/page.tsx)
+  if (!brand && params.slug.toLowerCase() === 'signia') {
+    brand = {
+      id: 'signia-manual',
+      name: 'Signia',
+      slug: 'signia',
+      logo: null,
+    } as BrandResponse;
+  }
+  
+  // If it's a brand, set brand filter in searchParams
+  const effectiveSearchParams = brand 
+    ? { ...searchParams, brand: searchParams.brand ? `${searchParams.brand},${brand.slug}` : brand.slug }
+    : searchParams;
+  
   // Optimized: Try catalog first (more common), then category
   // Both work the same way - unified filtering logic
-  const catalog = await getCatalogBySlug(params.slug, locale);
-  const category = !catalog ? await getCategoryBySlug(params.slug, locale) : null;
+  const catalog = !brand ? await getCatalogBySlug(params.slug, locale) : null;
+  const category = !brand && !catalog ? await getCategoryBySlug(params.slug, locale) : null;
   
   // Determine filter type for products query
   const filterType = catalog ? 'catalog' : category ? 'category' : null;
   const filterId = catalog?.id || category?.id || null;
 
-  // If both catalog and category are null, show all products instead of error
+  // If both catalog and category are null (or it's a brand), show all products instead of error
   // This handles cases where homepage links to catalogs/categories that don't exist yet
   // Users can still browse all products and use filters
   // NOTE: For P0, we still use client-side filtering for the fallback case
@@ -157,19 +176,19 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
       status: 'published',
       limit: 1000, // Temporary: fetch many to support client-side filtering
       offset: 0,
-      sort: (searchParams.sort as 'newest' | 'price_asc' | 'price_desc') || 'newest',
+      sort: (effectiveSearchParams.sort as 'newest' | 'price_asc' | 'price_desc') || 'newest',
     }, locale) || { items: [], total: 0, page: 1, pageSize: 12 };
     
     // Safety check: ensure items is an array
     const allProducts = allProductsResponse?.items || [];
     
     // Apply filters even without category (client-side for P0)
-    const selectedBrands = searchParams.brand?.split(',').filter(Boolean) ?? [];
-    const selectedAudience = searchParams.audience?.split(',').filter(Boolean) ?? [];
-    const selectedForms = searchParams.form?.split(',').filter(Boolean) ?? [];
-    const selectedSignal = searchParams.signal?.split(',').filter(Boolean) ?? [];
-    const selectedPower = searchParams.power?.split(',').filter(Boolean) ?? [];
-    const selectedLoss = searchParams.loss?.split(',').filter(Boolean) ?? [];
+    const selectedBrands = effectiveSearchParams.brand?.split(',').filter(Boolean) ?? [];
+    const selectedAudience = effectiveSearchParams.audience?.split(',').filter(Boolean) ?? [];
+    const selectedForms = effectiveSearchParams.form?.split(',').filter(Boolean) ?? [];
+    const selectedSignal = effectiveSearchParams.signal?.split(',').filter(Boolean) ?? [];
+    const selectedPower = effectiveSearchParams.power?.split(',').filter(Boolean) ?? [];
+    const selectedLoss = effectiveSearchParams.loss?.split(',').filter(Boolean) ?? [];
 
     let filteredProducts = [...allProducts];
 
@@ -193,9 +212,10 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
     }
 
     // Client-side pagination (P0 fallback - will be removed in P1)
+    const sortBy = (effectiveSearchParams.sort as 'newest' | 'price_asc' | 'price_desc') || 'newest';
     const totalItems = filteredProducts.length;
     const totalPages = Math.max(1, Math.ceil(totalItems / PRODUCTS_PER_PAGE));
-    const currentPage = Math.min(Math.max(1, parseInt(searchParams.page || '1', 10)), totalPages);
+    const currentPage = Math.min(Math.max(1, parseInt(effectiveSearchParams.page || '1', 10)), totalPages);
     const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
     const endIndex = startIndex + PRODUCTS_PER_PAGE;
     const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
@@ -216,6 +236,8 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
     )}`;
 
     // Show all products when category doesn't exist
+    const brandName = brand ? (brand.name || '') : '';
+    
     return (
       <main className="min-h-screen bg-background">
         {/* Breadcrumbs */}
@@ -228,20 +250,32 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
             <Link href="/catalog" className="hover:text-brand-primary" suppressHydrationWarning>
               {locale === 'ru' ? 'Каталог' : 'Katalog'}
             </Link>
+            {brand && (
+              <>
+                <span className="mx-2">›</span>
+                <span className="text-brand-primary" suppressHydrationWarning>{brandName}</span>
+              </>
+            )}
           </div>
         </section>
 
         {/* Header */}
         <section className="bg-brand-accent text-white">
-          <div className="mx-auto max-w-6xl space-y-4 px-4 py-10 md:px-6">
-            <h1 className="text-3xl font-bold md:text-4xl" suppressHydrationWarning>
-              {locale === 'ru' ? 'Все товары' : 'Barcha mahsulotlar'}
-            </h1>
-            <p className="max-w-4xl text-base leading-relaxed text-white/90" suppressHydrationWarning>
-              {locale === 'ru'
-                ? 'Все товары в каталоге. Используйте фильтры для уточнения поиска.'
-                : "Katalogdagi barcha mahsulotlar. Qidiruvni aniqlashtirish uchun filtrlardan foydalaning."}
-            </p>
+          <div className="mx-auto max-w-6xl px-4 py-4 md:px-6 md:py-5">
+            <div className="flex-1 space-y-1.5">
+              <h1 className="text-xl font-bold md:text-2xl" suppressHydrationWarning>
+                {brand ? brandName : (locale === 'ru' ? 'Все товары' : 'Barcha mahsulotlar')}
+              </h1>
+              <p className="max-w-4xl text-sm leading-relaxed text-white/90" suppressHydrationWarning>
+                {brand
+                  ? (locale === 'ru'
+                      ? `Все товары бренда ${brandName}. Используйте фильтры для уточнения поиска.`
+                      : `${brandName} brendidagi barcha mahsulotlar. Qidiruvni aniqlashtirish uchun filtrlardan foydalaning.`)
+                  : (locale === 'ru'
+                      ? 'Все товары в каталоге. Используйте фильтры для уточнения поиска.'
+                      : "Katalogdagi barcha mahsulotlar. Qidiruvni aniqlashtirish uchun filtrlardan foydalaning.")}
+              </p>
+            </div>
           </div>
         </section>
 
@@ -254,8 +288,9 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
                 <CatalogFilters
                   categorySlug={params.slug}
                   locale={locale}
-                  brands={availableBrands}
+                  brands={brand ? [] : availableBrands}
                   selectedBrands={selectedBrands}
+                  selectedBrandName={brand ? brandName : undefined}
                   selectedAudience={selectedAudience}
                   selectedForms={selectedForms}
                   selectedPower={selectedPower}
@@ -269,13 +304,13 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
 
               {/* Product Grid */}
               <div className="space-y-6">
-                {/* Brand Chips */}
-                {availableBrands.length > 0 && (
+                {/* Brand Chips - only show if not a brand page */}
+                {!brand && availableBrands.length > 0 && (
                   <CatalogBrandChips 
                     categorySlug={params.slug} 
                     locale={locale} 
                     brands={availableBrands} 
-                    selectedBrands={searchParams.brand?.split(',').filter(Boolean) ?? []} 
+                    selectedBrands={effectiveSearchParams.brand?.split(',').filter(Boolean) ?? []} 
                   />
                 )}
 
@@ -334,7 +369,7 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
                     <CatalogPagination
                       categorySlug={params.slug}
                       locale={locale}
-                      currentPage={productsResponse?.page || 1}
+                      currentPage={currentPage}
                       totalPages={totalPages}
                       totalItems={totalItems}
                     />
@@ -433,13 +468,15 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
 
         {/* Header */}
         <section className="bg-brand-accent text-white">
-          <div className="mx-auto max-w-6xl space-y-4 px-4 py-10 md:px-6">
-            <h1 className="text-3xl font-bold md:text-4xl" suppressHydrationWarning>{catalogName}</h1>
-            <p className="max-w-4xl text-base leading-relaxed text-white/90" suppressHydrationWarning>
-              {locale === 'ru'
-                ? `Все товары в каталоге "${catalogName}". Используйте фильтры для уточнения поиска.`
-                : `"${catalogName}" katalogidagi barcha mahsulotlar. Qidiruvni aniqlashtirish uchun filtrlardan foydalaning.`}
-            </p>
+          <div className="mx-auto max-w-6xl px-4 py-4 md:px-6 md:py-5">
+            <div className="flex-1 space-y-1.5">
+              <h1 className="text-xl font-bold md:text-2xl" suppressHydrationWarning>{catalogName}</h1>
+              <p className="max-w-4xl text-sm leading-relaxed text-white/90" suppressHydrationWarning>
+                {locale === 'ru'
+                  ? `Все товары в каталоге "${catalogName}". Используйте фильтры для уточнения поиска.`
+                  : `"${catalogName}" katalogidagi barcha mahsulotlar. Qidiruvni aniqlashtirish uchun filtrlardan foydalaning.`}
+              </p>
+            </div>
           </div>
         </section>
 
@@ -467,8 +504,8 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
 
               {/* Product Grid */}
               <div className="space-y-6">
-                {/* Brand Chips */}
-                {availableBrands.length > 0 && (
+                {/* Brand Chips - only show if not a brand page */}
+                {!brand && availableBrands.length > 0 && (
                   <CatalogBrandChips 
                     categorySlug={params.slug} 
                     locale={locale} 
@@ -804,13 +841,15 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
 
       {/* Header */}
       <section className="bg-brand-accent text-white">
-        <div className="mx-auto max-w-6xl space-y-4 px-4 py-10 md:px-6">
-          <h1 className="text-3xl font-bold md:text-4xl" suppressHydrationWarning>{categoryName}</h1>
-          <p className="max-w-4xl text-base leading-relaxed text-white/90" suppressHydrationWarning>
-            {locale === 'ru'
-              ? `Все товары в категории "${categoryName}". Используйте фильтры для уточнения поиска.`
-              : `"${categoryName}" kategoriyasidagi barcha mahsulotlar. Qidiruvni aniqlashtirish uchun filtrlardan foydalaning.`}
-          </p>
+        <div className="mx-auto max-w-6xl px-4 py-4 md:px-6 md:py-5">
+          <div className="flex-1 space-y-1.5">
+            <h1 className="text-xl font-bold md:text-2xl" suppressHydrationWarning>{categoryName}</h1>
+            <p className="max-w-4xl text-sm leading-relaxed text-white/90" suppressHydrationWarning>
+              {locale === 'ru'
+                ? `Все товары в категории "${categoryName}". Используйте фильтры для уточнения поиска.`
+                : `"${categoryName}" kategoriyasidagi barcha mahsulotlar. Qidiruvni aniqlashtirish uchun filtrlardan foydalaning.`}
+            </p>
+          </div>
         </div>
       </section>
 

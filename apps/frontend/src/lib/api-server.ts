@@ -24,6 +24,9 @@ import {
   getServiceCategories as getServiceCategoriesApi,
   getServiceCategoryBySlug as getServiceCategoryBySlugApi,
   getBrands as getBrandsApi,
+  getBranches as getBranchesApi,
+  getDoctors as getDoctorsApi,
+  getDoctorBySlug as getDoctorBySlugApi,
   type ProductCategoryResponse,
   type CatalogResponse,
   type ServiceCategoryResponse,
@@ -39,6 +42,9 @@ import {
   type FaqResponse,
   type HomepageJourneyStepResponse,
   type BrandResponse,
+  type BranchResponse,
+  type DoctorResponse,
+  getBranchBySlug as getBranchBySlugApi,
 } from './api';
 
 // Re-export types for use in pages
@@ -342,6 +348,60 @@ export async function getBrands(
     () => getBrandsApi(locale),
     [],
     'Failed to fetch brands',
+  );
+}
+
+/**
+ * Get all branches - returns empty array if backend is down
+ */
+export async function getBranches(
+  locale?: string,
+): Promise<BranchResponse[]> {
+  return safeApiCall(
+    () => getBranchesApi(locale),
+    [],
+    'Failed to fetch branches',
+  );
+}
+
+/**
+ * Get branch by slug - returns null if not found or backend is down
+ */
+export async function getBranchBySlug(
+  slug: string,
+  locale?: string,
+): Promise<BranchResponse | null> {
+  return safeApiCall(
+    () => getBranchBySlugApi(slug, locale),
+    null,
+    'Failed to fetch branch',
+  );
+}
+
+/**
+ * Get all doctors - returns empty array if backend is down
+ */
+export async function getDoctors(
+  locale?: string,
+): Promise<DoctorResponse[]> {
+  return safeApiCall(
+    () => getDoctorsApi(locale),
+    [],
+    'Failed to fetch doctors',
+  );
+}
+
+/**
+ * Get doctor by slug - returns null if backend is down or not found
+ */
+export async function getDoctorBySlug(
+  slug: string,
+  locale?: string,
+): Promise<DoctorResponse | null> {
+  return safeApiCall(
+    () => getDoctorBySlugApi(slug, locale),
+    null,
+    `Failed to fetch doctor: ${slug}`,
   );
 }
 

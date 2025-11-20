@@ -9,6 +9,7 @@ interface ServiceContentProps {
 
 /**
  * Renders service body content with support for:
+ * - HTML content (from RichTextEditor)
  * - Markdown-style **bold** text
  * - Numbered and bullet lists
  * - Headings (##, ###)
@@ -20,6 +21,41 @@ export default function ServiceContent({ content, locale }: ServiceContentProps)
       return null;
     }
 
+    // Check if content is HTML (contains HTML tags)
+    const isHTML = /<[a-z][\s\S]*>/i.test(content);
+    
+    if (isHTML) {
+      // Add IDs to headings for table of contents (in order)
+      let processedContent = content;
+      let headingIndex = 0;
+      
+      // Process all headings in order (H2 and H3 together)
+      processedContent = processedContent.replace(/<(h[23])([^>]*)>(.*?)<\/h[23]>/gi, (match, tag, attrs, text) => {
+        // Check if id already exists
+        if (attrs && attrs.includes('id=')) {
+          return match; // Keep existing ID
+        }
+        const id = `section-${headingIndex++}`;
+        const scrollClass = 'scroll-mt-20';
+        // Preserve existing classes or add scroll class
+        if (attrs && attrs.includes('class=')) {
+          attrs = attrs.replace(/class="([^"]*)"/, `class="$1 ${scrollClass}"`);
+        } else {
+          attrs = `${attrs} class="${scrollClass}"`;
+        }
+        return `<${tag}${attrs} id="${id}">${text}</${tag}>`;
+      });
+      
+      // Render HTML content directly
+      return (
+        <div 
+          className="prose prose-lg max-w-none"
+          dangerouslySetInnerHTML={{ __html: processedContent }}
+        />
+      );
+    }
+
+    // Otherwise, process as markdown
     const lines = content.split('\n');
     const elements: JSX.Element[] = [];
     let currentList: string[] = [];
@@ -88,9 +124,11 @@ export default function ServiceContent({ content, locale }: ServiceContentProps)
       // Check for headings
       if (trimmed.startsWith('### ')) {
         flushList();
+        const headingText = trimmed.substring(4);
+        const headingId = `section-${index}`;
         elements.push(
-          <h3 key={`h3-${index}`} className="mb-3 mt-6 text-xl font-semibold text-foreground">
-            {renderInlineContent(trimmed.substring(4))}
+          <h3 key={`h3-${index}`} id={headingId} className="mb-3 mt-6 scroll-mt-20 text-xl font-semibold text-foreground">
+            {renderInlineContent(headingText)}
           </h3>
         );
         return;
@@ -98,9 +136,11 @@ export default function ServiceContent({ content, locale }: ServiceContentProps)
 
       if (trimmed.startsWith('## ')) {
         flushList();
+        const headingText = trimmed.substring(3);
+        const headingId = `section-${index}`;
         elements.push(
-          <h2 key={`h2-${index}`} className="mb-4 mt-8 text-2xl font-bold text-foreground">
-            {renderInlineContent(trimmed.substring(3))}
+          <h2 key={`h2-${index}`} id={headingId} className="mb-4 mt-8 scroll-mt-20 text-2xl font-bold text-foreground">
+            {renderInlineContent(headingText)}
           </h2>
         );
         return;

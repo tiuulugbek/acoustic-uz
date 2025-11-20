@@ -176,7 +176,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   if (!product) {
     return (
       <main className="min-h-screen bg-background">
-        <div className="mx-auto max-w-4xl px-4 py-10 md:px-6">
+        <div className="mx-auto max-w-6xl px-4 py-10 md:px-6">
           <div className="rounded-lg border border-border bg-card p-8 text-center">
             <h1 className="mb-4 text-2xl font-bold text-foreground">
               {locale === 'ru' ? 'Продукт не найден' : 'Mahsulot topilmadi'}

@@ -114,6 +114,13 @@ export interface ServiceDto {
   slug: string;
   order: number;
   status: 'published' | 'draft' | 'archived';
+  categoryId?: string | null;
+  category?: {
+    id: string;
+    name_uz: string;
+    name_ru: string;
+    slug: string;
+  } | null;
   cover?: {
     id: string;
     url: string;
@@ -133,6 +140,7 @@ export type CreateServicePayload = {
   order?: number;
   status?: ServiceDto['status'];
   coverId?: string | null;
+  categoryId?: string | null;
 };
 
 export type UpdateServicePayload = Partial<CreateServicePayload>;
@@ -150,6 +158,64 @@ export const updateService = (id: string, payload: UpdateServicePayload) =>
   });
 export const deleteService = (id: string) =>
   request<void>(`/services/${id}`, {
+    method: 'DELETE',
+  });
+
+// Doctors
+export interface DoctorDto {
+  id: string;
+  name_uz: string;
+  name_ru: string;
+  position_uz?: string | null;
+  position_ru?: string | null;
+  experience_uz?: string | null;
+  experience_ru?: string | null;
+  description_uz?: string | null;
+  description_ru?: string | null;
+  slug: string;
+  imageId?: string | null;
+  image?: {
+    id: string;
+    url: string;
+    alt_uz?: string | null;
+    alt_ru?: string | null;
+  } | null;
+  order: number;
+  status: 'published' | 'draft' | 'archived';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CreateDoctorPayload = {
+  name_uz: string;
+  name_ru: string;
+  position_uz?: string | null;
+  position_ru?: string | null;
+  experience_uz?: string | null;
+  experience_ru?: string | null;
+  description_uz?: string | null;
+  description_ru?: string | null;
+  slug: string;
+  imageId?: string | null;
+  order?: number;
+  status?: DoctorDto['status'];
+};
+
+export type UpdateDoctorPayload = Partial<CreateDoctorPayload>;
+
+export const getDoctors = () => request<DoctorDto[]>('/doctors/admin');
+export const createDoctor = (payload: CreateDoctorPayload) =>
+  request<DoctorDto>('/doctors', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+export const updateDoctor = (id: string, payload: UpdateDoctorPayload) =>
+  request<DoctorDto>(`/doctors/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+export const deleteDoctor = (id: string) =>
+  request<void>(`/doctors/${id}`, {
     method: 'DELETE',
   });
 
@@ -846,6 +912,66 @@ export const updateFaq = (id: string, payload: UpdateFaqPayload) =>
   });
 export const deleteFaq = (id: string) =>
   request<void>(`/faq/${id}`, {
+    method: 'DELETE',
+  });
+
+// Branches
+export interface BranchDto {
+  slug?: string | null;
+  id: string;
+  name_uz: string;
+  name_ru: string;
+  address_uz: string;
+  address_ru: string;
+  phone: string;
+  phones: string[];
+  imageId?: string | null;
+  image?: {
+    id: string;
+    url: string;
+    alt_uz?: string | null;
+    alt_ru?: string | null;
+  } | null;
+  map_iframe?: string | null;
+  tour3d_iframe?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CreateBranchPayload = {
+  name_uz: string;
+  name_ru: string;
+  address_uz: string;
+  address_ru: string;
+  phone: string;
+  phones?: string[];
+  imageId?: string | null;
+  map_iframe?: string | null;
+  tour3d_iframe?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  order?: number;
+  slug?: string | null;
+};
+
+export type UpdateBranchPayload = Partial<CreateBranchPayload>;
+
+export const getBranches = () => request<BranchDto[]>('/branches');
+export const createBranch = (payload: CreateBranchPayload) =>
+  request<BranchDto>('/branches', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+export const updateBranch = (id: string, payload: UpdateBranchPayload) =>
+  request<BranchDto>(`/branches/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+export const deleteBranch = (id: string) =>
+  request<void>(`/branches/${id}`, {
     method: 'DELETE',
   });
 

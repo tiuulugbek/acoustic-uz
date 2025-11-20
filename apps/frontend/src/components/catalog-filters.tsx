@@ -48,6 +48,7 @@ interface CatalogFiltersProps {
   locale: 'uz' | 'ru';
   brands: Array<{ id: string; name: string; slug: string; count?: number }>;
   selectedBrands: string[];
+  selectedBrandName?: string;
   selectedAudience: string[];
   selectedForms: string[];
   selectedPower: string[];
@@ -78,6 +79,7 @@ export default function CatalogFilters({
   locale,
   brands,
   selectedBrands,
+  selectedBrandName,
   selectedAudience,
   selectedForms,
   selectedPower,
@@ -127,7 +129,13 @@ export default function CatalogFilters({
       <h2 className="text-lg font-semibold text-brand-accent">{locale === 'ru' ? 'Фильтры' : 'Filtrlar'}</h2>
 
       {/* Brand Filter */}
-      {brands.length > 0 && (
+      {selectedBrandName ? (
+        <FilterSection title={locale === 'ru' ? 'Бренд' : 'Brend'}>
+          <div className="flex items-center gap-2 text-sm font-medium text-brand-accent">
+            <span>{selectedBrandName}</span>
+          </div>
+        </FilterSection>
+      ) : brands.length > 0 ? (
         <FilterSection title={locale === 'ru' ? 'Бренд' : 'Brend'}>
           {brands
             .filter((brand) => (brand.count ?? 0) > 0)
@@ -138,7 +146,7 @@ export default function CatalogFilters({
               return <FilterCheckbox key={brand.id} id={`brand-${brand.id}`} label={brand.name} checked={isSelected} url={url} count={brand.count} />;
             })}
         </FilterSection>
-      )}
+      ) : null}
 
       {/* Audience Filter */}
       {Object.values(audienceCounts).some((count) => count > 0) && (

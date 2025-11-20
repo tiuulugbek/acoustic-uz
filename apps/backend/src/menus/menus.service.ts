@@ -5,12 +5,18 @@ import { menuItemsSchema, DEFAULT_MENUS, type MenuItemSchema, type MenuChildSche
 type MenuItem = MenuItemSchema;
 type MenuChild = MenuChildSchema;
 
-function mergeChildren(defaultChildren: MenuChild[] | undefined, existingChildren: MenuChild[] | undefined) {
+function mergeChildren(defaultChildren: MenuChild[] | undefined, existingChildren: MenuChild[] | undefined, itemId?: string) {
   const defaultList = defaultChildren ?? [];
   const existingList = existingChildren ?? [];
 
   if (!defaultList.length && !existingList.length) {
     return undefined;
+  }
+
+  // For "menu-catalog", always use default children to match frontend structure
+  // This ensures old submenus are replaced with new frontend-aligned structure
+  if (itemId === 'menu-catalog' && defaultList.length > 0) {
+    return defaultList;
   }
 
   const mergedChildren = defaultList.map((defaultChild) => {
@@ -33,7 +39,15 @@ function mergeMenuItems(defaults: MenuItem[], existing: MenuItem[]): MenuItem[] 
   const merged = defaults.map((defaultItem) => {
     const match = existing.find((item) => item.id === defaultItem.id);
     if (match) {
-      const mergedChildren = mergeChildren(defaultItem.children, match.children);
+      const mergedChildren = mergeChildren(defaultItem.children, match.children, defaultItem.id);
+      // For "menu-catalog", always use default children (ignore match.children)
+      if (defaultItem.id === 'menu-catalog' && defaultItem.children && defaultItem.children.length > 0) {
+        return {
+          ...defaultItem,
+          ...match,
+          children: defaultItem.children, // Force use default children
+        };
+      }
       return {
         ...defaultItem,
         ...match,
@@ -68,19 +82,109 @@ export class MenusService {
     }
 
     const items = Array.isArray(menu.items) ? (menuItemsSchema.safeParse(menu.items).success ? menu.items : []) : [];
+
+    // Get default catalog item directly from DEFAULT_MENUS
+    const defaultItemsRaw = DEFAULT_MENUS[name as keyof typeof DEFAULT_MENUS];
+    const defaultCatalogRaw = defaultItemsRaw?.find((item: any) => item.id === 'menu-catalog') as any;
+
     if (normalizedDefaults.length > 0) {
       const normalizedExisting = Array.isArray(items) && items.length > 0 ? menuItemsSchema.parse(items) : [];
-      const merged = mergeMenuItems(normalizedDefaults, normalizedExisting);
 
-      const needsUpdate =
-        !normalizedExisting.length ||
-        JSON.stringify(merged) !== JSON.stringify(normalizedExisting);
+      // If catalog exists in defaults, ALWAYS use default children
+      if (defaultCatalogRaw && 'children' in defaultCatalogRaw && Array.isArray(defaultCatalogRaw.children) && defaultCatalogRaw.children.length > 0) {
+        // Parse the default catalog item
+        const parsedCatalog = menuItemsSchema.parse([defaultCatalogRaw])[0];
 
-      if (needsUpdate) {
+        // Remove catalog from existing before merge
+        const withoutCatalog = normalizedExisting.filter(item => item.id !== 'menu-catalog');
+
+        // Merge other items (excluding catalog)
+        const otherMerged = mergeMenuItems(
+          normalizedDefaults.filter(item => item.id !== 'menu-catalog'),
+          withoutCatalog
+        );
+
+        // Add catalog with default children (always use parsed default)
+        const finalItems = [...otherMerged, parsedCatalog].sort((a, b) => a.order - b.order);
+
+        // Update database
         menu = await this.prisma.menu.update({
           where: { name },
-          data: { items: merged as any },
+          data: { items: finalItems as any },
         });
+
+        return menu;
+      }
+
+      // Normal merge for other cases - but update titles if they differ from defaults
+      const merged = mergeMenuItems(normalizedDefaults, normalizedExisting);
+
+      // Check if any item titles need updating from defaults
+      let needsUpdate = !normalizedExisting.length || JSON.stringify(merged) !== JSON.stringify(normalizedExisting);
+      
+      // Also check if titles match defaults (for menu-doctors, etc.)
+      for (const defaultItem of normalizedDefaults) {
+        const existingItem = normalizedExisting.find(item => item.id === defaultItem.id);
+        if (existingItem && (existingItem.title_uz !== defaultItem.title_uz || existingItem.title_ru !== defaultItem.title_ru)) {
+          needsUpdate = true;
+          break;
+        }
+      }
+
+      if (needsUpdate) {
+        // Update titles from defaults
+        const updatedMerged = merged.map(item => {
+          const defaultItem = normalizedDefaults.find(def => def.id === item.id);
+          if (defaultItem) {
+            return {
+              ...item,
+              title_uz: defaultItem.title_uz,
+              title_ru: defaultItem.title_ru,
+            };
+          }
+          return item;
+        });
+
+        menu = await this.prisma.menu.update({
+          where: { name },
+          data: { items: updatedMerged as any },
+        });
+      }
+    }
+
+    // Final safety check: always return default children for catalog in response
+    if (defaultCatalogRaw && 'children' in defaultCatalogRaw && Array.isArray(defaultCatalogRaw.children) && defaultCatalogRaw.children.length > 0 && Array.isArray(menu.items)) {
+      const itemsArray = menu.items as MenuItem[];
+      const catalogIndex = itemsArray.findIndex(item => item.id === 'menu-catalog');
+      if (catalogIndex >= 0) {
+        // Parse default children to ensure correct format
+        const parsedCatalog = menuItemsSchema.parse([defaultCatalogRaw])[0];
+        itemsArray[catalogIndex] = {
+          ...itemsArray[catalogIndex],
+          children: parsedCatalog.children
+        };
+        (menu as any).items = itemsArray;
+      }
+    }
+
+    // Final safety check: ensure titles match defaults
+    if (Array.isArray(menu.items)) {
+      const itemsArray = menu.items as MenuItem[];
+      let titlesUpdated = false;
+      for (let i = 0; i < itemsArray.length; i++) {
+        const item = itemsArray[i];
+        const defaultItem = normalizedDefaults.find(def => def.id === item.id);
+        if (defaultItem && (item.title_uz !== defaultItem.title_uz || item.title_ru !== defaultItem.title_ru)) {
+          itemsArray[i] = {
+            ...item,
+            title_uz: defaultItem.title_uz,
+            title_ru: defaultItem.title_ru,
+          };
+          titlesUpdated = true;
+        }
+      }
+      if (titlesUpdated) {
+        (menu as any).items = itemsArray;
       }
     }
 

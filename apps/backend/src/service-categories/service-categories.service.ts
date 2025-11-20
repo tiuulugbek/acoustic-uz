@@ -5,7 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class ServiceCategoriesService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(publicOnly = false) {
+  async findAll(publicOnly = false, limit?: number, offset?: number) {
     const where = publicOnly ? { status: 'published' } : {};
     const include: any = { 
       parent: true, 
@@ -17,6 +17,29 @@ export class ServiceCategoriesService {
         ...(publicOnly ? { where: { status: 'published' } } : {}),
       },
     };
+    
+    // If limit/offset are provided, return paginated response
+    if (limit !== undefined || offset !== undefined) {
+      const [items, total] = await Promise.all([
+        this.prisma.serviceCategory.findMany({
+          where,
+          include,
+          orderBy: [{ order: 'asc' }, { name_uz: 'asc' }],
+          ...(limit !== undefined ? { take: limit } : {}),
+          ...(offset !== undefined ? { skip: offset } : {}),
+        }),
+        this.prisma.serviceCategory.count({ where }),
+      ]);
+
+      return {
+        items,
+        total,
+        page: offset && limit ? Math.floor(offset / limit) + 1 : 1,
+        pageSize: limit || total,
+      };
+    }
+    
+    // Otherwise return array (for admin panel and backward compatibility)
     return this.prisma.serviceCategory.findMany({
       where,
       include,

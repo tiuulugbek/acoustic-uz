@@ -265,8 +265,32 @@ export interface ServiceCategoryResponse {
   status: string;
 }
 
-export const getServiceCategories = (locale?: string) => {
-  return fetchJson<ServiceCategoryResponse[]>('/service-categories?public=true', locale);
+export interface ServiceCategoriesListResponse {
+  items: ServiceCategoryResponse[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export const getServiceCategories = async (
+  locale?: string,
+  limit?: number,
+  offset?: number,
+): Promise<ServiceCategoryResponse[]> => {
+  const queryParams = new URLSearchParams({ public: 'true' });
+  if (limit !== undefined) queryParams.set('limit', limit.toString());
+  if (offset !== undefined) queryParams.set('offset', offset.toString());
+  
+  const response = await fetchJson<ServiceCategoriesListResponse | ServiceCategoryResponse[]>(
+    `/service-categories?${queryParams.toString()}`,
+    locale,
+  );
+  
+  // Handle both paginated and non-paginated responses for backward compatibility
+  if (Array.isArray(response)) {
+    return response;
+  }
+  return response.items;
 };
 
 export const getServiceCategoryBySlug = async (slug: string, locale?: string): Promise<ServiceCategoryResponse | null> => {
@@ -434,6 +458,8 @@ export interface ProductListParams {
   status?: string;
   brandId?: string;
   categoryId?: string;
+  catalogId?: string;
+  productType?: string;
   search?: string;
   audience?: string;
   formFactor?: string;
@@ -461,6 +487,7 @@ export const getProducts = (params?: ProductListParams, locale?: string): Promis
   if (params?.brandId) query.set('brandId', params.brandId);
   if (params?.categoryId) query.set('categoryId', params.categoryId);
   if (params?.catalogId) query.set('catalogId', params.catalogId);
+  if (params?.productType) query.set('productType', params.productType);
   if (params?.search) query.set('search', params.search);
   if (params?.audience) query.set('audience', params.audience);
   if (params?.formFactor) query.set('formFactor', params.formFactor);
@@ -571,4 +598,53 @@ export interface BrandResponse {
 
 export const getBrands = (locale?: string) => {
   return fetchJson<BrandResponse[]>('/brands', locale);
+};
+
+export interface BranchResponse {
+  id: string;
+  name_uz: string;
+  name_ru: string;
+  slug?: string | null;
+  address_uz: string;
+  address_ru: string;
+  phone: string;
+  phones: string[];
+  image?: MediaResponse | null;
+  map_iframe?: string | null;
+  tour3d_iframe?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  order: number;
+}
+
+export const getBranches = (locale?: string) => {
+  return fetchJson<BranchResponse[]>('/branches', locale);
+};
+
+export const getBranchBySlug = (slug: string, locale?: string) => {
+  return fetchJson<BranchResponse>(`/branches/slug/${slug}`, locale);
+};
+
+export interface DoctorResponse {
+  id: string;
+  name_uz: string;
+  name_ru: string;
+  position_uz?: string | null;
+  position_ru?: string | null;
+  experience_uz?: string | null;
+  experience_ru?: string | null;
+  description_uz?: string | null;
+  description_ru?: string | null;
+  slug: string;
+  image?: MediaResponse | null;
+  order: number;
+  status: string;
+}
+
+export const getDoctors = (locale?: string) => {
+  return fetchJson<DoctorResponse[]>('/doctors?public=true', locale);
+};
+
+export const getDoctorBySlug = (slug: string, locale?: string) => {
+  return fetchJson<DoctorResponse>(`/doctors/slug/${slug}?public=true`, locale);
 };

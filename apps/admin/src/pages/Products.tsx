@@ -495,7 +495,16 @@ export default function ProductsPage() {
                 name="name_uz"
                 rules={[{ required: true, message: 'Iltimos, mahsulot nomini kiriting' }]}
               >
-                <Input placeholder="Masalan, Oticon More 1" />
+                <Input 
+                  placeholder="Masalan, Oticon More 1"
+                  onChange={(e) => {
+                    const name = e.target.value;
+                    const currentSlug = form.getFieldValue('slug');
+                    if (!currentSlug || currentSlug === createSlug(form.getFieldValue('name_uz') || '')) {
+                      form.setFieldsValue({ slug: createSlug(name) });
+                    }
+                  }}
+                />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -513,9 +522,9 @@ export default function ProductsPage() {
             label="Slug"
             name="slug"
             rules={[{ required: true, message: 'Slug maydoni majburiy' }]}
-            extra="URL uchun qisqa nom"
+            extra="URL uchun qisqa nom (avtomatik yaratiladi yoki qo'lda kiriting)"
           >
-            <Input placeholder="oticon-more-1" />
+            <Input placeholder="Avtomatik yaratiladi..." />
           </Form.Item>
 
           <Row gutter={16}>

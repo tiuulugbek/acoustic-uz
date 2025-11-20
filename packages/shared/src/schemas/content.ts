@@ -135,6 +135,7 @@ export const faqSchema = z.object({
 });
 
 export const branchSchema = z.object({
+  slug: z.string().optional().nullable(),
   name_uz: z.string().min(1),
   name_ru: z.string().min(1),
   address_uz: z.string().min(1),
@@ -143,6 +144,9 @@ export const branchSchema = z.object({
   phones: z.array(z.string()).default([]),
   imageId: z.string().cuid().optional().nullable(),
   map_iframe: z.string().optional().nullable(),
+  tour3d_iframe: z.string().optional().nullable(),
+  latitude: z.number().min(-90).max(90).optional().nullable(),
+  longitude: z.number().min(-180).max(180).optional().nullable(),
   order: z.number().int().default(0),
 });
 
@@ -206,6 +210,21 @@ export const homepageServiceSchema = z.object({
   excerpt_uz: z.string().optional(),
   excerpt_ru: z.string().optional(),
   slug: z.string().optional().nullable(),
+  imageId: z.string().cuid().optional().nullable(),
+  order: z.number().int().default(0),
+  status: z.enum(['published', 'draft', 'archived']).default('published'),
+});
+
+export const doctorSchema = z.object({
+  name_uz: z.string().min(1),
+  name_ru: z.string().min(1),
+  position_uz: z.string().optional().nullable(),
+  position_ru: z.string().optional().nullable(),
+  experience_uz: z.string().optional().nullable(),
+  experience_ru: z.string().optional().nullable(),
+  description_uz: z.string().optional().nullable(),
+  description_ru: z.string().optional().nullable(),
+  slug: z.string().min(1),
   imageId: z.string().cuid().optional().nullable(),
   order: z.number().int().default(0),
   status: z.enum(['published', 'draft', 'archived']).default('published'),

@@ -25,6 +25,7 @@ export class ProductsController {
       brandId?: string;
       categoryId?: string;
       catalogId?: string;
+      productType?: string;
       search?: string;
       audience?: string;
       formFactor?: string;
