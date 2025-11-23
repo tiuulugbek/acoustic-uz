@@ -47,6 +47,7 @@ import {
   BrandDto,
   CatalogDto,
   getCatalogsAdmin,
+  getCatalogs,
   createCatalog,
   updateCatalog,
   deleteCatalog,
@@ -59,6 +60,8 @@ import {
 } from '../lib/api';
 import RichTextEditor from '../components/RichTextEditor';
 import { createSlug } from '../utils/slug';
+import { normalizeImageUrl } from '../utils/image';
+import { compressImage } from '../utils/image-compression';
 
 const statusOptions = [
   { label: 'Nashr etilgan', value: 'published' },
@@ -125,7 +128,8 @@ function CatalogManager() {
     queryFn: async (): Promise<CatalogDto[]> => {
       try {
         console.log('[CatalogManager] Fetching catalogs from /catalogs/admin...');
-        const result = await getCatalogsAdmin();
+        // Use public endpoint for catalogs (no auth required)
+        const result = await getCatalogs();
         console.log('[CatalogManager] Catalogs fetched successfully:', result);
         console.log('[CatalogManager] Number of catalogs:', result?.length ?? 0);
         return result ?? [];
@@ -219,7 +223,7 @@ function CatalogManager() {
 
   const openEditModal = (record: CatalogDto) => {
     setEditing(record);
-    setPreviewImage(record.image?.url ?? null);
+    setPreviewImage(record.image?.url ? normalizeImageUrl(record.image.url) : null);
     form.setFieldsValue({
       name_uz: record.name_uz,
       name_ru: record.name_ru,
@@ -239,9 +243,11 @@ function CatalogManager() {
     const { file, onSuccess, onError } = options;
     setUploading(true);
     try {
-      const media = await uploadMedia(file as File);
+      // Rasmni yuklashdan oldin siqish
+      const compressedFile = await compressImage(file as File);
+      const media = await uploadMedia(compressedFile);
       form.setFieldsValue({ imageId: media.id });
-      setPreviewImage(media.url);
+      setPreviewImage(normalizeImageUrl(media.url));
       message.success('Rasm yuklandi');
       queryClient.invalidateQueries({ queryKey: ['media'] });
       onSuccess?.(media);
@@ -261,7 +267,7 @@ function CatalogManager() {
 
   const handleSelectExistingMedia = (mediaId: string, mediaUrl: string) => {
     form.setFieldsValue({ imageId: mediaId });
-    setPreviewImage(mediaUrl);
+    setPreviewImage(normalizeImageUrl(mediaUrl));
   };
 
   const currentImageId = Form.useWatch('imageId', form);
@@ -310,7 +316,7 @@ function CatalogManager() {
         render: (_, record) =>
           record.image?.url ? (
             <Image
-              src={record.image.url}
+              src={normalizeImageUrl(record.image.url)}
               alt={record.name_uz}
               width={60}
               height={60}
@@ -489,7 +495,7 @@ function CatalogManager() {
                 <div style={{ marginTop: 16, textAlign: 'center' }}>
                   <div style={{ marginBottom: 8, fontSize: 12, color: '#666' }}>Tanlangan rasm:</div>
                   <Image
-                    src={previewImage || currentMedia?.url || ''}
+                    src={normalizeImageUrl(previewImage || currentMedia?.url || '')}
                     alt="Preview"
                     style={{ maxWidth: '100%', maxHeight: 200, objectFit: 'contain', borderRadius: 4 }}
                     preview={true}
@@ -517,7 +523,7 @@ function CatalogManager() {
                         }}
                       >
                         <img
-                          src={media.url}
+                          src={normalizeImageUrl(media.url)}
                           alt={media.alt_uz || media.filename}
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
@@ -860,8 +866,8 @@ function ProductManager({ productTypeFilter }: { productTypeFilter?: string }) {
   };
 
   const { data: productsResponse, isLoading } = useQuery({
-    queryKey: ['products-admin'],
-    queryFn: getProductsAdmin,
+    queryKey: ['products-admin', productTypeFilter],
+    queryFn: () => getProductsAdmin({ limit: 1000 }), // Barcha mahsulotlarni olish
   });
   
   // Extract items from paginated response and filter by productType
@@ -890,7 +896,7 @@ function ProductManager({ productTypeFilter }: { productTypeFilter?: string }) {
 
   const { data: catalogs, isLoading: isLoadingCatalogs, error: catalogsError } = useQuery({
     queryKey: ['catalogs-admin'],
-    queryFn: getCatalogsAdmin,
+    queryFn: getCatalogs,
     retry: false,
   });
 
@@ -1236,10 +1242,15 @@ function ProductManager({ productTypeFilter }: { productTypeFilter?: string }) {
 
       <Table
         loading={isLoading}
-        dataSource={products ?? []}
+        dataSource={products}
         columns={columns}
         rowKey="id"
-        pagination={{ pageSize: 10 }}
+        pagination={{ 
+          pageSize: 100, 
+          showSizeChanger: true,
+          showTotal: (total) => `Jami ${total} ta mahsulot`,
+          pageSizeOptions: ['10', '25', '50', '100', '200']
+        }}
       />
 
       <Modal

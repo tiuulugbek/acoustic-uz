@@ -10,6 +10,7 @@ import {
   getPosts,
   getPublicFaq,
   getHomepageJourney,
+  getHomepageHearingAidItems,
 } from '@/lib/api-server';
 import type {
   BannerResponse,
@@ -43,6 +44,7 @@ export default async function HomePage() {
     journeyData,
     newsItemsData,
     faqData,
+    hearingAidItemsData,
   ] = await Promise.all([
     getPublicBanners(locale),
     getHomepageServices(locale),
@@ -51,6 +53,7 @@ export default async function HomePage() {
     getHomepageJourney(locale),
     getPosts(locale, true),
     getPublicFaq(locale),
+    getHomepageHearingAidItems(locale),
   ]);
 
   // Transform data for rendering
@@ -62,42 +65,74 @@ export default async function HomePage() {
       const baseUrl = API_BASE_URL.replace('/api', '');
       image = `${baseUrl}${image}`;
     }
+    // Generate link: use slug as-is, if it starts with / use it directly, otherwise prepend /
+    const serviceSlug = service.slug || service.id || `service-${index}`;
+    const serviceLink = serviceSlug.startsWith('/') ? serviceSlug : `/${serviceSlug}`;
     return {
       id: service.id ?? `service-${index}`,
       title: title || '',
       description: description || '',
-      slug: service.slug || service.id || `service-${index}`,
+      slug: serviceSlug,
+      link: serviceLink,
       image: image || '',
     };
   });
 
-  // Filter catalogs by showOnHomepage and transform for display
-  const hearingItems = (catalogsData || [])
-    .filter((catalog) => catalog.showOnHomepage === true)
-    .slice(0, 9)
-    .map((catalog) => {
-      const title = locale === 'ru' ? (catalog.name_ru || '') : (catalog.name_uz || '');
-      const description = locale === 'ru' ? (catalog.description_ru || '') : (catalog.description_uz || '');
-      let image = catalog.image?.url || '';
-      if (image && image.startsWith('/') && !image.startsWith('//')) {
-        const baseUrl = API_BASE_URL.replace('/api', '');
-        image = `${baseUrl}${image}`;
-      }
-      const link = catalog.slug ? `/catalog/${catalog.slug}` : '/catalog';
-      return {
-        id: catalog.id,
-        title: title || '',
-        description: description || '',
-        image: image || '',
-        link: link,
-        hasImage: !!catalog.image?.url,
-      };
-    });
+  // Use HomepageHearingAid items if available, otherwise fallback to catalogs
+  const hearingItems = (hearingAidItemsData && hearingAidItemsData.length > 0)
+    ? hearingAidItemsData.slice(0, 9).map((item) => {
+        const title = locale === 'ru' ? (item.title_ru || '') : (item.title_uz || '');
+        const description = locale === 'ru' ? (item.description_ru || '') : (item.description_uz || '');
+        let image = item.image?.url || '';
+        if (image && image.startsWith('/') && !image.startsWith('//')) {
+          const baseUrl = API_BASE_URL.replace('/api', '');
+          image = `${baseUrl}${image}`;
+        }
+        const link = item.link || '/catalog';
+        return {
+          id: item.id,
+          title: title || '',
+          description: description || '',
+          image: image || '',
+          link: link,
+          hasImage: !!item.image?.url,
+        };
+      })
+    : (catalogsData || [])
+        .filter((catalog) => catalog.showOnHomepage === true)
+        .slice(0, 9)
+        .map((catalog) => {
+          const title = locale === 'ru' ? (catalog.name_ru || '') : (catalog.name_uz || '');
+          const description = locale === 'ru' ? (catalog.description_ru || '') : (catalog.description_uz || '');
+          let image = catalog.image?.url || '';
+          if (image && image.startsWith('/') && !image.startsWith('//')) {
+            const baseUrl = API_BASE_URL.replace('/api', '');
+            image = `${baseUrl}${image}`;
+          }
+          const link = catalog.slug ? `/catalog/${catalog.slug}` : '/catalog';
+          return {
+            id: catalog.id,
+            title: title || '',
+            description: description || '',
+            image: image || '',
+            link: link,
+            hasImage: !!catalog.image?.url,
+          };
+        });
 
   const interacousticsProducts = (interacousticsData?.products || []).slice(0, 4).map((product, index) => {
     const title = locale === 'ru' ? (product.name_ru || '') : (product.name_uz || '');
-    const description = locale === 'ru' ? (product.description_ru || '') : (product.description_uz || '');
-    let image = product.brand?.logo?.url || '';
+    // Use homepageDescription if available, otherwise fallback to product description
+    const description = locale === 'ru' 
+      ? ((product as any).homepageDescription_ru || product.description_ru || '')
+      : ((product as any).homepageDescription_uz || product.description_uz || '');
+    // Use homepageImage if available, otherwise fallback to brand logo
+    let image = '';
+    if ((product as any).homepageImage?.url) {
+      image = (product as any).homepageImage.url;
+    } else {
+      image = product.brand?.logo?.url || '';
+    }
     if (image && image.startsWith('/') && !image.startsWith('//')) {
       const baseUrl = API_BASE_URL.replace('/api', '');
       image = `${baseUrl}${image}`;
@@ -145,7 +180,7 @@ export default async function HomePage() {
               {services.map((service) => (
                 <Link
                   key={service.id}
-                  href={`/services/${service.slug}`}
+                  href={service.link || `/services/${service.slug}`}
                   className="group flex flex-col overflow-hidden rounded-lg bg-white shadow-sm transition hover:shadow-md"
                 >
                   <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted/20">
@@ -326,7 +361,7 @@ export default async function HomePage() {
                         {product.title}
                       </h3>
                       {product.description && (
-                        <p className="text-sm text-muted-foreground leading-relaxed flex-1" suppressHydrationWarning>
+                        <p className="text-sm text-muted-foreground leading-relaxed flex-1 line-clamp-3" suppressHydrationWarning>
                           {product.description}
                         </p>
                       )}

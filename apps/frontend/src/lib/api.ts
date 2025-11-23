@@ -77,15 +77,16 @@ async function fetchJson<T>(
     const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
     try {
-      // Add cache-busting timestamp for all homepage endpoints and menu endpoints to ensure fresh data
+      // Add cache-busting timestamp for all homepage endpoints, menu endpoints, and products to ensure fresh data
       const isHomepageEndpoint = path.includes('/homepage/') || 
                                   path.includes('/banners') ||
                                   path.includes('/faq') ||
                                   path.includes('/showcases');
       const isMenuEndpoint = path.includes('/menus/');
       const isCategoryEndpoint = path.includes('/product-categories');
+      const isProductEndpoint = path.includes('/products');
       let finalUrl = url.toString();
-      if (isHomepageEndpoint || isMenuEndpoint || isCategoryEndpoint) {
+      if (isHomepageEndpoint || isMenuEndpoint || isCategoryEndpoint || isProductEndpoint) {
         // Add cache-busting query parameter
         const separator = url.search ? '&' : '?';
         finalUrl = `${finalUrl}${separator}_t=${Date.now()}`;
@@ -538,6 +539,27 @@ export const getHomepageNews = (locale?: string) => {
   return fetchJson<HomepageNewsItemResponse[]>('/homepage/news', locale);
 };
 
+export interface DoctorResponse {
+  id: string;
+  name_uz: string;
+  name_ru: string;
+  position_uz?: string | null;
+  position_ru?: string | null;
+  experience_uz?: string | null;
+  experience_ru?: string | null;
+  description_uz?: string | null;
+  description_ru?: string | null;
+  slug: string;
+  image?: MediaResponse | null;
+  imageId?: string | null;
+  branchIds?: string[];
+  patientTypes?: string[];
+  order: number;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface PostResponse {
   id: string;
   title_uz: string;
@@ -545,9 +567,15 @@ export interface PostResponse {
   body_uz: string;
   body_ru: string;
   slug: string;
+  category?: PostCategoryResponse | null;
+  categoryId?: string | null;
+  author?: DoctorResponse | null;
+  authorId?: string | null;
   excerpt_uz?: string | null;
   excerpt_ru?: string | null;
   cover?: MediaResponse | null;
+  coverId?: string | null;
+  postType?: 'article' | 'news';
   tags: string[];
   status: string;
   publishAt: string;
@@ -555,9 +583,26 @@ export interface PostResponse {
   updatedAt: string;
 }
 
-export const getPosts = (locale?: string, publicOnly = true) => {
-  const query = publicOnly ? '?public=true' : '';
+export interface PostCategoryResponse {
+  id: string;
+  name_uz: string;
+  name_ru: string;
+  slug: string;
+}
+
+export const getPosts = (locale?: string, publicOnly = true, categoryId?: string) => {
+  const params = new URLSearchParams();
+  if (publicOnly) params.append('public', 'true');
+  if (categoryId) params.append('categoryId', categoryId);
+  const query = params.toString() ? `?${params.toString()}` : '';
   return fetchJson<PostResponse[]>(`/posts${query}`, locale);
+};
+
+export const getPostBySlug = (slug: string, locale?: string, publicOnly = true) => {
+  const params = new URLSearchParams();
+  if (publicOnly) params.append('public', 'true');
+  const query = params.toString() ? `?${params.toString()}` : '';
+  return fetchJson<PostResponse>(`/posts/slug/${slug}${query}`, locale);
 };
 
 export interface FaqResponse {
@@ -600,6 +645,28 @@ export const getBrands = (locale?: string) => {
   return fetchJson<BrandResponse[]>('/brands', locale);
 };
 
+export interface SettingsResponse {
+  id: string;
+  phonePrimary?: string | null;
+  phoneSecondary?: string | null;
+  email?: string | null;
+  telegramBotToken?: string | null;
+  telegramChatId?: string | null;
+  brandPrimary?: string | null;
+  brandAccent?: string | null;
+  featureFlags?: unknown;
+  socialLinks?: unknown;
+  catalogHeroImageId?: string | null;
+  catalogHeroImage?: MediaResponse | null;
+  logoId?: string | null;
+  logo?: MediaResponse | null;
+  updatedAt: string;
+}
+
+export const getSettings = (locale?: string) => {
+  return fetchJson<SettingsResponse>('/settings', locale);
+};
+
 export interface BranchResponse {
   id: string;
   name_uz: string;
@@ -614,6 +681,9 @@ export interface BranchResponse {
   tour3d_iframe?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  workingHours_uz?: string | null;
+  workingHours_ru?: string | null;
+  serviceIds?: string[];
   order: number;
 }
 
@@ -647,4 +717,40 @@ export const getDoctors = (locale?: string) => {
 
 export const getDoctorBySlug = (slug: string, locale?: string) => {
   return fetchJson<DoctorResponse>(`/doctors/slug/${slug}?public=true`, locale);
+};
+
+export interface PageResponse {
+  id: string;
+  slug: string;
+  title_uz: string;
+  title_ru: string;
+  body_uz?: string | null;
+  body_ru?: string | null;
+  metaTitle_uz?: string | null;
+  metaTitle_ru?: string | null;
+  metaDescription_uz?: string | null;
+  metaDescription_ru?: string | null;
+  galleryIds?: string[];
+  gallery?: MediaResponse[];
+  videoUrl?: string | null;
+  usefulArticleSlugs?: string[];
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const getPageBySlug = (slug: string, locale?: string): Promise<PageResponse | null> => {
+  return fetchJson<PageResponse | null>(`/pages/slug/${slug}`, locale);
+};
+
+export interface SearchResponse {
+  products: ProductResponse[];
+  services: ServiceResponse[];
+  posts: PostResponse[];
+}
+
+export const search = (query: string, locale?: string): Promise<SearchResponse> => {
+  const params = new URLSearchParams();
+  params.append('q', query);
+  return fetchJson<SearchResponse>(`/search?${params.toString()}`, locale);
 };

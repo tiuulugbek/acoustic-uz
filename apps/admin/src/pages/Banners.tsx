@@ -16,7 +16,7 @@ import {
   Row,
   Col,
 } from 'antd';
-import { UploadOutlined, DeleteOutlined } from '@ant-design/icons';
+import { UploadOutlined, DeleteOutlined, FolderOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { UploadProps } from 'antd';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -33,6 +33,9 @@ import {
   type MediaDto,
   ApiError,
 } from '../lib/api';
+import MediaLibraryModal from '../components/MediaLibraryModal';
+import { normalizeImageUrl } from '../utils/image';
+import { compressImage } from '../utils/image-compression';
 
 const statusOptions = [
   { label: 'Nashr etilgan', value: 'published' },
@@ -58,6 +61,7 @@ export default function BannersPage() {
   const [form] = Form.useForm();
   const [uploading, setUploading] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
 
   const { mutateAsync: createMutation, isPending: isCreating } = useMutation<BannerDto, ApiError, CreateBannerPayload>({
     mutationFn: createBanner,
@@ -100,7 +104,7 @@ export default function BannersPage() {
 
   const openEditModal = (banner: BannerDto) => {
     setEditingBanner(banner);
-    setPreviewImage(banner.image?.url || null);
+    setPreviewImage(banner.image?.url ? normalizeImageUrl(banner.image.url) : null);
     form.setFieldsValue({
       title_uz: banner.title_uz,
       title_ru: banner.title_ru,
@@ -154,9 +158,11 @@ export default function BannersPage() {
     const { file, onSuccess, onError } = options;
     setUploading(true);
     try {
-      const media = await uploadMedia(file as File);
+      // Rasmni yuklashdan oldin siqish
+      const compressedFile = await compressImage(file as File);
+      const media = await uploadMedia(compressedFile);
       form.setFieldsValue({ imageId: media.id });
-      setPreviewImage(media.url);
+      setPreviewImage(normalizeImageUrl(media.url));
       message.success('Rasm yuklandi');
       queryClient.invalidateQueries({ queryKey: ['media'] });
       onSuccess?.(media);
@@ -176,7 +182,14 @@ export default function BannersPage() {
 
   const handleSelectExistingMedia = (mediaId: string, mediaUrl: string) => {
     form.setFieldsValue({ imageId: mediaId });
-    setPreviewImage(mediaUrl);
+    setPreviewImage(normalizeImageUrl(mediaUrl));
+  };
+
+  const handleSelectMediaFromLibrary = (media: MediaDto) => {
+    form.setFieldsValue({ imageId: media.id });
+    setPreviewImage(normalizeImageUrl(media.url));
+    setImageModalOpen(false);
+    message.success('Rasm tanlandi');
   };
 
   const currentImageId = Form.useWatch('imageId', form);
@@ -191,7 +204,7 @@ export default function BannersPage() {
         render: (_, record) =>
           record.image?.url ? (
             <Image
-              src={record.image.url}
+              src={normalizeImageUrl(record.image.url)}
               alt={record.title_uz}
               width={60}
               height={60}
@@ -415,47 +428,48 @@ export default function BannersPage() {
                 </Col>
               </Row>
               
-              {(previewImage || currentMedia?.url) && (
-                <div style={{ marginTop: 16, textAlign: 'center' }}>
-                  <div style={{ marginBottom: 8, fontSize: 12, color: '#666' }}>Tanlangan rasm (slaydda ko'rinadi):</div>
-                  <Image
-                    src={previewImage || currentMedia?.url || ''}
-                    alt="Preview"
-                    style={{ maxWidth: '100%', maxHeight: 200, objectFit: 'contain', borderRadius: 4 }}
-                    preview={true}
-                  />
-                </div>
-              )}
-
-              {mediaList && mediaList.length > 0 && (
-                <div style={{ marginTop: 16 }}>
-                  <div style={{ marginBottom: 8, fontWeight: 500 }}>Mavjud rasmlar (tanlash uchun bosing):</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, maxHeight: 200, overflowY: 'auto' }}>
-                    {mediaList.slice(0, 20).map((media) => (
-                      <div
-                        key={media.id}
-                        onClick={() => handleSelectExistingMedia(media.id, media.url)}
-                        style={{
-                          width: 80,
-                          height: 80,
-                          border: currentImageId === media.id ? '2px solid #F07E22' : '1px solid #d9d9d9',
-                          borderRadius: 4,
-                          cursor: 'pointer',
-                          overflow: 'hidden',
-                          position: 'relative',
-                          backgroundColor: currentImageId === media.id ? '#fff7ed' : '#fff',
-                        }}
-                      >
-                        <img
-                          src={media.url}
-                          alt={media.alt_uz || media.filename}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
-                      </div>
-                    ))}
+              {(() => {
+                const imageUrl = previewImage || currentMedia?.url;
+                const normalizedUrl = imageUrl ? normalizeImageUrl(imageUrl) : '';
+                console.log('Banner preview image:', { previewImage, currentMediaUrl: currentMedia?.url, imageUrl, normalizedUrl });
+                return imageUrl ? (
+                  <div style={{ marginTop: 16, textAlign: 'center' }}>
+                    <div style={{ marginBottom: 8, fontSize: 12, color: '#666' }}>Tanlangan rasm (slaydda ko'rinadi):</div>
+                    <img
+                      src={normalizedUrl}
+                      alt="Preview"
+                      style={{ maxWidth: '100%', maxHeight: 200, objectFit: 'contain', borderRadius: 4, display: 'block', margin: '0 auto' }}
+                      onError={(e) => {
+                        console.error('Image load error:', {
+                          src: normalizedUrl,
+                          previewImage,
+                          currentMediaUrl: currentMedia?.url,
+                          imageId: form.getFieldValue('imageId'),
+                        });
+                      }}
+                      onLoad={() => {
+                        console.log('Image loaded successfully:', normalizedUrl);
+                      }}
+                    />
                   </div>
-                </div>
-              )}
+                ) : null;
+              })()}
+
+              <div style={{ marginTop: 16 }}>
+                <Button
+                  icon={<FolderOutlined />}
+                  onClick={() => setImageModalOpen(true)}
+                  block
+                  style={{ marginBottom: 8 }}
+                >
+                  Mavjud rasmdan tanlash
+                </Button>
+                {form.getFieldValue('imageId') && (
+                  <div style={{ fontSize: 12, color: '#666' }}>
+                    Tanlangan: {mediaList?.find(m => m.id === form.getFieldValue('imageId'))?.filename || 'Noma\'lum'}
+                  </div>
+                )}
+              </div>
             </div>
           </Form.Item>
 
@@ -477,6 +491,15 @@ export default function BannersPage() {
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* Media Library Modal for Banner Image */}
+      <MediaLibraryModal
+        open={imageModalOpen}
+        onCancel={() => setImageModalOpen(false)}
+        onSelect={handleSelectMediaFromLibrary}
+        fileType="image"
+        selectedMediaIds={form.getFieldValue('imageId') ? [form.getFieldValue('imageId')] : []}
+      />
     </div>
   );
 }

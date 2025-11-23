@@ -13,6 +13,8 @@ const nextConfig = {
       {
         protocol: 'http',
         hostname: 'localhost',
+        port: '3001',
+        pathname: '/uploads/**',
       },
       {
         protocol: 'https',
@@ -21,6 +23,7 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'api.acoustic.uz',
+        pathname: '/uploads/**',
       },
     ],
   },

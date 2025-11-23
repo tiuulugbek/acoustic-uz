@@ -15,6 +15,8 @@ import BranchesPage from './pages/Branches';
 import BrandsPage from './pages/Brands';
 import MenusPage from './pages/Menus';
 import FAQPage from './pages/FAQ';
+import SettingsPage from './pages/Settings';
+import MediaPage from './pages/Media';
 
 function App() {
   return (
@@ -22,7 +24,7 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route element={<AdminLayout />}>
-          <Route index element={<Dashboard />} />
+          <Route index element={<HomepagePage />} />
           <Route path="services" element={<ServicesPage />} />
           <Route path="catalog" element={<CatalogPage />} />
           <Route path="brands" element={<BrandsPage />} />
@@ -34,8 +36,9 @@ function App() {
           <Route path="posts" element={<PostsPage />} />
           <Route path="banners" element={<BannersPage />} />
           <Route path="menus" element={<MenusPage />} />
-          <Route path="homepage" element={<HomepagePage />} />
           <Route path="faq" element={<FAQPage />} />
+          <Route path="media" element={<MediaPage />} />
+          <Route path="settings" element={<SettingsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

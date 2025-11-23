@@ -19,11 +19,13 @@ export class SettingsService {
   async get() {
     let settings = await this.prisma.setting.findUnique({
       where: { id: 'singleton' },
+      include: { catalogHeroImage: true, logo: true },
     });
 
     if (!settings) {
       settings = await this.prisma.setting.create({
         data: { id: 'singleton' },
+        include: { catalogHeroImage: true, logo: true },
       });
     }
 
@@ -40,8 +42,18 @@ export class SettingsService {
     brandAccent?: string;
     featureFlags?: unknown;
     socialLinks?: unknown;
+    catalogHeroImageId?: string | null;
+    logoId?: string | null;
+    // AmoCRM settings
+    amocrmDomain?: string;
+    amocrmClientId?: string;
+    amocrmClientSecret?: string;
+    amocrmAccessToken?: string;
+    amocrmRefreshToken?: string;
+    amocrmPipelineId?: string;
+    amocrmStatusId?: string;
   }) {
-    const { featureFlags, socialLinks, ...rest } = data;
+    const { featureFlags, socialLinks, catalogHeroImageId, logoId, ...rest } = data;
 
     const jsonFields = {
       ...(featureFlags !== undefined ? { featureFlags: toJsonValue(featureFlags) } : {}),
@@ -53,12 +65,17 @@ export class SettingsService {
       update: {
         ...rest,
         ...jsonFields,
+        ...(catalogHeroImageId !== undefined ? { catalogHeroImageId: catalogHeroImageId || null } : {}),
+        ...(logoId !== undefined ? { logoId: logoId || null } : {}),
       },
       create: {
         id: 'singleton',
         ...rest,
         ...jsonFields,
+        catalogHeroImageId: catalogHeroImageId || null,
+        logoId: logoId || null,
       },
+      include: { catalogHeroImage: true, logo: true },
     });
   }
 }

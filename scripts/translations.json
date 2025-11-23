@@ -1,0 +1,494 @@
+{
+  "total_translations": 61,
+  "translations": {
+    "Мы в соц сетях": "Biz ijtimoiy tarmoqlardamiz",
+    "Слуховые аппараты": "Eshitish apparatlari",
+    "Каталог слуховых аппаратов": "Eshitish moslamalari katalogi",
+    "Перезаряжаемые": "Zaryadlanuvchi",
+    "Услуги": "Xizmatlar",
+    "Индивидуальные ушные вкладыши": "Maxsus quloqchinlar",
+    "Диагностика слуха у детей": "Bolalarda eshitish diagnostikasi",
+    "Диагностика слуха": "Eshitish diagnostikasi",
+    "Филиалы": "Filiallar",
+    "Производитель:": "Ishlab chiqaruvchi:",
+    "Наличие:": "Mavjudligi:",
+    "Наличными, картой Uzcard/Humo": "Naqd, karta Uzcard/Humo",
+    "Частотный диапазон": "Сhastota diapazoni",
+    "Наши адреса": "Bizning manzillarimiz",
+    "Подробнее": "Batafsil",
+    "Узнайте, насколько хорошо Вы слышите.": "Qanchalik yaxshi eshitayotganingizni bilib oling.",
+    "Индивидуальные вкладыши": "Maxsus quloqchinlar",
+    "Изготовление индивидуальных ушных вкладышей для слуховых аппаратов взрослым и детям": "Kattalar va bolalar eshitish apparatlari uchun maxsus quloqchinlarni ishlab chiqarish.",
+    "Диагностика слуха у взрослых": "Kattalardagi eshitish diagnostikasi",
+    "Все виды обследования слуха на новейшем оборудовании Interacoustics (Дания)": "Eng yangi Interacoustics uskunasidan foydalangan holda barcha turdagi eshitish tekshiruvlari (Daniya).",
+    "Ушные вкладыши": "Quloqchinlar",
+    "Найти ближайший центр": "Eng yaqin eshitish  markazini toping",
+    "Незаметное решение проблемы со слухом, с которым вы забудете о стеснении": "Eshitishdagi  muammoli  noqulayliklardan halos bo’lishda oqilona yechimdir.",
+    "Слуховые решения, которые помогут обеспечить ребенку нормальное развитие речевых навыков": "Farzandingizga normal nutq qobiliyatlarini rivojlantirishga yordam beradigan eshitish yechimlari.",
+    "Для пожилых людей": "Qariyalar uchun",
+    "Надежные, долговечные и простые в уходе слуховые решения для людей пожилого возраста": "Katta yoshdagilar uchun ishonchli, bardoshli va parvarish qilish oson bo’lgan eshitish yechimlari.",
+    "Вам больше не придется беспокоиться, что слуховые аппараты могут разрядиться в неподходящий момент": "Eshitish apparatlaringiz nomaqbul vaqtda zaryadsizlanib qolishi haqida endi siz  tashvishlanishingiz shart emas.",
+    "Made for iPhone/Android": "iPhone/Android uchun yaratilgan",
+    "Управление шумом в ушах": "Tinnitus boshqaruvi",
+    "Эффективная звуковая терапия маскирует ушной шум и приносит моментальное облегчение": "Samarali ovoz terapiyasi tinnitusni niqoblaydi va bir zumda yengillik yaratadi.",
+    "Заушные": "BTE",
+    "Простые в ношении, уходе и управлении эти модели легко скрываются за ушной раковиной и волосами": "Taqish , parvarish qilish va nazorat qilish oson bo’lgan  bu modellar quloq va soch orqasiga osongina yashirinadi.",
+    "Мощные и супермощные": "Kuchli va super kuchli",
+    "Универсальные решения для улучшения слуха при 3 и 4 степени тугоухости": "3 va 4 darajali eshitish qobiliyatini yaxshilash uchun universal yechimlar.",
+    "Neuro 2 — это самый маленький заушный звуковой процессор, который когда-либо был создан в индустрии кохлеарной имплантации.": "Neuro 2 koxlear implant sanoatida yaratilgan eng kichik BTE ovoz protsessoridir.",
+    "Начните свой путь к хорошему слуху": "Yaxshiroq eshitish uchun sayohatingizni boshlang",
+    "Бесплатный онлайн-тест всего за 3 минуты поможет Вам узнать, насколько хорошо Вы слышите.": "Atigi 3 daqiqada bepul onlayn test sizga qanchalik yaxshi eshitishingizni aniqlashga yordam beradi.",
+    "Запишитесь к сурдологу": "Audiolog bilan uchrashuv belgilang",
+    "Запишитесь на прием к сурдологу и получите квалифицированную помощь в решении проблемы со слухом.": "Audiolog bilan uchrashuv belgilang va eshitish muammosini hal qilishda malakali yordam oling.",
+    "Новости": "Yangiliklar",
+    "Ваш слух": "sizning eshitishingiz",
+    "Как часто нужно проверять слух": "Eshitish qobiliyatini qancha vaqt oralig’ida  tekshirib turish  kerak?",
+    "Болезнь Меньера": "Menyer kasalligi",
+    "Сколько стоит хороший слуховой аппарат?": "Yaxshi eshitish vositasi qancha turadi?",
+    "степени": "eshitish",
+    "Cлуховой аппарат может ухудшить слух?": "Eshitish vositasi sizning eshitishingizni yomonlashtirishi mumkinmi?",
+    "Как купить слуховой аппарат без врача?": "Eshitish vositasini shifokorsiz qanday sotib olish mumkinmi?",
+    "У меня шум в ушах. Поможет ли слуховой аппарат?": "Menning qulog’mda shovqin  bor. Eshitish vositasi yordam beradimi?",
+    "Что входит в проверку слуха?": "Eshitish testiga nima kiradi?",
+    "Как проверить слух у ребенка?": "Bolaning eshitish qobiliyatini qanday tekshirish mumkin?",
+    "Как вылечить тиннитус?": "Quloqdagi shovqinni  qanday davolash mumkin?",
+    "Бинауральная направленность": "Binaural yo’nalish",
+    "Размер батареи": "Batareya hajmi",
+    "Корпус с нанопокрытием": "Nano qoplamali korpus",
+    "Push кнопка": "Push tugma",
+    "опционально": "ixtiyoriy",
+    "— Перезаряжаемая модель- до 24 ч от 1 заряда, 16 ч при 50% стриминга": "— Zaryadlanuvchi model - 1 zaryaddan 24 soatgacha, 50% oqimda 16 soat",
+    "— Настольное зарядное устройство": "- Ish stoli uchun zaryadlovchi",
+    "Ультра Фокус": "Ultra fokus",
+    "Приложение ReSound Smart 3D™ с широкими возможностями персонализации звука, включая опцию «Качество Звука»": "ReSound Smart 3D™ ilovasida  yuqori  darajada ovozni shaxsiylashtirish imkoniyatlari mavjud bo’lib, jumladan ”Sifatli Ovoz” opsiyasiga ega",
+    "Доступна конфигурация с металлическим рожком (приобретается отдельно)": "Metall shoxli konfiguratsiya mavjud (alohida sotiladi)"
+  },
+  "products_with_translations": [
+    {
+      "id": "3268",
+      "title_ru": "Oticon Xceed BTE SP",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4123",
+      "title_ru": "ReSound OMNIA CIC",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "5151",
+      "title_ru": "publish",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "2790",
+      "title_ru": "Oticon Opn CIC",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4049",
+      "title_ru": "Signia Prompt Click ITC",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "5157",
+      "title_ru": "publish",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "3274",
+      "title_ru": "Oticon Xceed BTE UP",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4029",
+      "title_ru": "Signia Active",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4037",
+      "title_ru": "Signia Intuis SP",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "3272",
+      "title_ru": "Oticon Opn S BTE PP",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4999",
+      "title_ru": "Oticon Own ITC",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "5164",
+      "title_ru": "publish",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4053",
+      "title_ru": "Signia Prompt P",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4114",
+      "title_ru": "ReSound OMNIA 61",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "5149",
+      "title_ru": "Titan",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4070",
+      "title_ru": "ReSound Enya 288",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4104",
+      "title_ru": "ReSound LiNX Quattro 88",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4051",
+      "title_ru": "Signia Prompt CIC",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4065",
+      "title_ru": "Signia Styletto X",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4059",
+      "title_ru": "Signia Pure 312 AX",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4043",
+      "title_ru": "Signia Motion Charge&Go X SP",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4031",
+      "title_ru": "Signia Insio NX CIC",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "3352",
+      "title_ru": "Oticon More miniRITE T",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4045",
+      "title_ru": "Signia Motion SP PX",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "3345",
+      "title_ru": "Oticon Siya 2 BTE PP",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4124",
+      "title_ru": "2024-02-13 10:02:16",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4017",
+      "title_ru": "Signia Motion 13P NX",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4968",
+      "title_ru": "Oticon Jet CIC",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4041",
+      "title_ru": "Signia Motion Charge&Go X P",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "5154",
+      "title_ru": "publish",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "2786",
+      "title_ru": "Oticon Siya 2 ITC",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "6918",
+      "title_ru": "Oticon Siya 2 CIC",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4973",
+      "title_ru": "Oticon Jet miniRITE",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4063",
+      "title_ru": "Signia Styletto AX",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4057",
+      "title_ru": "Signia Pure Charge&Go AX",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4982",
+      "title_ru": "Oticon Own IIC",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "3320",
+      "title_ru": "Oticon Ruby 2 BTE PP",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4130",
+      "title_ru": "2024-02-13 10:30:10",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4098",
+      "title_ru": "2024-02-12 08:53:11",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4082",
+      "title_ru": "ReSound Key 77",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4108",
+      "title_ru": "ReSound OMNIA 60 DRWC",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "2783",
+      "title_ru": "Oticon Siya 2 CIC",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "3354",
+      "title_ru": "2024-01-09 06:27:50",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "2788",
+      "title_ru": "Oticon Opn S miniRITE",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4077",
+      "title_ru": "ReSound Key 461 DRWC",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "5169",
+      "title_ru": "publish",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "5691",
+      "title_ru": "I already did",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4129",
+      "title_ru": "2024-02-13 10:27:18",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4979",
+      "title_ru": "Oticon Jet BTE PP",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4097",
+      "title_ru": "ReSound Key 98",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "5084",
+      "title_ru": "EyeSeeCam",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4076",
+      "title_ru": "ReSound Key 61",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4127",
+      "title_ru": "2024-02-13 10:25:20",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4996",
+      "title_ru": "Oticon Own CIC",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4089",
+      "title_ru": "ReSound Key 88",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "5167",
+      "title_ru": "AC40",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4976",
+      "title_ru": "Oticon Jet BTE",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "5078",
+      "title_ru": "VisualEyes&#x2122;",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4020",
+      "title_ru": "Signia Run P",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4039",
+      "title_ru": "Signia Motion Charge&Go X",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4055",
+      "title_ru": "Signia Prompt SP",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "5161",
+      "title_ru": "publish",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4100",
+      "title_ru": "ReSound ONE 561",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4118",
+      "title_ru": "ReSound OMNIA 88 DWC",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4072",
+      "title_ru": "ReSound Enzo Q 998",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4035",
+      "title_ru": "Signia Intuis P",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4033",
+      "title_ru": "Signia Intuis M",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4022",
+      "title_ru": "Signia Prompt S",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "3322",
+      "title_ru": "Oticon Ruby 2 miniRITE",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4047",
+      "title_ru": "Signia Prompt Click CIC",
+      "title_uz": "",
+      "has_translation": false
+    },
+    {
+      "id": "4061",
+      "title_ru": "Signia Pure 312 X",
+      "title_uz": "",
+      "has_translation": false
+    }
+  ]
+}

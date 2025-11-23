@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
   Table,
   Button,
@@ -31,12 +31,14 @@ import {
   getBrands,
   getProductCategoriesAdmin,
   getPosts,
+  getCatalogs,
   type ProductDto,
   type CreateProductPayload,
   type UpdateProductPayload,
   type BrandDto,
   type ProductCategoryDto,
   type PostDto,
+  type CatalogDto,
   ApiError,
 } from '../lib/api';
 import {
@@ -169,10 +171,33 @@ function ArrayField({
 
 export default function ProductsPage() {
   const queryClient = useQueryClient();
-  const { data: products, isLoading } = useQuery<ProductDto[], ApiError>({
+  const { data: productsResponse, isLoading, error } = useQuery<{ items: ProductDto[]; total: number; page: number; pageSize: number }, ApiError>({
     queryKey: ['products-admin'],
-    queryFn: getProductsAdmin,
+    queryFn: async () => {
+      console.log('[ProductsPage] Fetching products with limit: 1000');
+      const result = await getProductsAdmin({ limit: 1000 });
+      console.log('[ProductsPage] Products fetched:', {
+        itemsCount: result.items?.length ?? 0,
+        total: result.total,
+        pageSize: result.pageSize,
+      });
+      return result;
+    },
   });
+
+  const products = productsResponse?.items ?? [];
+
+  useEffect(() => {
+    if (error) {
+      console.error('[ProductsPage] Error fetching products:', error);
+    }
+    console.log('[ProductsPage] Current state:', {
+      isLoading,
+      hasError: !!error,
+      productsCount: products.length,
+      total: productsResponse?.total ?? 0,
+    });
+  }, [isLoading, error, products.length, productsResponse?.total]);
 
   const { data: brands } = useQuery<BrandDto[], ApiError>({
     queryKey: ['brands'],
@@ -187,6 +212,12 @@ export default function ProductsPage() {
   const { data: posts } = useQuery<PostDto[], ApiError>({
     queryKey: ['posts'],
     queryFn: getPosts,
+  });
+
+  const { data: catalogs, isLoading: isLoadingCatalogs } = useQuery<CatalogDto[], ApiError>({
+    queryKey: ['catalogs-admin'],
+    queryFn: getCatalogs,
+    retry: false,
   });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -261,6 +292,7 @@ export default function ProductsPage() {
       galleryUrls: [],
       relatedProductIds: [],
       usefulArticleSlugs: [],
+      catalogIds: [],
     });
     setIsModalOpen(true);
   };
@@ -305,6 +337,7 @@ export default function ProductsPage() {
       galleryUrls: product.galleryUrls ?? [],
       relatedProductIds: product.relatedProductIds ?? [],
       usefulArticleSlugs: product.usefulArticleSlugs ?? [],
+      catalogIds: product.catalogs?.map(c => c.id) ?? [],
     });
     setIsModalOpen(true);
   };
@@ -343,6 +376,7 @@ export default function ProductsPage() {
             : undefined,
         brandId: values.brandId || undefined,
         categoryId: values.categoryId || undefined,
+        catalogIds: values.catalogIds || [],
         status: values.status,
         specsText: values.specsText || undefined,
         galleryIds,
@@ -405,6 +439,14 @@ export default function ProductsPage() {
         render: (_, record) => record.category?.name_uz ?? '—',
       },
       {
+        title: 'Kataloglar',
+        key: 'catalogs',
+        render: (_, record) => 
+          record.catalogs && record.catalogs.length > 0
+            ? record.catalogs.map(c => c.name_uz).join(', ')
+            : '—',
+      },
+      {
         title: 'Narx',
         dataIndex: 'price',
         key: 'price',
@@ -460,6 +502,7 @@ export default function ProductsPage() {
 
   const brandOptions = (brands ?? []).map((brand) => ({ value: brand.id, label: brand.name }));
   const categoryOptions = (categories ?? []).map((category) => ({ value: category.id, label: category.name_uz }));
+  const catalogOptions = (catalogs ?? []).map((catalog) => ({ value: catalog.id, label: `${catalog.name_uz}${catalog.name_ru ? ` (${catalog.name_ru})` : ''}` }));
 
   return (
     <div>
@@ -474,7 +517,12 @@ export default function ProductsPage() {
         dataSource={products ?? []}
         columns={columns}
         rowKey="id"
-        pagination={{ pageSize: 12 }}
+        pagination={{ 
+          pageSize: 100, 
+          showSizeChanger: true,
+          showTotal: (total) => `Jami ${total} ta mahsulot`,
+          pageSizeOptions: ['10', '25', '50', '100', '200']
+        }}
       />
 
       <Modal
@@ -581,6 +629,23 @@ export default function ProductsPage() {
               </Form.Item>
             </Col>
           </Row>
+
+          <Form.Item 
+            label="Kataloglar" 
+            name="catalogIds"
+            help="Mahsulotni bir yoki bir nechta kataloglarga biriktirish"
+          >
+            <Select
+              mode="multiple"
+              allowClear
+              placeholder={isLoadingCatalogs ? "Yuklanmoqda..." : catalogOptions.length === 0 ? "Katalog mavjud emas" : "Kataloglarni tanlang"}
+              options={catalogOptions}
+              showSearch
+              optionFilterProp="label"
+              loading={isLoadingCatalogs}
+              notFoundContent={isLoadingCatalogs ? "Yuklanmoqda..." : "Katalog topilmadi"}
+            />
+          </Form.Item>
 
           <Row gutter={16}>
             <Col span={12}>

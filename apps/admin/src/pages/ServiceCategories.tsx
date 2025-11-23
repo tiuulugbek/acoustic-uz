@@ -30,6 +30,7 @@ import {
   ApiError,
 } from '../lib/api';
 import { createSlug } from '../utils/slug';
+import { normalizeImageUrl } from '../utils/image';
 
 const statusOptions = [
   { label: 'Nashr etilgan', value: 'published' },
@@ -163,7 +164,7 @@ export default function ServiceCategoriesPage() {
           <Space align="start">
             {record.image?.url ? (
               <img
-                src={record.image.url}
+                src={normalizeImageUrl(record.image.url)}
                 alt={record.name_uz}
                 style={{ width: 72, height: 56, objectFit: 'cover', borderRadius: 8 }}
               />

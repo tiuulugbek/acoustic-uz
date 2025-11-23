@@ -6,9 +6,11 @@ import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
 import { Logger } from 'nestjs-pino';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
   });
 
@@ -17,8 +19,11 @@ async function bootstrap() {
 
   app.useLogger(logger);
 
-  // Security
-  app.use(helmet());
+  // Security - Configure helmet to allow cross-origin images
+  app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    crossOriginEmbedderPolicy: false,
+  }));
   app.use(cookieParser());
 
   // CORS
@@ -29,6 +34,8 @@ async function bootstrap() {
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Locale'],
     exposedHeaders: ['Vary', 'Cache-Control'],
+    // Allow images to be loaded from backend
+    optionsSuccessStatus: 200,
   });
 
   // Validation
@@ -45,6 +52,11 @@ async function bootstrap() {
 
   // Global prefix
   app.setGlobalPrefix('api');
+
+  // Serve static files from uploads directory
+  app.useStaticAssets(join(process.cwd(), 'uploads'), {
+    prefix: '/uploads/',
+  });
 
   // Swagger
   const config = new DocumentBuilder()

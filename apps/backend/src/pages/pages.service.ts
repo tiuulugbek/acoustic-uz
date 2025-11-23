@@ -6,9 +6,27 @@ export class PagesService {
   constructor(private prisma: PrismaService) {}
 
   async findBySlug(slug: string) {
-    return this.prisma.page.findUnique({
+    const page = await this.prisma.page.findUnique({
       where: { slug, status: 'published' },
     });
+
+    if (!page) {
+      return null;
+    }
+
+    // Fetch gallery media objects
+    const galleryIds = page.galleryIds || [];
+    const galleryMedia = galleryIds.length > 0
+      ? await this.prisma.media.findMany({
+          where: { id: { in: galleryIds } },
+        })
+      : [];
+
+    // Return page with gallery media
+    return {
+      ...page,
+      gallery: galleryMedia,
+    };
   }
 
   async findAll() {

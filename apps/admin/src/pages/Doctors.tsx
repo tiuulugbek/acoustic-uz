@@ -36,6 +36,8 @@ import {
   type MediaDto,
 } from '../lib/api';
 import { createSlug } from '../utils/slug';
+import { normalizeImageUrl } from '../utils/image';
+import { compressImage } from '../utils/image-compression';
 
 const statusOptions = [
   { label: 'Nashr etilgan', value: 'published' },
@@ -104,7 +106,7 @@ export default function DoctorsPage() {
 
   const openEditModal = (doctor: DoctorDto) => {
     setEditingDoctor(doctor);
-    setPreviewImage(doctor.image?.url || null);
+    setPreviewImage(doctor.image?.url ? normalizeImageUrl(doctor.image.url) : null);
     form.setFieldsValue({
       name_uz: doctor.name_uz,
       name_ru: doctor.name_ru,
@@ -126,9 +128,11 @@ export default function DoctorsPage() {
     const { file, onSuccess, onError } = options;
     setUploading(true);
     try {
-      const media = await uploadMedia(file as File);
+      // Rasmni yuklashdan oldin siqish
+      const compressedFile = await compressImage(file as File);
+      const media = await uploadMedia(compressedFile);
       form.setFieldsValue({ imageId: media.id });
-      setPreviewImage(media.url);
+      setPreviewImage(normalizeImageUrl(media.url));
       message.success('Rasm yuklandi');
       queryClient.invalidateQueries({ queryKey: ['media'] });
       onSuccess?.(media);
@@ -148,7 +152,7 @@ export default function DoctorsPage() {
 
   const handleSelectExistingMedia = (mediaId: string, mediaUrl: string) => {
     form.setFieldsValue({ imageId: mediaId });
-    setPreviewImage(mediaUrl);
+    setPreviewImage(normalizeImageUrl(mediaUrl));
   };
 
   const currentImageId = Form.useWatch('imageId', form);
@@ -199,7 +203,7 @@ export default function DoctorsPage() {
           <Space align="start">
             {record.image?.url ? (
               <img
-                src={record.image.url}
+                src={normalizeImageUrl(record.image.url)}
                 alt={record.name_uz}
                 style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 8 }}
               />
@@ -409,7 +413,7 @@ export default function DoctorsPage() {
                         }}
                       >
                         <img
-                          src={media.url}
+                          src={normalizeImageUrl(media.url)}
                           alt={media.alt_uz || media.filename}
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />

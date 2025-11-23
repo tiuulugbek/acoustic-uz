@@ -57,22 +57,36 @@ model Media {
   serviceCategories   ServiceCategory[]
   catalogs            Catalog[]
   doctors             Doctor[]
+  settingsCatalogHero Setting? @relation("SettingCatalogHero")
+  settingsLogo        Setting? @relation("SettingLogo")
 
   @@index([url])
 }
 
 model Setting {
-  id               String   @id @default("singleton")
-  phonePrimary     String?  @default("1385")
-  phoneSecondary   String?  @default("+998 71 202 14 41")
-  email            String?
-  telegramBotToken String?
-  telegramChatId   String?
-  brandPrimary     String?  @default("#F07E22")
-  brandAccent      String?  @default("#3F3091")
-  featureFlags     Json? // see §11
-  socialLinks      Json? // { facebook, instagram, telegram, etc. }
-  updatedAt        DateTime @updatedAt
+  id                 String   @id @default("singleton")
+  phonePrimary       String?  @default("1385")
+  phoneSecondary     String?  @default("+998 71 202 14 41")
+  email              String?
+  telegramBotToken   String?
+  telegramChatId     String?
+  brandPrimary       String?  @default("#F07E22")
+  brandAccent        String?  @default("#3F3091")
+  featureFlags       Json? // see §11
+  socialLinks        Json? // { facebook, instagram, telegram, etc. }
+  catalogHeroImageId String?  @unique
+  catalogHeroImage   Media?   @relation("SettingCatalogHero", fields: [catalogHeroImageId], references: [id], onDelete: SetNull)
+  logoId             String?  @unique
+  logo               Media?   @relation("SettingLogo", fields: [logoId], references: [id], onDelete: SetNull)
+  // AmoCRM settings
+  amocrmDomain       String?  // e.g., "yourcompany.amocrm.ru"
+  amocrmClientId     String?  // OAuth Client ID
+  amocrmClientSecret String?  // OAuth Client Secret
+  amocrmAccessToken  String?  // Access token (auto-refreshed)
+  amocrmRefreshToken String?  // Refresh token (auto-refreshed)
+  amocrmPipelineId   String?  // Pipeline ID for leads
+  amocrmStatusId     String?  // Status ID for leads
+  updatedAt          DateTime @updatedAt
 }
 
 model Banner {
@@ -214,6 +228,7 @@ model Product {
   catalogs                Catalog[]        @relation("ProductToCatalog")
   specsText               String?          @db.Text
   galleryIds              String[] // Array of Media IDs
+  thumbnailId             String? // Main thumbnail Media ID
   audience                String[]         @default([])
   formFactors             String[]         @default([])
   signalProcessing        String?
@@ -250,10 +265,28 @@ model Product {
 }
 
 model Showcase {
-  id         String   @id @default(cuid())
-  type       String   @unique // "interacoustics" or "cochlear"
-  productIds String[] // Array of Product IDs in order
-  updatedAt  DateTime @updatedAt
+  id                String   @id @default(cuid())
+  type              String   @unique // "interacoustics" or "cochlear"
+  productIds       String[] // Array of Product IDs in order
+  productMetadata  Json?    // { [productId]: { description_uz, description_ru, imageId } }
+  updatedAt         DateTime @updatedAt
+}
+
+model PostCategory {
+  id          String   @id @default(cuid())
+  name_uz     String
+  name_ru     String
+  slug        String   @unique
+  description_uz String? @db.Text
+  description_ru String? @db.Text
+  order       Int      @default(0)
+  status      String   @default("published")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  posts       Post[]
+
+  @@index([slug])
+  @@index([status, order])
 }
 
 model Post {
@@ -267,6 +300,11 @@ model Post {
   excerpt_ru        String?            @db.Text
   coverId           String?
   cover             Media?             @relation(fields: [coverId], references: [id], onDelete: SetNull)
+  postType          String             @default("article") // "article" or "news"
+  categoryId        String?
+  category          PostCategory?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  authorId          String?
+  author            Doctor?            @relation(fields: [authorId], references: [id], onDelete: SetNull)
   tags              String[]
   status            String             @default("published")
   publishAt         DateTime           @default(now())
@@ -277,6 +315,10 @@ model Post {
   @@index([slug])
   @@index([status, publishAt])
   @@index([tags])
+  @@index([categoryId])
+  @@index([categoryId, status])
+  @@index([postType])
+  @@index([authorId])
 }
 
 model Faq {
@@ -294,23 +336,26 @@ model Faq {
 }
 
 model Branch {
-  id         String   @id @default(cuid())
-  name_uz    String
-  name_ru    String
-  slug       String?  @unique
-  address_uz String
-  address_ru String
-  phone      String
-  phones     String[] // Additional phones
-  imageId    String?
-  image      Media?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
-  map_iframe String?  @db.Text
-  tour3d_iframe String? @db.Text // 3D virtual tour iframe
-  latitude   Float? // GPS latitude
-  longitude  Float? // GPS longitude
-  order      Int      @default(0)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id             String   @id @default(cuid())
+  name_uz        String
+  name_ru        String
+  slug           String?  @unique
+  address_uz     String
+  address_ru     String
+  phone          String
+  phones         String[] // Additional phones
+  imageId        String?
+  image          Media?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
+  map_iframe     String?  @db.Text
+  tour3d_iframe  String?  @db.Text // 3D virtual tour iframe
+  latitude       Float?   // GPS latitude
+  longitude      Float?   // GPS longitude
+  workingHours_uz String? @db.Text // Ish vaqti (uzbek) - Masalan: "Dushanba - Juma: 09:00-20:00\nShanba - Yakshanba: 09:00-18:00"
+  workingHours_ru String? @db.Text // Ish vaqti (russian) - Masalan: "Понедельник - Пятница: 09:00-20:00\nСуббота - Воскресенье: 09:00-18:00"
+  serviceIds     String[] @default([]) // Xizmatlar ID'lari array'i
+  order          Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@index([slug])
   @@index([order])
@@ -327,6 +372,9 @@ model Page {
   metaTitle_ru       String?
   metaDescription_uz String?
   metaDescription_ru String?
+  galleryIds         String[] @default([]) // Array of Media IDs for image gallery
+  videoUrl           String?  // YouTube video URL
+  usefulArticleSlugs String[] @default([]) // Array of Post slugs for useful articles sidebar
   status             String   @default("published")
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
@@ -455,10 +503,13 @@ model Doctor {
   slug           String   @unique
   imageId        String?
   image          Media?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
+  branchIds      String[] @default([]) // Array of Branch IDs where doctor accepts patients
+  patientTypes   String[] @default([]) // ["adults", "children"] or ["adults"] or ["children"]
   order          Int      @default(0)
   status         String   @default("published") // published, draft, archived
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  posts          Post[]
 
   @@index([slug])
   @@index([status, order])

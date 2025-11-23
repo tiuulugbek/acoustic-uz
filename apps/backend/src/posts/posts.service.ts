@@ -5,11 +5,14 @@ import { PrismaService } from '../prisma/prisma.service';
 export class PostsService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(publicOnly = false) {
-    const where = publicOnly ? { status: 'published' } : {};
+  async findAll(publicOnly = false, category?: string) {
+    const where: any = publicOnly ? { status: 'published' } : {};
+    if (category) {
+      where.categoryId = category;
+    }
     return this.prisma.post.findMany({
       where,
-      include: { cover: true },
+      include: { cover: true, category: true, author: { include: { image: true } } },
       orderBy: { publishAt: 'desc' },
     });
   }
@@ -17,23 +20,33 @@ export class PostsService {
   async findOne(id: string) {
     return this.prisma.post.findUnique({
       where: { id },
-      include: { cover: true },
+      include: { cover: true, category: true, author: { include: { image: true } } },
     });
   }
 
-  async findBySlug(slug: string) {
-    return this.prisma.post.findUnique({
-      where: { slug, status: 'published' },
-      include: { cover: true },
+  async findBySlug(slug: string, publicOnly = true) {
+    return this.prisma.post.findFirst({
+      where: { 
+        slug,
+        ...(publicOnly && { status: 'published' }),
+      },
+      include: { cover: true, category: true, author: { include: { image: true } } },
     });
   }
 
   async create(data: unknown) {
-    return this.prisma.post.create({ data: data as any, include: { cover: true } });
+    return this.prisma.post.create({ 
+      data: data as any, 
+      include: { cover: true, category: true, author: { include: { image: true } } } 
+    });
   }
 
   async update(id: string, data: unknown) {
-    return this.prisma.post.update({ where: { id }, data: data as any, include: { cover: true } });
+    return this.prisma.post.update({ 
+      where: { id }, 
+      data: data as any, 
+      include: { cover: true, category: true, author: { include: { image: true } } } 
+    });
   }
 
   async delete(id: string) {

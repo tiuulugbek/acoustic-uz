@@ -41,7 +41,26 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     return undefined as T;
   }
 
-  return response.json();
+  // Check if response has content before parsing JSON
+  const contentType = response.headers.get('content-type');
+  const text = await response.text();
+  
+  // If response is empty, return null for nullable types
+  if (!text || text.trim() === '') {
+    // For 404 errors, return null instead of throwing
+    if (response.status === 404) {
+      return null as T;
+    }
+    return undefined as T;
+  }
+
+  // Try to parse JSON
+  try {
+    return JSON.parse(text) as T;
+  } catch (error) {
+    // If JSON parsing fails, throw error
+    throw new ApiError(`Invalid JSON response: ${text.substring(0, 100)}`, response.status);
+  }
 }
 
 export interface UserDto {
@@ -61,6 +80,18 @@ export interface PostDto {
   body_uz: string;
   body_ru: string;
   slug: string;
+  postType?: 'article' | 'news';
+  categoryId?: string | null;
+  category?: PostCategoryDto | null;
+  authorId?: string | null;
+  author?: DoctorDto | null;
+  excerpt_uz?: string | null;
+  excerpt_ru?: string | null;
+  coverId?: string | null;
+  cover?: {
+    id: string;
+    url: string;
+  } | null;
   tags: string[];
   status: 'published' | 'draft' | 'archived';
   publishAt: string;
@@ -100,6 +131,39 @@ export const updatePost = (id: string, payload: UpdatePostPayload) =>
   });
 export const deletePost = (id: string) =>
   request<void>(`/posts/${id}`, {
+    method: 'DELETE',
+  });
+
+// Post Categories API
+export interface PostCategoryDto {
+  id: string;
+  name_uz: string;
+  name_ru: string;
+  slug: string;
+  description_uz?: string | null;
+  description_ru?: string | null;
+  order: number;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CreatePostCategoryPayload = Omit<PostCategoryDto, 'id' | 'createdAt' | 'updatedAt'>;
+export type UpdatePostCategoryPayload = Partial<CreatePostCategoryPayload>;
+
+export const getPostCategories = () => request<PostCategoryDto[]>('/post-categories');
+export const createPostCategory = (payload: CreatePostCategoryPayload) =>
+  request<PostCategoryDto>('/post-categories', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+export const updatePostCategory = (id: string, payload: UpdatePostCategoryPayload) =>
+  request<PostCategoryDto>(`/post-categories/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+export const deletePostCategory = (id: string) =>
+  request<void>(`/post-categories/${id}`, {
     method: 'DELETE',
   });
 
@@ -180,6 +244,8 @@ export interface DoctorDto {
     alt_uz?: string | null;
     alt_ru?: string | null;
   } | null;
+  branchIds: string[];
+  patientTypes: string[];
   order: number;
   status: 'published' | 'draft' | 'archived';
   createdAt: string;
@@ -553,6 +619,12 @@ export const deleteMedia = (id: string) =>
     method: 'DELETE',
   });
 
+export const updateMedia = (id: string, alt_uz?: string, alt_ru?: string) =>
+  request<MediaDto>(`/media/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ alt_uz, alt_ru }),
+  });
+
 export interface MenuItemDto {
   id: string;
   title_uz: string;
@@ -802,8 +874,14 @@ export type CreateProductPayload = {
 
 export type UpdateProductPayload = Partial<CreateProductPayload>;
 
-export const getProductsAdmin = () => 
-  request<{ items: ProductDto[]; total: number; page: number; pageSize: number }>('/products/admin');
+export const getProductsAdmin = (filters?: { limit?: number; offset?: number; status?: string }) => {
+  const params = new URLSearchParams();
+  if (filters?.limit) params.append('limit', String(filters.limit));
+  if (filters?.offset) params.append('offset', String(filters.offset));
+  if (filters?.status) params.append('status', filters.status);
+  const query = params.toString();
+  return request<{ items: ProductDto[]; total: number; page: number; pageSize: number }>(`/products/admin${query ? `?${query}` : ''}`);
+};
 export const createProduct = (payload: CreateProductPayload) =>
   request<ProductDto>('/products', {
     method: 'POST',
@@ -915,6 +993,70 @@ export const deleteFaq = (id: string) =>
     method: 'DELETE',
   });
 
+// Pages interfaces and functions
+export interface PageDto {
+  id: string;
+  slug: string;
+  title_uz: string;
+  title_ru: string;
+  body_uz?: string | null;
+  body_ru?: string | null;
+  metaTitle_uz?: string | null;
+  metaTitle_ru?: string | null;
+  metaDescription_uz?: string | null;
+  metaDescription_ru?: string | null;
+  galleryIds?: string[];
+  videoUrl?: string | null;
+  usefulArticleSlugs?: string[];
+  status: 'published' | 'draft' | 'archived';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CreatePagePayload = {
+  slug: string;
+  title_uz: string;
+  title_ru: string;
+  body_uz?: string | null;
+  body_ru?: string | null;
+  metaTitle_uz?: string | null;
+  metaTitle_ru?: string | null;
+  metaDescription_uz?: string | null;
+  metaDescription_ru?: string | null;
+  galleryIds?: string[];
+  videoUrl?: string | null;
+  usefulArticleSlugs?: string[];
+  status?: 'published' | 'draft' | 'archived';
+};
+
+export type UpdatePagePayload = Partial<CreatePagePayload>;
+
+export const getPages = () => request<PageDto[]>('/pages');
+export const getPageBySlug = async (slug: string): Promise<PageDto | null> => {
+  try {
+    return await request<PageDto>(`/pages/slug/${slug}`);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return null;
+    }
+    throw error;
+  }
+};
+export const createPage = (payload: CreatePagePayload) =>
+  request<PageDto>('/pages', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+export const updatePage = (id: string, payload: UpdatePagePayload) =>
+  request<PageDto>(`/pages/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+export const deletePage = (id: string) =>
+  request<void>(`/pages/${id}`, {
+    method: 'DELETE',
+  });
+
 // Branches
 export interface BranchDto {
   slug?: string | null;
@@ -936,6 +1078,9 @@ export interface BranchDto {
   tour3d_iframe?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  workingHours_uz?: string | null;
+  workingHours_ru?: string | null;
+  serviceIds?: string[];
   order: number;
   createdAt: string;
   updatedAt: string;
@@ -953,6 +1098,9 @@ export type CreateBranchPayload = {
   tour3d_iframe?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  workingHours_uz?: string | null;
+  workingHours_ru?: string | null;
+  serviceIds?: string[];
   order?: number;
   slug?: string | null;
 };
@@ -1002,6 +1150,7 @@ export interface ShowcaseDto {
 
 export type UpdateShowcasePayload = {
   productIds: string[];
+  productMetadata?: Record<string, { description_uz?: string; description_ru?: string; imageId?: string }>;
 };
 
 export const getShowcase = (type: 'interacoustics' | 'cochlear') =>
@@ -1010,4 +1159,93 @@ export const updateShowcase = (type: 'interacoustics' | 'cochlear', payload: Upd
   request<ShowcaseDto>(`/showcases/${type}`, {
     method: 'POST',
     body: JSON.stringify(payload),
+  });
+
+// Settings interfaces and functions
+export interface SettingsDto {
+  id: string;
+  phonePrimary?: string | null;
+  phoneSecondary?: string | null;
+  email?: string | null;
+  telegramBotToken?: string | null;
+  telegramChatId?: string | null;
+  brandPrimary?: string | null;
+  brandAccent?: string | null;
+  featureFlags?: unknown;
+  socialLinks?: unknown;
+  catalogHeroImageId?: string | null;
+  catalogHeroImage?: {
+    id: string;
+    url: string;
+    alt_uz?: string | null;
+    alt_ru?: string | null;
+  } | null;
+  logoId?: string | null;
+  logo?: {
+    id: string;
+    url: string;
+    alt_uz?: string | null;
+    alt_ru?: string | null;
+  } | null;
+  // AmoCRM settings
+  amocrmDomain?: string | null;
+  amocrmClientId?: string | null;
+  amocrmClientSecret?: string | null;
+  amocrmAccessToken?: string | null;
+  amocrmRefreshToken?: string | null;
+  amocrmPipelineId?: string | null;
+  amocrmStatusId?: string | null;
+  updatedAt: string;
+}
+
+export type UpdateSettingsPayload = {
+  phonePrimary?: string;
+  phoneSecondary?: string;
+  email?: string;
+  telegramBotToken?: string;
+  telegramChatId?: string;
+  brandPrimary?: string;
+  brandAccent?: string;
+  featureFlags?: unknown;
+  socialLinks?: unknown;
+  catalogHeroImageId?: string | null;
+  logoId?: string | null;
+  // AmoCRM settings
+  amocrmDomain?: string;
+  amocrmClientId?: string;
+  amocrmClientSecret?: string;
+  amocrmAccessToken?: string;
+  amocrmRefreshToken?: string;
+  amocrmPipelineId?: string;
+  amocrmStatusId?: string;
+};
+
+export const getSettings = () =>
+  request<SettingsDto>('/settings');
+export const updateSettings = (payload: UpdateSettingsPayload) =>
+  request<SettingsDto>('/settings', {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+
+// AmoCRM API
+export interface AmoCRMAuthUrlResponse {
+  authUrl: string;
+}
+
+export interface AmoCRMTestResponse {
+  success: boolean;
+  message: string;
+  account?: {
+    id: number;
+    name: string;
+  };
+}
+
+export const getAmoCRMAuthUrl = () =>
+  request<AmoCRMAuthUrlResponse>('/amocrm/authorize');
+
+export const testAmoCRMConnection = () =>
+  request<AmoCRMTestResponse>('/amocrm/test', {
+    method: 'POST',
   });

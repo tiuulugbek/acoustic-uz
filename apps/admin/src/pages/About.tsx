@@ -1,12 +1,5 @@
-import { Card, Typography } from 'antd';
+import PageEditor from '../components/PageEditor';
 
 export default function AboutPage() {
-  return (
-    <Card>
-      <Typography.Title level={3}>Biz haqimizda</Typography.Title>
-      <Typography.Paragraph>
-        Markaz haqida maʼlumot va kontentni boshqarish imkoniyatlari tez orada qo‘shiladi.
-      </Typography.Paragraph>
-    </Card>
-  );
+  return <PageEditor slug="about" defaultTitleUz="Biz haqimizda" defaultTitleRu="О нас" />;
 }

@@ -12,8 +12,10 @@ import {
   InputNumber,
   Upload,
   Image,
+  Select,
+  Transfer,
 } from 'antd';
-import { UploadOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { UploadOutlined, DeleteOutlined, PlusOutlined, FolderOutlined } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -29,8 +31,13 @@ import {
   getMedia,
   uploadMedia,
   type MediaDto,
+  getServices,
+  type ServiceDto,
 } from '../lib/api';
 import { createSlug } from '../utils/slug';
+import MediaLibraryModal from '../components/MediaLibraryModal';
+import { normalizeImageUrl } from '../utils/image';
+import { compressImage } from '../utils/image-compression';
 
 export default function BranchesPage() {
   const queryClient = useQueryClient();
@@ -46,11 +53,19 @@ export default function BranchesPage() {
     retry: false,
   });
 
+  // Fetch services list for branch services selection
+  const { data: servicesList } = useQuery<ServiceDto[], ApiError>({
+    queryKey: ['services-admin'],
+    queryFn: getServices,
+    retry: false,
+  });
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBranch, setEditingBranch] = useState<BranchDto | null>(null);
   const [form] = Form.useForm();
   const [uploading, setUploading] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
 
   const { mutateAsync: createMutation, isPending: isCreating } = useMutation<BranchDto, ApiError, CreateBranchPayload>({
     mutationFn: createBranch,
@@ -66,12 +81,24 @@ export default function BranchesPage() {
     ApiError,
     { id: string; payload: UpdateBranchPayload }
   >({
-    mutationFn: ({ id, payload }) => updateBranch(id, payload),
-    onSuccess: () => {
+    mutationFn: ({ id, payload }) => {
+      console.log('🔍 [BRANCHES ADMIN] Calling updateBranch:', { id, payload });
+      return updateBranch(id, payload);
+    },
+    onSuccess: (data) => {
+      console.log('🔍 [BRANCHES ADMIN] Update success:', {
+        id: data.id,
+        workingHours_uz: data.workingHours_uz,
+        workingHours_ru: data.workingHours_ru,
+        serviceIds: data.serviceIds,
+      });
       queryClient.invalidateQueries({ queryKey: ['branches'] });
       message.success('Filial yangilandi');
     },
-    onError: (error) => message.error(error.message || 'Yangilashda xatolik'),
+    onError: (error) => {
+      console.error('🔍 [BRANCHES ADMIN] Update error:', error);
+      message.error(error.message || 'Yangilashda xatolik');
+    },
   });
 
   const { mutateAsync: deleteMutation, isPending: isDeleting } = useMutation<void, ApiError, string>({
@@ -89,6 +116,7 @@ export default function BranchesPage() {
     setPreviewImage(null);
     form.setFieldsValue({
       phones: [],
+      serviceIds: [],
       order: 0,
     });
     setIsModalOpen(true);
@@ -96,7 +124,7 @@ export default function BranchesPage() {
 
   const openEditModal = (branch: BranchDto) => {
     setEditingBranch(branch);
-    setPreviewImage(branch.image?.url || null);
+    setPreviewImage(branch.image?.url ? normalizeImageUrl(branch.image.url) : null);
     form.setFieldsValue({
       name_uz: branch.name_uz,
       name_ru: branch.name_ru,
@@ -109,6 +137,9 @@ export default function BranchesPage() {
       tour3d_iframe: branch.tour3d_iframe,
       latitude: branch.latitude,
       longitude: branch.longitude,
+      workingHours_uz: branch.workingHours_uz || '',
+      workingHours_ru: branch.workingHours_ru || '',
+      serviceIds: branch.serviceIds || [],
       order: branch.order,
       imageId: branch.image?.id,
     });
@@ -119,9 +150,11 @@ export default function BranchesPage() {
     const { file, onSuccess, onError } = options;
     setUploading(true);
     try {
-      const media = await uploadMedia(file as File);
+      // Rasmni yuklashdan oldin siqish
+      const compressedFile = await compressImage(file as File);
+      const media = await uploadMedia(compressedFile);
       form.setFieldsValue({ imageId: media.id });
-      setPreviewImage(media.url);
+      setPreviewImage(normalizeImageUrl(media.url));
       message.success('Rasm yuklandi');
       queryClient.invalidateQueries({ queryKey: ['media'] });
       onSuccess?.(media);
@@ -139,9 +172,11 @@ export default function BranchesPage() {
     setPreviewImage(null);
   };
 
-  const handleSelectExistingMedia = (mediaId: string, mediaUrl: string) => {
-    form.setFieldsValue({ imageId: mediaId });
-    setPreviewImage(mediaUrl);
+  const handleSelectExistingMedia = (media: MediaDto) => {
+    form.setFieldsValue({ imageId: media.id });
+    setPreviewImage(normalizeImageUrl(media.url));
+    setImageModalOpen(false);
+    message.success('Rasm tanlandi');
   };
 
   const currentImageId = Form.useWatch('imageId', form);
@@ -172,12 +207,27 @@ export default function BranchesPage() {
         tour3d_iframe: values.tour3d_iframe || undefined,
         latitude: values.latitude != null ? Number(values.latitude) : undefined,
         longitude: values.longitude != null ? Number(values.longitude) : undefined,
+        workingHours_uz: values.workingHours_uz && values.workingHours_uz.trim() ? values.workingHours_uz.trim() : null,
+        workingHours_ru: values.workingHours_ru && values.workingHours_ru.trim() ? values.workingHours_ru.trim() : null,
+        serviceIds: values.serviceIds && Array.isArray(values.serviceIds) ? values.serviceIds : [],
         order: typeof values.order === 'number' ? values.order : Number(values.order ?? 0),
         imageId: values.imageId || undefined,
       };
 
+      console.log('🔍 [BRANCHES ADMIN] Payload:', {
+        workingHours_uz: payload.workingHours_uz,
+        workingHours_ru: payload.workingHours_ru,
+        serviceIds: payload.serviceIds,
+      });
+
       if (editingBranch) {
-        await updateMutation({ id: editingBranch.id, payload });
+        const result = await updateMutation({ id: editingBranch.id, payload });
+        console.log('🔍 [BRANCHES ADMIN] Update result:', {
+          id: result.id,
+          workingHours_uz: result.workingHours_uz,
+          workingHours_ru: result.workingHours_ru,
+          serviceIds: result.serviceIds,
+        });
       } else {
         await createMutation(payload);
       }
@@ -200,9 +250,13 @@ export default function BranchesPage() {
           <Space align="start">
             {record.image?.url ? (
               <img
-                src={record.image.url}
+                src={normalizeImageUrl(record.image.url)}
                 alt={record.name_uz}
                 style={{ width: 72, height: 56, objectFit: 'cover', borderRadius: 8 }}
+                onError={(e) => {
+                  console.error('Image load error:', { src: e.currentTarget.src, branchId: record.id });
+                  e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="72" height="56"%3E%3Crect fill="%23f5f5f5" width="72" height="56"/%3E%3Ctext fill="%23999" font-family="sans-serif" font-size="10" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3ERasm%3C/text%3E%3C/svg%3E';
+                }}
               />
             ) : null}
             <div>
@@ -388,15 +442,20 @@ export default function BranchesPage() {
           </Form.Item>
           <Form.Item label="Rasm" name="imageId" extra="Filial rasmi">
             <div>
-              {previewImage ? (
+              {(previewImage || form.getFieldValue('imageId')) && (
                 <div style={{ marginBottom: 16, position: 'relative', display: 'inline-block' }}>
-                  <Image
-                    src={previewImage}
+                  <img
+                    src={normalizeImageUrl(previewImage || mediaList?.find(m => m.id === form.getFieldValue('imageId'))?.url || '')}
                     alt="Preview"
-                    width={200}
-                    height={150}
-                    style={{ objectFit: 'cover', borderRadius: 8 }}
-                    preview={false}
+                    style={{ width: 200, height: 150, objectFit: 'cover', borderRadius: 8, display: 'block' }}
+                    onError={(e) => {
+                      console.error('Image load error:', {
+                        src: e.currentTarget.src,
+                        previewImage,
+                        imageId: form.getFieldValue('imageId'),
+                      });
+                      e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="150"%3E%3Crect fill="%23f5f5f5" width="200" height="150"/%3E%3Ctext fill="%23999" font-family="sans-serif" font-size="14" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3ERasm%3C/text%3E%3C/svg%3E';
+                    }}
                   />
                   <Button
                     type="text"
@@ -408,59 +467,32 @@ export default function BranchesPage() {
                     O'chirish
                   </Button>
                 </div>
-              ) : null}
-              <Upload
-                customRequest={handleUpload}
-                showUploadList={false}
-                accept="image/*"
-                disabled={uploading}
-              >
-                <Button icon={<UploadOutlined />} loading={uploading}>
-                  {previewImage ? 'Rasmni almashtirish' : 'Rasm yuklash'}
-                </Button>
-              </Upload>
-              {mediaList && mediaList.length > 0 && (
-                <div style={{ marginTop: 16 }}>
-                  <div style={{ marginBottom: 8, fontSize: 12, color: '#666' }}>
-                    Yoki mavjud rasmni tanlang:
-                  </div>
-                  <div
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))',
-                      gap: 8,
-                      maxHeight: 200,
-                      overflowY: 'auto',
-                      padding: 8,
-                      border: '1px solid #d9d9d9',
-                      borderRadius: 4,
-                    }}
-                  >
-                    {mediaList.slice(0, 20).map((media) => (
-                      <div
-                        key={media.id}
-                        onClick={() => handleSelectExistingMedia(media.id, media.url)}
-                        style={{
-                          width: '100%',
-                          aspectRatio: '1',
-                          border: currentImageId === media.id ? '2px solid #1890ff' : '1px solid #d9d9d9',
-                          borderRadius: 4,
-                          cursor: 'pointer',
-                          overflow: 'hidden',
-                          position: 'relative',
-                          backgroundColor: currentImageId === media.id ? '#e6f7ff' : '#fff',
-                        }}
-                      >
-                        <img
-                          src={media.url}
-                          alt={media.alt_uz || media.filename}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
               )}
+              <Space direction="vertical" style={{ width: '100%' }}>
+                <Upload
+                  customRequest={handleUpload}
+                  showUploadList={false}
+                  accept="image/*"
+                  disabled={uploading}
+                >
+                  <Button icon={<UploadOutlined />} loading={uploading} block>
+                    {previewImage ? 'Rasmni almashtirish' : 'Rasm yuklash'}
+                  </Button>
+                </Upload>
+                <Button
+                  icon={<FolderOutlined />}
+                  onClick={() => setImageModalOpen(true)}
+                  block
+                  style={{ marginBottom: 8 }}
+                >
+                  Mavjud rasmdan tanlash
+                </Button>
+                {form.getFieldValue('imageId') && (
+                  <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
+                    Tanlangan: {mediaList?.find(m => m.id === form.getFieldValue('imageId'))?.filename || 'Noma\'lum'}
+                  </div>
+                )}
+              </Space>
             </div>
           </Form.Item>
           <Form.Item
@@ -492,8 +524,59 @@ export default function BranchesPage() {
           <Form.Item label="Tartib" name="order" initialValue={0}>
             <InputNumber style={{ width: '100%' }} />
           </Form.Item>
+
+          <Form.Item
+            label="Ish vaqti (uz)"
+            name="workingHours_uz"
+            extra="Masalan: Dushanba - Juma: 09:00-20:00&#10;Shanba - Yakshanba: 09:00-18:00"
+          >
+            <Input.TextArea
+              rows={3}
+              placeholder="Dushanba - Juma: 09:00-20:00&#10;Shanba - Yakshanba: 09:00-18:00"
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="Ish vaqti (ru)"
+            name="workingHours_ru"
+            extra="Masalan: Понедельник - Пятница: 09:00-20:00&#10;Суббота - Воскресенье: 09:00-18:00"
+          >
+            <Input.TextArea
+              rows={3}
+              placeholder="Понедельник - Пятница: 09:00-20:00&#10;Суббота - Воскресенье: 09:00-18:00"
+            />
+          </Form.Item>
+
+          <Form.Item
+            label="Xizmatlar"
+            name="serviceIds"
+            extra="Filialda ko'rsatiladigan xizmatlarni tanlang"
+          >
+            <Select
+              mode="multiple"
+              placeholder="Xizmatlarni tanlang"
+              style={{ width: '100%' }}
+              showSearch
+              filterOption={(input, option) =>
+                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+              }
+              options={servicesList?.map((service) => ({
+                label: `${service.title_uz}${service.title_ru ? ` / ${service.title_ru}` : ''}`,
+                value: service.id,
+              })) || []}
+            />
+          </Form.Item>
         </Form>
       </Modal>
+
+      {/* Media Library Modal for Branch Image */}
+      <MediaLibraryModal
+        open={imageModalOpen}
+        onCancel={() => setImageModalOpen(false)}
+        onSelect={handleSelectExistingMedia}
+        fileType="image"
+        selectedMediaIds={form.getFieldValue('imageId') ? [form.getFieldValue('imageId')] : []}
+      />
     </div>
   );
 }

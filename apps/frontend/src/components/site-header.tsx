@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -17,7 +18,7 @@ import {
   Info,
   MapPin,
 } from 'lucide-react';
-import { getCatalogs, getMenu, type MenuItemResponse, type CatalogResponse } from '@/lib/api';
+import { getCatalogs, getMenu, getSettings, type MenuItemResponse, type CatalogResponse, type SettingsResponse } from '@/lib/api';
 // Removed DEFAULT_MENUS fallback - frontend fully depends on backend
 import LanguageSwitcher, { LanguageSwitcherMobile } from '@/components/language-switcher';
 import { getBilingualText, DEFAULT_LOCALE, type Locale } from '@/lib/locale';
@@ -75,7 +76,24 @@ function getLocaleFromDOM(): Locale {
   return DEFAULT_LOCALE;
 }
 
-export default function SiteHeader() {
+interface SiteHeaderProps {
+  initialSettings?: SettingsResponse | null;
+}
+
+// Helper function to normalize image URLs
+function normalizeImageUrl(url: string | null | undefined): string {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  if (url.startsWith('/uploads/')) {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3001';
+    return `${baseUrl}${url}`;
+  }
+  return url;
+}
+
+export default function SiteHeader({ initialSettings = null }: SiteHeaderProps = {}) {
   const queryClient = useQueryClient();
   
   // CRITICAL: Read initial locale from DOM synchronously - this must match server render
@@ -112,6 +130,7 @@ export default function SiteHeader() {
   const [displayLocale, setDisplayLocale] = useState<Locale>(getInitialLocale);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuRefreshKey, setMenuRefreshKey] = useState(0);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   // Track if we've successfully switched locale to prevent reverting
   const [localeChangeInProgress, setLocaleChangeInProgress] = useState(false);
@@ -209,6 +228,18 @@ export default function SiteHeader() {
       observer.disconnect();
     };
   }, [displayLocale, queryClient, localeChangeInProgress]);
+
+  const { data: settings, isLoading: isLoadingSettings } = useQuery<SettingsResponse>({
+    queryKey: ['settings', displayLocale],
+    queryFn: () => getSettings(displayLocale),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    retry: false,
+    throwOnError: false,
+    refetchOnMount: 'always', // Always refetch on mount to ensure logo is loaded
+    placeholderData: (previousData) => previousData || initialSettings, // Use initialSettings as placeholder
+    initialData: initialSettings, // Use server-side fetched settings as initial data
+  });
 
   const { data: catalogsData, isLoading: isLoadingCatalogs } = useQuery<CatalogResponse[]>({
     queryKey: ['catalogs', displayLocale, menuRefreshKey],
@@ -429,24 +460,49 @@ export default function SiteHeader() {
       <div className="bg-white">
         <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 md:flex-row md:items-center md:justify-between md:px-6">
           <div className="flex items-center gap-3">
-            <Link href="/" className="text-3xl font-semibold tracking-tight text-brand-primary">
-              Acoustic
+            <Link href="/" className="flex items-center">
+              {settings?.logo?.url ? (
+                <Image
+                  src={normalizeImageUrl(settings.logo.url)}
+                  alt={settings.logo.alt_uz || settings.logo.alt_ru || 'Acoustic'}
+                  width={120}
+                  height={40}
+                  className="h-auto w-auto object-contain"
+                  style={{ maxHeight: '40px' }}
+                  priority
+                  unoptimized
+                />
+              ) : (
+                <span className="text-3xl font-semibold tracking-tight text-brand-primary">
+                  Acoustic
+                </span>
+              )}
             </Link>
-            <span className="text-xs font-medium text-muted-foreground" suppressHydrationWarning>
-              {displayLocale === 'ru' ? 'Центр слуха с 2008 года' : '2008 yildan beri eshitish markazi'}
-            </span>
           </div>
 
           <div className="flex w-full flex-col gap-3 md:max-w-xl">
-            <div className="relative">
+            <form 
+              action="/search" 
+              method="get"
+              className="relative"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                const query = formData.get('q') as string;
+                if (query && query.trim()) {
+                  window.location.href = `/search?q=${encodeURIComponent(query.trim())}`;
+                }
+              }}
+            >
               <input
                 type="search"
+                name="q"
                 placeholder={displayLocale === 'ru' ? 'Поиск' : 'Qidiruv'}
                 className="w-full rounded-full border border-border/60 bg-white px-10 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/40"
                 suppressHydrationWarning
               />
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            </div>
+            </form>
           </div>
 
           <div className="flex items-center gap-3">
@@ -490,17 +546,23 @@ export default function SiteHeader() {
               // Use locale in key to force remount when locale changes
 
               if (item.type === 'dropdown') {
+                const isOpen = openDropdown === item.href;
                 return (
-                  <div key={`${item.href}-${displayLocale}`} className={`group relative flex-1 ${borderClass}`}>
+                  <div 
+                    key={`${item.href}-${displayLocale}`} 
+                    className={`group relative flex-1 ${borderClass}`}
+                    onMouseEnter={() => setOpenDropdown(item.href)}
+                    onMouseLeave={() => setOpenDropdown(null)}
+                  >
                     <Link
                       href={item.href}
                       className="flex h-full w-full items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
                     >
                       {item.icon}
                       <span suppressHydrationWarning>{item.label}</span>
-                      <ChevronDown className="h-3 w-3 transition group-hover:rotate-180" />
+                      <ChevronDown className={`h-3 w-3 transition ${isOpen ? 'rotate-180' : ''}`} />
                     </Link>
-                    <div className="pointer-events-none absolute left-0 top-full z-30 hidden min-w-[220px] translate-y-2 flex-col gap-1 rounded-b-3xl border border-brand-primary/30 bg-white/95 p-3 text-brand-accent shadow-lg group-hover:pointer-events-auto group-hover:flex">
+                    <div className={`absolute left-0 top-full z-30 min-w-[220px] flex-col gap-1 rounded-b-3xl border border-brand-primary/30 bg-white/95 p-3 text-brand-accent shadow-lg ${isOpen ? 'flex' : 'hidden'}`} style={{ marginTop: '-1px' }}>
                       {item.children.length > 0 ? (
                         item.children.map((child) => (
                           <Link

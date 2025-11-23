@@ -19,7 +19,7 @@ import {
   Transfer,
   Switch,
 } from 'antd';
-import { UploadOutlined, DeleteOutlined } from '@ant-design/icons';
+import { UploadOutlined, DeleteOutlined, FolderOutlined } from '@ant-design/icons';
 import type { TabsProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { UploadProps } from 'antd';
@@ -31,19 +31,13 @@ import {
   deleteHomepageService,
   HomepageServiceDto,
   ApiError,
-  getBannersAdmin,
-  createBanner,
-  updateBanner,
-  deleteBanner,
   getMedia,
   uploadMedia,
-  type BannerDto,
-  type CreateBannerPayload,
-  type UpdateBannerPayload,
   type MediaDto,
   type CreateHomepageServicePayload,
   type UpdateHomepageServicePayload,
   getCatalogsAdmin,
+  getCatalogs,
   createCatalog,
   updateCatalog,
   deleteCatalog,
@@ -63,304 +57,23 @@ import {
   type UpdateFaqPayload,
   getProductsAdmin,
   type ProductDto,
+  getHomepageHearingAids,
+  createHomepageHearingAid,
+  updateHomepageHearingAid,
+  deleteHomepageHearingAid,
+  type HomepageHearingAidDto,
+  type CreateHomepageHearingAidPayload,
+  type UpdateHomepageHearingAidPayload,
 } from '../lib/api';
+import MediaLibraryModal from '../components/MediaLibraryModal';
+import { normalizeImageUrl } from '../utils/image';
+import { compressImage } from '../utils/image-compression';
 
 const statusOptions = [
   { label: 'Nashr etilgan', value: 'published' },
   { label: 'Qoralama', value: 'draft' },
   { label: 'Arxiv', value: 'archived' },
 ];
-
-// Slides Tab (Banners)
-function SlidesTab() {
-  const queryClient = useQueryClient();
-  const { data: banners, isLoading } = useQuery<BannerDto[], ApiError>({
-    queryKey: ['banners-admin'],
-    queryFn: getBannersAdmin,
-  });
-  const { data: mediaList } = useQuery<MediaDto[], ApiError>({
-    queryKey: ['media'],
-    queryFn: getMedia,
-  });
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingBanner, setEditingBanner] = useState<BannerDto | null>(null);
-  const [form] = Form.useForm();
-  const [uploading, setUploading] = useState(false);
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
-
-  const createMutation = useMutation({
-    mutationFn: createBanner,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['banners-admin'] });
-      message.success('Slayd saqlandi');
-    },
-    onError: (error: ApiError) => message.error(error.message || 'Xatolik yuz berdi'),
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: UpdateBannerPayload }) => updateBanner(id, payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['banners-admin'] });
-      message.success('Slayd yangilandi');
-    },
-    onError: (error: ApiError) => message.error(error.message || 'Xatolik yuz berdi'),
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: deleteBanner,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['banners-admin'] });
-      message.success("Slayd o'chirildi");
-    },
-    onError: (error: ApiError) => message.error(error.message || "O'chirishda xatolik"),
-  });
-
-  const columns: ColumnsType<BannerDto> = useMemo(
-    () => [
-      {
-        title: 'Rasm',
-        key: 'image',
-        width: 100,
-        render: (_, record) =>
-          record.image?.url ? (
-            <Image src={record.image.url} alt={record.title_uz} width={60} height={60} style={{ objectFit: 'cover', borderRadius: 4 }} preview={false} />
-          ) : (
-            <div style={{ width: 60, height: 60, background: '#f0f0f0', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#999' }}>
-              Rasm yo'q
-            </div>
-          ),
-      },
-      {
-        title: 'Sarlavha (uz)',
-        dataIndex: 'title_uz',
-        key: 'title_uz',
-      },
-      {
-        title: 'Sarlavha (ru)',
-        dataIndex: 'title_ru',
-        key: 'title_ru',
-      },
-      {
-        title: 'Holati',
-        dataIndex: 'status',
-        key: 'status',
-        render: (value: BannerDto['status']) => {
-          const color = value === 'published' ? 'green' : value === 'draft' ? 'orange' : 'default';
-          return <Tag color={color}>{value}</Tag>;
-        },
-      },
-      {
-        title: 'Tartib',
-        dataIndex: 'order',
-        key: 'order',
-      },
-      {
-        title: 'Amallar',
-        key: 'actions',
-        render: (_: unknown, record: BannerDto) => (
-          <Space>
-            <Button
-              size="small"
-              onClick={() => {
-                setEditingBanner(record);
-                setPreviewImage(record.image?.url || null);
-                form.setFieldsValue({
-                  title_uz: record.title_uz,
-                  title_ru: record.title_ru,
-                  text_uz: record.text_uz ?? undefined,
-                  text_ru: record.text_ru ?? undefined,
-                  ctaText_uz: record.ctaText_uz ?? undefined,
-                  ctaText_ru: record.ctaText_ru ?? undefined,
-                  ctaLink: record.ctaLink ?? undefined,
-                  imageId: record.imageId ?? undefined,
-                  order: record.order,
-                  status: record.status,
-                });
-                setIsModalOpen(true);
-              }}
-            >
-              Tahrirlash
-            </Button>
-            <Popconfirm title="Slaydni o'chirish" description="Haqiqatan ham o'chirilsinmi?" onConfirm={() => deleteMutation.mutate(record.id)} okText="Ha" cancelText="Yo'q">
-              <Button danger size="small" loading={deleteMutation.isPending}>
-                O'chirish
-              </Button>
-            </Popconfirm>
-          </Space>
-        ),
-      },
-    ],
-    [deleteMutation.isPending, form],
-  );
-
-  const openCreateModal = () => {
-    setEditingBanner(null);
-    setPreviewImage(null);
-    form.resetFields();
-    form.setFieldsValue({ status: 'published', order: 0 });
-    setIsModalOpen(true);
-  };
-
-  const handleSubmit = async () => {
-    try {
-      const values = await form.validateFields();
-      const payload: CreateBannerPayload = {
-        title_uz: values.title_uz,
-        title_ru: values.title_ru,
-        text_uz: values.text_uz || undefined,
-        text_ru: values.text_ru || undefined,
-        ctaText_uz: values.ctaText_uz || undefined,
-        ctaText_ru: values.ctaText_ru || undefined,
-        ctaLink: values.ctaLink || undefined,
-        imageId: values.imageId || undefined,
-        order: typeof values.order === 'number' ? values.order : Number(values.order ?? 0),
-        status: values.status,
-      };
-
-      if (editingBanner) {
-        await updateMutation.mutateAsync({ id: editingBanner.id, payload });
-      } else {
-        await createMutation.mutateAsync(payload);
-      }
-
-      setIsModalOpen(false);
-      form.resetFields();
-      setPreviewImage(null);
-    } catch (error) {
-      // validation error
-    }
-  };
-
-  const handleUpload: UploadProps['customRequest'] = async (options) => {
-    const { file, onSuccess, onError } = options;
-    setUploading(true);
-    try {
-      const media = await uploadMedia(file as File);
-      form.setFieldsValue({ imageId: media.id });
-      setPreviewImage(media.url);
-      message.success('Rasm yuklandi');
-      queryClient.invalidateQueries({ queryKey: ['media'] });
-      onSuccess?.(media);
-    } catch (error) {
-      const apiError = error as ApiError;
-      message.error(apiError.message || 'Rasm yuklashda xatolik');
-      onError?.(error as Error);
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleRemoveImage = () => {
-    form.setFieldsValue({ imageId: undefined });
-    setPreviewImage(null);
-  };
-
-  const handleSelectExistingMedia = (mediaId: string, mediaUrl: string) => {
-    form.setFieldsValue({ imageId: mediaId });
-    setPreviewImage(mediaUrl);
-  };
-
-  const currentImageId = Form.useWatch('imageId', form);
-  const currentMedia = mediaList?.find((m) => m.id === currentImageId);
-
-  return (
-    <div>
-      <Space style={{ marginBottom: 16 }}>
-        <Button type="primary" onClick={openCreateModal}>
-          Yangi slayd
-        </Button>
-      </Space>
-      <Table rowKey="id" loading={isLoading} dataSource={banners ?? []} columns={columns} pagination={false} />
-
-      <Modal title={editingBanner ? 'Slaydni tahrirlash' : 'Yangi slayd'} open={isModalOpen} onCancel={() => setIsModalOpen(false)} onOk={handleSubmit} confirmLoading={createMutation.isPending || updateMutation.isPending} okText="Saqlash" cancelText="Bekor qilish" width={800}>
-        <Form layout="vertical" form={form}>
-          <Form.Item label="Sarlavha (uz)" name="title_uz" rules={[{ required: true, message: 'Sarlavha (uz) majburiy' }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item label="Sarlavha (ru)" name="title_ru" rules={[{ required: true, message: 'Sarlavha (ru) majburiy' }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item label="Matn (uz)" name="text_uz">
-            <Input.TextArea rows={2} />
-          </Form.Item>
-          <Form.Item label="Matn (ru)" name="text_ru">
-            <Input.TextArea rows={2} />
-          </Form.Item>
-          <Form.Item label="CTA matn (uz)" name="ctaText_uz">
-            <Input />
-          </Form.Item>
-          <Form.Item label="CTA matn (ru)" name="ctaText_ru">
-            <Input />
-          </Form.Item>
-          <Form.Item label="CTA havola" name="ctaLink">
-            <Input placeholder="https://example.com yoki tel:+998712021441" />
-          </Form.Item>
-
-          <Form.Item label="Rasm" name="imageId">
-            <div>
-              <Row gutter={16}>
-                <Col span={12}>
-                  <Upload customRequest={handleUpload} showUploadList={false} accept="image/*" maxCount={1}>
-                    <Button icon={<UploadOutlined />} loading={uploading} block>
-                      Yangi rasm yuklash
-                    </Button>
-                  </Upload>
-                </Col>
-                <Col span={12}>
-                  {previewImage && (
-                    <Button danger icon={<DeleteOutlined />} onClick={handleRemoveImage} block>
-                      Rasmi o'chirish
-                    </Button>
-                  )}
-                </Col>
-              </Row>
-
-              {(previewImage || currentMedia?.url) && (
-                <div style={{ marginTop: 16, textAlign: 'center' }}>
-                  <Image src={previewImage || currentMedia?.url || ''} alt="Preview" style={{ maxWidth: '100%', maxHeight: 200, objectFit: 'contain', borderRadius: 4 }} preview={true} />
-                </div>
-              )}
-
-              {mediaList && mediaList.length > 0 && (
-                <div style={{ marginTop: 16 }}>
-                  <div style={{ marginBottom: 8, fontWeight: 500 }}>Mavjud rasmlar (tanlash uchun bosing):</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, maxHeight: 200, overflowY: 'auto' }}>
-                    {mediaList.slice(0, 20).map((media) => (
-                      <div
-                        key={media.id}
-                        onClick={() => handleSelectExistingMedia(media.id, media.url)}
-                        style={{
-                          width: 80,
-                          height: 80,
-                          border: currentImageId === media.id ? '2px solid #F07E22' : '1px solid #d9d9d9',
-                          borderRadius: 4,
-                          cursor: 'pointer',
-                          overflow: 'hidden',
-                          position: 'relative',
-                          backgroundColor: currentImageId === media.id ? '#fff7ed' : '#fff',
-                        }}
-                      >
-                        <img src={media.url} alt={media.alt_uz || media.filename} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </Form.Item>
-
-          <Form.Item label="Tartib" name="order" initialValue={0}>
-            <InputNumber style={{ width: '100%' }} min={0} />
-          </Form.Item>
-          <Form.Item label="Holati" name="status" initialValue="published">
-            <Select options={statusOptions} />
-          </Form.Item>
-        </Form>
-      </Modal>
-    </div>
-  );
-}
 
 // Homepage Services Tab (separate from regular services)
 function HomepageServicesTab() {
@@ -373,6 +86,27 @@ function HomepageServicesTab() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingService, setEditingService] = useState<HomepageServiceDto | null>(null);
   const [form] = Form.useForm();
+  const [uploading, setUploading] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const { data: mediaList } = useQuery<MediaDto[], ApiError>({
+    queryKey: ['media'],
+    queryFn: getMedia,
+  });
+
+  // Helper function to normalize image URLs
+  const normalizeImageUrl = (url: string | null | undefined): string => {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    if (url.startsWith('/uploads/')) {
+      const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+      const baseUrl = apiBase.replace('/api', '');
+      return `${baseUrl}${url}`;
+    }
+    return url;
+  };
 
   const createMutation = useMutation({
     mutationFn: createHomepageService,
@@ -441,11 +175,12 @@ function HomepageServicesTab() {
                   title_ru: record.title_ru,
                   excerpt_uz: record.excerpt_uz,
                   excerpt_ru: record.excerpt_ru,
-                  slug: record.slug,
+                  link: record.slug ? (record.slug.startsWith('/') ? record.slug : `/${record.slug}`) : undefined,
                   status: record.status,
                   order: record.order,
                   imageId: record.image?.id,
                 });
+                setPreviewImage(record.image?.url ? normalizeImageUrl(record.image.url) : null);
                 setIsModalOpen(true);
               }}
             >
@@ -465,20 +200,76 @@ function HomepageServicesTab() {
 
   const openCreateModal = () => {
     setEditingService(null);
+    setPreviewImage(null);
     form.resetFields();
     form.setFieldsValue({ status: 'published', order: 0 });
     setIsModalOpen(true);
   };
 
+  const handleUpload: UploadProps['customRequest'] = async (options) => {
+    const { file, onSuccess, onError } = options;
+    setUploading(true);
+    try {
+      // Rasmni yuklashdan oldin siqish
+      const compressedFile = await compressImage(file as File);
+      const media = await uploadMedia(compressedFile);
+      form.setFieldsValue({ imageId: media.id });
+      setPreviewImage(normalizeImageUrl(media.url));
+      message.success('Rasm yuklandi');
+      queryClient.invalidateQueries({ queryKey: ['media'] });
+      onSuccess?.(media);
+    } catch (error) {
+      const apiError = error as ApiError;
+      message.error(apiError.message || 'Rasm yuklashda xatolik');
+      onError?.(error as Error);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    form.setFieldsValue({ imageId: undefined });
+    setPreviewImage(null);
+  };
+
+  const handleSelectExistingMedia = (mediaId: string, mediaUrl: string) => {
+    form.setFieldsValue({ imageId: mediaId });
+    setPreviewImage(normalizeImageUrl(mediaUrl));
+  };
+
+  const handleSelectMediaFromLibrary = (media: MediaDto) => {
+    form.setFieldsValue({ imageId: media.id });
+    setPreviewImage(normalizeImageUrl(media.url));
+    setImageModalOpen(false);
+    message.success('Rasm tanlandi');
+  };
+
+  const currentImageId = Form.useWatch('imageId', form);
+
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
+      // Use link as-is if provided, otherwise use slug field
+      // Slug will be saved exactly as entered - no automatic /services/ prefix
+      let slug: string | undefined = undefined;
+      if (values.link) {
+        // Remove leading / if present, but keep the rest as-is
+        // If user enters "/services/xizmat-slug", save as "services/xizmat-slug"
+        // If user enters "xizmat-slug", save as "xizmat-slug"
+        // If user enters "/catalog/katalog-slug", save as "catalog/katalog-slug"
+        slug = values.link.startsWith('/') 
+          ? values.link.substring(1).split('?')[0].split('#')[0]
+          : values.link.split('?')[0].split('#')[0];
+      } else if (values.slug) {
+        slug = values.slug;
+      }
+
       const payload: CreateHomepageServicePayload = {
         title_uz: values.title_uz,
         title_ru: values.title_ru,
         excerpt_uz: values.excerpt_uz ?? undefined,
         excerpt_ru: values.excerpt_ru ?? undefined,
-        slug: values.slug ?? undefined,
+        slug: slug,
         order: typeof values.order === 'number' ? values.order : Number(values.order ?? 0),
         status: values.status,
         imageId: values.imageId || undefined,
@@ -520,16 +311,482 @@ function HomepageServicesTab() {
           <Form.Item label="Qisqa matn (ru)" name="excerpt_ru">
             <Input.TextArea rows={3} />
           </Form.Item>
-          <Form.Item label="Slug" name="slug">
-            <Input placeholder="xizmat-slug (ixtiyoriy)" />
+          <Form.Item 
+            label="Link" 
+            name="link"
+            extra="Masalan: xizmat-slug yoki /services/xizmat-slug yoki /catalog/katalog-slug. Qanday yozilsa shunchaki o'sha qoladi."
+          >
+            <Input 
+              placeholder="xizmat-slug yoki /services/xizmat-slug" 
+            />
           </Form.Item>
-          <Form.Item label="Rasm ID" name="imageId">
-            <Input placeholder="Media ID" />
+          <Form.Item label="Rasm" name="imageId" extra="Bosh sahifadagi xizmat kartasida ko'rinadigan rasm">
+            <div>
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Upload
+                    customRequest={handleUpload}
+                    showUploadList={false}
+                    accept="image/*"
+                    maxCount={1}
+                  >
+                    <Button icon={<UploadOutlined />} loading={uploading} block>
+                      Yangi rasm yuklash
+                    </Button>
+                  </Upload>
+                </Col>
+                <Col span={12}>
+                  {previewImage && (
+                    <Button danger icon={<DeleteOutlined />} onClick={handleRemoveImage} block>
+                      Rasmi o'chirish
+                    </Button>
+                  )}
+                </Col>
+              </Row>
+              
+              {(previewImage || mediaList?.find((m) => m.id === currentImageId)?.url) && (
+                <div style={{ marginTop: 16, textAlign: 'center' }}>
+                  <div style={{ marginBottom: 8, fontSize: 12, color: '#666' }}>
+                    Tanlangan rasm:
+                  </div>
+                  <Image
+                    src={previewImage || normalizeImageUrl(mediaList?.find((m) => m.id === currentImageId)?.url) || ''}
+                    alt="Preview"
+                    style={{ maxWidth: '100%', maxHeight: 200, objectFit: 'contain', borderRadius: 4 }}
+                    preview={true}
+                  />
+                </div>
+              )}
+
+              <div style={{ marginTop: 16 }}>
+                <Button
+                  icon={<FolderOutlined />}
+                  onClick={() => setImageModalOpen(true)}
+                  block
+                  style={{ marginBottom: 8 }}
+                >
+                  Mavjud rasmdan tanlash
+                </Button>
+                {form.getFieldValue('imageId') && (
+                  <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
+                    Tanlangan: {mediaList?.find(m => m.id === form.getFieldValue('imageId'))?.filename || 'Noma\'lum'}
+                  </div>
+                )}
+              </div>
+            </div>
           </Form.Item>
           <Form.Item label="Holati" name="status" initialValue="published">
             <Select options={statusOptions} />
           </Form.Item>
           <Form.Item label="Tartib" name="order" initialValue={0}>
+            <InputNumber style={{ width: '100%' }} min={0} />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Media Library Modal */}
+      <MediaLibraryModal
+        open={imageModalOpen}
+        onCancel={() => setImageModalOpen(false)}
+        onSelect={handleSelectMediaFromLibrary}
+        fileType="image"
+        selectedMediaIds={form.getFieldValue('imageId') ? [form.getFieldValue('imageId')] : []}
+      />
+    </div>
+  );
+}
+
+// Homepage Products Tab (Select products and add short descriptions)
+function HomepageProductsTab() {
+  const queryClient = useQueryClient();
+  const { data: hearingAids, isLoading } = useQuery<HomepageHearingAidDto[], ApiError>({
+    queryKey: ['homepage-hearing-aids-admin'],
+    queryFn: getHomepageHearingAids,
+  });
+
+  const { data: productsResponse } = useQuery({
+    queryKey: ['products-admin-for-homepage'],
+    queryFn: () => getProductsAdmin({ limit: 1000, productType: 'hearing-aids' }),
+  });
+
+  const allProducts = productsResponse?.items ?? [];
+
+  const { data: mediaList } = useQuery<MediaDto[], ApiError>({
+    queryKey: ['media'],
+    queryFn: getMedia,
+  });
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<HomepageHearingAidDto | null>(null);
+  const [form] = Form.useForm();
+  const [uploading, setUploading] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  const createMutation = useMutation({
+    mutationFn: createHomepageHearingAid,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['homepage-hearing-aids-admin'] });
+      message.success('Mahsulot saqlandi');
+    },
+    onError: (error: ApiError) => message.error(error.message || 'Xatolik yuz berdi'),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateHomepageHearingAidPayload }) =>
+      updateHomepageHearingAid(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['homepage-hearing-aids-admin'] });
+      message.success('Mahsulot yangilandi');
+    },
+    onError: (error: ApiError) => message.error(error.message || 'Xatolik yuz berdi'),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteHomepageHearingAid,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['homepage-hearing-aids-admin'] });
+      message.success("Mahsulot o'chirildi");
+    },
+    onError: (error: ApiError) => message.error(error.message || "O'chirishda xatolik"),
+  });
+
+  const columns: ColumnsType<HomepageHearingAidDto> = useMemo(
+    () => [
+      {
+        title: 'Rasm',
+        key: 'image',
+        width: 100,
+        render: (_, record) =>
+          record.image?.url ? (
+            <Image
+              src={record.image.url}
+              alt={record.title_uz}
+              width={60}
+              height={60}
+              style={{ objectFit: 'cover', borderRadius: 4 }}
+              preview={false}
+            />
+          ) : (
+            <div
+              style={{
+                width: 60,
+                height: 60,
+                background: '#f0f0f0',
+                borderRadius: 4,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 12,
+                color: '#999',
+              }}
+            >
+              Rasm yo'q
+            </div>
+          ),
+      },
+      {
+        title: 'Sarlavha (uz)',
+        dataIndex: 'title_uz',
+        key: 'title_uz',
+      },
+      {
+        title: 'Sarlavha (ru)',
+        dataIndex: 'title_ru',
+        key: 'title_ru',
+      },
+      {
+        title: 'Tavsif (uz)',
+        dataIndex: 'description_uz',
+        key: 'description_uz',
+        ellipsis: true,
+      },
+      {
+        title: 'Link',
+        dataIndex: 'link',
+        key: 'link',
+        render: (value: string) => (value ? <a href={value}>{value}</a> : '—'),
+      },
+      {
+        title: 'Holati',
+        dataIndex: 'status',
+        key: 'status',
+        render: (value: HomepageHearingAidDto['status']) => {
+          const color = value === 'published' ? 'green' : value === 'draft' ? 'orange' : 'default';
+          return <Tag color={color}>{value}</Tag>;
+        },
+      },
+      {
+        title: 'Tartib',
+        dataIndex: 'order',
+        key: 'order',
+        width: 80,
+      },
+      {
+        title: 'Amallar',
+        key: 'actions',
+        render: (_: unknown, record: HomepageHearingAidDto) => (
+          <Space>
+            <Button
+              size="small"
+              onClick={() => {
+                setEditingItem(record);
+                form.setFieldsValue({
+                  title_uz: record.title_uz,
+                  title_ru: record.title_ru,
+                  description_uz: record.description_uz ?? undefined,
+                  description_ru: record.description_ru ?? undefined,
+                  link: record.link ?? undefined,
+                  imageId: record.image?.id ?? undefined,
+                  order: record.order ?? 0,
+                  status: record.status,
+                });
+                setPreviewImage(record.image?.url ?? null);
+                setIsModalOpen(true);
+              }}
+            >
+              Tahrirlash
+            </Button>
+            <Popconfirm
+              title="Mahsulotni o'chirish"
+              description="Haqiqatan ham o'chirilsinmi?"
+              onConfirm={() => deleteMutation.mutate(record.id)}
+              okText="Ha"
+              cancelText="Yo'q"
+            >
+              <Button danger size="small" loading={deleteMutation.isPending}>
+                O'chirish
+              </Button>
+            </Popconfirm>
+          </Space>
+        ),
+      },
+    ],
+    [deleteMutation.isPending, form],
+  );
+
+  const openCreateModal = () => {
+    setEditingItem(null);
+    setPreviewImage(null);
+    form.resetFields();
+    form.setFieldsValue({ status: 'published', order: 0 });
+    setIsModalOpen(true);
+  };
+
+  const handleUpload: UploadProps['customRequest'] = async (options) => {
+    const { file, onSuccess, onError } = options;
+    setUploading(true);
+    try {
+      // Rasmni yuklashdan oldin siqish
+      const compressedFile = await compressImage(file as File);
+      const media = await uploadMedia(compressedFile);
+      form.setFieldsValue({ imageId: media.id });
+      setPreviewImage(normalizeImageUrl(media.url));
+      message.success('Rasm yuklandi');
+      queryClient.invalidateQueries({ queryKey: ['media'] });
+      onSuccess?.(media);
+    } catch (error) {
+      const apiError = error as ApiError;
+      message.error(apiError.message || 'Rasm yuklashda xatolik');
+      onError?.(error as Error);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    form.setFieldsValue({ imageId: undefined });
+    setPreviewImage(null);
+  };
+
+  const handleSelectExistingMedia = (mediaId: string, mediaUrl: string) => {
+    form.setFieldsValue({ imageId: mediaId });
+    setPreviewImage(mediaUrl);
+  };
+
+  const handleSelectProduct = (productId: string) => {
+    const product = allProducts.find((p) => p.id === productId);
+    if (product) {
+      form.setFieldsValue({
+        title_uz: product.name_uz || '',
+        title_ru: product.name_ru || '',
+        link: product.slug ? `/products/${product.slug}` : undefined,
+      });
+    }
+  };
+
+  const currentImageId = Form.useWatch('imageId', form);
+
+  const handleSubmit = async () => {
+    try {
+      const values = await form.validateFields();
+      const payload: CreateHomepageHearingAidPayload = {
+        title_uz: values.title_uz,
+        title_ru: values.title_ru,
+        description_uz: values.description_uz || undefined,
+        description_ru: values.description_ru || undefined,
+        link: values.link || undefined,
+        imageId: values.imageId || undefined,
+        order: typeof values.order === 'number' ? values.order : Number(values.order ?? 0),
+        status: values.status,
+      };
+
+      if (editingItem) {
+        await updateMutation.mutateAsync({ id: editingItem.id, payload });
+      } else {
+        await createMutation.mutateAsync(payload);
+      }
+
+      setIsModalOpen(false);
+      form.resetFields();
+      setPreviewImage(null);
+    } catch (error) {
+      // validation error
+    }
+  };
+
+  const items = hearingAids ?? [];
+
+  return (
+    <div>
+      <Space style={{ marginBottom: 16 }}>
+        <Button type="primary" onClick={openCreateModal}>
+          Yangi mahsulot qo'shish
+        </Button>
+      </Space>
+      <Table
+        rowKey="id"
+        loading={isLoading}
+        dataSource={items}
+        columns={columns}
+        pagination={false}
+      />
+
+      <Modal
+        title={editingItem ? 'Mahsulotni tahrirlash' : 'Yangi mahsulot qo\'shish'}
+        open={isModalOpen}
+        onCancel={() => setIsModalOpen(false)}
+        onOk={handleSubmit}
+        confirmLoading={createMutation.isPending || updateMutation.isPending}
+        okText="Saqlash"
+        cancelText="Bekor qilish"
+        width={800}
+      >
+        <Form layout="vertical" form={form}>
+          <Form.Item
+            label="Mahsulotni tanlash"
+            extra="Mavjud mahsulotlardan birini tanlang (ixtiyoriy)"
+          >
+            <Select
+              placeholder="Mahsulotni tanlang..."
+              showSearch
+              filterOption={(input, option) =>
+                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+              }
+              options={allProducts.map((p) => ({
+                value: p.id,
+                label: `${p.name_uz} / ${p.name_ru}`,
+              }))}
+              onChange={handleSelectProduct}
+              allowClear
+            />
+          </Form.Item>
+
+          <Form.Item label="Sarlavha (uz)" name="title_uz" rules={[{ required: true }]}>
+            <Input placeholder="Masalan, Oticon More 1" />
+          </Form.Item>
+          <Form.Item label="Sarlavha (ru)" name="title_ru" rules={[{ required: true }]}>
+            <Input placeholder="Например, Oticon More 1" />
+          </Form.Item>
+          <Form.Item
+            label="Qisqacha tavsif (uz)"
+            name="description_uz"
+            extra="Bosh sahifadagi mahsulot kartasida ko'rinadigan qisqacha tavsif"
+          >
+            <Input.TextArea rows={2} placeholder="Masalan, Ko'rinmas quloq apparati" />
+          </Form.Item>
+          <Form.Item
+            label="Qisqacha tavsif (ru)"
+            name="description_ru"
+            extra="Краткое описание, которое отображается на карточке продукта на главной странице"
+          >
+            <Input.TextArea rows={2} placeholder="Например, Невидимый слуховой аппарат" />
+          </Form.Item>
+          <Form.Item label="Link" name="link" extra="Mahsulot sahifasiga link (avtomatik to'ldiriladi)">
+            <Input placeholder="/products/product-slug" />
+          </Form.Item>
+          <Form.Item label="Rasm" name="imageId" extra="Bosh sahifadagi mahsulot kartasida ko'rinadigan rasm">
+            <div>
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Upload
+                    customRequest={handleUpload}
+                    showUploadList={false}
+                    accept="image/*"
+                    maxCount={1}
+                  >
+                    <Button icon={<UploadOutlined />} loading={uploading} block>
+                      Yangi rasm yuklash
+                    </Button>
+                  </Upload>
+                </Col>
+                <Col span={12}>
+                  {previewImage && (
+                    <Button danger icon={<DeleteOutlined />} onClick={handleRemoveImage} block>
+                      Rasmi o'chirish
+                    </Button>
+                  )}
+                </Col>
+              </Row>
+
+              {(previewImage || mediaList?.find((m) => m.id === currentImageId)?.url) && (
+                <div style={{ marginTop: 16, textAlign: 'center' }}>
+                  <div style={{ marginBottom: 8, fontSize: 12, color: '#666' }}>
+                    Tanlangan rasm:
+                  </div>
+                  <Image
+                    src={previewImage || mediaList?.find((m) => m.id === currentImageId)?.url || ''}
+                    alt="Preview"
+                    style={{ maxWidth: '100%', maxHeight: 200, objectFit: 'contain', borderRadius: 4 }}
+                    preview={true}
+                  />
+                </div>
+              )}
+
+              {mediaList && mediaList.length > 0 && (
+                <div style={{ marginTop: 16 }}>
+                  <div style={{ marginBottom: 8, fontWeight: 500 }}>Mavjud rasmlar:</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, maxHeight: 200, overflowY: 'auto' }}>
+                    {mediaList.slice(0, 20).map((media) => (
+                      <div
+                        key={media.id}
+                        onClick={() => handleSelectExistingMedia(media.id, media.url)}
+                        style={{
+                          width: 80,
+                          height: 80,
+                          border: currentImageId === media.id ? '2px solid #F07E22' : '1px solid #d9d9d9',
+                          borderRadius: 4,
+                          cursor: 'pointer',
+                          overflow: 'hidden',
+                          position: 'relative',
+                          backgroundColor: currentImageId === media.id ? '#fff7ed' : '#fff',
+                        }}
+                      >
+                        <img
+                          src={media.url}
+                          alt={media.alt_uz || media.filename}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </Form.Item>
+          <Form.Item label="Holati" name="status" initialValue="published">
+            <Select options={statusOptions} />
+          </Form.Item>
+          <Form.Item label="Tartib" name="order" initialValue={0} extra="Mahsulotlarning ko'rinish tartibi">
             <InputNumber style={{ width: '100%' }} min={0} />
           </Form.Item>
         </Form>
@@ -543,13 +800,39 @@ function CatalogsTab() {
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery<CatalogDto[], ApiError>({
     queryKey: ['catalogs-admin'],
-    queryFn: getCatalogsAdmin,
+    queryFn: async () => {
+      // Try admin endpoint first, fallback to public if auth fails
+      try {
+        return await getCatalogsAdmin();
+      } catch (err) {
+        const apiError = err as ApiError;
+        if (apiError.status === 401 || apiError.status === 403) {
+          // If auth fails, use public endpoint
+          return await getCatalogs();
+        }
+        throw err;
+      }
+    },
   });
 
   const { data: mediaList } = useQuery<MediaDto[], ApiError>({
     queryKey: ['media'],
     queryFn: getMedia,
   });
+
+  // Helper function to normalize image URLs
+  const normalizeImageUrl = (url: string | null | undefined): string => {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    if (url.startsWith('/uploads/')) {
+      const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+      const baseUrl = apiBase.replace('/api', '');
+      return `${baseUrl}${url}`;
+    }
+    return url;
+  };
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCatalog, setEditingCatalog] = useState<CatalogDto | null>(null);
@@ -590,10 +873,12 @@ function CatalogsTab() {
         title: 'Rasm',
         key: 'image',
         width: 100,
-        render: (_, record) =>
-          record.image?.url ? (
+        render: (_, record) => {
+          const imageUrl = record.image?.url;
+          const normalizedUrl = imageUrl ? normalizeImageUrl(imageUrl) : '';
+          return imageUrl ? (
             <Image
-              src={record.image.url}
+              src={normalizedUrl}
               alt={record.name_uz}
               width={60}
               height={60}
@@ -604,7 +889,8 @@ function CatalogsTab() {
             <div style={{ width: 60, height: 60, background: '#f0f0f0', borderRadius: 4, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#999' }}>
               Rasm yo'q
             </div>
-          ),
+          );
+        },
       },
       {
         title: 'Nomi (uz)',
@@ -696,9 +982,11 @@ function CatalogsTab() {
     const { file, onSuccess, onError } = options;
     setUploading(true);
     try {
-      const media = await uploadMedia(file as File);
+      // Rasmni yuklashdan oldin siqish
+      const compressedFile = await compressImage(file as File);
+      const media = await uploadMedia(compressedFile);
       form.setFieldsValue({ imageId: media.id });
-      setPreviewImage(media.url);
+      setPreviewImage(normalizeImageUrl(media.url));
       message.success('Rasm yuklandi');
       queryClient.invalidateQueries({ queryKey: ['media'] });
       onSuccess?.(media);
@@ -815,7 +1103,7 @@ function CatalogsTab() {
                 <div style={{ marginTop: 16, textAlign: 'center' }}>
                   <div style={{ marginBottom: 8, fontSize: 12, color: '#666' }}>Tanlangan rasm (katalog kartasida ko'rinadi):</div>
                   <Image
-                    src={previewImage || currentMedia?.url || ''}
+                    src={previewImage || normalizeImageUrl(currentMedia?.url) || ''}
                     alt="Preview"
                     style={{ maxWidth: '100%', maxHeight: 200, objectFit: 'contain', borderRadius: 4 }}
                     preview={true}
@@ -880,8 +1168,13 @@ function InteracousticsTab() {
     queryFn: () => getShowcase('interacoustics'),
   });
   const { data: productsResponse } = useQuery<{ items: ProductDto[]; total: number; page: number; pageSize: number }, ApiError>({
-    queryKey: ['products-admin'],
-    queryFn: getProductsAdmin,
+    queryKey: ['products-admin-interacoustics'],
+    queryFn: () => getProductsAdmin({ limit: 1000, productType: 'interacoustics' }),
+  });
+
+  const { data: mediaList } = useQuery<MediaDto[], ApiError>({
+    queryKey: ['media'],
+    queryFn: getMedia,
   });
 
   const updateMutation = useMutation({
@@ -895,44 +1188,163 @@ function InteracousticsTab() {
 
   const [targetKeys, setTargetKeys] = useState<string[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
+  const [searchText, setSearchText] = useState<string>('');
+  const [productMetadata, setProductMetadata] = useState<Record<string, { description_uz?: string; description_ru?: string; imageId?: string }>>({});
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
+  const [metadataForm] = Form.useForm();
 
-  // Initialize target keys when showcase data loads
+  // Initialize target keys and metadata when showcase data loads
   useEffect(() => {
     if (showcase?.productIds) {
       setTargetKeys(showcase.productIds);
     } else {
       setTargetKeys([]);
     }
+    // Extract metadata from showcase if available
+    if (showcase && 'productMetadata' in showcase && showcase.productMetadata) {
+      setProductMetadata(showcase.productMetadata as Record<string, { description_uz?: string; description_ru?: string; imageId?: string }>);
+    }
   }, [showcase]);
 
   const handleChange = (newTargetKeys: string[]) => {
     setTargetKeys(newTargetKeys);
+    // Remove metadata for products that are no longer selected
+    const removedKeys = targetKeys.filter((key) => !newTargetKeys.includes(key));
+    const updatedMetadata = { ...productMetadata };
+    removedKeys.forEach((key) => {
+      delete updatedMetadata[key];
+    });
+    setProductMetadata(updatedMetadata);
+  };
+
+  const handleOpenMetadataModal = (productId: string) => {
+    const product = allProducts.find((p) => p.id === productId);
+    const metadata = productMetadata[productId] || {};
+    setEditingProductId(productId);
+    setPreviewImage(null); // Reset preview image
+    metadataForm.setFieldsValue({
+      description_uz: metadata.description_uz || '',
+      description_ru: metadata.description_ru || '',
+      imageId: metadata.imageId || undefined,
+    });
+    // Set preview image if imageId exists
+    if (metadata.imageId && mediaList) {
+      const media = mediaList.find((m) => m.id === metadata.imageId);
+      if (media) {
+        setPreviewImage(media.url);
+      }
+    }
+    setIsMetadataModalOpen(true);
+  };
+
+  const handleSaveMetadata = () => {
+    const values = metadataForm.getFieldsValue();
+    if (editingProductId) {
+      setProductMetadata({
+        ...productMetadata,
+        [editingProductId]: {
+          description_uz: values.description_uz || undefined,
+          description_ru: values.description_ru || undefined,
+          imageId: values.imageId || undefined,
+        },
+      });
+    }
+    setIsMetadataModalOpen(false);
+    setEditingProductId(null);
+    metadataForm.resetFields();
   };
 
   const handleSubmit = async () => {
     try {
-      await updateMutation.mutateAsync({ productIds: targetKeys });
+      await updateMutation.mutateAsync({
+        productIds: targetKeys,
+        productMetadata: productMetadata,
+      });
     } catch (error) {
       // error handled by mutation
     }
   };
 
   const allProducts = productsResponse?.items ?? [];
-  const dataSource = allProducts.map((product) => ({
+  
+  // Filter products by search text
+  const filteredProducts = useMemo(() => {
+    if (!searchText) return allProducts;
+    const searchLower = searchText.toLowerCase();
+    return allProducts.filter((product) => {
+      const nameUz = (product.name_uz || '').toLowerCase();
+      const nameRu = (product.name_ru || '').toLowerCase();
+      const brandName = (product.brand?.name || '').toLowerCase();
+      return nameUz.includes(searchLower) || nameRu.includes(searchLower) || brandName.includes(searchLower);
+    });
+  }, [allProducts, searchText]);
+
+  const dataSource = filteredProducts.map((product) => ({
     key: product.id,
     title: `${product.name_uz} / ${product.name_ru}`,
     description: product.brand?.name || "Brend yo'q",
   }));
 
+  const [isMetadataModalOpen, setIsMetadataModalOpen] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  const handleImageUpload: UploadProps['customRequest'] = async (options) => {
+    const { file, onSuccess, onError } = options;
+    setUploadingImage(true);
+    try {
+      // Rasmni yuklashdan oldin siqish
+      const compressedFile = await compressImage(file as File);
+      const media = await uploadMedia(compressedFile);
+      metadataForm.setFieldsValue({ imageId: media.id });
+      setPreviewImage(normalizeImageUrl(media.url));
+      message.success('Rasm yuklandi');
+      queryClient.invalidateQueries({ queryKey: ['media'] });
+      onSuccess?.(media);
+    } catch (error) {
+      const apiError = error as ApiError;
+      message.error(apiError.message || 'Rasm yuklashda xatolik');
+      onError?.(error as Error);
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    metadataForm.setFieldsValue({ imageId: undefined });
+    setPreviewImage(null);
+  };
+
+  const handleSelectExistingMedia = (mediaId: string, mediaUrl: string) => {
+    metadataForm.setFieldsValue({ imageId: mediaId });
+    setPreviewImage(mediaUrl);
+  };
+
+  const currentImageId = Form.useWatch('imageId', metadataForm);
+
   if (isLoading) {
     return <div>Yuklanmoqda...</div>;
   }
 
+  const selectedProducts = allProducts.filter((p) => targetKeys.includes(p.id));
+
   return (
     <div>
       <div style={{ marginBottom: 16 }}>
-        <p>Interacoustics vitrinasi uchun mahsulotlarni tanlang. Tanlangan mahsulotlar bosh sahifada ko'rinadi.</p>
+        <p>Interacoustics vitrinasi uchun mahsulotlarni tanlang va har biriga qisqacha tavsif qo'shing. Tanlangan mahsulotlar bosh sahifada ko'rinadi.</p>
       </div>
+      
+      {/* Search input */}
+      <div style={{ marginBottom: 16 }}>
+        <Input
+          placeholder="Mahsulotlarni qidirish..."
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          allowClear
+          style={{ maxWidth: 400 }}
+        />
+      </div>
+
       <Transfer
         dataSource={dataSource}
         titles={['Barcha mahsulotlar', 'Tanlangan mahsulotlar']}
@@ -943,19 +1355,29 @@ function InteracousticsTab() {
           setSelectedKeys([...sourceSelectedKeys, ...targetSelectedKeys]);
         }}
         render={(item) => item.title}
-        listStyle={{ width: 400, height: 400 }}
+        listStyle={{ width: 400, height: 500 }}
+        showSearch
+        filterOption={(inputValue, item) =>
+          item.title.toLowerCase().includes(inputValue.toLowerCase()) ||
+          item.description.toLowerCase().includes(inputValue.toLowerCase())
+        }
       />
       <div style={{ marginTop: 16 }}>
         <Button type="primary" onClick={handleSubmit} loading={updateMutation.isPending}>
           Saqlash
         </Button>
+        <span style={{ marginLeft: 16, color: '#666' }}>
+          Tanlangan: {targetKeys.length} ta mahsulot
+        </span>
       </div>
-      {showcase?.products && showcase.products.length > 0 && (
+
+      {/* Selected products with descriptions */}
+      {selectedProducts.length > 0 && (
         <div style={{ marginTop: 24 }}>
-          <h3>Joriy tanlangan mahsulotlar:</h3>
+          <h3>Tanlangan mahsulotlar va tavsiflar ({selectedProducts.length} ta):</h3>
           <Table
             rowKey="id"
-            dataSource={showcase.products}
+            dataSource={selectedProducts}
             columns={[
               {
                 title: 'Nomi (uz)',
@@ -972,11 +1394,145 @@ function InteracousticsTab() {
                 key: 'brand',
                 render: (_, record) => record.brand?.name || '-',
               },
+              {
+                title: 'Tavsif (uz)',
+                key: 'description_uz',
+                render: (_, record) => {
+                  const metadata = productMetadata[record.id];
+                  return metadata?.description_uz || <span style={{ color: '#999' }}>Tavsif qo'shilmagan</span>;
+                },
+              },
+              {
+                title: 'Amallar',
+                key: 'actions',
+                render: (_: unknown, record: ProductDto) => (
+                  <Button
+                    size="small"
+                    onClick={() => handleOpenMetadataModal(record.id)}
+                  >
+                    Tavsif qo'shish/tahrirlash
+                  </Button>
+                ),
+              },
             ]}
             pagination={false}
+            size="small"
           />
         </div>
       )}
+
+      {/* Metadata Modal */}
+      <Modal
+        title="Mahsulot tavsifi va rasmi"
+        open={isMetadataModalOpen}
+        onCancel={() => {
+          setIsMetadataModalOpen(false);
+          setEditingProductId(null);
+          metadataForm.resetFields();
+          setPreviewImage(null);
+        }}
+        onOk={handleSaveMetadata}
+        okText="Saqlash"
+        cancelText="Bekor qilish"
+        width={700}
+      >
+        <Form layout="vertical" form={metadataForm}>
+          {editingProductId && (
+            <div style={{ marginBottom: 16, padding: 12, background: '#f5f5f5', borderRadius: 4 }}>
+              <strong>Mahsulot:</strong>{' '}
+              {allProducts.find((p) => p.id === editingProductId)?.name_uz} /{' '}
+              {allProducts.find((p) => p.id === editingProductId)?.name_ru}
+            </div>
+          )}
+          <Form.Item
+            label="Qisqacha tavsif (uz)"
+            name="description_uz"
+            extra="Bosh sahifadagi mahsulot kartasida ko'rinadigan qisqacha tavsif"
+          >
+            <Input.TextArea rows={3} placeholder="Masalan, Diagnostika uskunasi" />
+          </Form.Item>
+          <Form.Item
+            label="Qisqacha tavsif (ru)"
+            name="description_ru"
+            extra="Краткое описание, которое отображается на карточке продукта на главной странице"
+          >
+            <Input.TextArea rows={3} placeholder="Например, Диагностическое оборудование" />
+          </Form.Item>
+          <Form.Item
+            label="Rasm"
+            name="imageId"
+            extra="Bosh sahifadagi mahsulot kartasida ko'rinadigan rasm (ixtiyoriy)"
+          >
+            <div>
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Upload
+                    customRequest={handleImageUpload}
+                    showUploadList={false}
+                    accept="image/*"
+                    maxCount={1}
+                  >
+                    <Button icon={<UploadOutlined />} loading={uploadingImage} block>
+                      Yangi rasm yuklash
+                    </Button>
+                  </Upload>
+                </Col>
+                <Col span={12}>
+                  {previewImage && (
+                    <Button danger icon={<DeleteOutlined />} onClick={handleRemoveImage} block>
+                      Rasmi o'chirish
+                    </Button>
+                  )}
+                </Col>
+              </Row>
+
+              {(previewImage || mediaList?.find((m) => m.id === currentImageId)?.url) && (
+                <div style={{ marginTop: 16, textAlign: 'center' }}>
+                  <div style={{ marginBottom: 8, fontSize: 12, color: '#666' }}>
+                    Tanlangan rasm:
+                  </div>
+                  <Image
+                    src={previewImage || mediaList?.find((m) => m.id === currentImageId)?.url || ''}
+                    alt="Preview"
+                    style={{ maxWidth: '100%', maxHeight: 200, objectFit: 'contain', borderRadius: 4 }}
+                    preview={true}
+                  />
+                </div>
+              )}
+
+              {mediaList && mediaList.length > 0 && (
+                <div style={{ marginTop: 16 }}>
+                  <div style={{ marginBottom: 8, fontWeight: 500 }}>Mavjud rasmlar:</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, maxHeight: 200, overflowY: 'auto' }}>
+                    {mediaList.slice(0, 20).map((media) => (
+                      <div
+                        key={media.id}
+                        onClick={() => handleSelectExistingMedia(media.id, media.url)}
+                        style={{
+                          width: 80,
+                          height: 80,
+                          border: currentImageId === media.id ? '2px solid #F07E22' : '1px solid #d9d9d9',
+                          borderRadius: 4,
+                          cursor: 'pointer',
+                          overflow: 'hidden',
+                          position: 'relative',
+                          backgroundColor: currentImageId === media.id ? '#fff7ed' : '#fff',
+                        }}
+                      >
+                        <img
+                          src={media.url}
+                          alt={media.alt_uz || media.filename}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 }
@@ -1153,11 +1709,6 @@ function FAQsTab() {
 export default function HomepagePage() {
   const items: TabsProps['items'] = [
     {
-      key: 'slides',
-      label: 'Slaydlar',
-      children: <SlidesTab />,
-    },
-    {
       key: 'homepage-services',
       label: 'Bosh sahifa xizmatlari',
       children: <HomepageServicesTab />,
@@ -1174,7 +1725,7 @@ export default function HomepagePage() {
     },
     {
       key: 'faqs',
-      label: 'Savol-javoblar',
+      label: 'Savol-javoblar (Bosh sahifa)',
       children: <FAQsTab />,
     },
   ];

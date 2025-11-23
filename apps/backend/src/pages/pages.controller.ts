@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, NotFoundException } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { PagesService } from './pages.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -13,8 +13,12 @@ export class PagesController {
 
   @Public()
   @Get('slug/:slug')
-  findBySlug(@Param('slug') slug: string) {
-    return this.service.findBySlug(slug);
+  async findBySlug(@Param('slug') slug: string) {
+    const page = await this.service.findBySlug(slug);
+    if (!page) {
+      throw new NotFoundException(`Page with slug "${slug}" not found`);
+    }
+    return page;
   }
 
   @UseGuards(JwtAuthGuard, RbacGuard)

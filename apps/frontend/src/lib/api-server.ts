@@ -19,6 +19,7 @@ import {
   getHomepageHearingAidItems as getHomepageHearingAidItemsApi,
   getHomepageNews as getHomepageNewsApi,
   getPosts as getPostsApi,
+  getPostBySlug as getPostBySlugApi,
   getPublicFaq as getPublicFaqApi,
   getHomepageJourney as getHomepageJourneyApi,
   getServiceCategories as getServiceCategoriesApi,
@@ -39,12 +40,17 @@ import {
   type HearingAidItemResponse,
   type HomepageNewsItemResponse,
   type PostResponse,
+  type PostCategoryResponse,
   type FaqResponse,
   type HomepageJourneyStepResponse,
   type BrandResponse,
   type BranchResponse,
   type DoctorResponse,
   getBranchBySlug as getBranchBySlugApi,
+  getPageBySlug as getPageBySlugApi,
+  type PageResponse,
+  getSettings as getSettingsApi,
+  type SettingsResponse,
 } from './api';
 
 // Re-export types for use in pages
@@ -63,6 +69,8 @@ export type {
   FaqResponse,
   HomepageJourneyStepResponse,
   BrandResponse,
+  PageResponse,
+  SettingsResponse,
 } from './api';
 
 /**
@@ -277,11 +285,26 @@ export async function getHomepageNews(
 export async function getPosts(
   locale?: string,
   publicOnly = true,
+  categoryId?: string,
 ): Promise<PostResponse[]> {
   return safeApiCall(
-    () => getPostsApi(locale, publicOnly),
+    () => getPostsApi(locale, publicOnly, categoryId),
     [],
     'Failed to fetch posts',
+  );
+}
+
+/**
+ * Get post by slug - returns null if not found or backend is down
+ */
+export async function getPostBySlug(
+  slug: string,
+  locale?: string,
+): Promise<PostResponse | null> {
+  return safeApiCall(
+    () => getPostBySlugApi(slug, locale),
+    null,
+    `Failed to fetch post: ${slug}`,
   );
 }
 
@@ -402,6 +425,44 @@ export async function getDoctorBySlug(
     () => getDoctorBySlugApi(slug, locale),
     null,
     `Failed to fetch doctor: ${slug}`,
+  );
+}
+
+/**
+ * Get page by slug - returns null if not found or backend is down
+ */
+export async function getPageBySlug(
+  slug: string,
+  locale?: string,
+): Promise<PageResponse | null> {
+  return safeApiCall(
+    () => getPageBySlugApi(slug, locale),
+    null,
+    `Failed to fetch page: ${slug}`,
+  );
+}
+
+/**
+ * Get settings - returns default settings if backend is down
+ */
+export async function getSettings(
+  locale?: string,
+): Promise<SettingsResponse> {
+  return safeApiCall(
+    () => getSettingsApi(locale),
+    {
+      id: 'singleton',
+      phonePrimary: '1385',
+      phoneSecondary: '+998 71 202 14 41',
+      brandPrimary: '#F07E22',
+      brandAccent: '#3F3091',
+      catalogHeroImageId: null,
+      catalogHeroImage: null,
+      logoId: null,
+      logo: null,
+      updatedAt: new Date().toISOString(),
+    },
+    'Failed to fetch settings',
   );
 }
 

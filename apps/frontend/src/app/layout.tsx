@@ -4,6 +4,8 @@ import { Providers } from './providers';
 import SiteHeader from '@/components/site-header';
 import SiteFooter from '@/components/site-footer';
 import { detectLocale } from '@/lib/locale-server';
+import { getSettings } from '@/lib/api-server';
+import type { SettingsResponse } from '@/lib/api';
 
 // Force dynamic rendering to ensure locale is always read from cookies
 // This prevents Next.js from caching the layout with a stale locale
@@ -40,6 +42,15 @@ export default async function RootLayout({
     locale = 'uz';
   }
 
+  // Fetch settings server-side to ensure logo is available immediately
+  let settings: SettingsResponse | null = null;
+  try {
+    settings = await getSettings(locale);
+  } catch (error) {
+    console.error('[Layout] Failed to fetch settings:', error);
+    // Continue without settings - SiteHeader will handle fallback
+  }
+
   return (
     <html lang={locale} suppressHydrationWarning data-locale={locale}>
       <body className="font-sans">
@@ -55,7 +66,7 @@ export default async function RootLayout({
             }}
           />
           <div className="flex min-h-screen flex-col bg-muted/20">
-            <SiteHeader />
+            <SiteHeader initialSettings={settings} />
             <main className="flex-1">{children}</main>
             <SiteFooter />
           </div>

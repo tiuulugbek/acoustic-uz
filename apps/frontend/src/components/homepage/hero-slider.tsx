@@ -74,13 +74,19 @@ export default function HeroSlider({ banners, locale, apiBaseUrl }: HeroSliderPr
         <div className="relative overflow-hidden rounded-lg bg-white shadow-sm">
           <div className="flex flex-col md:flex-row md:items-stretch">
             {/* Left Panel - Text Content */}
-            <div className="relative flex flex-col justify-center bg-white px-6 py-6 md:px-8 md:py-8 md:w-1/2 md:min-h-[320px] rounded-l-lg">
+            <div className="relative flex flex-col justify-center bg-white px-6 py-6 md:px-8 md:py-8 md:w-1/2 md:min-h-[320px] rounded-l-lg overflow-hidden">
               {slides.map((slide, index) => (
                 <div
                   key={`text-${slide.id}`}
-                  className={`transition-opacity duration-500 ${
-                    index === activeSlide ? 'opacity-100 relative z-10' : 'absolute inset-0 opacity-0 z-0 pointer-events-none'
+                  className={`transition-opacity duration-500 ease-in-out ${
+                    index === activeSlide 
+                      ? 'opacity-100 relative z-10' 
+                      : 'absolute inset-0 opacity-0 z-0 pointer-events-none'
                   }`}
+                  style={{
+                    visibility: index === activeSlide ? 'visible' : 'hidden',
+                    willChange: 'opacity',
+                  }}
                 >
                   <div className="space-y-3 md:space-y-4">
                     <h1 className="text-xl font-bold leading-tight text-[#1e3a8a] md:text-2xl lg:text-3xl" suppressHydrationWarning>
@@ -135,7 +141,7 @@ export default function HeroSlider({ banners, locale, apiBaseUrl }: HeroSliderPr
             </div>
 
             {/* Right Panel - Image */}
-            <div className="relative w-full md:w-1/2 bg-brand-primary md:min-h-[320px] rounded-r-lg">
+            <div className="relative w-full md:w-1/2 bg-brand-primary md:min-h-[320px] rounded-r-lg overflow-hidden">
               {slides.map((slide, index) => {
                 const imageUrl = slide.image;
                 const isActive = index === activeSlide;
@@ -147,9 +153,15 @@ export default function HeroSlider({ banners, locale, apiBaseUrl }: HeroSliderPr
                 return (
                   <div
                     key={`image-${slide.id}`}
-                    className={`absolute inset-0 transition-opacity duration-500 rounded-r-lg ${
-                      isActive ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'
+                    className={`absolute inset-0 transition-opacity duration-500 ease-in-out rounded-r-lg ${
+                      isActive 
+                        ? 'opacity-100 z-10' 
+                        : 'opacity-0 z-0 pointer-events-none'
                     }`}
+                    style={{
+                      visibility: isActive ? 'visible' : 'hidden',
+                      willChange: 'opacity',
+                    }}
                   >
                     {hasRealImage ? (
                       <div className="absolute inset-0 flex items-center justify-center p-4 md:p-6 lg:p-8">

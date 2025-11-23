@@ -1,12 +1,5 @@
-import { Card, Typography } from 'antd';
+import PageEditor from '../components/PageEditor';
 
 export default function PatientsPage() {
-  return (
-    <Card>
-      <Typography.Title level={3}>Bemorlar uchun maʼlumot</Typography.Title>
-      <Typography.Paragraph>
-        Bemorlar bo‘limidagi kontentni boshqarish imkoniyatlari ustida ishlayapmiz.
-      </Typography.Paragraph>
-    </Card>
-  );
+  return <PageEditor slug="patients" defaultTitleUz="Bemorlar" defaultTitleRu="Пациентам" />;
 }

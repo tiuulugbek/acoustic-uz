@@ -7,6 +7,7 @@ import { getBilingualText } from '@/lib/locale';
 import ServiceContent from '@/components/service-content';
 import ServiceTableOfContents from '@/components/service-table-of-contents';
 import PageHeader from '@/components/page-header';
+import AppointmentForm from '@/components/appointment-form';
 
 // Force dynamic rendering to always fetch fresh data from admin
 export const dynamic = 'force-dynamic';
@@ -318,7 +319,7 @@ export default async function ServiceSlugPage({ params }: ServicePageProps) {
       />
 
       {/* Main Content with Sidebar */}
-      <div className="mx-auto max-w-6xl px-4 py-10 md:px-6">
+      <div className="mx-auto max-w-6xl px-4 pt-8 pb-10 md:px-6">
         <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
           {/* Main Content */}
           <article className="min-w-0">
@@ -345,6 +346,21 @@ export default async function ServiceSlugPage({ params }: ServicePageProps) {
             )}
 
             <ServiceContent content={body || ''} locale={locale} />
+
+            {/* Appointment Form - Below content, same grid layout */}
+            <div className="mt-8 bg-gradient-to-br from-brand-primary/5 to-brand-accent/5 rounded-lg p-6">
+              <div className="mb-4">
+                <h2 className="mb-2 text-2xl font-bold text-foreground">
+                  {locale === 'ru' ? 'Записаться на консультацию' : 'Maslahat uchun yozilish'}
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {locale === 'ru'
+                    ? 'Наши специалисты готовы ответить на все ваши вопросы и помочь подобрать оптимальное решение для вашего слуха.'
+                    : 'Bizning mutaxassislarimiz barcha savollaringizga javob berishga va eshitishingiz uchun eng yaxshi yechimni topishga tayyor.'}
+                </p>
+              </div>
+              <AppointmentForm locale={locale} doctorId={null} />
+            </div>
           </article>
 
           {/* Sidebar */}

@@ -9,10 +9,43 @@ export default function Login() {
 
   const { mutateAsync, isPending } = useMutation<{ user: unknown }, ApiError, { email: string; password: string }>({
     mutationFn: login,
-    onSuccess: async () => {
+    onSuccess: async (data) => {
       message.success('Kirish muvaffaqiyatli');
-      await queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
+      
+      // Set user data in cache AND localStorage immediately if available
+      if (data && typeof data === 'object' && 'user' in data && data.user) {
+        queryClient.setQueryData(['auth', 'me'], data.user);
+        // Also save to localStorage
+        try {
+          localStorage.setItem('admin_user', JSON.stringify(data.user));
+          console.log('[Login] ✅ User saved to localStorage');
+        } catch (err) {
+          console.error('[Login] ❌ Failed to save to localStorage:', err);
+        }
+      }
+      
+      // Wait a bit for cookie to be set
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Navigate to dashboard IMMEDIATELY
       navigate('/', { replace: true });
+      
+      // Refetch user data in background after navigation (optional)
+      setTimeout(async () => {
+        try {
+          await queryClient.refetchQueries({ queryKey: ['auth', 'me'] });
+        } catch (err) {
+          // If refetch fails, keep the cached user from login response
+          if (data && typeof data === 'object' && 'user' in data && data.user) {
+            queryClient.setQueryData(['auth', 'me'], data.user);
+            try {
+              localStorage.setItem('admin_user', JSON.stringify(data.user));
+            } catch (e) {
+              // ignore
+            }
+          }
+        }
+      }, 500);
     },
     onError: (error: unknown) => {
       const err = error as ApiError;

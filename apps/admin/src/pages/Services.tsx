@@ -41,6 +41,8 @@ import {
 import ServiceCategoriesPage from './ServiceCategories';
 import RichTextEditor from '../components/RichTextEditor';
 import { createSlug } from '../utils/slug';
+import { normalizeImageUrl } from '../utils/image';
+import { compressImage } from '../utils/image-compression';
 
 const statusOptions = [
   { label: 'Nashr etilgan', value: 'published' },
@@ -141,7 +143,7 @@ function ServicesManager() {
 
   const openEditModal = (service: ServiceDto) => {
     setEditingService(service);
-    setPreviewImage(service.cover?.url || null);
+    setPreviewImage(service.cover?.url ? normalizeImageUrl(service.cover.url) : null);
     form.setFieldsValue({
       title_uz: service.title_uz,
       title_ru: service.title_ru,
@@ -162,9 +164,11 @@ function ServicesManager() {
     const { file, onSuccess, onError } = options;
     setUploading(true);
     try {
-      const media = await uploadMedia(file as File);
+      // Rasmni yuklashdan oldin siqish
+      const compressedFile = await compressImage(file as File);
+      const media = await uploadMedia(compressedFile);
       form.setFieldsValue({ coverId: media.id });
-      setPreviewImage(media.url);
+      setPreviewImage(normalizeImageUrl(media.url));
       message.success('Rasm yuklandi');
       queryClient.invalidateQueries({ queryKey: ['media'] });
       onSuccess?.(media);
@@ -184,7 +188,7 @@ function ServicesManager() {
 
   const handleSelectExistingMedia = (mediaId: string, mediaUrl: string) => {
     form.setFieldsValue({ coverId: mediaId });
-    setPreviewImage(mediaUrl);
+    setPreviewImage(normalizeImageUrl(mediaUrl));
   };
 
   const currentImageId = Form.useWatch('coverId', form);
@@ -234,7 +238,7 @@ function ServicesManager() {
           <Space align="start">
             {record.cover?.url ? (
               <img
-                src={record.cover.url}
+                src={normalizeImageUrl(record.cover.url)}
                 alt={record.title_uz}
                 style={{ width: 72, height: 56, objectFit: 'cover', borderRadius: 8 }}
               />
@@ -449,7 +453,7 @@ function ServicesManager() {
                         }}
                       >
                         <img
-                          src={media.url}
+                          src={normalizeImageUrl(media.url)}
                           alt={media.alt_uz || media.filename}
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />

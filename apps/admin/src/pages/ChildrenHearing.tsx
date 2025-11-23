@@ -1,12 +1,5 @@
-import { Card, Typography } from 'antd';
+import PageEditor from '../components/PageEditor';
 
 export default function ChildrenHearingPage() {
-  return (
-    <Card>
-      <Typography.Title level={3}>Bolalar</Typography.Title>
-      <Typography.Paragraph>
-        Bolalar uchun eshitish yechimlari bo‘limini boshqarish bu yerda paydo bo‘ladi.
-      </Typography.Paragraph>
-    </Card>
-  );
+  return <PageEditor slug="children-hearing" defaultTitleUz="Bolalar va eshitish" defaultTitleRu="Дети и слух" />;
 }

@@ -7,9 +7,13 @@ import { ArrowRight, Phone } from 'lucide-react';
 import {
   type ProductResponse,
   type UsefulArticleSummary,
+  type ProductCategoryResponse,
+  type BrandResponse,
 } from '@/lib/api';
-import { getProductBySlug } from '@/lib/api-server';
+import { getProductBySlug, getProductCategories, getBrands } from '@/lib/api-server';
 import ProductTabs from '@/components/product-tabs';
+import ProductSpecsTable from '@/components/product-specs-table';
+import ProductFeaturesList from '@/components/product-features-list';
 import { detectLocale } from '@/lib/locale-server';
 import { getBilingualText } from '@/lib/locale';
 
@@ -140,26 +144,41 @@ function buildJsonLd(product: ProductResponse, mainImage: string) {
   };
 }
 
-function UsefulArticles({ articles }: { articles: UsefulArticleSummary[] }) {
+function UsefulArticles({ articles, locale }: { articles: UsefulArticleSummary[]; locale: 'uz' | 'ru' }) {
   if (!articles || articles.length === 0) return null;
+  const isRu = locale === 'ru';
 
   return (
-    <div className="rounded-2xl border border-border/60 bg-card p-6">
-      <h3 className="mb-4 text-lg font-semibold text-brand-accent">Foydali maqolalar</h3>
-      <ul className="space-y-2">
-        {articles.map((article) => (
-          <li key={article.id}>
-            <Link href={`/posts/${article.slug}`} className="group block">
-              <span className="font-medium text-brand-primary group-hover:underline">
-                {article.title_uz}
-              </span>
-              {article.title_ru ? (
-                <p className="text-xs text-muted-foreground">{article.title_ru}</p>
+    <div className="space-y-3">
+      <h3 className="text-sm font-semibold text-foreground">
+        {isRu ? 'Полезные статьи' : 'Foydali maqolalar'}
+      </h3>
+      <div className="space-y-3">
+        {articles.slice(0, 3).map((article) => (
+          <Link
+            key={article.id}
+            href={`/posts/${article.slug}`}
+            className="group flex items-start gap-3 rounded-lg border border-border/60 bg-white p-3 transition hover:border-brand-primary/50 hover:bg-muted/20"
+          >
+            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded bg-muted/30">
+              {/* Placeholder for article image - can be replaced with actual cover image if available */}
+              <div className="flex h-full w-full items-center justify-center">
+                <ArrowRight className="h-6 w-6 text-muted-foreground" />
+              </div>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-foreground group-hover:text-brand-primary">
+                {isRu ? article.title_ru : article.title_uz}
+              </p>
+              {article.excerpt_uz || article.excerpt_ru ? (
+                <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
+                  {isRu ? article.excerpt_ru : article.excerpt_uz}
+                </p>
               ) : null}
-            </Link>
-          </li>
+            </div>
+          </Link>
         ))}
-      </ul>
+      </div>
     </div>
   );
 }
@@ -169,7 +188,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
   
   // Handle errors gracefully - getProductBySlug returns null if backend is down or product not found
   // The api-server wrapper ensures this never throws, so we can safely await it
-  const product = await getProductBySlug(params.slug, locale);
+  const [product, categories, brands] = await Promise.all([
+    getProductBySlug(params.slug, locale),
+    getProductCategories(locale),
+    getBrands(locale),
+  ]);
 
   // If product is null, show fallback UI (backend down or product not found)
   // Never crash - always show UI structure
@@ -196,10 +219,54 @@ export default async function ProductPage({ params }: ProductPageProps) {
   }
   const priceFormatted = formatPrice(product.price);
   const availability = product.availabilityStatus ? availabilityMap[product.availabilityStatus] : undefined;
-  const mainImage = product.galleryUrls?.[0] ?? product.brand?.logo?.url ?? placeholderImage;
-  const gallery = product.galleryUrls?.length ? product.galleryUrls : product.brand?.logo?.url ? [product.brand.logo.url] : [];
-  const features = combineBilingual(product.features_uz, product.features_ru);
-  const benefits = combineBilingual(product.benefits_uz, product.benefits_ru);
+  
+  // Helper function to convert relative URLs to absolute URLs
+  const normalizeImageUrl = (url: string | null | undefined): string => {
+    if (!url) return placeholderImage;
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      // URL already absolute, but ensure pathname is properly encoded
+      try {
+        const urlObj = new URL(url);
+        // Only encode the filename part, not the entire path
+        const pathParts = urlObj.pathname.split('/');
+        const filename = pathParts.pop();
+        if (filename) {
+          // Encode only the filename to handle spaces
+          const encodedFilename = encodeURIComponent(filename);
+          urlObj.pathname = [...pathParts, encodedFilename].join('/');
+        }
+        return urlObj.toString();
+      } catch {
+        // If URL parsing fails, return as is (Next.js Image will handle it)
+        return url;
+      }
+    }
+    if (url.startsWith('/uploads/')) {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3001';
+      // Encode only the filename part
+      const pathParts = url.split('/');
+      const filename = pathParts.pop();
+      if (filename) {
+        const encodedFilename = encodeURIComponent(filename);
+        return `${baseUrl}${pathParts.join('/')}/${encodedFilename}`;
+      }
+      return `${baseUrl}${url}`;
+    }
+    return url;
+  };
+  
+  const mainImage = normalizeImageUrl(product.galleryUrls?.[0] ?? product.brand?.logo?.url);
+  const gallery = product.galleryUrls?.length 
+    ? product.galleryUrls.map(normalizeImageUrl)
+    : product.brand?.logo?.url 
+      ? [normalizeImageUrl(product.brand.logo.url)] 
+      : [];
+  const features = product.features_uz?.length || product.features_ru?.length 
+    ? [...(product.features_uz || []), ...(product.features_ru || [])].join('\n')
+    : '';
+  const benefits = product.benefits_uz?.length || product.benefits_ru?.length
+    ? [...(product.benefits_uz || []), ...(product.benefits_ru || [])].join('\n')
+    : '';
   const isRu = locale === 'ru';
 
   const tabTitles = {
@@ -208,21 +275,111 @@ export default async function ProductPage({ params }: ProductPageProps) {
     fitting: isRu ? 'Диапазон настройки' : 'Sozlash diapazoni',
   };
 
+  // Helper function to clean specsText - remove JSON strings
+  const cleanSpecsText = (text?: string | null): string | null => {
+    if (!text) return null;
+    const trimmed = text.trim();
+    // Check if it's a JSON string (starts with { or [)
+    if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+      try {
+        JSON.parse(trimmed);
+        // If it's valid JSON, return null (don't show it)
+        return null;
+      } catch {
+        // If it's not valid JSON, return as is
+        return trimmed;
+      }
+    }
+    return trimmed;
+  };
+
+  // Helper function to extract tables from HTML and return text without tables
+  const extractTablesAndText = (html?: string | null): { text: string | null; tables: string | null } => {
+    if (!html) return { text: null, tables: null };
+    
+    const trimmed = html.trim();
+    if (!trimmed) return { text: null, tables: null };
+    
+    // Extract all table elements
+    const tableRegex = /<table[^>]*>[\s\S]*?<\/table>/gi;
+    const tables: string[] = [];
+    let text: string = trimmed;
+    
+    let match;
+    while ((match = tableRegex.exec(trimmed)) !== null) {
+      tables.push(match[0]);
+      text = text.replace(match[0], '');
+    }
+    
+    // Also remove other HTML tags and clean up
+    text = text
+      .replace(/<[^>]+>/g, '') // Remove all HTML tags
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#x2122;/g, '™') // Replace trademark symbol
+      .replace(/\s+/g, ' ')
+      .trim();
+    
+    // Check if text looks like just a list of technical terms (no sentences, just words separated by spaces)
+    // This pattern matches the repetitive content the user mentioned
+    const isTechnicalWordList = !text.includes('.') && !text.includes('!') && !text.includes('?') && 
+                                 text.split(' ').length > 15 && 
+                                 /(Chastota|Kanallarni|Transient|Feedback|Sozlamalar|Adaptation|Formulalarni|konfiguratsiya|variant|Neyron|shovqinni|dB|kHz|baholovchi|Tinnitus|SoundSupport|OWN|Configurations|MoreSound|Amplifier|Optimizer|Speech|Rescue|VAC|NAL|DSL|Intelligence|Spatial|Sound)/i.test(text);
+    
+    // If text is empty, very short, or looks like just a list of words (no sentences), return null
+    // Check if it looks like a meaningful description (has periods, or is longer than 100 chars with proper sentences)
+    const hasSentences = text.includes('.') || text.includes('!') || text.includes('?');
+    const isLongEnough = text.length > 100;
+    // Also check if it's just a list of words separated by spaces (no punctuation, no proper sentences)
+    const isJustWordList = !hasSentences && text.split(' ').length > 10 && text.length < 200;
+    // If text is too short (less than 30 chars) and has no sentences, it's probably not meaningful
+    const isTooShort = text.length < 30 && !hasSentences;
+    
+    // If it's a technical word list (like the repetitive content), return null for text (only return tables)
+    const finalText: string | null = (!text || (!hasSentences && !isLongEnough) || isJustWordList || isTooShort || isTechnicalWordList) ? null : text;
+    
+    // Combine all tables
+    const combinedTables = tables.length > 0 ? tables.join('\n\n') : null;
+    
+    return { text: finalText, tables: combinedTables };
+  };
+
+  // Extract tables and text from descriptions
+  const descRu = extractTablesAndText(product.description_ru);
+  const descUz = extractTablesAndText(product.description_uz);
+  
+  // Combine tables from descriptions with specsText for tech tab
+  const techTablesParts = [
+    descRu.tables,
+    descUz.tables,
+    cleanSpecsText(product.specsText),
+    product.tech_ru,
+    product.tech_uz,
+  ].filter((part): part is string => Boolean(part));
+  
+  const techTables = techTablesParts.length > 0 ? techTablesParts.join('\n\n') : null;
+
+  // Only show description tab if there's meaningful text (not just a list of words)
+  const descriptionPrimary = isRu ? descRu.text ?? descUz.text ?? null : descUz.text ?? descRu.text ?? null;
+  const descriptionSecondary = isRu ? descUz.text ?? null : descRu.text ?? null;
+  const hasDescription = Boolean(descriptionPrimary || descriptionSecondary);
+
   const productTabs = [
-    {
+    ...(hasDescription ? [{
       key: 'description',
       title: tabTitles.description,
-      primary: isRu
-        ? product.description_ru ?? product.description_uz ?? null
-        : product.description_uz ?? product.description_ru ?? null,
-      secondary: isRu ? product.description_uz ?? null : product.description_ru ?? null,
-    },
+      primary: descriptionPrimary,
+      secondary: descriptionSecondary,
+    }] : []),
     {
       key: 'tech',
       title: tabTitles.tech,
       primary: isRu
-        ? product.tech_ru ?? product.specsText ?? null
-        : product.tech_uz ?? product.specsText ?? null,
+        ? product.tech_ru ?? techTables ?? null
+        : product.tech_uz ?? techTables ?? null,
       secondary: isRu ? product.tech_uz ?? null : product.tech_ru ?? null,
     },
     {
@@ -258,168 +415,232 @@ export default async function ProductPage({ params }: ProductPageProps) {
         </div>
       </section>
 
-      {/* Header */}
-      <section className="bg-brand-accent text-white">
-        <div className="mx-auto max-w-6xl space-y-4 px-4 py-10 md:px-6">
-          <div className="flex items-center gap-2">
-            {product.brand && (
-              <>
-                <span className="text-sm font-medium text-white/70">{product.brand.name}</span>
-                <span className="text-white/50">/</span>
-              </>
-            )}
-            <h1 className="text-3xl font-bold md:text-4xl" suppressHydrationWarning>
-              {getBilingualText(product.name_uz, product.name_ru, locale)}
-            </h1>
-          </div>
-          {product.intro_uz || product.intro_ru ? (
-            <p className="max-w-4xl text-base leading-relaxed text-white/90" suppressHydrationWarning>
-              {getBilingualText(product.intro_uz, product.intro_ru, locale)}
-            </p>
-          ) : null}
-          {priceFormatted && (
-            <p className="text-2xl font-bold text-white">{priceFormatted}</p>
-          )}
-          {availability && (
-            <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${availability.color}`}>
-              {isRu ? availability.ru : availability.uz}
-            </span>
-          )}
+      {/* Header - White background like sluh.by */}
+      <section className="bg-white py-6">
+        <div className="mx-auto max-w-6xl px-4 md:px-6">
+          <h1 className="text-2xl font-bold text-foreground md:text-3xl" suppressHydrationWarning>
+            {getBilingualText(product.name_uz, product.name_ru, locale)}
+          </h1>
         </div>
       </section>
 
-      {/* Main Content */}
+      {/* Main Content - 3 columns: Image | Info | Sidebar */}
       <section className="bg-white py-8">
         <div className="mx-auto max-w-6xl px-4 md:px-6">
-          <div className="grid gap-8 lg:grid-cols-[2fr_1fr]">
-            {/* Left Column - Image Gallery & Tabs */}
-            <div className="space-y-6">
+          <div className="grid gap-6 lg:grid-cols-[400px_1fr_280px]">
+            {/* Left Column - Image */}
+            <div className="space-y-4">
               {/* Main Image */}
-              <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-brand-primary/5">
+              <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-white border border-border/40 shadow-sm">
                 <Image
                   src={mainImage}
                   alt={getBilingualText(product.name_uz, product.name_ru, locale)}
                   fill
-                  sizes="(max-width: 1024px) 100vw, 66vw"
+                  sizes="400px"
                   className="object-contain p-8"
                   priority
+                  unoptimized
                 />
               </div>
 
               {/* Gallery */}
               {gallery.length > 1 && (
-                <div className="grid grid-cols-4 gap-4">
+                <div className="grid grid-cols-4 gap-2">
                   {gallery.slice(1, 5).map((image, index) => (
-                    <div key={index} className="relative aspect-square w-full overflow-hidden rounded-xl bg-brand-primary/5">
+                    <div key={index} className="relative aspect-square w-full overflow-hidden rounded-lg bg-white border border-border/40 shadow-sm">
                       <Image
                         src={image}
                         alt={`${getBilingualText(product.name_uz, product.name_ru, locale)} ${index + 2}`}
                         fill
-                        sizes="(max-width: 1024px) 25vw, 16vw"
+                        sizes="(max-width: 1024px) 25vw, 100px"
                         className="object-contain p-2"
+                        unoptimized
                       />
                     </div>
                   ))}
                 </div>
               )}
+            </div>
 
-              {/* Product Tabs */}
-              {productTabs.some((tab) => tab.primary || tab.secondary) && (
-                <ProductTabs tabs={productTabs} />
-              )}
-
-              {/* Features & Benefits */}
-              {(features || benefits) && (
-                <div className="space-y-6 rounded-2xl border border-border/60 bg-card p-6">
-                  {features && (
-                    <div>
-                      <h3 className="mb-2 text-lg font-semibold text-brand-accent">
-                        {isRu ? 'Особенности' : 'Xususiyatlar'}
-                      </h3>
-                      <div className="whitespace-pre-line text-muted-foreground">{features}</div>
-                    </div>
-                  )}
-                  {benefits && (
-                    <div>
-                      <h3 className="mb-2 text-lg font-semibold text-brand-accent">
-                        {isRu ? 'Преимущества' : 'Afzalliklar'}
-                      </h3>
-                      <div className="whitespace-pre-line text-muted-foreground">{benefits}</div>
-                    </div>
-                  )}
-                </div>
-              )}
+            {/* Center Column - Product Info */}
+            <div className="space-y-4">
+              {/* Product Details */}
+              <div className="space-y-3">
+                {product.brand && (
+                  <p className="text-sm text-muted-foreground">
+                    <span className="font-medium">{isRu ? 'Производитель' : 'Ishlab chiqaruvchi'}:</span> {product.brand.name}
+                  </p>
+                )}
+                {availability && (
+                  <p className="text-sm text-muted-foreground">
+                    <span className="font-medium">{isRu ? 'Наличие' : 'Mavjudlik'}:</span>{' '}
+                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${availability.color}`}>
+                      {isRu ? availability.ru : availability.uz}
+                    </span>
+                  </p>
+                )}
+                {priceFormatted && (
+                  <p className="text-lg font-semibold text-foreground">
+                    <span className="font-medium">{isRu ? 'Цена' : 'Narx'}:</span> {priceFormatted}
+                  </p>
+                )}
+                <p className="text-sm text-muted-foreground">
+                  {isRu ? 'Способ оплаты: Наличными, картой Visa/MasterCard' : 'To\'lov usuli: Naqd pul, Visa/MasterCard kartasi'}
+                </p>
+                <Link
+                  href="/contact"
+                  className="inline-flex items-center gap-2 rounded-lg bg-pink-500 px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-pink-600 hover:shadow-lg"
+                >
+                  <Phone className="h-4 w-4" />
+                  {isRu ? 'Записаться на подбор' : 'Tanlash uchun yozilish'}
+                </Link>
+              </div>
             </div>
 
             {/* Right Column - Sidebar */}
             <div className="space-y-6">
-              {/* Contact CTA */}
-              <div className="rounded-2xl border border-border/60 bg-card p-6">
-                <h3 className="mb-4 text-lg font-semibold text-brand-accent">
-                  {isRu ? 'Связаться с нами' : 'Biz bilan bog\'laning'}
+              {/* Product Categories */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-foreground">
+                  {isRu ? 'Каталог слуховых аппаратов' : 'Eshitish apparatlari katalogi'}
                 </h3>
-                <p className="mb-4 text-sm text-muted-foreground">
-                  {isRu
-                    ? 'Хотите узнать больше об этом продукте? Свяжитесь с нами для консультации.'
-                    : 'Bu mahsulot haqida ko\'proq bilmoqchimisiz? Konsultatsiya uchun biz bilan bog\'laning.'}
-                </p>
-                <Link
-                  href="/contacts"
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-primary/90"
-                >
-                  <Phone className="h-4 w-4" />
-                  {isRu ? 'Связаться' : 'Bog\'lanish'}
-                </Link>
+                <div className="space-y-2">
+                  {categories.slice(0, 1).map((category) => (
+                    <Link
+                      key={category.id}
+                      href={`/catalog/${category.slug}`}
+                      className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/30 p-3 transition hover:border-brand-primary/50 hover:bg-white"
+                    >
+                      {category.image?.url ? (
+                        <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded bg-white">
+                          <Image
+                            src={category.image.url}
+                            alt={getBilingualText(category.name_uz, category.name_ru, locale)}
+                            fill
+                            sizes="40px"
+                            className="object-contain p-1"
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-white border border-border/40">
+                          <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                      )}
+                      <span className="text-sm text-foreground">
+                        {getBilingualText(category.name_uz, category.name_ru, locale)}
+                      </span>
+                    </Link>
+                  ))}
+                  
+                  {/* Additional Category Links */}
+                  <Link
+                    href="/catalog?categoryId=batteries"
+                    className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/30 p-3 transition hover:border-brand-primary/50 hover:bg-white"
+                  >
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-white border border-border/40">
+                      <div className="h-6 w-4 rounded-sm border-2 border-foreground/30"></div>
+                    </div>
+                    <span className="text-sm text-foreground">
+                      {isRu ? 'Батарейки для слуховых аппаратов' : 'Eshitish apparatlari uchun batareyalar'}
+                    </span>
+                  </Link>
+                  
+                  <Link
+                    href="/catalog?categoryId=care"
+                    className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/30 p-3 transition hover:border-brand-primary/50 hover:bg-white"
+                  >
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-white border border-border/40">
+                      <div className="h-5 w-5 rounded border border-foreground/30"></div>
+                    </div>
+                    <span className="text-sm text-foreground">
+                      {isRu ? 'Средства по уходу' : 'Parvarish vositalari'}
+                    </span>
+                  </Link>
+                  
+                  <Link
+                    href="/catalog?categoryId=accessories"
+                    className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/30 p-3 transition hover:border-brand-primary/50 hover:bg-white"
+                  >
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-white border border-border/40">
+                      <div className="h-6 w-4 rounded border border-foreground/30"></div>
+                    </div>
+                    <span className="text-sm text-foreground">
+                      {isRu ? 'Беспроводные аксессуары' : 'Simsiz aksessuarlar'}
+                    </span>
+                  </Link>
+                </div>
               </div>
 
-              {/* Related Products */}
-              {product.relatedProducts && product.relatedProducts.length > 0 && (
-                <div className="rounded-2xl border border-border/60 bg-card p-6">
-                  <h3 className="mb-4 text-lg font-semibold text-brand-accent">
-                    {isRu ? 'Похожие товары' : 'O\'xshash mahsulotlar'}
-                  </h3>
-                  <ul className="space-y-3">
-                    {product.relatedProducts.slice(0, 3).map((related) => (
-                      <li key={related.id}>
-                        <Link
-                          href={`/products/${related.slug}`}
-                          className="group flex items-center gap-3 rounded-lg border border-border/60 p-3 transition hover:border-brand-primary/50 hover:bg-muted/20"
-                        >
-                          {related.image && (
-                            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-brand-primary/5">
-                              <Image
-                                src={related.image}
-                                alt={getBilingualText(related.name_uz, related.name_ru, locale)}
-                                fill
-                                sizes="64px"
-                                className="object-contain p-2"
-                              />
-                            </div>
-                          )}
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium text-foreground group-hover:text-brand-primary">
-                              {getBilingualText(related.name_uz, related.name_ru, locale)}
-                            </p>
-                            {related.price && (
-                              <p className="text-xs text-muted-foreground">{formatPrice(related.price)}</p>
-                            )}
+              {/* Brands */}
+              {brands.length > 0 && (
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    {brands.slice(0, 3).map((brand) => (
+                      <Link
+                        key={brand.id}
+                        href={`/catalog?brandId=${brand.id}`}
+                        className="block rounded-lg border border-border/60 bg-muted/30 p-3 transition hover:border-brand-primary/50 hover:bg-white"
+                      >
+                        {brand.logo?.url ? (
+                          <div className="relative h-10 w-full">
+                            <Image
+                              src={brand.logo.url}
+                              alt={brand.name}
+                              fill
+                              sizes="200px"
+                              className="object-contain"
+                            />
                           </div>
-                          <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition group-hover:translate-x-1 group-hover:text-brand-primary" />
-                        </Link>
-                      </li>
+                        ) : (
+                          <span className="text-sm font-medium text-foreground">{brand.name}</span>
+                        )}
+                      </Link>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               )}
 
               {/* Useful Articles */}
               {product.usefulArticles && product.usefulArticles.length > 0 && (
-                <UsefulArticles articles={product.usefulArticles} />
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-foreground border-b border-border/60 pb-2">
+                    {isRu ? 'Полезные статьи' : 'Foydali maqolalar'}
+                  </h3>
+                  <div className="space-y-3">
+                    {product.usefulArticles.slice(0, 2).map((article) => (
+                      <Link
+                        key={article.id}
+                        href={`/posts/${article.slug}`}
+                        className="group flex items-start gap-3 rounded-lg transition hover:opacity-80"
+                      >
+                        <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded bg-muted/30">
+                          {/* Placeholder for article image */}
+                          <div className="flex h-full w-full items-center justify-center">
+                            <ArrowRight className="h-6 w-6 text-muted-foreground" />
+                          </div>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-brand-primary group-hover:underline">
+                            {isRu ? article.title_ru : article.title_uz}
+                          </p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
           </div>
+
+          {/* Product Tabs - Below image and info */}
+          {productTabs.some((tab) => tab.primary || tab.secondary) && (
+            <div className="mt-8">
+              <ProductTabs tabs={productTabs} />
+            </div>
+          )}
         </div>
       </section>
+
     </main>
   );
 }

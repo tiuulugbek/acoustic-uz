@@ -18,7 +18,7 @@ import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import type { MenuProps } from 'antd';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getCurrentUser, logout, ApiError, UserDto } from '../lib/api';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 const { Header, Sider, Content } = Layout;
 
@@ -75,7 +75,7 @@ const menuItems: MenuProps['items'] = [
   {
     key: '/posts',
     icon: <FileTextOutlined />,
-    label: 'Yangiliklar',
+    label: 'Maqolalar',
   },
   {
     key: '/banners',
@@ -93,9 +93,22 @@ const menuItems: MenuProps['items'] = [
     label: 'Savol-Javob',
   },
   {
-    key: '/homepage',
+    type: 'divider',
+    key: 'divider-2',
+  },
+  {
+    key: '/media',
+    icon: <PictureOutlined />,
+    label: 'Media kutubxonasi',
+  },
+  {
+    type: 'divider',
+    key: 'divider-3',
+  },
+  {
+    key: '/settings',
     icon: <InfoCircleOutlined />,
-    label: 'Bosh sahifa kontenti',
+    label: 'Sozlamalar',
   },
 ];
 
@@ -108,6 +121,21 @@ export default function AdminLayout() {
     ? [location.pathname]
     : ['/'];
 
+  // Use useState to manage user - initialize from localStorage immediately
+  const [userState, setUserState] = useState<UserDto | null>(() => {
+    try {
+      const stored = localStorage.getItem('admin_user');
+      if (stored) {
+        const user = JSON.parse(stored) as UserDto;
+        queryClient.setQueryData(['auth', 'me'], user);
+        return user;
+      }
+    } catch (err) {
+      // ignore
+    }
+    return null;
+  });
+
   const {
     data: currentUser,
     isLoading,
@@ -117,29 +145,70 @@ export default function AdminLayout() {
     queryKey: ['auth', 'me'],
     queryFn: getCurrentUser,
     retry: false,
+    enabled: !userState,
+    staleTime: 5 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
+
+  // Update state when API returns user
+  useEffect(() => {
+    if (currentUser && (!userState || currentUser.id !== userState.id)) {
+      setUserState(currentUser);
+      try {
+        localStorage.setItem('admin_user', JSON.stringify(currentUser));
+      } catch (err) {
+        // ignore
+      }
+    }
+  }, [currentUser, userState]);
+
+  // Watch for cache updates (e.g., after login)
+  useEffect(() => {
+    const cachedUser = queryClient.getQueryData<UserDto>(['auth', 'me']);
+    if (cachedUser && (!userState || cachedUser.id !== userState.id)) {
+      setUserState(cachedUser);
+      try {
+        localStorage.setItem('admin_user', JSON.stringify(cachedUser));
+      } catch (err) {
+        // ignore
+      }
+    }
+  }, [queryClient, userState]);
+
+  const userToDisplay = userState;
 
   useEffect(() => {
     if (isError) {
       const err = error as ApiError;
-      if (err.status === 401) {
+      if (err.status === 401 && !userState) {
         navigate('/login', { replace: true });
-      } else {
+      } else if (err.status !== 401) {
         message.error(err.message || 'Auth xatoligi');
       }
     }
-  }, [isError, error, navigate]);
+  }, [isError, error, navigate, userState]);
 
   const { mutateAsync: logoutMutation, isPending: isLoggingOut } = useMutation<void, ApiError, void>({
     mutationFn: logout,
     onSuccess: () => {
       queryClient.clear();
+      try {
+        localStorage.removeItem('admin_user');
+      } catch (err) {
+        // ignore
+      }
+      setUserState(null);
       navigate('/login', { replace: true });
     },
     onError: (error) => {
       message.error(error.message || 'Chiqishda xatolik');
     },
   });
+
+  const handleLogout = async () => {
+    await logoutMutation();
+  };
 
   if (isLoading || isLoggingOut) {
     return (
@@ -149,31 +218,43 @@ export default function AdminLayout() {
     );
   }
 
-  if (!currentUser) {
+  if (!userToDisplay) {
     return null;
   }
 
-  const handleLogout = async () => {
-    await logoutMutation();
-  };
-
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <Sider theme="light" width={220} breakpoint="lg" collapsedWidth={0}>
-        <div style={{ padding: '16px', fontSize: '20px', fontWeight: 600, color: '#F07E22' }}>
+      <Sider 
+        theme="light" 
+        width={220} 
+        breakpoint="lg" 
+        collapsedWidth={0}
+        style={{
+          height: '100vh',
+          position: 'fixed',
+          left: 0,
+          top: 0,
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        <div style={{ padding: '16px', fontSize: '20px', fontWeight: 600, color: '#F07E22', flexShrink: 0 }}>
           Acoustic.uz
         </div>
-        <Menu
-          mode="inline"
-          selectedKeys={selectedKey}
-          items={menuItems}
-          onClick={({ key }) => navigate(key)}
-        />
+        <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+          <Menu
+            mode="inline"
+            selectedKeys={selectedKey}
+            items={menuItems}
+            onClick={({ key }) => navigate(key)}
+            style={{ borderRight: 0, height: '100%' }}
+          />
+        </div>
       </Sider>
-      <Layout>
-        <Header style={{ background: '#fff', padding: '0 24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h1 style={{ fontSize: '18px', fontWeight: 600, color: '#F07E22' }}>Admin panel</h1>
+      <Layout style={{ marginLeft: 220 }}>
+        <Header style={{ background: '#fff', padding: '0 24px', borderBottom: '1px solid #f0f0f0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '100%' }}>
+            <h1 style={{ fontSize: '18px', fontWeight: 600, color: '#F07E22', margin: 0 }}>Admin panel</h1>
             <button
               type="button"
               onClick={handleLogout}
@@ -193,7 +274,7 @@ export default function AdminLayout() {
             </button>
           </div>
         </Header>
-        <Content style={{ margin: '24px', padding: '24px', background: '#fff' }}>
+        <Content style={{ margin: '24px', padding: '24px', background: '#fff', minHeight: 'calc(100vh - 64px)' }}>
           <Outlet />
         </Content>
       </Layout>

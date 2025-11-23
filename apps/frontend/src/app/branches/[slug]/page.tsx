@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { getBranchBySlug, getDoctors } from '@/lib/api-server';
+import { getBranchBySlug, getDoctors, getServices } from '@/lib/api-server';
 import { detectLocale } from '@/lib/locale-server';
 import { getBilingualText } from '@/lib/locale';
 import { MapPin, Phone, Clock, Navigation, ExternalLink } from 'lucide-react';
@@ -54,6 +54,7 @@ export default async function BranchPage({ params }: BranchPageProps) {
   }
   
   const doctors = await getDoctors(locale);
+  const allServices = await getServices(locale);
 
   if (!branch) {
     return (
@@ -76,6 +77,17 @@ export default async function BranchPage({ params }: BranchPageProps) {
 
   const name = getBilingualText(branch.name_uz, branch.name_ru, locale);
   const address = getBilingualText(branch.address_uz, branch.address_ru, locale);
+
+  // Debug: Log branch data to check if new fields are present
+  console.log('🔍 [BRANCH] Branch data:', {
+    id: branch.id,
+    name_uz: branch.name_uz,
+    workingHours_uz: branch.workingHours_uz,
+    workingHours_ru: branch.workingHours_ru,
+    serviceIds: branch.serviceIds,
+    hasWorkingHours: !!(branch.workingHours_uz || branch.workingHours_ru),
+    hasServiceIds: !!branch.serviceIds && Array.isArray(branch.serviceIds) && branch.serviceIds.length > 0,
+  });
 
   // Build image URL
   let imageUrl = branch.image?.url || '';
@@ -101,15 +113,16 @@ export default async function BranchPage({ params }: BranchPageProps) {
     { id: 'location', label: locale === 'ru' ? 'Как добраться' : 'Qanday yetib borish' },
   ];
 
-  // Services list (placeholder - can be fetched from API later)
-  const services = [
-    { name_uz: 'Eshitish diagnostikasi (bolalar)', name_ru: 'Диагностика слуха для детей' },
-    { name_uz: 'Eshitish diagnostikasi (kattalar)', name_ru: 'Диагностика слуха для взрослых' },
-    { name_uz: 'Surdologlar bilan maslahat', name_ru: 'Консультации сурдологов' },
-    { name_uz: 'Eshitish buzilishlarini tuzatish', name_ru: 'Коррекция нарушений слуха' },
-    { name_uz: 'Quloq vkladishlarini tayyorlash', name_ru: 'Изготовление ушных вкладышей' },
-    { name_uz: 'Eshitish apparatlarini diagnostika va ta\'mirlash', name_ru: 'Диагностика и ремонт слуховых аппаратов' },
-  ];
+  // Services list - fetch from branch.serviceIds if available, otherwise show all services
+  const branchServiceIds = (branch.serviceIds && Array.isArray(branch.serviceIds)) ? branch.serviceIds : [];
+  console.log('🔍 [BRANCH] Services:', {
+    branchServiceIds,
+    allServicesCount: allServices.length,
+    filteredServicesCount: branchServiceIds.length > 0 ? allServices.filter(service => branchServiceIds.includes(service.id)).length : 0,
+  });
+  const services = branchServiceIds.length > 0
+    ? allServices.filter(service => branchServiceIds.includes(service.id))
+    : allServices.slice(0, 6); // Fallback: show first 6 services if no specific services assigned
 
   return (
     <main className="min-h-screen bg-background">
@@ -142,21 +155,27 @@ export default async function BranchPage({ params }: BranchPageProps) {
               </div>
 
               {/* Services Section */}
-              <section id="services" className="scroll-mt-20">
-                <h2 className="mb-4 text-2xl font-bold text-foreground" suppressHydrationWarning>
-                  {locale === 'ru' ? 'Услуги' : 'Xizmatlar'}
-                </h2>
-                <div className="grid gap-3 md:grid-cols-2">
-                  {services.map((service, idx) => (
-                    <div key={idx} className="flex items-start gap-2">
-                      <span className="mt-1 text-brand-primary">•</span>
-                      <span className="text-foreground" suppressHydrationWarning>
-                        {getBilingualText(service.name_uz, service.name_ru, locale)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </section>
+              {services.length > 0 && (
+                <section id="services" className="scroll-mt-20">
+                  <h2 className="mb-4 text-2xl font-bold text-foreground" suppressHydrationWarning>
+                    {locale === 'ru' ? 'Услуги' : 'Xizmatlar'}
+                  </h2>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {services.map((service) => (
+                      <Link
+                        key={service.id}
+                        href={`/services/${service.slug}`}
+                        className="flex items-start gap-2 group hover:text-brand-primary transition-colors"
+                      >
+                        <span className="mt-1 text-brand-primary">•</span>
+                        <span className="text-foreground group-hover:text-brand-primary" suppressHydrationWarning>
+                          {getBilingualText(service.title_uz, service.title_ru, locale)}
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                </section>
+              )}
 
               {/* Doctors Section */}
               {doctors && doctors.length > 0 && (
@@ -232,7 +251,9 @@ export default async function BranchPage({ params }: BranchPageProps) {
                   <div className="rounded-lg overflow-hidden border border-border bg-muted/20">
                     <div
                       className="w-full aspect-video"
-                      dangerouslySetInnerHTML={{ __html: branch.tour3d_iframe }}
+                      dangerouslySetInnerHTML={{ 
+                        __html: branch.tour3d_iframe.replace(/width="[^"]*"/gi, 'width="100%"')
+                      }}
                     />
                   </div>
                 </section>
@@ -243,27 +264,30 @@ export default async function BranchPage({ params }: BranchPageProps) {
                 <h2 className="mb-4 text-2xl font-bold text-foreground" suppressHydrationWarning>
                   {locale === 'ru' ? 'Как добраться' : 'Qanday yetib borish'}
                 </h2>
-                {branch.map_iframe && (
-                  <div className="mb-4 rounded-lg overflow-hidden border border-border">
-                    <div
-                      className="w-full aspect-video"
-                      dangerouslySetInnerHTML={{ __html: branch.map_iframe }}
-                    />
-                  </div>
-                )}
-                {!branch.map_iframe && branch.latitude && branch.longitude && (
-                  <div className="mb-4 rounded-lg overflow-hidden border border-border">
+                {branch.latitude && branch.longitude ? (
+                  // If coordinates are available, use Google Maps embed with marker
+                  <div className="mb-4 rounded-lg overflow-hidden border border-border relative">
                     <iframe
-                      src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || ''}&q=${branch.latitude},${branch.longitude}`}
+                      src={`https://www.google.com/maps?q=${branch.latitude},${branch.longitude}&hl=${locale === 'ru' ? 'ru' : 'uz'}&z=16&output=embed`}
                       width="100%"
-                      height="400"
+                      height="480"
                       style={{ border: 0 }}
                       allowFullScreen
                       loading="lazy"
                       referrerPolicy="no-referrer-when-downgrade"
                     />
                   </div>
-                )}
+                ) : branch.map_iframe ? (
+                  // Fallback to custom iframe if no coordinates
+                  <div className="mb-4 rounded-lg overflow-hidden border border-border">
+                    <div
+                      className="w-full aspect-video"
+                      dangerouslySetInnerHTML={{ 
+                        __html: branch.map_iframe.replace(/width="[^"]*"/gi, 'width="100%"')
+                      }}
+                    />
+                  </div>
+                ) : null}
               </section>
             </div>
 
@@ -363,25 +387,45 @@ export default async function BranchPage({ params }: BranchPageProps) {
                 </div>
 
                 {/* Working Hours */}
-                <div>
-                  <h3 className="mb-2 text-sm font-semibold text-foreground uppercase" suppressHydrationWarning>
-                    {locale === 'ru' ? 'Время работы' : 'Ish vaqti'}
-                  </h3>
-                  <div className="space-y-1 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-brand-primary" />
-                      <span suppressHydrationWarning>
-                        {locale === 'ru' ? 'Понедельник - Пятница' : 'Dushanba - Juma'}: 09:00-20:00
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-brand-primary" />
-                      <span suppressHydrationWarning>
-                        {locale === 'ru' ? 'Суббота - Воскресенье' : 'Shanba - Yakshanba'}: 09:00-18:00
-                      </span>
+                {(branch.workingHours_uz || branch.workingHours_ru) ? (
+                  <div>
+                    <h3 className="mb-2 text-sm font-semibold text-foreground uppercase" suppressHydrationWarning>
+                      {locale === 'ru' ? 'Время работы' : 'Ish vaqti'}
+                    </h3>
+                    <div className="space-y-1 text-sm text-muted-foreground">
+                      {getBilingualText(branch.workingHours_uz, branch.workingHours_ru, locale)
+                        ?.split('\n')
+                        .filter(line => line.trim())
+                        .map((line, idx) => (
+                          <div key={idx} className="flex items-center gap-2">
+                            <Clock className="h-4 w-4 text-brand-primary flex-shrink-0" />
+                            <span suppressHydrationWarning>{line.trim()}</span>
+                          </div>
+                        ))}
                     </div>
                   </div>
-                </div>
+                ) : (
+                  // Fallback: Show default working hours if not set
+                  <div>
+                    <h3 className="mb-2 text-sm font-semibold text-foreground uppercase" suppressHydrationWarning>
+                      {locale === 'ru' ? 'Время работы' : 'Ish vaqti'}
+                    </h3>
+                    <div className="space-y-1 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-brand-primary" />
+                        <span suppressHydrationWarning>
+                          {locale === 'ru' ? 'Понедельник - Пятница' : 'Dushanba - Juma'}: 09:00-20:00
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-brand-primary" />
+                        <span suppressHydrationWarning>
+                          {locale === 'ru' ? 'Суббота - Воскресенье' : 'Shanba - Yakshanba'}: 09:00-18:00
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </aside>
           </div>

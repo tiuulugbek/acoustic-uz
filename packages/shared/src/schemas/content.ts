@@ -147,6 +147,9 @@ export const branchSchema = z.object({
   tour3d_iframe: z.string().optional().nullable(),
   latitude: z.number().min(-90).max(90).optional().nullable(),
   longitude: z.number().min(-180).max(180).optional().nullable(),
+  workingHours_uz: z.string().optional().nullable(),
+  workingHours_ru: z.string().optional().nullable(),
+  serviceIds: z.array(z.string().cuid()).default([]),
   order: z.number().int().default(0),
 });
 

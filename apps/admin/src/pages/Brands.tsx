@@ -22,6 +22,7 @@ import {
   type UpdateBrandPayload,
   ApiError,
 } from '../lib/api';
+import { normalizeImageUrl } from '../utils/image';
 
 export default function BrandsPage() {
   const queryClient = useQueryClient();
@@ -135,9 +136,9 @@ export default function BrandsPage() {
         key: 'logo',
         render: (_, record) =>
           record.logo?.url ? (
-            <img src={record.logo.url} alt={record.name} style={{ width: 64, height: 32, objectFit: 'contain' }} />
+            <img src={normalizeImageUrl(record.logo.url)} alt={record.name} style={{ width: 64, height: 32, objectFit: 'contain' }} />
           ) : (
-            <Tag color="default">Logo yo‘q</Tag>
+            <Tag color="default">Logo yo'q</Tag>
           ),
       },
       {

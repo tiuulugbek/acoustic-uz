@@ -13,14 +13,14 @@ export class PostsController {
 
   @Public()
   @Get()
-  findAll(@Query('public') publicOnly?: string) {
-    return this.service.findAll(publicOnly === 'true');
+  findAll(@Query('public') publicOnly?: string, @Query('categoryId') categoryId?: string) {
+    return this.service.findAll(publicOnly === 'true', categoryId);
   }
 
   @Public()
   @Get('slug/:slug')
-  findBySlug(@Param('slug') slug: string) {
-    return this.service.findBySlug(slug);
+  findBySlug(@Param('slug') slug: string, @Query('public') publicOnly?: string) {
+    return this.service.findBySlug(slug, publicOnly === 'true');
   }
 
   @UseGuards(JwtAuthGuard, RbacGuard)

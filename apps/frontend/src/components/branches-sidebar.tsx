@@ -24,6 +24,15 @@ export default function BranchesSidebar({ locale, branches: initialBranches }: B
 
   return (
     <div className="rounded-lg border border-border bg-card p-6">
+      {/* Instruction Text */}
+      <div className="mb-4 text-center">
+        <p className="text-sm font-medium text-foreground" suppressHydrationWarning>
+          {locale === 'ru' 
+            ? 'Нажмите на область, где вы живете' 
+            : 'O\'zingiz yashaydigan hudud ustiga bosing'}
+        </p>
+      </div>
+      
       {/* Map */}
       <div>
         <BranchesMapSidebar
