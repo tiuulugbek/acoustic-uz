@@ -416,6 +416,20 @@ function HomepageProductsTab() {
     queryFn: getMedia,
   });
 
+  // Helper function to normalize image URLs
+  const normalizeImageUrl = (url: string | null | undefined): string => {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    if (url.startsWith('/uploads/')) {
+      const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+      const baseUrl = apiBase.replace('/api', '');
+      return `${baseUrl}${url}`;
+    }
+    return url;
+  };
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<HomepageHearingAidDto | null>(null);
   const [form] = Form.useForm();
@@ -540,7 +554,7 @@ function HomepageProductsTab() {
                   order: record.order ?? 0,
                   status: record.status,
                 });
-                setPreviewImage(record.image?.url ?? null);
+                setPreviewImage(record.image?.url ? normalizeImageUrl(record.image.url) : null);
                 setIsModalOpen(true);
               }}
             >
@@ -561,7 +575,7 @@ function HomepageProductsTab() {
         ),
       },
     ],
-    [deleteMutation.isPending, form],
+    [deleteMutation.isPending, form, normalizeImageUrl],
   );
 
   const openCreateModal = () => {
@@ -600,7 +614,7 @@ function HomepageProductsTab() {
 
   const handleSelectExistingMedia = (mediaId: string, mediaUrl: string) => {
     form.setFieldsValue({ imageId: mediaId });
-    setPreviewImage(mediaUrl);
+    setPreviewImage(normalizeImageUrl(mediaUrl));
   };
 
   const handleSelectProduct = (productId: string) => {
@@ -615,6 +629,24 @@ function HomepageProductsTab() {
   };
 
   const currentImageId = Form.useWatch('imageId', form);
+  const currentMedia = mediaList?.find((m) => m.id === currentImageId);
+
+  // Restore preview image when modal opens or currentImageId changes
+  useEffect(() => {
+    if (!isModalOpen) return;
+    
+    if (currentImageId && currentMedia?.url) {
+      const normalizedUrl = normalizeImageUrl(currentMedia.url);
+      setPreviewImage((prev) => {
+        if (prev !== normalizedUrl) {
+          return normalizedUrl;
+        }
+        return prev;
+      });
+    } else if (!currentImageId) {
+      setPreviewImage(null);
+    }
+  }, [isModalOpen, currentImageId, currentMedia?.url]);
 
   const handleSubmit = async () => {
     try {
@@ -744,7 +776,7 @@ function HomepageProductsTab() {
                     Tanlangan rasm:
                   </div>
                   <Image
-                    src={previewImage || mediaList?.find((m) => m.id === currentImageId)?.url || ''}
+                    src={previewImage || normalizeImageUrl(mediaList?.find((m) => m.id === currentImageId)?.url) || ''}
                     alt="Preview"
                     style={{ maxWidth: '100%', maxHeight: 200, objectFit: 'contain', borderRadius: 4 }}
                     preview={true}
@@ -772,7 +804,7 @@ function HomepageProductsTab() {
                         }}
                       >
                         <img
-                          src={media.url}
+                          src={normalizeImageUrl(media.url)}
                           alt={media.alt_uz || media.filename}
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
@@ -952,7 +984,7 @@ function CatalogsTab() {
                   status: record.status,
                   showOnHomepage: record.showOnHomepage,
                 });
-                setPreviewImage(record.image?.url ?? null);
+                setPreviewImage(record.image?.url ? normalizeImageUrl(record.image.url) : null);
                 setIsModalOpen(true);
               }}
             >
@@ -1005,12 +1037,34 @@ function CatalogsTab() {
   };
 
   const handleSelectExistingMedia = (mediaId: string, mediaUrl: string) => {
+    console.log('CatalogsTab: Selecting media:', { mediaId, mediaUrl });
+    // Set form value
     form.setFieldsValue({ imageId: mediaId });
-    setPreviewImage(mediaUrl);
+    // Update preview
+    setPreviewImage(normalizeImageUrl(mediaUrl));
+    // Force form to update by triggering a re-render
+    form.validateFields(['imageId']).catch(() => {});
   };
 
   const currentImageId = Form.useWatch('imageId', form);
   const currentMedia = mediaList?.find((m) => m.id === currentImageId);
+
+  // Restore preview image when modal opens or currentImageId changes
+  useEffect(() => {
+    if (!isModalOpen) return;
+    
+    if (currentImageId && currentMedia?.url) {
+      const normalizedUrl = normalizeImageUrl(currentMedia.url);
+      setPreviewImage((prev) => {
+        if (prev !== normalizedUrl) {
+          return normalizedUrl;
+        }
+        return prev;
+      });
+    } else if (!currentImageId) {
+      setPreviewImage(null);
+    }
+  }, [isModalOpen, currentImageId, currentMedia?.url]);
 
   const handleSubmit = async () => {
     try {
@@ -1131,7 +1185,7 @@ function CatalogsTab() {
                         }}
                       >
                         <img
-                          src={media.url}
+                          src={normalizeImageUrl(media.url)}
                           alt={media.alt_uz || media.filename}
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
@@ -1140,6 +1194,7 @@ function CatalogsTab() {
                   </div>
                 </div>
               )}
+              <Input type="hidden" />
             </div>
           </Form.Item>
           <Form.Item label="Icon" name="icon" extra="Icon nomi (ixtiyoriy)">
@@ -1176,6 +1231,20 @@ function InteracousticsTab() {
     queryKey: ['media'],
     queryFn: getMedia,
   });
+
+  // Helper function to normalize image URLs
+  const normalizeImageUrl = (url: string | null | undefined): string => {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    if (url.startsWith('/uploads/')) {
+      const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+      const baseUrl = apiBase.replace('/api', '');
+      return `${baseUrl}${url}`;
+    }
+    return url;
+  };
 
   const updateMutation = useMutation({
     mutationFn: (payload: UpdateShowcasePayload) => updateShowcase('interacoustics', payload),
@@ -1317,7 +1386,7 @@ function InteracousticsTab() {
 
   const handleSelectExistingMedia = (mediaId: string, mediaUrl: string) => {
     metadataForm.setFieldsValue({ imageId: mediaId });
-    setPreviewImage(mediaUrl);
+    setPreviewImage(normalizeImageUrl(mediaUrl));
   };
 
   const currentImageId = Form.useWatch('imageId', metadataForm);
@@ -1492,7 +1561,7 @@ function InteracousticsTab() {
                     Tanlangan rasm:
                   </div>
                   <Image
-                    src={previewImage || mediaList?.find((m) => m.id === currentImageId)?.url || ''}
+                    src={previewImage || normalizeImageUrl(mediaList?.find((m) => m.id === currentImageId)?.url) || ''}
                     alt="Preview"
                     style={{ maxWidth: '100%', maxHeight: 200, objectFit: 'contain', borderRadius: 4 }}
                     preview={true}
@@ -1520,7 +1589,7 @@ function InteracousticsTab() {
                         }}
                       >
                         <img
-                          src={media.url}
+                          src={normalizeImageUrl(media.url)}
                           alt={media.alt_uz || media.filename}
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />

@@ -78,12 +78,22 @@ export default async function HomePage() {
     };
   });
 
-  // Use HomepageHearingAid items if available, otherwise fallback to catalogs
-  const hearingItems = (hearingAidItemsData && hearingAidItemsData.length > 0)
-    ? hearingAidItemsData.slice(0, 9).map((item) => {
+  // Use HomepageHearingAid items if available and have images, otherwise fallback to catalogs
+  const hearingAidItemsWithImages = hearingAidItemsData?.filter((item) => item.image?.url) || [];
+  const hearingItems = (hearingAidItemsWithImages.length > 0)
+    ? hearingAidItemsWithImages.slice(0, 9).map((item) => {
         const title = locale === 'ru' ? (item.title_ru || '') : (item.title_uz || '');
         const description = locale === 'ru' ? (item.description_ru || '') : (item.description_uz || '');
         let image = item.image?.url || '';
+        // Debug: log image data
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[Homepage] Hearing aid item:', {
+            id: item.id,
+            title,
+            image: item.image,
+            imageUrl: image,
+          });
+        }
         if (image && image.startsWith('/') && !image.startsWith('//')) {
           const baseUrl = API_BASE_URL.replace('/api', '');
           image = `${baseUrl}${image}`;
