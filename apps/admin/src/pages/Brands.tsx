@@ -9,7 +9,10 @@ import {
   Popconfirm,
   message,
   Tag,
+  Upload,
 } from 'antd';
+import { UploadOutlined, FolderOutlined, DeleteOutlined } from '@ant-design/icons';
+import type { UploadProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -17,12 +20,18 @@ import {
   createBrand,
   updateBrand,
   deleteBrand,
+  uploadMedia,
+  getMedia,
   type BrandDto,
   type CreateBrandPayload,
   type UpdateBrandPayload,
+  type MediaDto,
   ApiError,
 } from '../lib/api';
 import { normalizeImageUrl } from '../utils/image';
+import MediaLibraryModal from '../components/MediaLibraryModal';
+import { compressImage } from '../utils/image-compression';
+import { createSlug } from '../utils/slug';
 
 export default function BrandsPage() {
   const queryClient = useQueryClient();
@@ -34,6 +43,14 @@ export default function BrandsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBrand, setEditingBrand] = useState<BrandDto | null>(null);
   const [form] = Form.useForm();
+  const [previewLogo, setPreviewLogo] = useState<string | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [logoModalOpen, setLogoModalOpen] = useState(false);
+
+  const { data: mediaList } = useQuery<MediaDto[], ApiError>({
+    queryKey: ['media'],
+    queryFn: getMedia,
+  });
 
   const { mutateAsync: createMutation, isPending: isCreating } = useMutation<BrandDto, ApiError, CreateBrandPayload>({
     mutationFn: createBrand,
@@ -68,6 +85,7 @@ export default function BrandsPage() {
 
   const openCreateModal = () => {
     setEditingBrand(null);
+    setPreviewLogo(null);
     form.resetFields();
     setIsModalOpen(true);
   };
@@ -81,7 +99,39 @@ export default function BrandsPage() {
       desc_ru: brand.desc_ru ?? undefined,
       logoId: brand.logo?.id ?? undefined,
     });
+    setPreviewLogo(brand.logo?.url ? normalizeImageUrl(brand.logo.url) : null);
     setIsModalOpen(true);
+  };
+
+  const handleLogoUpload: UploadProps['customRequest'] = async (options) => {
+    const { file, onSuccess, onError } = options;
+    setUploadingLogo(true);
+    try {
+      const compressedFile = await compressImage(file as File);
+      const media = await uploadMedia(compressedFile);
+      form.setFieldsValue({ logoId: media.id });
+      setPreviewLogo(normalizeImageUrl(media.url));
+      message.success('Logo yuklandi');
+      queryClient.invalidateQueries({ queryKey: ['media'] });
+      onSuccess?.(media);
+    } catch (error) {
+      const apiError = error as ApiError;
+      message.error(apiError.message || 'Logo yuklashda xatolik');
+      onError?.(error as Error);
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    form.setFieldsValue({ logoId: null });
+    setPreviewLogo(null);
+  };
+
+  const handleSelectExistingLogo = (mediaId: string, mediaUrl: string) => {
+    form.setFieldsValue({ logoId: mediaId });
+    setPreviewLogo(normalizeImageUrl(mediaUrl));
+    setLogoModalOpen(false);
   };
 
   const handleDelete = async (brand: BrandDto) => {
@@ -220,11 +270,66 @@ export default function BrandsPage() {
           <Form.Item label="Ta'rif (ru)" name="desc_ru">
             <Input.TextArea rows={3} placeholder="Краткое описание бренда" />
           </Form.Item>
-          <Form.Item label="Logo ID" name="logoId" extra="Media ID ni kiriting (hozircha qo‘lda)">
-            <Input placeholder="Media ID" />
+          <Form.Item label="Logo" name="logoId">
+            <div>
+              {previewLogo ? (
+                <div style={{ marginBottom: 16 }}>
+                  <img
+                    src={previewLogo}
+                    alt="Logo preview"
+                    style={{ maxWidth: '200px', maxHeight: '100px', objectFit: 'contain', border: '1px solid #d9d9d9', borderRadius: 4, padding: 8 }}
+                  />
+                  <Button
+                    type="link"
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={handleRemoveLogo}
+                    style={{ marginTop: 8 }}
+                  >
+                    O'chirish
+                  </Button>
+                </div>
+              ) : null}
+              
+              <Upload
+                customRequest={handleLogoUpload}
+                showUploadList={false}
+                accept="image/*"
+              >
+                <Button icon={<UploadOutlined />} loading={uploadingLogo} block>
+                  {previewLogo ? 'Logoni almashtirish' : 'Logo yuklash'}
+                </Button>
+              </Upload>
+
+              {/* Select from existing media */}
+              <div style={{ marginTop: 16 }}>
+                <Button
+                  icon={<FolderOutlined />}
+                  onClick={() => setLogoModalOpen(true)}
+                  block
+                  style={{ marginBottom: 8 }}
+                >
+                  Mavjud rasmdan tanlash
+                </Button>
+                {form.getFieldValue('logoId') && (
+                  <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
+                    Tanlangan: {mediaList?.find(m => m.id === form.getFieldValue('logoId'))?.filename || 'Noma\'lum'}
+                  </div>
+                )}
+              </div>
+            </div>
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* Media Library Modal for Logo */}
+      <MediaLibraryModal
+        open={logoModalOpen}
+        onCancel={() => setLogoModalOpen(false)}
+        onSelect={(media) => handleSelectExistingLogo(media.id, media.url)}
+        fileType="image"
+        selectedMediaIds={form.getFieldValue('logoId') ? [form.getFieldValue('logoId')] : []}
+      />
     </div>
   );
 }

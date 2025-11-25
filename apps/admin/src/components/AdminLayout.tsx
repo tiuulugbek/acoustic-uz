@@ -147,8 +147,9 @@ export default function AdminLayout() {
     retry: false,
     enabled: !userState,
     staleTime: 5 * 60 * 1000,
-    refetchOnMount: false,
-    refetchOnWindowFocus: false,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchInterval: 10 * 60 * 1000, // Refetch every 10 minutes to check session validity
   });
 
   // Update state when API returns user
@@ -178,16 +179,26 @@ export default function AdminLayout() {
 
   const userToDisplay = userState;
 
+  // Handle session expiration - redirect to login if 401 error
   useEffect(() => {
     if (isError) {
       const err = error as ApiError;
-      if (err.status === 401 && !userState) {
+      if (err.status === 401) {
+        // Session expired - clear all data and redirect to login
+        queryClient.clear();
+        try {
+          localStorage.removeItem('admin_user');
+        } catch (err) {
+          // ignore
+        }
+        setUserState(null);
         navigate('/login', { replace: true });
+        message.warning('Sessiya tugadi. Iltimos, qayta kiring.');
       } else if (err.status !== 401) {
         message.error(err.message || 'Auth xatoligi');
       }
     }
-  }, [isError, error, navigate, userState]);
+  }, [isError, error, navigate, queryClient]);
 
   const { mutateAsync: logoutMutation, isPending: isLoggingOut } = useMutation<void, ApiError, void>({
     mutationFn: logout,
@@ -218,7 +229,9 @@ export default function AdminLayout() {
     );
   }
 
-  if (!userToDisplay) {
+  // Redirect to login if no user and not loading
+  if (!userToDisplay && !isLoading) {
+    navigate('/login', { replace: true });
     return null;
   }
 

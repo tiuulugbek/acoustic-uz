@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Calendar, Tag, ArrowLeft } from 'lucide-react';
-import { getPostBySlug, getPosts } from '@/lib/api-server';
+import { getPostBySlug, getPosts, getBrands, getSettings } from '@/lib/api-server';
 import { detectLocale } from '@/lib/locale-server';
 import { getBilingualText } from '@/lib/locale';
 import PageHeader from '@/components/page-header';
@@ -12,11 +12,12 @@ import AppointmentForm from '@/components/appointment-form';
 import PostSidebar from '@/components/post-sidebar';
 import ArticleTOC from '@/components/article-toc';
 import AuthorCard from '@/components/author-card';
+import Sidebar from '@/components/sidebar';
 import { notFound } from 'next/navigation';
 import dayjs from 'dayjs';
 
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+// ISR: Revalidate every 2 hours
+export const revalidate = 7200;
 
 interface PostPageProps {
   params: {
@@ -40,16 +41,60 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
   const title = getBilingualText(post.title_uz, post.title_ru, locale);
   const description = getBilingualText(post.excerpt_uz, post.excerpt_ru, locale) || 
                      getBilingualText(post.body_uz, post.body_ru, locale)?.replace(/<[^>]*>/g, '').substring(0, 160);
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
+  const postUrl = `${baseUrl}/posts/${params.slug}`;
+  const imageUrl = post.cover?.url 
+    ? (post.cover.url.startsWith('http') 
+        ? post.cover.url 
+        : `${baseUrl}${post.cover.url}`)
+    : `${baseUrl}/logo.png`;
 
   return {
     title: `${title} — Acoustic.uz`,
     description: description || undefined,
+    alternates: {
+      canonical: postUrl,
+      languages: {
+        uz: postUrl,
+        ru: postUrl,
+        'x-default': postUrl,
+      },
+    },
+    openGraph: {
+      title: `${title} — Acoustic.uz`,
+      description: description || undefined,
+      url: postUrl,
+      siteName: 'Acoustic.uz',
+      images: [
+        {
+          url: imageUrl,
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
+      locale: locale === 'ru' ? 'ru_RU' : 'uz_UZ',
+      type: 'article',
+      publishedTime: post.publishAt ? new Date(post.publishAt).toISOString() : undefined,
+      modifiedTime: post.updatedAt ? new Date(post.updatedAt).toISOString() : undefined,
+      authors: post.author ? [post.author.name] : undefined,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${title} — Acoustic.uz`,
+      description: description || undefined,
+      images: [imageUrl],
+    },
   };
 }
 
 export default async function PostPage({ params }: PostPageProps) {
   const locale = detectLocale();
-  const post = await getPostBySlug(params.slug, locale);
+  const [post, brands, settings] = await Promise.all([
+    getPostBySlug(params.slug, locale),
+    getBrands(locale),
+    getSettings(locale),
+  ]);
 
   if (!post || post.status !== 'published') {
     notFound();
@@ -212,6 +257,7 @@ export default async function PostPage({ params }: PostPageProps) {
             {/* Sidebar - 1 column */}
             <div className="lg:col-span-1">
               <div className="sticky top-24 space-y-6">
+                <Sidebar locale={locale} settingsData={settings} brandsData={brands} pageType="posts" />
                 <ArticleTOC locale={locale} />
                 <PostSidebar locale={locale} relatedPosts={filteredRelatedPosts} />
               </div>

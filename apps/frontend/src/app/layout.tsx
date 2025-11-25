@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import './globals.css';
 import { Providers } from './providers';
 import SiteHeader from '@/components/site-header';
@@ -51,8 +52,48 @@ export default async function RootLayout({
     // Continue without settings - SiteHeader will handle fallback
   }
 
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
+  const phonePrimary = settings?.phonePrimary || '+998-71-202-1441';
+  const phoneSecondary = settings?.phoneSecondary || phonePrimary;
+  const logoUrl = settings?.logo?.url 
+    ? (settings.logo.url.startsWith('http') 
+        ? settings.logo.url 
+        : `${baseUrl}${settings.logo.url}`)
+    : `${baseUrl}/logo.png`;
+
+  // Organization structured data
+  const organizationSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'Acoustic.uz',
+    url: baseUrl,
+    logo: logoUrl,
+    description: locale === 'ru'
+      ? 'Центр диагностики и коррекции слуха в Узбекистане'
+      : 'O\'zbekistondagi eshitish diagnostikasi va korreksiyasi markazi',
+    contactPoint: {
+      '@type': 'ContactPoint',
+      telephone: phoneSecondary.replace(/\s/g, ''),
+      contactType: 'customer service',
+      areaServed: 'UZ',
+      availableLanguage: ['uz', 'ru'],
+    },
+    sameAs: [
+      'https://www.facebook.com/acoustic.uz',
+      'https://www.instagram.com/acoustic.uz/',
+      'https://www.youtube.com/@acousticuz',
+    ],
+  };
+
   return (
     <html lang={locale} suppressHydrationWarning data-locale={locale}>
+      <head>
+        <Script
+          id="organization-jsonld"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+        />
+      </head>
       <body className="font-sans">
         <Providers>
           {/* Set locale in window before children render - this script runs synchronously */}

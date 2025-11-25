@@ -1,17 +1,17 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { getServiceBySlug, getServiceCategoryBySlug } from '@/lib/api-server';
+import { getServiceBySlug, getServiceCategoryBySlug, getBrands, getSettings } from '@/lib/api-server';
 import { detectLocale } from '@/lib/locale-server';
 import { getBilingualText } from '@/lib/locale';
 import ServiceContent from '@/components/service-content';
 import ServiceTableOfContents from '@/components/service-table-of-contents';
 import PageHeader from '@/components/page-header';
 import AppointmentForm from '@/components/appointment-form';
+import Sidebar from '@/components/sidebar';
 
-// Force dynamic rendering to always fetch fresh data from admin
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+// ISR: Revalidate every hour
+export const revalidate = 3600;
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -47,10 +47,47 @@ export async function generateMetadata({ params }: ServicePageProps): Promise<Me
 
   const title = getBilingualText(service.title_uz, service.title_ru, locale);
   const description = getBilingualText(service.excerpt_uz, service.excerpt_ru, locale) || undefined;
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
+  const serviceUrl = `${baseUrl}/services/${params.slug}`;
+  const imageUrl = service.cover?.url 
+    ? (service.cover.url.startsWith('http') 
+        ? service.cover.url 
+        : `${baseUrl}${service.cover.url}`)
+    : `${baseUrl}/logo.png`;
 
   return {
     title: `${title} — Acoustic.uz`,
     description,
+    alternates: {
+      canonical: serviceUrl,
+      languages: {
+        uz: serviceUrl,
+        ru: serviceUrl,
+        'x-default': serviceUrl,
+      },
+    },
+    openGraph: {
+      title: `${title} — Acoustic.uz`,
+      description,
+      url: serviceUrl,
+      siteName: 'Acoustic.uz',
+      images: [
+        {
+          url: imageUrl,
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
+      locale: locale === 'ru' ? 'ru_RU' : 'uz_UZ',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${title} — Acoustic.uz`,
+      description,
+      images: [imageUrl],
+    },
   };
 }
 
@@ -186,7 +223,11 @@ export default async function ServiceSlugPage({ params }: ServicePageProps) {
   }
   
   // This is a service slug - show service detail
-  const service = await getServiceBySlug(params.slug, locale);
+  const [service, brands, settings] = await Promise.all([
+    getServiceBySlug(params.slug, locale),
+    getBrands(locale),
+    getSettings(locale),
+  ]);
 
   // If service is null, show fallback UI (backend down or service not found)
   if (!service) {
@@ -365,6 +406,9 @@ export default async function ServiceSlugPage({ params }: ServicePageProps) {
 
           {/* Sidebar */}
           <aside className="sticky top-6 h-fit space-y-6">
+            {/* Sidebar Component */}
+            <Sidebar locale={locale} settingsData={settings} brandsData={brands} pageType="services" />
+            
             {/* Table of Contents */}
             <ServiceTableOfContents items={tableOfContents} locale={locale} />
 

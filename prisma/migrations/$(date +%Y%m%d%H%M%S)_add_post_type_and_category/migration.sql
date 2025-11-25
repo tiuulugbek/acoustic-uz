@@ -40,3 +40,4 @@ ALTER TABLE "Post" ADD CONSTRAINT "Post_categoryId_fkey" FOREIGN KEY ("categoryI
 
 
 
+

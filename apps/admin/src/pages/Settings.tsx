@@ -14,6 +14,8 @@ import {
   Select,
   Alert,
   Tag,
+  InputNumber,
+  Tabs,
 } from 'antd';
 import { UploadOutlined, DeleteOutlined, SaveOutlined, FolderOutlined, CheckCircleOutlined, CloseCircleOutlined, LinkOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
@@ -25,9 +27,12 @@ import {
   uploadMedia,
   getAmoCRMAuthUrl,
   testAmoCRMConnection,
+  getBrands,
   type SettingsDto,
   type UpdateSettingsPayload,
   type MediaDto,
+  type SidebarSection,
+  type BrandDto,
   ApiError,
 } from '../lib/api';
 import MediaLibraryModal from '../components/MediaLibraryModal';
@@ -43,6 +48,17 @@ export default function SettingsPage() {
   const [logoModalOpen, setLogoModalOpen] = useState(false);
   const [testingAmoCRM, setTestingAmoCRM] = useState(false);
   const [amocrmTestResult, setAmocrmTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [sidebarSections, setSidebarSections] = useState<SidebarSection[]>([]);
+  const [sidebarSectionImageModals, setSidebarSectionImageModals] = useState<Record<string, boolean>>({});
+  
+  // Per-page-type sidebar configs
+  const [sidebarConfigs, setSidebarConfigs] = useState<{
+    catalog?: { sections?: SidebarSection[]; brandIds?: string[] };
+    products?: { sections?: SidebarSection[]; brandIds?: string[] };
+    services?: { sections?: SidebarSection[]; brandIds?: string[] };
+    posts?: { sections?: SidebarSection[]; brandIds?: string[] };
+  }>({});
+  const [sidebarConfigImageModals, setSidebarConfigImageModals] = useState<Record<string, Record<string, boolean>>>({});
 
   // Helper function to normalize image URLs - same as Media.tsx
   const normalizeImageUrl = (url: string | null | undefined): string => {
@@ -66,6 +82,11 @@ export default function SettingsPage() {
   const { data: mediaList } = useQuery<MediaDto[], ApiError>({
     queryKey: ['media'],
     queryFn: getMedia,
+  });
+
+  const { data: brandsList } = useQuery<BrandDto[], ApiError>({
+    queryKey: ['brands'],
+    queryFn: getBrands,
   });
 
   const updateMutation = useMutation({
@@ -103,8 +124,62 @@ export default function SettingsPage() {
       if (settings.logo?.url) {
         setPreviewLogo(normalizeImageUrl(settings.logo.url));
       }
+      // Initialize sidebar sections (legacy - only if sidebarConfigs doesn't exist)
+      // Don't set default sections - use sidebarConfigs instead
+      if (settings.sidebarSections && Array.isArray(settings.sidebarSections)) {
+        setSidebarSections(settings.sidebarSections as SidebarSection[]);
+      } else {
+        // Empty array - don't use hard-coded defaults
+        setSidebarSections([]);
+      }
+      // Initialize sidebar brand IDs
+      form.setFieldsValue({
+        sidebarBrandIds: settings.sidebarBrandIds || [],
+      });
     }
   }, [settings, form]);
+
+  // Initialize per-page-type sidebar configs when settings and brandsList are loaded
+  useEffect(() => {
+    if (settings && brandsList) {
+      if (settings.sidebarConfigs && typeof settings.sidebarConfigs === 'object') {
+        setSidebarConfigs(settings.sidebarConfigs as typeof sidebarConfigs);
+      } else {
+        // Initialize with default configs (from hard-coded values) - only on first load
+        // Find Oticon, ReSound, Signia brands for default brandIds
+        const defaultBrandIds: string[] = [];
+        brandsList.forEach(brand => {
+          const brandName = (brand.name || '').toLowerCase();
+          const brandSlug = (brand.slug || '').toLowerCase();
+          if (
+            brandName.includes('oticon') || brandSlug.includes('oticon') ||
+            brandName.includes('resound') || brandSlug.includes('resound') ||
+            brandName.includes('signia') || brandSlug.includes('signia')
+          ) {
+            defaultBrandIds.push(brand.id);
+          }
+        });
+        
+        const defaultSections: SidebarSection[] = [
+          { id: 'accessories', title_uz: 'Aksessuarlar', title_ru: 'Аксессуары', link: '/catalog/accessories', icon: '📱', imageId: null, order: 0 },
+          { id: 'earmolds', title_uz: 'Quloq qo\'shimchalari', title_ru: 'Ушные вкладыши', link: '/catalog/earmolds', icon: '👂', imageId: null, order: 1 },
+          { id: 'batteries', title_uz: 'Batareyalar', title_ru: 'Батарейки', link: '/catalog/batteries', icon: '🔋', imageId: null, order: 2 },
+          { id: 'care', title_uz: 'Parvarish vositalari', title_ru: 'Средства ухода', link: '/catalog/care', icon: '🧴', imageId: null, order: 3 },
+        ];
+        
+        const defaultConfigs = {
+          catalog: { sections: defaultSections, brandIds: defaultBrandIds },
+          products: { sections: defaultSections, brandIds: defaultBrandIds },
+          services: { sections: defaultSections, brandIds: defaultBrandIds },
+          posts: { sections: defaultSections, brandIds: defaultBrandIds },
+        };
+        
+        setSidebarConfigs(defaultConfigs);
+        // Don't auto-save - let user save manually
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings, brandsList]);
 
   // Check URL params for OAuth callback results
   useEffect(() => {
@@ -236,6 +311,9 @@ export default function SettingsPage() {
         brandAccent: values.brandAccent || undefined,
         catalogHeroImageId: values.catalogHeroImageId || null,
         logoId: values.logoId || null,
+        sidebarSections: sidebarSections.length > 0 ? sidebarSections : undefined,
+        sidebarBrandIds: values.sidebarBrandIds || [],
+        // Don't include sidebarConfigs here - it's saved separately
         // AmoCRM settings
         amocrmDomain: values.amocrmDomain?.trim() || undefined,
         amocrmClientId: values.amocrmClientId?.trim() || undefined,
@@ -247,6 +325,80 @@ export default function SettingsPage() {
     } catch (error) {
       console.error('Form validation error:', error);
     }
+  };
+
+  // Handle sidebar config save for specific page type
+  const handleSidebarConfigSave = async (pageType: 'catalog' | 'products' | 'services' | 'posts') => {
+    try {
+      // Ensure we have a valid config structure
+      const currentConfig = sidebarConfigs[pageType] || { sections: [], brandIds: [] };
+      
+      // Clean up sections: remove null imageId, ensure all required fields exist
+      const cleanedSections = (currentConfig.sections || []).map((section: SidebarSection) => ({
+        id: section.id,
+        title_uz: section.title_uz || '',
+        title_ru: section.title_ru || '',
+        link: section.link || '',
+        icon: section.icon || '',
+        imageId: section.imageId || null,
+        order: section.order || 0,
+      }));
+      
+      // Ensure brandIds is an array
+      const cleanedBrandIds = Array.isArray(currentConfig.brandIds) ? currentConfig.brandIds : [];
+      
+      // Build complete sidebarConfigs object with all page types
+      const completeSidebarConfigs = {
+        catalog: sidebarConfigs.catalog || { sections: [], brandIds: [] },
+        products: sidebarConfigs.products || { sections: [], brandIds: [] },
+        services: sidebarConfigs.services || { sections: [], brandIds: [] },
+        posts: sidebarConfigs.posts || { sections: [], brandIds: [] },
+        [pageType]: {
+          sections: cleanedSections,
+          brandIds: cleanedBrandIds,
+        },
+      };
+      
+      const payload: UpdateSettingsPayload = {
+        sidebarConfigs: completeSidebarConfigs,
+      };
+      
+      console.log('Saving sidebar config:', JSON.stringify(payload, null, 2));
+      await updateMutation.mutateAsync(payload);
+      message.success(`${pageType === 'catalog' ? 'Catalog' : pageType === 'products' ? 'Mahsulot' : pageType === 'services' ? 'Xizmat' : 'Maqola'} sahifasi sidebar konfiguratsiyasi saqlandi`);
+    } catch (error) {
+      console.error('Sidebar config save error:', error);
+      const apiError = error as ApiError;
+      message.error(apiError.message || 'Saqlashda xatolik yuz berdi');
+    }
+  };
+
+  const handleAddSidebarSection = () => {
+    const newSection: SidebarSection = {
+      id: `section-${Date.now()}`,
+      title_uz: '',
+      title_ru: '',
+      link: '',
+      icon: '',
+      imageId: null,
+      order: sidebarSections.length,
+    };
+    setSidebarSections([...sidebarSections, newSection]);
+  };
+
+  const handleRemoveSidebarSection = (id: string) => {
+    setSidebarSections(sidebarSections.filter(s => s.id !== id));
+  };
+
+  const handleUpdateSidebarSection = (id: string, field: keyof SidebarSection, value: any) => {
+    setSidebarSections(sidebarSections.map(s => 
+      s.id === id ? { ...s, [field]: value } : s
+    ));
+  };
+
+  const handleSidebarSectionImageSelect = (sectionId: string, mediaId: string, mediaUrl: string) => {
+    handleUpdateSidebarSection(sectionId, 'imageId', mediaId);
+    setSidebarSectionImageModals({ ...sidebarSectionImageModals, [sectionId]: false });
   };
 
   if (isLoading) {
@@ -557,6 +709,71 @@ export default function SettingsPage() {
                 </Form.Item>
               </div>
             </Card>
+
+            {/* Sidebar Boshqaruvi - Har bir sahifa turi uchun */}
+            <Card title="Sidebar boshqaruvi (har bir sahifa turi uchun)" style={{ marginTop: 24 }}>
+              <Tabs
+                defaultActiveKey="catalog"
+                items={[
+                  {
+                    key: 'catalog',
+                    label: 'Catalog sahifasi',
+                    children: <SidebarConfigTab 
+                      pageType="catalog"
+                      config={sidebarConfigs.catalog || { sections: [], brandIds: [] }}
+                      onUpdate={(config) => setSidebarConfigs({ ...sidebarConfigs, catalog: config })}
+                      onSave={() => handleSidebarConfigSave('catalog')}
+                      brandsList={brandsList || []}
+                      imageModals={sidebarConfigImageModals.catalog || {}}
+                      onImageModalChange={(modals) => setSidebarConfigImageModals({ ...sidebarConfigImageModals, catalog: modals })}
+                      isSaving={updateMutation.isPending}
+                    />,
+                  },
+                  {
+                    key: 'products',
+                    label: 'Mahsulot sahifasi',
+                    children: <SidebarConfigTab 
+                      pageType="products"
+                      config={sidebarConfigs.products || { sections: [], brandIds: [] }}
+                      onUpdate={(config) => setSidebarConfigs({ ...sidebarConfigs, products: config })}
+                      onSave={() => handleSidebarConfigSave('products')}
+                      brandsList={brandsList || []}
+                      imageModals={sidebarConfigImageModals.products || {}}
+                      onImageModalChange={(modals) => setSidebarConfigImageModals({ ...sidebarConfigImageModals, products: modals })}
+                      isSaving={updateMutation.isPending}
+                    />,
+                  },
+                  {
+                    key: 'services',
+                    label: 'Xizmat sahifasi',
+                    children: <SidebarConfigTab 
+                      pageType="services"
+                      config={sidebarConfigs.services || { sections: [], brandIds: [] }}
+                      onUpdate={(config) => setSidebarConfigs({ ...sidebarConfigs, services: config })}
+                      onSave={() => handleSidebarConfigSave('services')}
+                      brandsList={brandsList || []}
+                      imageModals={sidebarConfigImageModals.services || {}}
+                      onImageModalChange={(modals) => setSidebarConfigImageModals({ ...sidebarConfigImageModals, services: modals })}
+                      isSaving={updateMutation.isPending}
+                    />,
+                  },
+                  {
+                    key: 'posts',
+                    label: 'Maqola sahifasi',
+                    children: <SidebarConfigTab 
+                      pageType="posts"
+                      config={sidebarConfigs.posts || { sections: [], brandIds: [] }}
+                      onUpdate={(config) => setSidebarConfigs({ ...sidebarConfigs, posts: config })}
+                      onSave={() => handleSidebarConfigSave('posts')}
+                      brandsList={brandsList || []}
+                      imageModals={sidebarConfigImageModals.posts || {}}
+                      onImageModalChange={(modals) => setSidebarConfigImageModals({ ...sidebarConfigImageModals, posts: modals })}
+                      isSaving={updateMutation.isPending}
+                    />,
+                  },
+                ]}
+              />
+            </Card>
           </Col>
         </Row>
 
@@ -595,6 +812,190 @@ export default function SettingsPage() {
         fileType="image"
         selectedMediaIds={form.getFieldValue('logoId') ? [form.getFieldValue('logoId')] : []}
       />
+
+      {/* Sidebar Section Image Modals */}
+      {sidebarSections.map((section) => (
+        <MediaLibraryModal
+          key={`sidebar-section-${section.id}`}
+          open={sidebarSectionImageModals[section.id] || false}
+          onCancel={() => setSidebarSectionImageModals({ ...sidebarSectionImageModals, [section.id]: false })}
+          onSelect={(media) => handleSidebarSectionImageSelect(section.id, media.id, media.url)}
+          fileType="image"
+          selectedMediaIds={section.imageId ? [section.imageId] : []}
+        />
+      ))}
+    </div>
+  );
+}
+
+// Sidebar Config Tab Component
+function SidebarConfigTab({
+  pageType,
+  config,
+  onUpdate,
+  onSave,
+  brandsList,
+  imageModals,
+  onImageModalChange,
+  isSaving,
+}: {
+  pageType: 'catalog' | 'products' | 'services' | 'posts';
+  config: { sections?: SidebarSection[]; brandIds?: string[] };
+  onUpdate: (config: { sections?: SidebarSection[]; brandIds?: string[] }) => void;
+  onSave: () => void;
+  brandsList: BrandDto[];
+  imageModals: Record<string, boolean>;
+  onImageModalChange: (modals: Record<string, boolean>) => void;
+  isSaving?: boolean;
+}) {
+  const sections = config.sections || [];
+  const brandIds = config.brandIds || [];
+
+  const handleAddSection = () => {
+    const newSection: SidebarSection = {
+      id: `section-${Date.now()}`,
+      title_uz: '',
+      title_ru: '',
+      link: '',
+      icon: '',
+      imageId: null,
+      order: sections.length,
+    };
+    onUpdate({ ...config, sections: [...sections, newSection] });
+  };
+
+  const handleRemoveSection = (id: string) => {
+    onUpdate({ ...config, sections: sections.filter(s => s.id !== id) });
+  };
+
+  const handleUpdateSection = (id: string, field: keyof SidebarSection, value: any) => {
+    onUpdate({
+      ...config,
+      sections: sections.map(s => s.id === id ? { ...s, [field]: value } : s),
+    });
+  };
+
+  const handleSectionImageSelect = (sectionId: string, mediaId: string) => {
+    handleUpdateSection(sectionId, 'imageId', mediaId);
+    onImageModalChange({ ...imageModals, [sectionId]: false });
+  };
+
+  const handleBrandIdsChange = (ids: string[]) => {
+    onUpdate({ ...config, brandIds: ids });
+  };
+
+  return (
+    <div>
+      {/* Boshqa bo'limlar */}
+      <div style={{ marginBottom: 24 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <h4 style={{ margin: 0 }}>Boshqa bo'limlar</h4>
+          <Button type="dashed" onClick={handleAddSection}>
+            + Qo'shish
+          </Button>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {sections.map((section) => (
+            <Card key={section.id} size="small" style={{ backgroundColor: '#fafafa' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <Input
+                    placeholder="Icon (emoji)"
+                    value={section.icon || ''}
+                    onChange={(e) => handleUpdateSection(section.id, 'icon', e.target.value)}
+                    style={{ width: 80 }}
+                  />
+                  <Input
+                    placeholder="Sarlavha (UZ)"
+                    value={section.title_uz}
+                    onChange={(e) => handleUpdateSection(section.id, 'title_uz', e.target.value)}
+                    style={{ flex: 1, minWidth: 150 }}
+                  />
+                  <Input
+                    placeholder="Sarlavha (RU)"
+                    value={section.title_ru}
+                    onChange={(e) => handleUpdateSection(section.id, 'title_ru', e.target.value)}
+                    style={{ flex: 1, minWidth: 150 }}
+                  />
+                  <Input
+                    placeholder="Link"
+                    value={section.link}
+                    onChange={(e) => handleUpdateSection(section.id, 'link', e.target.value)}
+                    style={{ flex: 1, minWidth: 150 }}
+                  />
+                  <Button
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={() => handleRemoveSection(section.id)}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <Button
+                    icon={<FolderOutlined />}
+                    onClick={() => onImageModalChange({ ...imageModals, [section.id]: true })}
+                  >
+                    Rasm tanlash
+                  </Button>
+                  {section.imageId && (
+                    <span style={{ fontSize: 12, color: '#666' }}>
+                      Rasm tanlangan
+                    </span>
+                  )}
+                  <InputNumber
+                    placeholder="Tartib"
+                    value={section.order}
+                    onChange={(value) => handleUpdateSection(section.id, 'order', value || 0)}
+                    style={{ width: 100 }}
+                    min={0}
+                  />
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* Brendlar */}
+      <Divider />
+      <div>
+        <h4 style={{ marginBottom: 16 }}>Sidebar'da ko'rsatiladigan brendlar</h4>
+        <Select
+          mode="multiple"
+          placeholder="Brendlarni tanlang"
+          style={{ width: '100%' }}
+          value={brandIds}
+          onChange={handleBrandIdsChange}
+          options={brandsList.map(brand => ({
+            label: brand.name,
+            value: brand.id,
+          }))}
+        />
+      </div>
+
+      {/* Save Button */}
+      <div style={{ marginTop: 24, textAlign: 'right' }}>
+        <Button
+          type="primary"
+          icon={<SaveOutlined />}
+          onClick={onSave}
+          loading={isSaving}
+          size="large"
+        >
+          Saqlash
+        </Button>
+      </div>
+
+      {/* Image Modals */}
+      {sections.map((section) => (
+        <MediaLibraryModal
+          key={`${pageType}-section-${section.id}`}
+          open={imageModals[section.id] || false}
+          onCancel={() => onImageModalChange({ ...imageModals, [section.id]: false })}
+          onSelect={(media) => handleSectionImageSelect(section.id, media.id, media.url)}
+          fileType="image"
+          selectedMediaIds={section.imageId ? [section.imageId] : []}
+        />
+      ))}
     </div>
   );
 }

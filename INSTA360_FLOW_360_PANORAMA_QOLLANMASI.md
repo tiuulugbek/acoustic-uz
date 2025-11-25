@@ -232,3 +232,4 @@ Agar muammo bo'lsa:
 **Oxirgi yangilanish:** 2024-yil
 
 
+

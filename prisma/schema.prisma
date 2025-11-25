@@ -78,6 +78,11 @@ model Setting {
   catalogHeroImage   Media?   @relation("SettingCatalogHero", fields: [catalogHeroImageId], references: [id], onDelete: SetNull)
   logoId             String?  @unique
   logo               Media?   @relation("SettingLogo", fields: [logoId], references: [id], onDelete: SetNull)
+  // Sidebar settings - per page type
+  sidebarConfigs     Json? // { catalog: { sections: [...], brandIds: [...] }, products: {...}, services: {...}, posts: {...} }
+  // Legacy sidebar settings (for backward compatibility)
+  sidebarSections    Json? // Array of { id, title_uz, title_ru, link, icon, imageId, order }
+  sidebarBrandIds    String[] @default([]) // Array of Brand IDs to show in sidebar
   // AmoCRM settings
   amocrmDomain       String?  // e.g., "yourcompany.amocrm.ru"
   amocrmClientId     String?  // OAuth Client ID

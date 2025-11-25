@@ -458,8 +458,9 @@ export default function SiteHeader({ initialSettings = null }: SiteHeaderProps =
   return (
     <header className="border-b shadow-sm" key={`header-${displayLocale}-${menuRefreshKey}`}>
       <div className="bg-white">
-        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-4 md:flex-row md:items-center md:justify-between md:px-6">
-          <div className="flex items-center gap-3">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 md:px-6">
+          {/* Logo - Left */}
+          <div className="flex items-center">
             <Link href="/" className="flex items-center">
               {settings?.logo?.url ? (
                 <Image
@@ -473,18 +474,19 @@ export default function SiteHeader({ initialSettings = null }: SiteHeaderProps =
                   unoptimized
                 />
               ) : (
-                <span className="text-3xl font-semibold tracking-tight text-brand-primary">
+                <span className="text-xl font-semibold tracking-tight text-brand-primary md:text-3xl">
                   Acoustic
                 </span>
               )}
             </Link>
           </div>
 
-          <div className="flex w-full flex-col gap-3 md:max-w-xl">
+          {/* Search Bar - Center (desktop only) */}
+          <div className="hidden flex-1 md:block">
             <form 
               action="/search" 
               method="get"
-              className="relative"
+              className="relative max-w-md mx-auto"
               onSubmit={(e) => {
                 e.preventDefault();
                 const formData = new FormData(e.currentTarget);
@@ -505,14 +507,27 @@ export default function SiteHeader({ initialSettings = null }: SiteHeaderProps =
             </form>
           </div>
 
-          <div className="flex items-center gap-3">
+          {/* Right side - Phone, Language, Menu */}
+          <div className="flex items-center gap-2 md:gap-3">
+            {/* Phone - Mobile only */}
             <Link
-              href="tel:+998712021441"
+              href={`tel:${settings?.phoneSecondary?.replace(/\s/g, '') || '+998712021441'}`}
+              className="inline-flex items-center gap-1 rounded-full border border-brand-primary/30 bg-brand-primary px-3 py-1.5 text-xs font-semibold text-white shadow transition hover:bg-brand-primary/90 md:hidden"
+            >
+              <Phone size={14} /> {settings?.phonePrimary || '1385'}
+            </Link>
+            
+            {/* Phone - Desktop */}
+            <Link
+              href={`tel:${settings?.phoneSecondary?.replace(/\s/g, '') || '+998712021441'}`}
               className="hidden items-center gap-2 rounded-full border border-brand-primary/30 bg-brand-primary px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-brand-primary/90 md:inline-flex"
             >
-              <Phone size={16} /> 1385
+              <Phone size={16} /> {settings?.phonePrimary || '1385'}
             </Link>
+            
             <LanguageSwitcher />
+            
+            {/* Mobile Menu Button */}
             <button
               type="button"
               className="inline-flex items-center rounded-full border border-border p-2 text-muted-foreground lg:hidden"
@@ -522,6 +537,32 @@ export default function SiteHeader({ initialSettings = null }: SiteHeaderProps =
               <Menu size={20} />
             </button>
           </div>
+        </div>
+        
+        {/* Search Bar - Mobile only (below header) */}
+        <div className="mx-auto max-w-6xl px-4 pb-3 md:hidden">
+          <form 
+            action="/search" 
+            method="get"
+            className="relative"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const query = formData.get('q') as string;
+              if (query && query.trim()) {
+                window.location.href = `/search?q=${encodeURIComponent(query.trim())}`;
+              }
+            }}
+          >
+            <input
+              type="search"
+              name="q"
+              placeholder={displayLocale === 'ru' ? 'Поиск' : 'Qidiruv'}
+              className="w-full rounded-full border border-border/60 bg-white px-10 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/40"
+              suppressHydrationWarning
+            />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          </form>
         </div>
       </div>
 

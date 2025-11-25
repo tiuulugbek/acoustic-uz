@@ -645,6 +645,16 @@ export const getBrands = (locale?: string) => {
   return fetchJson<BrandResponse[]>('/brands', locale);
 };
 
+export interface SidebarSection {
+  id: string;
+  title_uz: string;
+  title_ru: string;
+  link: string;
+  icon?: string;
+  imageId?: string | null;
+  order: number;
+}
+
 export interface SettingsResponse {
   id: string;
   phonePrimary?: string | null;
@@ -660,6 +670,14 @@ export interface SettingsResponse {
   catalogHeroImage?: MediaResponse | null;
   logoId?: string | null;
   logo?: MediaResponse | null;
+  sidebarSections?: SidebarSection[] | null;
+  sidebarBrandIds?: string[];
+  sidebarConfigs?: {
+    catalog?: { sections?: SidebarSection[]; brandIds?: string[] };
+    products?: { sections?: SidebarSection[]; brandIds?: string[] };
+    services?: { sections?: SidebarSection[]; brandIds?: string[] };
+    posts?: { sections?: SidebarSection[]; brandIds?: string[] };
+  } | null;
   updatedAt: string;
 }
 

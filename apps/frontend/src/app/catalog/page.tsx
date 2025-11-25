@@ -8,11 +8,10 @@ import type { CatalogResponse, PostResponse, BrandResponse, SettingsResponse } f
 import { detectLocale } from '@/lib/locale-server';
 import PageHeader from '@/components/page-header';
 import CatalogHeroImage from '@/components/catalog-hero-image';
+import Sidebar from '@/components/sidebar';
 
-// Force dynamic rendering to ensure locale is always read from cookies
-// This prevents Next.js from caching the page with a stale locale
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+// ISR: Revalidate every 30 minutes
+export const revalidate = 1800;
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = detectLocale();
@@ -867,87 +866,105 @@ export default async function CatalogPage({
     );
   }
   
-  // Fetch catalogs, posts, and brands from backend
-  const [catalogsData, postsData, brandsData] = await Promise.all([
+  // Fetch catalogs, posts, brands, and settings from backend
+  const [catalogsData, postsData, brandsData, settingsData] = await Promise.all([
     getCatalogs(locale),
     getPosts(locale, true),
     getBrands(locale),
+    getSettings(locale),
   ]);
 
-  // Filter brands to show only Oticon, ReSound, Signia
-  const mainBrands = brandsData?.filter((brand) => {
-    const brandName = brand.name?.toLowerCase() || '';
-    const brandSlug = brand.slug?.toLowerCase() || '';
-    return (
-      brandName.includes('oticon') ||
-      brandName.includes('resound') ||
-      brandName.includes('signia') ||
-      brandSlug.includes('oticon') ||
-      brandSlug.includes('resound') ||
-      brandSlug.includes('signia')
-    );
-  }) || [];
-  
-  // Check if Signia exists in the filtered brands
-  const hasSignia = mainBrands.some(b => {
-    const name = (b.name || '').toLowerCase();
-    const slug = (b.slug || '').toLowerCase();
-    return name.includes('signia') || slug.includes('signia');
-  });
-  
-  // If Signia is not found in backend, add it manually
-  if (!hasSignia) {
-    mainBrands.push({
-      id: 'signia-manual',
-      name: 'Signia',
-      slug: 'signia',
-      logo: null,
-    } as BrandResponse);
+  // Filter brands based on settings.sidebarBrandIds, or fallback to Oticon, ReSound, Signia
+  let mainBrands: BrandResponse[] = [];
+  if (settingsData?.sidebarBrandIds && settingsData.sidebarBrandIds.length > 0) {
+    // Use brands from settings
+    mainBrands = brandsData?.filter((brand) => 
+      settingsData.sidebarBrandIds!.includes(brand.id)
+    ) || [];
+  } else {
+    // Fallback to default brands: Oticon, ReSound, Signia
+    mainBrands = brandsData?.filter((brand) => {
+      const brandName = brand.name?.toLowerCase() || '';
+      const brandSlug = brand.slug?.toLowerCase() || '';
+      return (
+        brandName.includes('oticon') ||
+        brandName.includes('resound') ||
+        brandName.includes('signia') ||
+        brandSlug.includes('oticon') ||
+        brandSlug.includes('resound') ||
+        brandSlug.includes('signia')
+      );
+    }) || [];
+    
+    // Check if Signia exists in the filtered brands
+    const hasSignia = mainBrands.some(b => {
+      const name = (b.name || '').toLowerCase();
+      const slug = (b.slug || '').toLowerCase();
+      return name.includes('signia') || slug.includes('signia');
+    });
+    
+    // If Signia is not found in backend, add it manually
+    if (!hasSignia) {
+      mainBrands.push({
+        id: 'signia-manual',
+        name: 'Signia',
+        slug: 'signia',
+        logo: null,
+      } as BrandResponse);
+    }
   }
   
-  // Sort brands: Oticon, ReSound, Signia
-  const sortedBrands = [...mainBrands].sort((a, b) => {
-    const aName = (a.name || '').toLowerCase();
-    const bName = (b.name || '').toLowerCase();
-    const aSlug = (a.slug || '').toLowerCase();
-    const bSlug = (b.slug || '').toLowerCase();
-    const order = ['oticon', 'resound', 'signia'];
-    const aIndex = order.findIndex(o => aName.includes(o) || aSlug.includes(o));
-    const bIndex = order.findIndex(o => bName.includes(o) || bSlug.includes(o));
-    return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
-  });
+  // Sort brands: maintain order from settings or default order
+  const sortedBrands = settingsData?.sidebarBrandIds && settingsData.sidebarBrandIds.length > 0
+    ? [...mainBrands].sort((a, b) => {
+        const aIndex = settingsData.sidebarBrandIds!.indexOf(a.id);
+        const bIndex = settingsData.sidebarBrandIds!.indexOf(b.id);
+        return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
+      })
+    : [...mainBrands].sort((a, b) => {
+        const aName = (a.name || '').toLowerCase();
+        const bName = (b.name || '').toLowerCase();
+        const aSlug = (a.slug || '').toLowerCase();
+        const bSlug = (b.slug || '').toLowerCase();
+        const order = ['oticon', 'resound', 'signia'];
+        const aIndex = order.findIndex(o => aName.includes(o) || aSlug.includes(o));
+        const bIndex = order.findIndex(o => bName.includes(o) || bSlug.includes(o));
+        return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
+      });
 
-  // Define other sections (accessories, earmolds, etc.)
-  const otherSections = [
-    {
-      id: 'accessories',
-      title_uz: 'Aksessuarlar',
-      title_ru: 'Аксессуары',
-      link: '/catalog/accessories',
-      icon: '📱',
-    },
-    {
-      id: 'earmolds',
-      title_uz: 'Quloq qo\'shimchalari',
-      title_ru: 'Ушные вкладыши',
-      link: '/catalog/earmolds',
-      icon: '👂',
-    },
-    {
-      id: 'batteries',
-      title_uz: 'Batareyalar',
-      title_ru: 'Батарейки',
-      link: '/catalog/batteries',
-      icon: '🔋',
-    },
-    {
-      id: 'care',
-      title_uz: 'Parvarish vositalari',
-      title_ru: 'Средства ухода',
-      link: '/catalog/care',
-      icon: '🧴',
-    },
-  ];
+  // Get sidebar sections from settings, fallback to default
+  const otherSections = (settingsData?.sidebarSections && Array.isArray(settingsData.sidebarSections) && settingsData.sidebarSections.length > 0)
+    ? settingsData.sidebarSections.sort((a, b) => (a.order || 0) - (b.order || 0))
+    : [
+        {
+          id: 'accessories',
+          title_uz: 'Aksessuarlar',
+          title_ru: 'Аксессуары',
+          link: '/catalog/accessories',
+          icon: '📱',
+        },
+        {
+          id: 'earmolds',
+          title_uz: 'Quloq qo\'shimchalari',
+          title_ru: 'Ушные вкладыши',
+          link: '/catalog/earmolds',
+          icon: '👂',
+        },
+        {
+          id: 'batteries',
+          title_uz: 'Batareyalar',
+          title_ru: 'Батарейки',
+          link: '/catalog/batteries',
+          icon: '🔋',
+        },
+        {
+          id: 'care',
+          title_uz: 'Parvarish vositalari',
+          title_ru: 'Средства ухода',
+          link: '/catalog/care',
+          icon: '🧴',
+        },
+      ];
 
   // Transform catalogs for display
   const catalogItems = (catalogsData && catalogsData.length > 0 ? catalogsData : []).map((catalog) => {
@@ -994,23 +1011,23 @@ export default async function CatalogPage({
             {/* Main Content - 3 columns on large screens */}
             <div className="lg:col-span-3">
               {catalogItems.length > 0 ? (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 grid-cols-2 md:grid-cols-2 lg:grid-cols-3">
                   {catalogItems.map((item) => (
                     <Link
                       key={item.id}
                       href={item.link}
                       className="group flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4 transition hover:border-brand-primary/50 hover:shadow-sm"
                     >
-                      {/* Rasm va nom bir xil qatorda */}
-                      <div className="flex gap-3">
-                        {/* Rasm - chapda, avvalgi o'lchamda */}
-                        <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-xl bg-brand-primary/10">
+                      {/* Mobil: rasm yuqorida, Desktop: rasm va nom bir qatorda */}
+                      <div className="flex flex-col md:flex-row gap-3">
+                        {/* Rasm - mobil: yuqorida, desktop: chapda */}
+                        <div className="relative h-40 w-full md:h-20 md:w-28 shrink-0 overflow-hidden rounded-xl bg-brand-primary/10">
                           {item.image ? (
                             <Image 
                               src={item.image} 
                               alt={item.title} 
                               fill 
-                              sizes="112px"
+                              sizes="(max-width: 768px) 100vw, 112px"
                               className="object-cover transition-transform duration-300 group-hover:scale-105"
                               suppressHydrationWarning
                             />
@@ -1020,11 +1037,15 @@ export default async function CatalogPage({
                             </div>
                           )}
                         </div>
-                        {/* Nom - rasm yonida */}
-                        <div className="flex flex-col flex-1 min-w-0">
+                        {/* Nom - mobil: rasm tagida, desktop: rasm yonida */}
+                        <div className="flex flex-col flex-1 min-w-0 md:justify-between">
                           <h3 className="text-base font-semibold text-brand-accent leading-tight group-hover:text-brand-primary transition-colors" suppressHydrationWarning>
                             {item.title}
                           </h3>
+                          {/* Desktop: Batafsil link rasm yonida */}
+                          <span className="hidden md:inline-flex items-center gap-1 text-xs font-semibold text-brand-primary group-hover:text-brand-accent transition-all mt-auto" suppressHydrationWarning>
+                            {locale === 'ru' ? 'Подробнее' : 'Batafsil'} ↗
+                          </span>
                         </div>
                       </div>
                       {/* Tavsif - rasm tagida */}
@@ -1033,8 +1054,8 @@ export default async function CatalogPage({
                           {item.description}
                         </p>
                       )}
-                      {/* Batafsil link */}
-                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-brand-primary group-hover:text-brand-accent transition-all" suppressHydrationWarning>
+                      {/* Mobil: Batafsil link pastda */}
+                      <span className="inline-flex md:hidden items-center gap-1 text-xs font-semibold text-brand-primary group-hover:text-brand-accent transition-all" suppressHydrationWarning>
                         {locale === 'ru' ? 'Подробнее' : 'Batafsil'} ↗
                       </span>
                     </Link>
@@ -1052,75 +1073,7 @@ export default async function CatalogPage({
             </div>
 
             {/* Sidebar - 1 column on large screens */}
-            <aside className="lg:col-span-1 space-y-8">
-              {/* Other Sections */}
-              <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-foreground mb-4" suppressHydrationWarning>
-                  {locale === 'ru' ? 'Другие разделы' : 'Boshqa bo\'limlar'}
-                </h3>
-                <nav className="space-y-2">
-                  {otherSections.map((section) => {
-                    const title = locale === 'ru' ? section.title_ru : section.title_uz;
-                    return (
-                      <Link
-                        key={section.id}
-                        href={section.link}
-                        className="flex items-center gap-3 p-3 rounded-md hover:bg-gray-50 transition-colors group"
-                      >
-                        <span className="text-xl">{section.icon}</span>
-                        <span className="text-sm font-medium text-foreground group-hover:text-brand-primary transition-colors" suppressHydrationWarning>
-                          {title}
-                        </span>
-                      </Link>
-                    );
-                  })}
-                </nav>
-              </div>
-
-              {/* Brands Section - Only Oticon, ReSound, Signia */}
-              {sortedBrands.length > 0 && (
-                <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
-                  <h3 className="text-lg font-semibold text-foreground mb-4" suppressHydrationWarning>
-                    {locale === 'ru' ? 'Бренды' : 'Brendlar'}
-                  </h3>
-                  <div className="space-y-4">
-                    {sortedBrands.map((brand) => {
-                      const brandName = brand.name || '';
-                      const brandSlug = brand.slug || '';
-                      const brandLogo = brand.logo?.url || '';
-                      let logoUrl = brandLogo;
-                      if (logoUrl && logoUrl.startsWith('/') && !logoUrl.startsWith('//')) {
-                        const baseUrl = API_BASE_URL.replace('/api', '');
-                        logoUrl = `${baseUrl}${logoUrl}`;
-                      }
-                      const brandLink = brandSlug ? `/catalog/${brandSlug}` : '#';
-                      return (
-                        <Link
-                          key={brand.id}
-                          href={brandLink}
-                          className="flex items-center justify-center p-4 border border-gray-200 rounded-lg hover:border-brand-primary/50 transition-colors bg-gray-50 group"
-                        >
-                          {logoUrl ? (
-                            <Image
-                              src={logoUrl}
-                              alt={brandName}
-                              width={120}
-                              height={40}
-                              className="object-contain max-h-10"
-                              suppressHydrationWarning
-                            />
-                          ) : (
-                            <span className="text-sm font-medium text-muted-foreground group-hover:text-brand-primary transition-colors" suppressHydrationWarning>
-                              {brandName}
-                            </span>
-                          )}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </aside>
+            <Sidebar locale={locale} settingsData={settingsData} brandsData={brandsData} pageType="catalog" />
           </div>
         </div>
       </section>

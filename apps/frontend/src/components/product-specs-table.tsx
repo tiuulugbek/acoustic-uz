@@ -1,23 +1,35 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 
 interface ProductSpecsTableProps {
   specsText?: string | null;
   locale: 'uz' | 'ru';
 }
 
+interface SpecRow {
+  label: string;
+  value: string;
+  tooltips: Array<{ keyword: string; content: string }>;
+}
+
 /**
- * Processes tooltip shortcodes to extract just the keyword
+ * Processes tooltip shortcodes and extracts both keyword and content
  */
-function processTooltipShortcode(text: string): string {
-  // Match [tooltips keyword="..." content="..."]
+function processTooltips(text: string): { 
+  text: string; 
+  tooltips: Array<{ keyword: string; content: string }> 
+} {
   const tooltipRegex = /\[tooltips\s+keyword=["']([^"']+)["']\s+content=["']([^"']+)["']\]/gi;
+  const tooltips: Array<{ keyword: string; content: string }> = [];
   
-  return text.replace(tooltipRegex, (match, keyword) => {
-    // Return just the keyword, not the whole shortcode
-    return keyword;
+  const processedText = text.replace(tooltipRegex, (match, keyword, content) => {
+    tooltips.push({ keyword, content });
+    // Return keyword wrapped in a span with data attributes
+    return `<span class="tooltip-trigger cursor-help border-b border-dashed border-brand-primary/40 text-brand-primary hover:border-brand-primary" data-tooltip-keyword="${keyword.replace(/"/g, '&quot;')}" data-tooltip-content="${content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')}">${keyword}</span>`;
   });
+  
+  return { text: processedText, tooltips };
 }
 
 /**
@@ -31,26 +43,33 @@ export default function ProductSpecsTable({ specsText, locale }: ProductSpecsTab
     // Try to extract table data from HTML
     // Look for tables that contain "Основные характеристики" or similar structure
     const tableRegex = /<table[^>]*>([\s\S]*?)<\/table>/gi;
-    const tables: Array<{ rows: Array<{ label: string; value: string }> }> = [];
+    const tables: Array<{ rows: SpecRow[] }> = [];
 
     let match;
     let tableIndex = 0;
     while ((match = tableRegex.exec(specsText)) !== null) {
       const tableHtml = match[1];
       const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
-      const rows: Array<{ label: string; value: string }> = [];
+      const rows: SpecRow[] = [];
 
       let rowMatch;
       while ((rowMatch = rowRegex.exec(tableHtml)) !== null) {
         const rowHtml = rowMatch[1];
         const cellRegex = /<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi;
         const cells: string[] = [];
+        const rowTooltips: Array<{ keyword: string; content: string }> = [];
 
         let cellMatch;
         while ((cellMatch = cellRegex.exec(rowHtml)) !== null) {
-          // Extract text from HTML, processing tooltips
-          let cellText = cellMatch[1]
-            .replace(/<[^>]+>/g, '')
+          // Extract HTML content first (before removing tags)
+          const cellHtml = cellMatch[1];
+          
+          // Process tooltips and get both text and tooltip data
+          const { text: cellText, tooltips } = processTooltips(cellHtml);
+          
+          // Clean HTML tags but keep tooltip spans
+          const cleanedText = cellText
+            .replace(/<(?!(span|/span))[^>]+>/g, '') // Remove all tags except span
             .replace(/&nbsp;/g, ' ')
             .replace(/&amp;/g, '&')
             .replace(/&lt;/g, '<')
@@ -58,11 +77,9 @@ export default function ProductSpecsTable({ specsText, locale }: ProductSpecsTab
             .replace(/&quot;/g, '"')
             .trim();
           
-          // Process tooltip shortcodes - extract just the keyword
-          cellText = processTooltipShortcode(cellText);
-          
-          if (cellText) {
-            cells.push(cellText);
+          if (cleanedText) {
+            cells.push(cleanedText);
+            rowTooltips.push(...tooltips);
           }
         }
 
@@ -96,6 +113,7 @@ export default function ProductSpecsTable({ specsText, locale }: ProductSpecsTab
             rows.push({
               label,
               value,
+              tooltips: rowTooltips,
             });
           }
         }
@@ -117,17 +135,150 @@ export default function ProductSpecsTable({ specsText, locale }: ProductSpecsTab
   }
 
   return (
+    <SpecsTableWithTooltips specs={specs} locale={locale} />
+  );
+}
+
+/**
+ * Component that renders specs table with tooltip support
+ */
+function SpecsTableWithTooltips({ specs, locale }: { specs: SpecRow[]; locale: 'uz' | 'ru' }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const container = containerRef.current;
+    const tooltipTriggers = Array.from(container.querySelectorAll('.tooltip-trigger'));
+    
+    const cleanupFunctions: Array<() => void> = [];
+    
+    tooltipTriggers.forEach((trigger) => {
+      const keyword = trigger.getAttribute('data-tooltip-keyword') || '';
+      const tooltipContent = trigger.getAttribute('data-tooltip-content') || '';
+      
+      if (keyword && tooltipContent) {
+        // Decode HTML entities
+        const decodedContent = tooltipContent
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;/g, "'");
+        
+        let tooltipElement: HTMLDivElement | null = null;
+        let scrollHandler: (() => void) | null = null;
+        let resizeHandler: (() => void) | null = null;
+        
+        const showTooltip = () => {
+          if (tooltipElement) return;
+          
+          tooltipElement = document.createElement('div');
+          tooltipElement.className = 'fixed z-50 max-w-xs rounded-lg bg-gray-900 px-3 py-2 text-xs text-white shadow-lg transition-opacity';
+          tooltipElement.innerHTML = `
+            <div class="font-semibold text-white mb-1">${keyword}</div>
+            <div class="text-gray-300 leading-relaxed">${decodedContent}</div>
+          `;
+          
+          document.body.appendChild(tooltipElement);
+          
+          const updatePosition = () => {
+            if (!tooltipElement) return;
+            const rect = trigger.getBoundingClientRect();
+            const tooltipRect = tooltipElement.getBoundingClientRect();
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const spaceAbove = rect.top;
+            const spaceRight = window.innerWidth - rect.left;
+            
+            let top = rect.bottom + 8;
+            let left = rect.left;
+            
+            // Adjust if not enough space below
+            if (spaceBelow < tooltipRect.height + 10) {
+              top = rect.top - tooltipRect.height - 8;
+            }
+            
+            // Adjust if goes off right edge
+            if (left + tooltipRect.width > window.innerWidth) {
+              left = window.innerWidth - tooltipRect.width - 10;
+            }
+            
+            // Adjust if goes off left edge
+            if (left < 10) {
+              left = 10;
+            }
+            
+            tooltipElement.style.top = `${top}px`;
+            tooltipElement.style.left = `${left}px`;
+          };
+          
+          updatePosition();
+          scrollHandler = () => updatePosition();
+          resizeHandler = () => updatePosition();
+          
+          window.addEventListener('scroll', scrollHandler, true);
+          window.addEventListener('resize', resizeHandler);
+          
+          const hideTooltip = () => {
+            if (tooltipElement) {
+              tooltipElement.remove();
+              tooltipElement = null;
+              if (scrollHandler) {
+                window.removeEventListener('scroll', scrollHandler, true);
+              }
+              if (resizeHandler) {
+                window.removeEventListener('resize', resizeHandler);
+              }
+            }
+          };
+          
+          trigger.addEventListener('mouseleave', hideTooltip);
+          trigger.addEventListener('blur', hideTooltip);
+          
+          setTimeout(updatePosition, 0);
+          
+          cleanupFunctions.push(() => {
+            trigger.removeEventListener('mouseleave', hideTooltip);
+            trigger.removeEventListener('blur', hideTooltip);
+            if (scrollHandler) {
+              window.removeEventListener('scroll', scrollHandler, true);
+            }
+            if (resizeHandler) {
+              window.removeEventListener('resize', resizeHandler);
+            }
+            if (tooltipElement) {
+              tooltipElement.remove();
+            }
+          });
+        };
+        
+        trigger.addEventListener('mouseenter', showTooltip);
+        trigger.addEventListener('focus', showTooltip);
+        
+        cleanupFunctions.push(() => {
+          trigger.removeEventListener('mouseenter', showTooltip);
+          trigger.removeEventListener('focus', showTooltip);
+        });
+      }
+    });
+
+    return () => {
+      cleanupFunctions.forEach(cleanup => cleanup());
+    };
+  }, [specs]);
+
+  return (
     <div className="rounded-lg border border-border/60 bg-card overflow-hidden">
       <div className="bg-brand-accent/5 px-6 py-4 border-b border-border/60">
         <h3 className="text-xl font-semibold text-brand-accent">
           {locale === 'ru' ? 'Основные характеристики' : 'Asosiy xususiyatlar'}
         </h3>
       </div>
-      <div className="divide-y divide-border/60">
+      <div ref={containerRef} className="divide-y divide-border/60">
         {specs.map((spec, index) => (
           <div key={index} className="grid grid-cols-[1fr_1fr] gap-6 px-6 py-3 hover:bg-muted/30 transition-colors">
-            <div className="font-medium text-foreground text-sm">{spec.label}</div>
-            <div className="text-muted-foreground text-sm">{spec.value}</div>
+            <div className="font-medium text-foreground text-sm" dangerouslySetInnerHTML={{ __html: spec.label }} />
+            <div className="text-muted-foreground text-sm" dangerouslySetInnerHTML={{ __html: spec.value }} />
           </div>
         ))}
       </div>

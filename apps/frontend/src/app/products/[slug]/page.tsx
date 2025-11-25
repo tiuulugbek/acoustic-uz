@@ -10,17 +10,16 @@ import {
   type ProductCategoryResponse,
   type BrandResponse,
 } from '@/lib/api';
-import { getProductBySlug, getProductCategories, getBrands } from '@/lib/api-server';
+import { getProductBySlug, getProductCategories, getBrands, getSettings } from '@/lib/api-server';
 import ProductTabs from '@/components/product-tabs';
 import ProductSpecsTable from '@/components/product-specs-table';
 import ProductFeaturesList from '@/components/product-features-list';
 import { detectLocale } from '@/lib/locale-server';
 import { getBilingualText } from '@/lib/locale';
+import Sidebar from '@/components/sidebar';
 
-// Force dynamic rendering to ensure locale is always read from cookies
-// This prevents Next.js from caching the page with a stale locale
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+// ISR: Revalidate every hour
+export const revalidate = 3600;
 
 const placeholderSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect width="100%" height="100%" fill="#F07E22"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#fff" font-family="Arial" font-size="28">Acoustic</text></svg>`;
 const placeholderImage = `data:image/svg+xml,${encodeURIComponent(placeholderSvg)}`;
@@ -98,9 +97,21 @@ async function getProductMetadata(slug: string): Promise<{ title: string; descri
 }
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
+  const locale = detectLocale();
   const { title, description } = await getProductMetadata(params.slug);
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
   const productUrl = `${baseUrl}/products/${params.slug}`;
+  
+  // Get product for image
+  const product = await getProductBySlug(params.slug, locale);
+  const mainImage = product?.galleryUrls?.[0] || product?.brand?.logo?.url || '';
+  const imageUrl = mainImage && mainImage.startsWith('http') 
+    ? mainImage 
+    : mainImage && mainImage.startsWith('/')
+    ? `${baseUrl}${mainImage}`
+    : mainImage
+    ? `${baseUrl}${mainImage}`
+    : `${baseUrl}/logo.png`;
   
   return {
     title,
@@ -113,10 +124,33 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
         'x-default': productUrl,
       },
     },
+    openGraph: {
+      title,
+      description: description || undefined,
+      url: productUrl,
+      siteName: 'Acoustic.uz',
+      images: [
+        {
+          url: imageUrl,
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
+      locale: locale === 'ru' ? 'ru_RU' : 'uz_UZ',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description: description || undefined,
+      images: [imageUrl],
+    },
   };
 }
 
-function buildJsonLd(product: ProductResponse, mainImage: string) {
+function buildJsonLd(product: ProductResponse, mainImage: string, locale: 'uz' | 'ru') {
+  const baseUrl = 'https://acoustic.uz';
   const offers = product.price
     ? {
         '@type': 'Offer',
@@ -128,20 +162,53 @@ function buildJsonLd(product: ProductResponse, mainImage: string) {
       }
     : undefined;
 
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'Product',
-    name: product.name_uz || product.name_ru,
-    description: product.description_uz || product.description_ru || product.intro_uz || product.intro_ru,
-    image: product.galleryUrls?.length ? product.galleryUrls : [mainImage],
-    brand: {
-      '@type': 'Brand',
-      name: product.brand?.name ?? 'Acoustic',
+  const productName = locale === 'ru' ? product.name_ru : product.name_uz;
+  const categoryName = locale === 'ru' 
+    ? product.category?.name_ru 
+    : product.category?.name_uz;
+
+  return [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: productName,
+      description: locale === 'ru' 
+        ? (product.description_ru || product.intro_ru)
+        : (product.description_uz || product.intro_uz),
+      image: product.galleryUrls?.length ? product.galleryUrls : [mainImage],
+      brand: {
+        '@type': 'Brand',
+        name: product.brand?.name ?? 'Acoustic',
+      },
+      offers,
+      category: categoryName,
+      url: `${baseUrl}/products/${product.slug}`,
     },
-    offers,
-    category: product.category?.name_uz ?? undefined,
-    url: `https://acoustic.uz/products/${product.slug}`,
-  };
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: locale === 'ru' ? 'Главная' : 'Bosh sahifa',
+          item: baseUrl,
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: locale === 'ru' ? 'Каталог' : 'Katalog',
+          item: `${baseUrl}/catalog`,
+        },
+        {
+          '@type': 'ListItem',
+          position: 3,
+          name: productName,
+          item: `${baseUrl}/products/${product.slug}`,
+        },
+      ],
+    },
+  ];
 }
 
 function UsefulArticles({ articles, locale }: { articles: UsefulArticleSummary[]; locale: 'uz' | 'ru' }) {
@@ -188,10 +255,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
   
   // Handle errors gracefully - getProductBySlug returns null if backend is down or product not found
   // The api-server wrapper ensures this never throws, so we can safely await it
-  const [product, categories, brands] = await Promise.all([
+  const [product, categories, brands, settings] = await Promise.all([
     getProductBySlug(params.slug, locale),
     getProductCategories(locale),
     getBrands(locale),
+    getSettings(locale),
   ]);
 
   // If product is null, show fallback UI (backend down or product not found)
@@ -347,14 +415,19 @@ export default async function ProductPage({ params }: ProductPageProps) {
     return { text: finalText, tables: combinedTables };
   };
 
-  // Extract tables and text from descriptions
-  const descRu = extractTablesAndText(product.description_ru);
-  const descUz = extractTablesAndText(product.description_uz);
+  // Description tab - use full HTML content (including tables)
+  // This will be shown in the "Tavsif" tab
+  const descriptionPrimary = isRu 
+    ? product.description_ru ?? product.description_uz ?? null
+    : product.description_uz ?? product.description_ru ?? null;
+  const descriptionSecondary = isRu 
+    ? product.description_uz ?? null
+    : product.description_ru ?? null;
+  const hasDescription = Boolean(descriptionPrimary || descriptionSecondary);
   
-  // Combine tables from descriptions with specsText for tech tab
+  // For tech tab, combine specsText with tech fields (but NOT description tables)
+  // Description tables should only appear in "Tavsif" tab
   const techTablesParts = [
-    descRu.tables,
-    descUz.tables,
     cleanSpecsText(product.specsText),
     product.tech_ru,
     product.tech_uz,
@@ -362,18 +435,15 @@ export default async function ProductPage({ params }: ProductPageProps) {
   
   const techTables = techTablesParts.length > 0 ? techTablesParts.join('\n\n') : null;
 
-  // Only show description tab if there's meaningful text (not just a list of words)
-  const descriptionPrimary = isRu ? descRu.text ?? descUz.text ?? null : descUz.text ?? descRu.text ?? null;
-  const descriptionSecondary = isRu ? descUz.text ?? null : descRu.text ?? null;
-  const hasDescription = Boolean(descriptionPrimary || descriptionSecondary);
-
   const productTabs = [
+    // Description tab - always first, shows full HTML content including tables
     ...(hasDescription ? [{
       key: 'description',
       title: tabTitles.description,
       primary: descriptionPrimary,
       secondary: descriptionSecondary,
     }] : []),
+    // Technologies tab
     {
       key: 'tech',
       title: tabTitles.tech,
@@ -382,6 +452,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
         : product.tech_uz ?? techTables ?? null,
       secondary: isRu ? product.tech_uz ?? null : product.tech_ru ?? null,
     },
+    // Fitting range tab
     {
       key: 'fitting',
       title: tabTitles.fitting,
@@ -390,15 +461,26 @@ export default async function ProductPage({ params }: ProductPageProps) {
     },
   ];
 
-  const jsonLd = buildJsonLd(product, mainImage);
+  const jsonLd = buildJsonLd(product, mainImage, locale);
 
   return (
     <main className="min-h-screen bg-background">
-      <Script
-        id="product-jsonld"
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      {Array.isArray(jsonLd) ? (
+        jsonLd.map((schema, index) => (
+          <Script
+            key={index}
+            id={`product-jsonld-${index}`}
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+          />
+        ))
+      ) : (
+        <Script
+          id="product-jsonld"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      )}
       
       {/* Breadcrumbs */}
       <section className="bg-muted/40">
@@ -427,7 +509,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
       {/* Main Content - 3 columns: Image | Info | Sidebar */}
       <section className="bg-white py-8">
         <div className="mx-auto max-w-6xl px-4 md:px-6">
-          <div className="grid gap-6 lg:grid-cols-[400px_1fr_280px]">
+          <div className="grid gap-6 lg:grid-cols-[400px_1fr] xl:grid-cols-[400px_1fr_280px]">
             {/* Left Column - Image */}
             <div className="space-y-4">
               {/* Main Image */}
@@ -497,10 +579,28 @@ export default async function ProductPage({ params }: ProductPageProps) {
               </div>
             </div>
 
-            {/* Right Column - Sidebar */}
-            <div className="space-y-6">
-              {/* Product Categories */}
-              <div className="space-y-3">
+            {/* Right Column - Sidebar (spans both rows on desktop, hidden on mobile) */}
+            <div className="hidden xl:block xl:col-span-1 xl:row-span-2">
+              <Sidebar locale={locale} settingsData={settings} brandsData={brands} pageType="products" />
+            </div>
+
+            {/* Second Row - Product Tabs */}
+            {productTabs.some((tab) => tab.primary || tab.secondary) && (
+              <div className="lg:col-span-2 xl:col-span-2">
+                <ProductTabs tabs={productTabs} />
+              </div>
+            )}
+          </div>
+
+          {/* Sidebar - Mobile (after product info and tabs) */}
+          <div className="mt-6 xl:hidden">
+            <Sidebar locale={locale} settingsData={settings} brandsData={brands} pageType="products" />
+          </div>
+
+          {/* Product Categories - Mobile (always shown, independent of sidebar) */}
+          <div className="mt-6 space-y-6 xl:hidden">
+            {/* Product Categories */}
+            <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-foreground">
                   {isRu ? 'Каталог слуховых аппаратов' : 'Eshitish apparatlari katalogi'}
                 </h3>
@@ -569,11 +669,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
                     </span>
                   </Link>
                 </div>
-              </div>
+            </div>
 
-              {/* Brands */}
-              {brands.length > 0 && (
-                <div className="space-y-3">
+            {/* Brands */}
+            {brands.length > 0 && (
+              <div className="space-y-3">
                   <div className="space-y-2">
                     {brands.slice(0, 3).map((brand) => (
                       <Link
@@ -597,12 +697,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
                       </Link>
                     ))}
                   </div>
-                </div>
-              )}
+              </div>
+            )}
 
-              {/* Useful Articles */}
-              {product.usefulArticles && product.usefulArticles.length > 0 && (
-                <div className="space-y-3">
+            {/* Useful Articles */}
+            {product.usefulArticles && product.usefulArticles.length > 0 && (
+              <div className="space-y-3">
                   <h3 className="text-sm font-semibold text-foreground border-b border-border/60 pb-2">
                     {isRu ? 'Полезные статьи' : 'Foydali maqolalar'}
                   </h3>
@@ -627,17 +727,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
                       </Link>
                     ))}
                   </div>
-                </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
-
-          {/* Product Tabs - Below image and info */}
-          {productTabs.some((tab) => tab.primary || tab.secondary) && (
-            <div className="mt-8">
-              <ProductTabs tabs={productTabs} />
-            </div>
-          )}
         </div>
       </section>
 

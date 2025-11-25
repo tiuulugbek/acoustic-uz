@@ -23,8 +23,19 @@ export class SettingsController {
   @RequirePermissions('settings.write')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Update settings' })
-  update(@Body() updateDto: unknown) {
-    return this.settingsService.update(updateDto as Parameters<typeof this.settingsService.update>[0]);
+  async update(@Body() updateDto: unknown) {
+    try {
+      console.log('Settings update request:', JSON.stringify(updateDto, null, 2));
+      const result = await this.settingsService.update(updateDto as Parameters<typeof this.settingsService.update>[0]);
+      return result;
+    } catch (error) {
+      console.error('Settings controller error:', error);
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+      }
+      throw error;
+    }
   }
 }
 

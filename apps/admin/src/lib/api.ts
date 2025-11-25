@@ -34,6 +34,34 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     } catch (error) {
       // ignore JSON parse errors
     }
+    
+    // Handle 401 Unauthorized - session expired
+    if (response.status === 401) {
+      // Clear user data from localStorage
+      try {
+        localStorage.removeItem('admin_user');
+      } catch (err) {
+        // ignore
+      }
+      
+      // Only redirect if not already on login page
+      if (window.location.pathname !== '/login') {
+        // Clear query cache
+        const queryClient = (window as any).__queryClient;
+        if (queryClient) {
+          queryClient.clear();
+        }
+        
+        // Show warning message
+        if (typeof window !== 'undefined' && (window as any).antd) {
+          (window as any).antd.message?.warning('Sessiya tugadi. Iltimos, qayta kiring.');
+        }
+        
+        // Redirect to login page
+        window.location.href = '/login';
+      }
+    }
+    
     throw new ApiError(message || `Request failed with status ${response.status}`, response.status);
   }
 
@@ -1162,6 +1190,16 @@ export const updateShowcase = (type: 'interacoustics' | 'cochlear', payload: Upd
   });
 
 // Settings interfaces and functions
+export interface SidebarSection {
+  id: string;
+  title_uz: string;
+  title_ru: string;
+  link: string;
+  icon?: string;
+  imageId?: string | null;
+  order: number;
+}
+
 export interface SettingsDto {
   id: string;
   phonePrimary?: string | null;
@@ -1187,6 +1225,15 @@ export interface SettingsDto {
     alt_uz?: string | null;
     alt_ru?: string | null;
   } | null;
+  // Sidebar settings
+  sidebarSections?: SidebarSection[] | null;
+  sidebarBrandIds?: string[];
+  sidebarConfigs?: {
+    catalog?: { sections?: SidebarSection[]; brandIds?: string[] };
+    products?: { sections?: SidebarSection[]; brandIds?: string[] };
+    services?: { sections?: SidebarSection[]; brandIds?: string[] };
+    posts?: { sections?: SidebarSection[]; brandIds?: string[] };
+  } | null;
   // AmoCRM settings
   amocrmDomain?: string | null;
   amocrmClientId?: string | null;
@@ -1210,6 +1257,15 @@ export type UpdateSettingsPayload = {
   socialLinks?: unknown;
   catalogHeroImageId?: string | null;
   logoId?: string | null;
+  // Sidebar settings
+  sidebarSections?: SidebarSection[];
+  sidebarBrandIds?: string[];
+  sidebarConfigs?: {
+    catalog?: { sections?: SidebarSection[]; brandIds?: string[] };
+    products?: { sections?: SidebarSection[]; brandIds?: string[] };
+    services?: { sections?: SidebarSection[]; brandIds?: string[] };
+    posts?: { sections?: SidebarSection[]; brandIds?: string[] };
+  };
   // AmoCRM settings
   amocrmDomain?: string;
   amocrmClientId?: string;

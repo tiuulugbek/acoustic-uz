@@ -24,6 +24,7 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route element={<AdminLayout />}>
+          {/* Protected routes - AdminLayout will handle authentication */}
           <Route index element={<HomepagePage />} />
           <Route path="services" element={<ServicesPage />} />
           <Route path="catalog" element={<CatalogPage />} />

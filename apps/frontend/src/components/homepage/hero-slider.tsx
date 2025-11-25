@@ -19,9 +19,11 @@ interface HeroSliderProps {
   banners: BannerResponse[];
   locale: Locale;
   apiBaseUrl: string;
+  phoneNumber?: string;
+  phoneLink?: string;
 }
 
-export default function HeroSlider({ banners, locale, apiBaseUrl }: HeroSliderProps) {
+export default function HeroSlider({ banners, locale, apiBaseUrl, phoneNumber = '1385', phoneLink = '+998712021441' }: HeroSliderProps) {
   const [activeSlide, setActiveSlide] = useState(0);
 
   // Convert banners to slides
@@ -33,9 +35,31 @@ export default function HeroSlider({ banners, locale, apiBaseUrl }: HeroSliderPr
       const cta = locale === 'ru' ? (banner.ctaText_ru || '') : (banner.ctaText_uz || '');
       
       let imageUrl = banner.image?.url || '';
-      if (imageUrl && imageUrl.startsWith('/') && !imageUrl.startsWith('//')) {
-        const baseUrl = apiBaseUrl.replace('/api', '');
-        imageUrl = `${baseUrl}${imageUrl}`;
+      
+      // Debug: log banner image data
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[HeroSlider] Banner image:', {
+          bannerId: banner.id,
+          image: banner.image,
+          imageUrl: imageUrl,
+          apiBaseUrl,
+        });
+      }
+      
+      // Normalize image URL
+      if (imageUrl) {
+        // If already absolute URL, use as-is
+        if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+          // Already absolute, use as-is
+        } else if (imageUrl.startsWith('/uploads/')) {
+          // Relative path, prepend base URL
+          const baseUrl = apiBaseUrl.replace('/api', '');
+          imageUrl = `${baseUrl}${imageUrl}`;
+        } else if (imageUrl.startsWith('/') && !imageUrl.startsWith('//')) {
+          // Other relative paths
+          const baseUrl = apiBaseUrl.replace('/api', '');
+          imageUrl = `${baseUrl}${imageUrl}`;
+        }
       }
       
       return {
@@ -72,9 +96,9 @@ export default function HeroSlider({ banners, locale, apiBaseUrl }: HeroSliderPr
     <section className="bg-white py-8">
       <div className="mx-auto max-w-6xl px-4 md:px-6">
         <div className="relative overflow-hidden rounded-lg bg-white shadow-sm">
-          <div className="flex flex-col md:flex-row md:items-stretch">
+          <div className="flex flex-col-reverse md:flex-row md:items-stretch">
             {/* Left Panel - Text Content */}
-            <div className="relative flex flex-col justify-center bg-white px-6 py-6 md:px-8 md:py-8 md:w-1/2 md:min-h-[320px] rounded-l-lg overflow-hidden">
+            <div className="relative flex flex-col justify-center bg-white px-6 py-6 md:px-8 md:py-8 md:w-1/2 md:min-h-[320px] rounded-b-lg md:rounded-b-none md:rounded-l-lg overflow-hidden">
               {slides.map((slide, index) => (
                 <div
                   key={`text-${slide.id}`}
@@ -109,12 +133,12 @@ export default function HeroSlider({ banners, locale, apiBaseUrl }: HeroSliderPr
                         </Link>
                       )}
                       <Link
-                        href="tel:+998712021441"
+                        href={`tel:${phoneLink}`}
                         className="inline-flex items-center gap-2 rounded-lg border-2 border-border bg-white px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-muted/50 md:px-5 md:py-2.5"
                         suppressHydrationWarning
                       >
                         <Phone size={14} className="md:w-4 md:h-4" />
-                        <span>1385</span>
+                        <span>{phoneNumber}</span>
                       </Link>
                     </div>
                   </div>
@@ -141,14 +165,20 @@ export default function HeroSlider({ banners, locale, apiBaseUrl }: HeroSliderPr
             </div>
 
             {/* Right Panel - Image */}
-            <div className="relative w-full md:w-1/2 bg-brand-primary md:min-h-[320px] rounded-r-lg overflow-hidden">
+            <div className="relative w-full md:w-1/2 bg-brand-primary md:min-h-[320px] rounded-t-lg md:rounded-t-none md:rounded-r-lg overflow-hidden">
               {slides.map((slide, index) => {
                 const imageUrl = slide.image;
                 const isActive = index === activeSlide;
-                const hasRealImage = imageUrl && 
-                  (imageUrl.startsWith('http://') || 
-                   imageUrl.startsWith('https://') || 
-                   (imageUrl.startsWith('/') && !imageUrl.startsWith('//')));
+                const hasRealImage = imageUrl && imageUrl.trim().length > 0;
+                
+                // Debug: log slide image
+                if (process.env.NODE_ENV === 'development' && isActive) {
+                  console.log('[HeroSlider] Active slide image:', {
+                    slideId: slide.id,
+                    imageUrl,
+                    hasRealImage,
+                  });
+                }
                 
                 return (
                   <div
@@ -164,23 +194,30 @@ export default function HeroSlider({ banners, locale, apiBaseUrl }: HeroSliderPr
                     }}
                   >
                     {hasRealImage ? (
-                      <div className="absolute inset-0 flex items-center justify-center p-4 md:p-6 lg:p-8">
+                      <div className="absolute inset-0 overflow-hidden rounded-r-lg">
                         <img
                           src={imageUrl}
                           alt={slide.title}
-                          className="max-w-full max-h-full object-contain rounded-lg"
+                          className="w-full h-full object-cover object-center"
                           style={{ 
-                            width: 'auto',
-                            height: 'auto',
-                            maxWidth: 'calc(100% - 2rem)',
-                            maxHeight: 'calc(100% - 2rem)'
+                            minWidth: '100%',
+                            minHeight: '100%'
                           }}
                           onError={(e) => {
+                            console.error('[HeroSlider] Image load error:', {
+                              imageUrl,
+                              slideId: slide.id,
+                            });
                             const target = e.target as HTMLImageElement;
                             target.style.display = 'none';
                             const parent = target.parentElement;
                             if (parent) {
                               parent.innerHTML = '<div class="absolute inset-0 flex items-center justify-center rounded-r-lg"><span class="text-3xl font-bold text-white md:text-4xl lg:text-5xl">Acoustic</span></div>';
+                            }
+                          }}
+                          onLoad={() => {
+                            if (process.env.NODE_ENV === 'development') {
+                              console.log('[HeroSlider] Image loaded successfully:', imageUrl);
                             }
                           }}
                         />

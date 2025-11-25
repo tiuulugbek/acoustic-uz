@@ -186,3 +186,4 @@ Agar rasmlarni yuklashda muammo bo'lsa:
 **Versiya:** 1.0
 
 
+

@@ -73,3 +73,4 @@ export async function optimizeImageIfNeeded(
   return compressImage(file, { maxSizeMB });
 }
 
+

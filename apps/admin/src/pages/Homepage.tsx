@@ -18,8 +18,9 @@ import {
   Col,
   Transfer,
   Switch,
+  Tooltip,
 } from 'antd';
-import { UploadOutlined, DeleteOutlined, FolderOutlined } from '@ant-design/icons';
+import { UploadOutlined, DeleteOutlined, FolderOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import type { TabsProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { UploadProps } from 'antd';
@@ -299,20 +300,69 @@ function HomepageServicesTab() {
 
       <Modal title={editingService ? 'Xizmatni tahrirlash' : 'Yangi xizmat'} open={isModalOpen} onCancel={() => setIsModalOpen(false)} onOk={handleSubmit} confirmLoading={createMutation.isPending || updateMutation.isPending} okText="Saqlash" cancelText="Bekor qilish" width={800}>
         <Form layout="vertical" form={form}>
-          <Form.Item label="Sarlavha (uz)" name="title_uz" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item label="Sarlavha (ru)" name="title_ru" rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item label="Qisqa matn (uz)" name="excerpt_uz">
-            <Input.TextArea rows={3} />
-          </Form.Item>
-          <Form.Item label="Qisqa matn (ru)" name="excerpt_ru">
-            <Input.TextArea rows={3} />
+          <Form.Item 
+            label={
+              <span>
+                Sarlavha (uz)
+                <Tooltip title="Bosh sahifadagi xizmat kartasida ko'rinadigan asosiy sarlavha. O'zbek tilida yozilishi kerak.">
+                  <QuestionCircleOutlined style={{ marginLeft: 4, color: '#999', cursor: 'help' }} />
+                </Tooltip>
+              </span>
+            }
+            name="title_uz" 
+            rules={[{ required: true }]}
+          >
+            <Input placeholder="Masalan: Diagnostika xizmatlari" />
           </Form.Item>
           <Form.Item 
-            label="Link" 
+            label={
+              <span>
+                Sarlavha (ru)
+                <Tooltip title="Bosh sahifadagi xizmat kartasida ko'rinadigan asosiy sarlavha. Rus tilida yozilishi kerak.">
+                  <QuestionCircleOutlined style={{ marginLeft: 4, color: '#999', cursor: 'help' }} />
+                </Tooltip>
+              </span>
+            }
+            name="title_ru" 
+            rules={[{ required: true }]}
+          >
+            <Input placeholder="Например: Диагностические услуги" />
+          </Form.Item>
+          <Form.Item 
+            label={
+              <span>
+                Qisqa matn (uz)
+                <Tooltip title="Xizmat haqida qisqacha ma'lumot. Bosh sahifadagi kartada ko'rinadi. 100-150 belgi tavsiya etiladi.">
+                  <QuestionCircleOutlined style={{ marginLeft: 4, color: '#999', cursor: 'help' }} />
+                </Tooltip>
+              </span>
+            }
+            name="excerpt_uz"
+          >
+            <Input.TextArea rows={3} placeholder="Xizmat haqida qisqacha ma'lumot..." />
+          </Form.Item>
+          <Form.Item 
+            label={
+              <span>
+                Qisqa matn (ru)
+                <Tooltip title="Краткая информация об услуге. Отображается на карточке на главной странице. Рекомендуется 100-150 символов.">
+                  <QuestionCircleOutlined style={{ marginLeft: 4, color: '#999', cursor: 'help' }} />
+                </Tooltip>
+              </span>
+            }
+            name="excerpt_ru"
+          >
+            <Input.TextArea rows={3} placeholder="Краткая информация об услуге..." />
+          </Form.Item>
+          <Form.Item 
+            label={
+              <span>
+                Link
+                <Tooltip title="Xizmat sahifasiga havola. Masalan: xizmat-slug yoki /services/xizmat-slug. Qanday yozilsa shunchaki o'sha qoladi.">
+                  <QuestionCircleOutlined style={{ marginLeft: 4, color: '#999', cursor: 'help' }} />
+                </Tooltip>
+              </span>
+            }
             name="link"
             extra="Masalan: xizmat-slug yoki /services/xizmat-slug yoki /catalog/katalog-slug. Qanday yozilsa shunchaki o'sha qoladi."
           >
@@ -320,7 +370,17 @@ function HomepageServicesTab() {
               placeholder="xizmat-slug yoki /services/xizmat-slug" 
             />
           </Form.Item>
-          <Form.Item label="Rasm" name="imageId" extra="Bosh sahifadagi xizmat kartasida ko'rinadigan rasm">
+          <Form.Item 
+            label={
+              <span>
+                Rasm
+                <Tooltip title="Bosh sahifadagi xizmat kartasida ko'rinadigan rasm. Tavsiya etilgan o'lcham: 800x600px yoki 1200x900px. WebP formatida yuklash tavsiya etiladi.">
+                  <QuestionCircleOutlined style={{ marginLeft: 4, color: '#999', cursor: 'help' }} />
+                </Tooltip>
+              </span>
+            }
+            name="imageId"
+          >
             <div>
               <Row gutter={16}>
                 <Col span={12}>
@@ -705,7 +765,14 @@ function HomepageProductsTab() {
       >
         <Form layout="vertical" form={form}>
           <Form.Item
-            label="Mahsulotni tanlash"
+            label={
+              <span>
+                Mahsulotni tanlash
+                <Tooltip title="Agar mavjud mahsulotni tanlasangiz, sarlavhalar avtomatik to'ldiriladi. Bu ixtiyoriy - yangi mahsulot yaratishingiz ham mumkin.">
+                  <QuestionCircleOutlined style={{ marginLeft: 4, color: '#999', cursor: 'help' }} />
+                </Tooltip>
+              </span>
+            }
             extra="Mavjud mahsulotlardan birini tanlang (ixtiyoriy)"
           >
             <Select
@@ -723,30 +790,87 @@ function HomepageProductsTab() {
             />
           </Form.Item>
 
-          <Form.Item label="Sarlavha (uz)" name="title_uz" rules={[{ required: true }]}>
+          <Form.Item 
+            label={
+              <span>
+                Sarlavha (uz)
+                <Tooltip title="Bosh sahifadagi mahsulot kartasida ko'rinadigan asosiy sarlavha. O'zbek tilida yozilishi kerak.">
+                  <QuestionCircleOutlined style={{ marginLeft: 4, color: '#999', cursor: 'help' }} />
+                </Tooltip>
+              </span>
+            }
+            name="title_uz" 
+            rules={[{ required: true }]}
+          >
             <Input placeholder="Masalan, Oticon More 1" />
           </Form.Item>
-          <Form.Item label="Sarlavha (ru)" name="title_ru" rules={[{ required: true }]}>
+          <Form.Item 
+            label={
+              <span>
+                Sarlavha (ru)
+                <Tooltip title="Bosh sahifadagi mahsulot kartasida ko'rinadigan asosiy sarlavha. Rus tilida yozilishi kerak.">
+                  <QuestionCircleOutlined style={{ marginLeft: 4, color: '#999', cursor: 'help' }} />
+                </Tooltip>
+              </span>
+            }
+            name="title_ru" 
+            rules={[{ required: true }]}
+          >
             <Input placeholder="Например, Oticon More 1" />
           </Form.Item>
           <Form.Item
-            label="Qisqacha tavsif (uz)"
+            label={
+              <span>
+                Qisqacha tavsif (uz)
+                <Tooltip title="Bosh sahifadagi mahsulot kartasida ko'rinadigan qisqacha tavsif. 100-150 belgi tavsiya etiladi.">
+                  <QuestionCircleOutlined style={{ marginLeft: 4, color: '#999', cursor: 'help' }} />
+                </Tooltip>
+              </span>
+            }
             name="description_uz"
             extra="Bosh sahifadagi mahsulot kartasida ko'rinadigan qisqacha tavsif"
           >
             <Input.TextArea rows={2} placeholder="Masalan, Ko'rinmas quloq apparati" />
           </Form.Item>
           <Form.Item
-            label="Qisqacha tavsif (ru)"
+            label={
+              <span>
+                Qisqacha tavsif (ru)
+                <Tooltip title="Краткое описание, которое отображается на карточке продукта на главной странице. Рекомендуется 100-150 символов.">
+                  <QuestionCircleOutlined style={{ marginLeft: 4, color: '#999', cursor: 'help' }} />
+                </Tooltip>
+              </span>
+            }
             name="description_ru"
             extra="Краткое описание, которое отображается на карточке продукта на главной странице"
           >
             <Input.TextArea rows={2} placeholder="Например, Невидимый слуховой аппарат" />
           </Form.Item>
-          <Form.Item label="Link" name="link" extra="Mahsulot sahifasiga link (avtomatik to'ldiriladi)">
+          <Form.Item 
+            label={
+              <span>
+                Link
+                <Tooltip title="Mahsulot sahifasiga havola. Agar mahsulotni tanlasangiz, avtomatik to'ldiriladi. Qo'lda ham kiriting mumkin.">
+                  <QuestionCircleOutlined style={{ marginLeft: 4, color: '#999', cursor: 'help' }} />
+                </Tooltip>
+              </span>
+            }
+            name="link" 
+            extra="Mahsulot sahifasiga link (avtomatik to'ldiriladi)"
+          >
             <Input placeholder="/products/product-slug" />
           </Form.Item>
-          <Form.Item label="Rasm" name="imageId" extra="Bosh sahifadagi mahsulot kartasida ko'rinadigan rasm">
+          <Form.Item 
+            label={
+              <span>
+                Rasm
+                <Tooltip title="Bosh sahifadagi mahsulot kartasida ko'rinadigan rasm. Tavsiya etilgan o'lcham: 800x600px yoki 1200x900px. WebP formatida yuklash tavsiya etiladi.">
+                  <QuestionCircleOutlined style={{ marginLeft: 4, color: '#999', cursor: 'help' }} />
+                </Tooltip>
+              </span>
+            }
+            name="imageId"
+          >
             <div>
               <Row gutter={16}>
                 <Col span={12}>
@@ -1357,6 +1481,7 @@ function InteracousticsTab() {
   const [isMetadataModalOpen, setIsMetadataModalOpen] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
 
   const handleImageUpload: UploadProps['customRequest'] = async (options) => {
     const { file, onSuccess, onError } = options;
@@ -1387,6 +1512,13 @@ function InteracousticsTab() {
   const handleSelectExistingMedia = (mediaId: string, mediaUrl: string) => {
     metadataForm.setFieldsValue({ imageId: mediaId });
     setPreviewImage(normalizeImageUrl(mediaUrl));
+  };
+
+  const handleSelectMediaFromLibrary = (media: MediaDto) => {
+    metadataForm.setFieldsValue({ imageId: media.id });
+    setPreviewImage(normalizeImageUrl(media.url));
+    setImageModalOpen(false);
+    message.success('Rasm tanlandi');
   };
 
   const currentImageId = Form.useWatch('imageId', metadataForm);
@@ -1569,39 +1701,34 @@ function InteracousticsTab() {
                 </div>
               )}
 
-              {mediaList && mediaList.length > 0 && (
-                <div style={{ marginTop: 16 }}>
-                  <div style={{ marginBottom: 8, fontWeight: 500 }}>Mavjud rasmlar:</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, maxHeight: 200, overflowY: 'auto' }}>
-                    {mediaList.slice(0, 20).map((media) => (
-                      <div
-                        key={media.id}
-                        onClick={() => handleSelectExistingMedia(media.id, media.url)}
-                        style={{
-                          width: 80,
-                          height: 80,
-                          border: currentImageId === media.id ? '2px solid #F07E22' : '1px solid #d9d9d9',
-                          borderRadius: 4,
-                          cursor: 'pointer',
-                          overflow: 'hidden',
-                          position: 'relative',
-                          backgroundColor: currentImageId === media.id ? '#fff7ed' : '#fff',
-                        }}
-                      >
-                        <img
-                          src={normalizeImageUrl(media.url)}
-                          alt={media.alt_uz || media.filename}
-                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
-                      </div>
-                    ))}
+              <div style={{ marginTop: 16 }}>
+                <Button
+                  icon={<FolderOutlined />}
+                  onClick={() => setImageModalOpen(true)}
+                  block
+                  style={{ marginBottom: 8 }}
+                >
+                  Mavjud rasmdan tanlash
+                </Button>
+                {metadataForm.getFieldValue('imageId') && (
+                  <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
+                    Tanlangan: {mediaList?.find(m => m.id === metadataForm.getFieldValue('imageId'))?.filename || 'Noma\'lum'}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* Media Library Modal */}
+      <MediaLibraryModal
+        open={imageModalOpen}
+        onCancel={() => setImageModalOpen(false)}
+        onSelect={handleSelectMediaFromLibrary}
+        fileType="image"
+        selectedMediaIds={metadataForm.getFieldValue('imageId') ? [metadataForm.getFieldValue('imageId')] : []}
+      />
     </div>
   );
 }
