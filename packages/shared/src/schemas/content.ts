@@ -145,6 +145,7 @@ export const branchSchema = z.object({
   imageId: z.string().cuid().optional().nullable(),
   map_iframe: z.string().optional().nullable(),
   tour3d_iframe: z.string().optional().nullable(),
+  tour3d_config: z.any().optional().nullable(), // Pannellum tour configuration (JSON)
   latitude: z.number().min(-90).max(90).optional().nullable(),
   longitude: z.number().min(-180).max(180).optional().nullable(),
   workingHours_uz: z.string().optional().nullable(),

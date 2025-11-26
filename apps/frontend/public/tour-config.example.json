@@ -1,0 +1,71 @@
+{
+  "default": {
+    "firstScene": "room1",
+    "hfov": 100,
+    "pitch": 0,
+    "yaw": 0
+  },
+  "scenes": {
+    "room1": {
+      "id": "room1",
+      "panorama": "/panorama/room1.jpg",
+      "type": "equirectangular",
+      "hfov": 100,
+      "pitch": 0,
+      "yaw": 0,
+      "title": {
+        "uz": "Asosiy xona",
+        "ru": "Главный зал"
+      },
+      "hotSpots": [
+        {
+          "pitch": -10,
+          "yaw": 30,
+          "type": "scene",
+          "text": "Ikkinchi xonaga o'tish",
+          "sceneId": "room2"
+        },
+        {
+          "pitch": 5,
+          "yaw": -45,
+          "type": "info",
+          "text": "Ma'lumot",
+          "description": "Bu xona haqida qo'shimcha ma'lumot"
+        }
+      ],
+      "order": 1
+    },
+    "room2": {
+      "id": "room2",
+      "panorama": "/panorama/room2.jpg",
+      "type": "equirectangular",
+      "hfov": 100,
+      "pitch": 0,
+      "yaw": 0,
+      "title": {
+        "uz": "Ikkinchi xona",
+        "ru": "Второй зал"
+      },
+      "hotSpots": [
+        {
+          "pitch": -10,
+          "yaw": -30,
+          "type": "scene",
+          "text": "Asosiy xonaga qaytish",
+          "sceneId": "room1"
+        }
+      ],
+      "order": 2
+    }
+  },
+  "autoRotate": 0,
+  "autoLoad": true,
+  "showControls": true,
+  "showFullscreenCtrl": true,
+  "showZoomCtrl": true,
+  "keyboardZoom": true,
+  "mouseZoom": true,
+  "compass": false,
+  "northOffset": 0
+}
+

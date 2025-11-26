@@ -697,6 +697,7 @@ export interface BranchResponse {
   image?: MediaResponse | null;
   map_iframe?: string | null;
   tour3d_iframe?: string | null;
+  tour3d_config?: any | null; // Pannellum tour configuration (JSON)
   latitude?: number | null;
   longitude?: number | null;
   workingHours_uz?: string | null;

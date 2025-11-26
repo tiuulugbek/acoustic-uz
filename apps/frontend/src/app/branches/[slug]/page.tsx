@@ -1,11 +1,23 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import dynamic from 'next/dynamic';
 import { getBranchBySlug, getDoctors, getServices } from '@/lib/api-server';
 import { detectLocale } from '@/lib/locale-server';
 import { getBilingualText } from '@/lib/locale';
 import { MapPin, Phone, Clock, Navigation, ExternalLink } from 'lucide-react';
 import PageHeader from '@/components/page-header';
+import type { TourConfig } from '@/types/tour';
+
+// Dynamically import PanoramaViewer for client-side rendering
+const PanoramaViewer = dynamic(() => import('@/components/tour/PanoramaViewer'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-[500px] w-full items-center justify-center bg-gray-100 text-lg text-gray-500">
+      3D Tour yuklanmoqda...
+    </div>
+  ),
+});
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -109,7 +121,8 @@ export default async function BranchPage({ params }: BranchPageProps) {
   const tocSections = [
     { id: 'services', label: locale === 'ru' ? 'Услуги' : 'Xizmatlar' },
     { id: 'doctors', label: locale === 'ru' ? 'Врачи' : 'Shifokorlar' },
-    ...(branch.tour3d_iframe ? [{ id: 'tour3d', label: locale === 'ru' ? '3D Тур' : '3D Tour' }] : []),
+    // Conditionally add 3D Tour to TOC
+    ...(branch.tour3d_config || branch.tour3d_iframe ? [{ id: 'tour3d', label: locale === 'ru' ? '3D Тур' : '3D Tour' }] : []),
     { id: 'location', label: locale === 'ru' ? 'Как добраться' : 'Qanday yetib borish' },
   ];
 
@@ -243,18 +256,24 @@ export default async function BranchPage({ params }: BranchPageProps) {
               )}
 
               {/* 3D Tour Section */}
-              {branch.tour3d_iframe && (
+              {(branch.tour3d_config || branch.tour3d_iframe) && (
                 <section id="tour3d" className="scroll-mt-20">
                   <h2 className="mb-4 text-2xl font-bold text-foreground" suppressHydrationWarning>
                     {locale === 'ru' ? '3D Тур' : '3D Tour'}
                   </h2>
                   <div className="rounded-lg overflow-hidden border border-border bg-muted/20">
-                    <div
-                      className="w-full aspect-video"
-                      dangerouslySetInnerHTML={{ 
-                        __html: branch.tour3d_iframe.replace(/width="[^"]*"/gi, 'width="100%"')
-                      }}
-                    />
+                    {branch.tour3d_config ? (
+                      <div className="w-full aspect-video">
+                        <PanoramaViewer config={branch.tour3d_config as TourConfig} locale={locale} />
+                      </div>
+                    ) : (
+                      <div
+                        className="w-full aspect-video"
+                        dangerouslySetInnerHTML={{
+                          __html: branch.tour3d_iframe?.replace(/width="[^"]*"/gi, 'width="100%"') || '',
+                        }}
+                      />
+                    )}
                   </div>
                 </section>
               )}

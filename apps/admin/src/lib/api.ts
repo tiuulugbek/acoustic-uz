@@ -1104,6 +1104,7 @@ export interface BranchDto {
   } | null;
   map_iframe?: string | null;
   tour3d_iframe?: string | null;
+  tour3d_config?: any | null; // Pannellum tour configuration (JSON)
   latitude?: number | null;
   longitude?: number | null;
   workingHours_uz?: string | null;
@@ -1124,6 +1125,7 @@ export type CreateBranchPayload = {
   imageId?: string | null;
   map_iframe?: string | null;
   tour3d_iframe?: string | null;
+  tour3d_config?: any | null; // Pannellum tour configuration (JSON)
   latitude?: number | null;
   longitude?: number | null;
   workingHours_uz?: string | null;

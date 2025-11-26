@@ -1,0 +1,34 @@
+{
+  "default": {
+    "firstScene": "room1",
+    "hfov": 100,
+    "pitch": 0,
+    "yaw": 0
+  },
+  "scenes": {
+    "room1": {
+      "id": "room1",
+      "panorama": "/panorama/room1.jpg",
+      "type": "equirectangular",
+      "hfov": 100,
+      "pitch": 0,
+      "yaw": 0,
+      "title": {
+        "uz": "Asosiy xona",
+        "ru": "Главный зал"
+      },
+      "hotSpots": [],
+      "order": 1
+    }
+  },
+  "autoRotate": 0,
+  "autoLoad": true,
+  "showControls": true,
+  "showFullscreenCtrl": true,
+  "showZoomCtrl": true,
+  "keyboardZoom": true,
+  "mouseZoom": true,
+  "compass": false,
+  "northOffset": 0
+}
+

@@ -352,7 +352,8 @@ model Branch {
   imageId        String?
   image          Media?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
   map_iframe     String?  @db.Text
-  tour3d_iframe  String?  @db.Text // 3D virtual tour iframe
+  tour3d_iframe  String?  @db.Text // 3D virtual tour iframe (legacy, for backward compatibility)
+  tour3d_config  Json?    // 3D virtual tour configuration (Pannellum-based tour config)
   latitude       Float?   // GPS latitude
   longitude      Float?   // GPS longitude
   workingHours_uz String? @db.Text // Ish vaqti (uzbek) - Masalan: "Dushanba - Juma: 09:00-20:00\nShanba - Yakshanba: 09:00-18:00"

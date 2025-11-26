@@ -1,3 +1,16 @@
+-- AlterTable
+ALTER TABLE "Branch" ADD COLUMN     "serviceIds" TEXT[] DEFAULT ARRAY[]::TEXT[],
+ADD COLUMN     "tour3d_config" JSONB,
+ADD COLUMN     "workingHours_ru" TEXT,
+ADD COLUMN     "workingHours_uz" TEXT;
+
+-- AlterTable
+ALTER TABLE "CatalogPageConfig" ALTER COLUMN "updatedAt" DROP DEFAULT;
+
+-- AlterTable
+ALTER TABLE "Post" ADD COLUMN     "categoryId" TEXT,
+ADD COLUMN     "postType" TEXT NOT NULL DEFAULT 'article';
+
 -- CreateTable
 CREATE TABLE "PostCategory" (
     "id" TEXT NOT NULL,
@@ -14,11 +27,8 @@ CREATE TABLE "PostCategory" (
     CONSTRAINT "PostCategory_pkey" PRIMARY KEY ("id")
 );
 
--- AlterTable
-ALTER TABLE "Post" ADD COLUMN "postType" TEXT NOT NULL DEFAULT 'article',
-ADD COLUMN "categoryId" TEXT,
-ADD COLUMN "excerpt_uz" TEXT,
-ADD COLUMN "excerpt_ru" TEXT;
+-- CreateIndex
+CREATE UNIQUE INDEX "PostCategory_slug_key" ON "PostCategory"("slug");
 
 -- CreateIndex
 CREATE INDEX "PostCategory_slug_idx" ON "PostCategory"("slug");
@@ -38,6 +48,5 @@ CREATE INDEX "Post_postType_idx" ON "Post"("postType");
 -- AddForeignKey
 ALTER TABLE "Post" ADD CONSTRAINT "Post_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "PostCategory"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
-
-
-
+-- AddForeignKey
+ALTER TABLE "HomepagePlaceholder" ADD CONSTRAINT "HomepagePlaceholder_imageId_fkey" FOREIGN KEY ("imageId") REFERENCES "Media"("id") ON DELETE SET NULL ON UPDATE CASCADE;
