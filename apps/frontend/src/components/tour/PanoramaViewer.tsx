@@ -13,9 +13,11 @@ interface PanoramaViewerProps {
   config: TourConfig;
   locale?: 'uz' | 'ru';
   className?: string;
+  onThumbnailsChange?: (show: boolean) => void;
+  showThumbnailsExternal?: boolean;
 }
 
-export default function PanoramaViewer({ config, locale = 'uz', className = '' }: PanoramaViewerProps) {
+export default function PanoramaViewer({ config, locale = 'uz', className = '', onThumbnailsChange, showThumbnailsExternal }: PanoramaViewerProps) {
   const viewerRef = useRef<HTMLDivElement>(null);
   const viewerInstanceRef = useRef<any>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -28,6 +30,18 @@ export default function PanoramaViewer({ config, locale = 'uz', className = '' }
   const [currentHotspots, setCurrentHotspots] = useState<HotspotConfig[]>([]);
   const [hoveredHotspotIndex, setHoveredHotspotIndex] = useState<number | null>(null);
   const [previewReady, setPreviewReady] = useState(false);
+  const [showThumbnails, setShowThumbnails] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  
+  // Sync external state if provided
+  const actualShowThumbnails = showThumbnailsExternal !== undefined ? showThumbnailsExternal : showThumbnails;
+  
+  const handleSetShowThumbnails = (value: boolean) => {
+    if (showThumbnailsExternal === undefined) {
+      setShowThumbnails(value);
+    }
+    onThumbnailsChange?.(value);
+  };
   const hoverTimeoutRef = useRef<Map<number, NodeJS.Timeout>>(new Map());
   const originalPositionRef = useRef<Map<number, { pitch: number; yaw: number }>>(new Map());
   const initializationAttemptedRef = useRef(false);
@@ -356,11 +370,11 @@ export default function PanoramaViewer({ config, locale = 'uz', className = '' }
             yaw: config.default.yaw ?? 0,
           },
           scenes: {},
-          autoRotate: config.autoRotate || 0,
+          autoRotate: 0, // Avtomatik aylanish o'chirilgan - faqat tugma bosilganda yoqiladi
           autoLoad: config.autoLoad !== false,
-          showControls: config.showControls !== false,
-          showFullscreenCtrl: config.showFullscreenCtrl !== false,
-          showZoomCtrl: config.showZoomCtrl !== false,
+          showControls: false, // Pannellum'ning default controls'larini o'chirish - custom controls ishlatamiz
+          showFullscreenCtrl: false, // Custom fullscreen button ishlatamiz
+          showZoomCtrl: false, // Custom zoom buttons ishlatamiz
           keyboardZoom: config.keyboardZoom !== false,
           mouseZoom: config.mouseZoom !== false,
           compass: config.compass || false,
@@ -1095,12 +1109,45 @@ export default function PanoramaViewer({ config, locale = 'uz', className = '' }
 
     loadPannellum();
 
+    // Fullscreen change listener
+    const handleFullscreenChange = () => {
+      const isCurrentlyFullscreen = !!(
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).mozFullScreenElement ||
+        (document as any).msFullscreenElement
+      );
+      setIsFullscreen(isCurrentlyFullscreen);
+      
+      // Resize viewer when fullscreen changes
+      if (viewerInstanceRef.current) {
+        setTimeout(() => {
+          try {
+            viewerInstanceRef.current.resize();
+          } catch (e) {
+            console.warn('Could not resize viewer after fullscreen change:', e);
+          }
+        }, 100);
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
     // Cleanup
     return () => {
       console.log('🧹 Cleaning up PanoramaViewer');
       clearPanoloadTimeout();
       initializationAttemptedRef.current = false;
       panoloadFiredRef.current = false;
+      
+      // Remove fullscreen listeners
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
       
       // Arrow overlay'ni tozalash
       if (arrowsOverlayRef.current) {
@@ -1127,7 +1174,7 @@ export default function PanoramaViewer({ config, locale = 'uz', className = '' }
         viewerInstanceRef.current = null;
       }
     };
-  }, [config, normalizePanoramaUrl, prepareHotspots, clearPanoloadTimeout]);
+  }, [config, normalizePanoramaUrl, prepareHotspots, clearPanoloadTimeout, locale]);
 
   if (error) {
     return (
@@ -1281,13 +1328,227 @@ export default function PanoramaViewer({ config, locale = 'uz', className = '' }
         )}
       </div>
 
+      {/* Custom Controls - Bottom Center */}
+      {!isLoading && (
+        <div className="absolute bottom-2 left-1/2 z-30 flex -translate-x-1/2 items-center gap-1">
+          {/* Zoom In */}
+          <button
+            onClick={() => {
+              if (viewerInstanceRef.current) {
+                const currentHfov = viewerInstanceRef.current.getHfov() || 100;
+                const newHfov = Math.max(50, currentHfov - 10);
+                viewerInstanceRef.current.setHfov(newHfov);
+              }
+            }}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-lg backdrop-blur-sm transition-all hover:bg-white hover:shadow-xl active:scale-95"
+            aria-label="Zoom in"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+          </button>
+
+          {/* Zoom Out */}
+          <button
+            onClick={() => {
+              if (viewerInstanceRef.current) {
+                const currentHfov = viewerInstanceRef.current.getHfov() || 100;
+                const newHfov = Math.min(120, currentHfov + 10);
+                viewerInstanceRef.current.setHfov(newHfov);
+              }
+            }}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-lg backdrop-blur-sm transition-all hover:bg-white hover:shadow-xl active:scale-95"
+            aria-label="Zoom out"
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+            </svg>
+          </button>
+
+          {/* Thumbnail Menu Toggle */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              console.log('🖼️ Thumbnail menu toggle clicked, current state:', actualShowThumbnails);
+              handleSetShowThumbnails(!actualShowThumbnails);
+            }}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-lg backdrop-blur-sm transition-all hover:bg-white hover:shadow-xl active:scale-95"
+            aria-label={locale === 'ru' ? 'Меню по панорам' : 'Panorama menyusi'}
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+            </svg>
+          </button>
+
+          {/* Fullscreen Toggle */}
+          <button
+            onClick={async () => {
+              if (!viewerRef.current) return;
+              
+              try {
+                if (!isFullscreen) {
+                  if (viewerRef.current.requestFullscreen) {
+                    await viewerRef.current.requestFullscreen();
+                  } else if ((viewerRef.current as any).webkitRequestFullscreen) {
+                    await (viewerRef.current as any).webkitRequestFullscreen();
+                  } else if ((viewerRef.current as any).mozRequestFullScreen) {
+                    await (viewerRef.current as any).mozRequestFullScreen();
+                  } else if ((viewerRef.current as any).msRequestFullscreen) {
+                    await (viewerRef.current as any).msRequestFullscreen();
+                  }
+                } else {
+                  if (document.exitFullscreen) {
+                    await document.exitFullscreen();
+                  } else if ((document as any).webkitExitFullscreen) {
+                    await (document as any).webkitExitFullscreen();
+                  } else if ((document as any).mozCancelFullScreen) {
+                    await (document as any).mozCancelFullScreen();
+                  } else if ((document as any).msExitFullscreen) {
+                    await (document as any).msExitFullscreen();
+                  }
+                }
+              } catch (err) {
+                console.warn('Fullscreen error:', err);
+              }
+            }}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-gray-700 shadow-lg backdrop-blur-sm transition-all hover:bg-white hover:shadow-xl active:scale-95"
+            aria-label={locale === 'ru' ? 'Полноэкранный режим' : 'To\'liq ekran'}
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+            </svg>
+          </button>
+        </div>
+      )}
+
+      {/* Thumbnail Menu - Bottom Horizontal Strip */}
+      {(() => {
+        console.log('🖼️ Thumbnail menu render check:', { showThumbnails, isLoading, scenesCount: config?.scenes ? Object.values(config.scenes).length : 0 });
+        return null;
+      })()}
+      {actualShowThumbnails && !isLoading && (
+        <>
+          {/* Backdrop - click to close */}
+          <div 
+            className="fixed inset-0 z-[90] bg-black/20"
+            onClick={() => {
+              console.log('🖼️ Backdrop clicked, closing thumbnail menu');
+              handleSetShowThumbnails(false);
+            }}
+          />
+          {/* Thumbnail strip - centered, between panorama and location section */}
+          <div 
+            className="fixed left-1/2 z-[100] -translate-x-1/2 bg-black/90 px-3 py-2 rounded-lg relative max-w-[90vw] shadow-2xl"
+            style={{ 
+              minHeight: '80px',
+              pointerEvents: 'auto',
+              display: 'flex',
+              visibility: 'visible',
+              opacity: 1,
+              top: 'auto',
+              bottom: '30%', // Position between panorama and location section (20% -> 30%)
+              justifyContent: 'center', // Center thumbnails
+              alignItems: 'center',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button - top right - outside rounded corners */}
+            <button
+              onClick={() => handleSetShowThumbnails(false)}
+              className="absolute flex h-8 w-8 items-center justify-center rounded-full bg-white text-gray-700 shadow-xl transition-all hover:bg-gray-100 hover:shadow-2xl active:scale-95"
+              aria-label="Close"
+              style={{ 
+                top: '-16px',
+                right: '-16px',
+                zIndex: 110,
+                position: 'absolute'
+              }}
+            >
+              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <div className="flex items-center justify-center gap-2 overflow-x-auto max-w-full">
+              {(() => {
+                const scenes = config?.scenes ? Object.values(config.scenes) : [];
+                console.log('🖼️ Rendering thumbnails:', { 
+                  showThumbnails, 
+                  isLoading, 
+                  scenesCount: scenes.length,
+                  scenes: scenes.map(s => ({ id: s.id, panorama: s.panorama }))
+                });
+                
+                if (scenes.length === 0) {
+                  return (
+                    <div className="px-4 py-2 text-white text-sm">
+                      {locale === 'ru' ? 'Нет доступных панорам' : 'Panoramalar topilmadi'}
+                    </div>
+                  );
+                }
+                
+                return scenes.map((scene) => {
+                  const sceneId = scene.id;
+                  const isActive = currentScene === sceneId;
+                  const panoramaUrl = normalizePanoramaUrl(scene.panorama);
+                  
+                  console.log('🖼️ Rendering thumbnail:', { sceneId, panoramaUrl, isActive });
+                  
+                  return (
+                    <button
+                      key={sceneId}
+                      onClick={() => {
+                        if (viewerInstanceRef.current && sceneId !== currentScene) {
+                          viewerInstanceRef.current.loadScene(sceneId);
+                          setCurrentScene(sceneId);
+                          currentSceneRef.current = sceneId;
+                        }
+                        // Thumbnail'ga bosilganda menyuni yopish
+                        handleSetShowThumbnails(false);
+                      }}
+                      className={`relative flex-shrink-0 overflow-hidden rounded border-2 transition-all hover:scale-105 ${
+                        isActive ? 'border-white shadow-lg' : 'border-gray-400'
+                      }`}
+                      style={{ width: '80px', height: '60px' }}
+                    >
+                      {panoramaUrl ? (
+                        <img
+                          src={panoramaUrl}
+                          alt={typeof scene.title === 'string' ? scene.title : (scene.title?.[locale] || `Scene ${sceneId}`)}
+                          className="h-full w-full object-cover"
+                          loading="lazy"
+                          onError={(e) => {
+                            console.error('❌ Thumbnail image failed to load:', panoramaUrl);
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center bg-gray-700 text-[8px] text-gray-300">
+                          {sceneId}
+                        </div>
+                      )}
+                      {isActive && (
+                        <div className="absolute right-1 top-1 flex h-3 w-3 items-center justify-center rounded-full bg-white">
+                          <svg className="h-2 w-2 text-brand-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      )}
+                    </button>
+                  );
+                });
+              })()}
+            </div>
+          </div>
+        </>
+      )}
+
       {/* Hotspot Navigation Buttons - Pastki qismda */}
       {(() => {
         console.log('🔍 Button render check - isLoading:', isLoading, 'currentHotspots:', currentHotspots.length, currentHotspots);
         return null;
       })()}
       {!isLoading && currentHotspots.length > 0 && (
-        <div className="absolute bottom-4 left-0 right-0 z-20 flex flex-wrap items-center justify-center gap-2 px-4">
+        <div className="absolute bottom-12 left-1/2 z-20 flex -translate-x-1/2 flex-wrap items-center justify-center gap-1 px-4">
           {currentHotspots.map((hotspot, index) => {
             const handleHotspotClick = () => {
               if (!viewerInstanceRef.current) return;
