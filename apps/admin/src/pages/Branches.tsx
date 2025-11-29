@@ -14,6 +14,7 @@ import {
   Image,
   Select,
   Transfer,
+  Tabs,
 } from 'antd';
 import { UploadOutlined, DeleteOutlined, PlusOutlined, FolderOutlined } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
@@ -36,6 +37,7 @@ import {
 } from '../lib/api';
 import { createSlug } from '../utils/slug';
 import MediaLibraryModal from '../components/MediaLibraryModal';
+import Tour3DEditor from '../components/Tour3DEditor';
 import { normalizeImageUrl } from '../utils/image';
 import { compressImage } from '../utils/image-compression';
 
@@ -66,6 +68,7 @@ export default function BranchesPage() {
   const [uploading, setUploading] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('general');
 
   const { mutateAsync: createMutation, isPending: isCreating } = useMutation<BranchDto, ApiError, CreateBranchPayload>({
     mutationFn: createBranch,
@@ -135,7 +138,7 @@ export default function BranchesPage() {
       phones: branch.phones || [],
       map_iframe: branch.map_iframe,
       tour3d_iframe: branch.tour3d_iframe,
-      tour3d_config: branch.tour3d_config ? JSON.stringify(branch.tour3d_config, null, 2) : undefined,
+      tour3d_config: branch.tour3d_config || undefined,
       latitude: branch.latitude,
       longitude: branch.longitude,
       workingHours_uz: branch.workingHours_uz || '',
@@ -206,14 +209,7 @@ export default function BranchesPage() {
         phones: values.phones || [],
         map_iframe: values.map_iframe || undefined,
         tour3d_iframe: values.tour3d_iframe || undefined,
-        tour3d_config: values.tour3d_config ? (() => {
-          try {
-            return JSON.parse(values.tour3d_config);
-          } catch (e) {
-            message.error('3D Tour Konfiguratsiyasi noto\'g\'ri JSON formatida');
-            throw e;
-          }
-        })() : undefined,
+        tour3d_config: values.tour3d_config || undefined,
         latitude: values.latitude != null ? Number(values.latitude) : undefined,
         longitude: values.longitude != null ? Number(values.longitude) : undefined,
         workingHours_uz: values.workingHours_uz && values.workingHours_uz.trim() ? values.workingHours_uz.trim() : null,
@@ -344,16 +340,26 @@ export default function BranchesPage() {
         onCancel={() => {
           setIsModalOpen(false);
           setPreviewImage(null);
+          setActiveTab('general');
         }}
         onOk={handleSubmit}
         confirmLoading={isCreating || isUpdating}
-        width={800}
+        width={1000}
         okText="Saqlash"
         cancelText="Bekor qilish"
       >
         <Form layout="vertical" form={form}>
-          <Form.Item
-            label="Nomi (uz)"
+          <Tabs
+            activeKey={activeTab}
+            onChange={setActiveTab}
+            items={[
+              {
+                key: 'general',
+                label: 'Umumiy ma\'lumotlar',
+                children: (
+                  <>
+                    <Form.Item
+                      label="Nomi (uz)"
             name="name_uz"
             rules={[{ required: true, message: 'Iltimos nomni kiriting' }]}
           >
@@ -437,90 +443,6 @@ export default function BranchesPage() {
             <Input.TextArea
               rows={4}
               placeholder='<iframe src="https://www.google.com/maps/embed?pb=..." width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>'
-            />
-          </Form.Item>
-          <Form.Item
-            label="3D Tour iframe (Eski usul)"
-            name="tour3d_iframe"
-            extra="3D virtual tour iframe kodini kiriting (masalan, Matterport, Kuula, yoki boshqa 3D tour xizmatidan). Agar tour3d_config to'ldirilsa, bu maydon e'tiborsiz qoldiriladi."
-          >
-            <Input.TextArea
-              rows={4}
-              placeholder='<iframe src="https://my.matterport.com/show/?m=..." width="100%" height="600" frameborder="0" allowfullscreen allow="xr-spatial-tracking"></iframe>'
-            />
-          </Form.Item>
-          <Form.Item
-            label="3D Tour Konfiguratsiyasi (Pannellum)"
-            name="tour3d_config"
-            extra={
-              <div>
-                <p>Pannellum-based 3D tour konfiguratsiyasini JSON formatida kiriting.</p>
-                <p>
-                  <a href="/tour-config.example.json" target="_blank" rel="noopener noreferrer">
-                    Misol konfiguratsiyani ko'rish
-                  </a>
-                </p>
-              </div>
-            }
-          >
-            <Input.TextArea
-              rows={10}
-              placeholder={JSON.stringify(
-                {
-                  default: {
-                    firstScene: 'room1',
-                    author: 'Acoustic.uz',
-                    sceneFadeDuration: 1000,
-                    autoLoad: true,
-                    autoRotate: -2,
-                    compass: true,
-                    hotSpotDebug: false,
-                  },
-                  scenes: {
-                    room1: {
-                      title: 'Asosiy xona',
-                      panorama: '/panorama/room1.jpg',
-                      hfov: 110,
-                      pitch: -3,
-                      yaw: 117,
-                      hotSpots: [
-                        {
-                          pitch: -2.1,
-                          yaw: 132.6,
-                          type: 'scene',
-                          text: 'Keyingi xonaga o\'tish',
-                          sceneId: 'room2',
-                        },
-                        {
-                          pitch: 14.1,
-                          yaw: -50.1,
-                          type: 'info',
-                          text: 'Ma\'lumot',
-                          description: 'Bu yerda quloqni tekshirish uskunalari joylashgan.',
-                        },
-                      ],
-                    },
-                    room2: {
-                      title: 'Ikkinchi xona',
-                      panorama: '/panorama/room2.jpg',
-                      hfov: 110,
-                      pitch: -3,
-                      yaw: 117,
-                      hotSpots: [
-                        {
-                          pitch: -2.1,
-                          yaw: 132.6,
-                          type: 'scene',
-                          text: 'Oldingi xonaga qaytish',
-                          sceneId: 'room1',
-                        },
-                      ],
-                    },
-                  },
-                },
-                null,
-                2
-              )}
             />
           </Form.Item>
           <Form.Item label="Rasm" name="imageId" extra="Filial rasmi">
@@ -649,6 +571,49 @@ export default function BranchesPage() {
               })) || []}
             />
           </Form.Item>
+                  </>
+                ),
+              },
+              {
+                key: 'tour3d',
+                label: '3D Tour',
+                children: (
+                  <>
+                    <Form.Item
+                      label="3D Tour iframe (Eski usul)"
+                      name="tour3d_iframe"
+                      extra="3D virtual tour iframe kodini kiriting (masalan, Matterport, Kuula, yoki boshqa 3D tour xizmatidan). Agar tour3d_config to'ldirilsa, bu maydon e'tiborsiz qoldiriladi."
+                    >
+                      <Input.TextArea
+                        rows={4}
+                        placeholder='<iframe src="https://my.matterport.com/show/?m=..." width="100%" height="600" frameborder="0" allowfullscreen allow="xr-spatial-tracking"></iframe>'
+                      />
+                    </Form.Item>
+                    <Form.Item
+                      label="3D Tour Konfiguratsiyasi (Pannellum)"
+                      name="tour3d_config"
+                      extra="Sahnalar va hotspot'larni qo'shing va tahrirlang. Panorama rasmlarni media kutubxonasidan tanlang."
+                    >
+                      {activeTab === 'tour3d' && (
+                        <Tour3DEditor
+                          value={form.getFieldValue('tour3d_config')}
+                          onChange={(config) => {
+                            form.setFieldsValue({ tour3d_config: config });
+                          }}
+                          mediaList={mediaList || []}
+                        />
+                      )}
+                      {activeTab !== 'tour3d' && (
+                        <div style={{ padding: 20, textAlign: 'center', color: '#999' }}>
+                          "3D Tour" tab'iga o'ting
+                        </div>
+                      )}
+                    </Form.Item>
+                  </>
+                ),
+              },
+            ]}
+          />
         </Form>
       </Modal>
 

@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import dynamic from 'next/dynamic';
+import dynamicImport from 'next/dynamic';
 import { getBranchBySlug, getDoctors, getServices } from '@/lib/api-server';
 import { detectLocale } from '@/lib/locale-server';
 import { getBilingualText } from '@/lib/locale';
@@ -10,7 +10,7 @@ import PageHeader from '@/components/page-header';
 import type { TourConfig } from '@/types/tour';
 
 // Dynamically import PanoramaViewer for client-side rendering
-const PanoramaViewer = dynamic(() => import('@/components/tour/PanoramaViewer'), {
+const PanoramaViewer = dynamicImport(() => import('@/components/tour/PanoramaViewer'), {
   ssr: false,
   loading: () => (
     <div className="flex h-[500px] w-full items-center justify-center bg-gray-100 text-lg text-gray-500">
@@ -263,7 +263,7 @@ export default async function BranchPage({ params }: BranchPageProps) {
                   </h2>
                   <div className="rounded-lg overflow-hidden border border-border bg-muted/20">
                     {branch.tour3d_config ? (
-                      <div className="w-full aspect-video">
+                      <div className="w-full" style={{ aspectRatio: '16 / 9', minHeight: '400px' }}>
                         <PanoramaViewer config={branch.tour3d_config as TourConfig} locale={locale} />
                       </div>
                     ) : (
