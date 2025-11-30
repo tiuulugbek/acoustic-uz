@@ -71,16 +71,16 @@ fi
 
 # Step 5: Database setup
 echo -e "${YELLOW}🗄️  Setting up database...${NC}"
-pnpm db:generate || echo "Database generate failed, continuing..."
+# Use Prisma 5.22.0 from root package.json (not Prisma 7)
+npx prisma@5.22.0 generate --schema=prisma/schema.prisma || echo "Database generate failed, continuing..."
 
 # Build shared package first (required for backend)
 echo -e "${YELLOW}📦 Building shared package...${NC}"
 pnpm --filter @acoustic/shared build || echo "Shared package build failed, continuing..."
 
-# Run migrations
-cd apps/backend
-pnpm db:migrate:deploy || pnpm db:migrate || echo "Database migrate failed, continuing..."
-cd ../..
+# Run migrations using Prisma 5.22.0
+echo -e "${YELLOW}🔄 Running database migrations...${NC}"
+npx prisma@5.22.0 migrate deploy --schema=prisma/schema.prisma || echo "Database migrate failed, continuing..."
 
 # Step 6: Build applications
 echo -e "${YELLOW}🔨 Building applications...${NC}"
