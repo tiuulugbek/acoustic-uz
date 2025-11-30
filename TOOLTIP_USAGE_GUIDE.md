@@ -259,3 +259,7 @@ Tooltip'larni kiritish juda oson:
 
 Frontend'da avtomatik tooltip'lar ko'rinadi!
 
+
+
+
+

@@ -188,3 +188,7 @@ imkoniyati qo'shiladi.
 - Touch eventlar yoqilganligini tekshiring
 - Browser'ning touch qo'llab-quvvatlashini tekshiring
 
+
+
+
+

@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useEffect, useRef } from 'react';
+import { useMemo, useRef } from 'react';
+import { useTooltipManager } from './tooltip-manager';
 
 interface ProductSpecsTableProps {
   specsText?: string | null;
@@ -15,18 +16,36 @@ interface SpecRow {
 
 /**
  * Processes tooltip shortcodes and extracts both keyword and content
+ * Handles various formats: [tooltips keyword="..." content="..."] or [tooltips keyword = "..." content = "..."]
  */
 function processTooltips(text: string): { 
   text: string; 
   tooltips: Array<{ keyword: string; content: string }> 
 } {
-  const tooltipRegex = /\[tooltips\s+keyword=["']([^"']+)["']\s+content=["']([^"']+)["']\]/gi;
+  // More flexible regex that handles spaces around = and different quote types
+  const tooltipRegex = /\[tooltips\s+keyword\s*=\s*["']([^"']+)["']\s+content\s*=\s*["']([^"']+)["']\]/gi;
   const tooltips: Array<{ keyword: string; content: string }> = [];
   
   const processedText = text.replace(tooltipRegex, (match, keyword, content) => {
-    tooltips.push({ keyword, content });
+    // Trim whitespace from keyword and content
+    const trimmedKeyword = keyword.trim();
+    const trimmedContent = content.trim();
+    
+    tooltips.push({ keyword: trimmedKeyword, content: trimmedContent });
+    
+    // Escape HTML entities in content for data attribute
+    const escapedContent = trimmedContent
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+    
+    // Escape keyword for data attribute
+    const escapedKeyword = trimmedKeyword.replace(/"/g, '&quot;');
+    
     // Return keyword wrapped in a span with data attributes
-    return `<span class="tooltip-trigger cursor-help border-b border-dashed border-brand-primary/40 text-brand-primary hover:border-brand-primary" data-tooltip-keyword="${keyword.replace(/"/g, '&quot;')}" data-tooltip-content="${content.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')}">${keyword}</span>`;
+    return `<span class="tooltip-trigger cursor-help border-b border-dashed border-brand-primary/40 text-brand-primary hover:border-brand-primary" data-tooltip-keyword="${escapedKeyword}" data-tooltip-content="${escapedContent}">${trimmedKeyword}</span>`;
   });
   
   return { text: processedText, tooltips };
@@ -109,12 +128,17 @@ export default function ProductSpecsTable({ specsText, locale }: ProductSpecsTab
           // 1. Basic specs (long labels, not short values) - like "Тип модели", "Линейка"
           // 2. Long values (like formulas, descriptions) - these are different from features list
           // Exclude rows that are already in features list (short values with short labels)
-          if (label.length > 2 && value.length > 0 && !isModelName && !isJustNumbers && (isBasicSpec || isLongValue) && !isShortValue) {
-            rows.push({
-              label,
-              value,
-              tooltips: rowTooltips,
-            });
+          // YOKI agar jadvalda kamida 2 ta qator bo'lsa va label uzunligi 3 dan katta bo'lsa, ko'rsatish
+          if (label.length > 2 && value.length > 0 && !isModelName && !isJustNumbers) {
+            // Agar jadvalda kam qator bo'lsa yoki barcha qatorlar qisqa bo'lsa, barchasini ko'rsatish
+            const shouldInclude = (isBasicSpec || isLongValue) && !isShortValue;
+            if (shouldInclude || (label.length > 3 && value.length > 1)) {
+              rows.push({
+                label,
+                value,
+                tooltips: rowTooltips,
+              });
+            }
           }
         }
       }
@@ -144,20 +168,35 @@ export default function ProductSpecsTable({ specsText, locale }: ProductSpecsTab
  */
 function SpecsTableWithTooltips({ specs, locale }: { specs: SpecRow[]; locale: 'uz' | 'ru' }) {
   const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    const container = containerRef.current;
-    const tooltipTriggers = Array.from(container.querySelectorAll('.tooltip-trigger'));
-    
-    const cleanupFunctions: Array<() => void> = [];
-    
-    tooltipTriggers.forEach((trigger) => {
-      const keyword = trigger.getAttribute('data-tooltip-keyword') || '';
-      const tooltipContent = trigger.getAttribute('data-tooltip-content') || '';
-      
-      if (keyword && tooltipContent) {
+  
+  // Use optimized tooltip manager hook
+  useTooltipManager(containerRef);
+        
+        const keyword = trigger.getAttribute('data-tooltip-keyword') || '';
+        const tooltipContent = trigger.getAttribute('data-tooltip-content') || '';
+        
+        if (!keyword || !tooltipContent) return;
+        
+        // Ensure trigger has correct classes
+        if (!trigger.classList.contains('tooltip-trigger')) {
+          trigger.classList.add('tooltip-trigger');
+        }
+        if (!trigger.classList.contains('cursor-help')) {
+          trigger.classList.add('cursor-help');
+        }
+        if (!trigger.classList.contains('border-b')) {
+          trigger.classList.add('border-b');
+        }
+        if (!trigger.classList.contains('border-dashed')) {
+          trigger.classList.add('border-dashed');
+        }
+        if (!trigger.classList.contains('border-brand-primary')) {
+          trigger.classList.add('border-brand-primary');
+        }
+        if (!trigger.classList.contains('text-brand-primary')) {
+          trigger.classList.add('text-brand-primary');
+        }
+        
         // Decode HTML entities
         const decodedContent = tooltipContent
           .replace(/&amp;/g, '&')
@@ -166,104 +205,247 @@ function SpecsTableWithTooltips({ specs, locale }: { specs: SpecRow[]; locale: '
           .replace(/&quot;/g, '"')
           .replace(/&#39;/g, "'");
         
-        let tooltipElement: HTMLDivElement | null = null;
-        let scrollHandler: (() => void) | null = null;
-        let resizeHandler: (() => void) | null = null;
+        // Initialize ref for this trigger
+        const ref = {
+          tooltipElement: null as HTMLDivElement | null,
+          scrollHandler: null as (() => void) | null,
+          resizeHandler: null as (() => void) | null,
+          hideTimeout: null as NodeJS.Timeout | null,
+          mouseEnterHandler: null as (() => void) | null,
+          mouseLeaveHandler: null as (() => void) | null,
+          focusHandler: null as (() => void) | null,
+          blurHandler: null as (() => void) | null,
+        };
+        tooltipRefs.set(trigger, ref);
+        
+        const updatePosition = () => {
+          if (!ref.tooltipElement || !trigger.isConnected) {
+            return;
+          }
+          
+          const rect = trigger.getBoundingClientRect();
+          const tooltipRect = ref.tooltipElement.getBoundingClientRect();
+          const spaceBelow = window.innerHeight - rect.bottom;
+          
+          let top = rect.bottom + 8;
+          let left = rect.left;
+          
+          // Adjust if not enough space below
+          if (spaceBelow < tooltipRect.height + 10) {
+            top = rect.top - tooltipRect.height - 8;
+          }
+          
+          // Adjust if goes off right edge
+          if (left + tooltipRect.width > window.innerWidth) {
+            left = window.innerWidth - tooltipRect.width - 10;
+          }
+          
+          // Adjust if goes off left edge
+          if (left < 10) {
+            left = 10;
+          }
+          
+          ref.tooltipElement.style.top = `${top}px`;
+          ref.tooltipElement.style.left = `${left}px`;
+        };
+        
+        const hideTooltip = () => {
+          if (ref.hideTimeout) {
+            clearTimeout(ref.hideTimeout);
+            ref.hideTimeout = null;
+          }
+          
+          if (ref.tooltipElement) {
+            ref.tooltipElement.remove();
+            ref.tooltipElement = null;
+            
+            if (ref.scrollHandler) {
+              window.removeEventListener('scroll', ref.scrollHandler, true);
+              ref.scrollHandler = null;
+            }
+            
+            if (ref.resizeHandler) {
+              window.removeEventListener('resize', ref.resizeHandler);
+              ref.resizeHandler = null;
+            }
+          }
+          
+          // Ensure trigger classes are preserved
+          if (trigger.isConnected) {
+            if (!trigger.classList.contains('tooltip-trigger')) {
+              trigger.classList.add('tooltip-trigger');
+            }
+            if (!trigger.classList.contains('cursor-help')) {
+              trigger.classList.add('cursor-help');
+            }
+            if (!trigger.classList.contains('border-b')) {
+              trigger.classList.add('border-b');
+            }
+            if (!trigger.classList.contains('border-dashed')) {
+              trigger.classList.add('border-dashed');
+            }
+            if (!trigger.classList.contains('border-brand-primary')) {
+              trigger.classList.add('border-brand-primary');
+            }
+            if (!trigger.classList.contains('text-brand-primary')) {
+              trigger.classList.add('text-brand-primary');
+            }
+          }
+        };
         
         const showTooltip = () => {
-          if (tooltipElement) return;
+          // Clear any pending hide timeout
+          if (ref.hideTimeout) {
+            clearTimeout(ref.hideTimeout);
+            ref.hideTimeout = null;
+          }
           
-          tooltipElement = document.createElement('div');
-          tooltipElement.className = 'fixed z-50 max-w-xs rounded-lg bg-gray-900 px-3 py-2 text-xs text-white shadow-lg transition-opacity';
-          tooltipElement.innerHTML = `
+          // Ensure trigger classes are preserved
+          if (trigger.isConnected) {
+            if (!trigger.classList.contains('tooltip-trigger')) {
+              trigger.classList.add('tooltip-trigger');
+            }
+            if (!trigger.classList.contains('cursor-help')) {
+              trigger.classList.add('cursor-help');
+            }
+            if (!trigger.classList.contains('border-b')) {
+              trigger.classList.add('border-b');
+            }
+            if (!trigger.classList.contains('border-dashed')) {
+              trigger.classList.add('border-dashed');
+            }
+            if (!trigger.classList.contains('border-brand-primary')) {
+              trigger.classList.add('border-brand-primary');
+            }
+            if (!trigger.classList.contains('text-brand-primary')) {
+              trigger.classList.add('text-brand-primary');
+            }
+          }
+          
+          // If tooltip already exists, just update position
+          if (ref.tooltipElement) {
+            updatePosition();
+            return;
+          }
+          
+          // Create tooltip element
+          ref.tooltipElement = document.createElement('div');
+          ref.tooltipElement.className = 'tooltip-popup-element fixed z-50 max-w-xs rounded-lg bg-gray-900 px-3 py-2 text-xs text-white shadow-lg transition-opacity';
+          ref.tooltipElement.style.pointerEvents = 'auto';
+          ref.tooltipElement.innerHTML = `
             <div class="font-semibold text-white mb-1">${keyword}</div>
             <div class="text-gray-300 leading-relaxed">${decodedContent}</div>
           `;
           
-          document.body.appendChild(tooltipElement);
+          document.body.appendChild(ref.tooltipElement);
           
-          const updatePosition = () => {
-            if (!tooltipElement) return;
-            const rect = trigger.getBoundingClientRect();
-            const tooltipRect = tooltipElement.getBoundingClientRect();
-            const spaceBelow = window.innerHeight - rect.bottom;
-            const spaceAbove = rect.top;
-            const spaceRight = window.innerWidth - rect.left;
-            
-            let top = rect.bottom + 8;
-            let left = rect.left;
-            
-            // Adjust if not enough space below
-            if (spaceBelow < tooltipRect.height + 10) {
-              top = rect.top - tooltipRect.height - 8;
-            }
-            
-            // Adjust if goes off right edge
-            if (left + tooltipRect.width > window.innerWidth) {
-              left = window.innerWidth - tooltipRect.width - 10;
-            }
-            
-            // Adjust if goes off left edge
-            if (left < 10) {
-              left = 10;
-            }
-            
-            tooltipElement.style.top = `${top}px`;
-            tooltipElement.style.left = `${left}px`;
-          };
+          // Setup position updaters
+          ref.scrollHandler = () => updatePosition();
+          ref.resizeHandler = () => updatePosition();
           
+          window.addEventListener('scroll', ref.scrollHandler, true);
+          window.addEventListener('resize', ref.resizeHandler);
+          
+          // Initial position
           updatePosition();
-          scrollHandler = () => updatePosition();
-          resizeHandler = () => updatePosition();
           
-          window.addEventListener('scroll', scrollHandler, true);
-          window.addEventListener('resize', resizeHandler);
-          
-          const hideTooltip = () => {
-            if (tooltipElement) {
-              tooltipElement.remove();
-              tooltipElement = null;
-              if (scrollHandler) {
-                window.removeEventListener('scroll', scrollHandler, true);
-              }
-              if (resizeHandler) {
-                window.removeEventListener('resize', resizeHandler);
-              }
+          // Setup tooltip mouse events
+          ref.tooltipElement.addEventListener('mouseenter', () => {
+            if (ref.hideTimeout) {
+              clearTimeout(ref.hideTimeout);
+              ref.hideTimeout = null;
             }
-          };
+          });
           
-          trigger.addEventListener('mouseleave', hideTooltip);
-          trigger.addEventListener('blur', hideTooltip);
-          
-          setTimeout(updatePosition, 0);
-          
-          cleanupFunctions.push(() => {
-            trigger.removeEventListener('mouseleave', hideTooltip);
-            trigger.removeEventListener('blur', hideTooltip);
-            if (scrollHandler) {
-              window.removeEventListener('scroll', scrollHandler, true);
-            }
-            if (resizeHandler) {
-              window.removeEventListener('resize', resizeHandler);
-            }
-            if (tooltipElement) {
-              tooltipElement.remove();
-            }
+          ref.tooltipElement.addEventListener('mouseleave', () => {
+            hideTooltip();
           });
         };
         
-        trigger.addEventListener('mouseenter', showTooltip);
-        trigger.addEventListener('focus', showTooltip);
+        const handleMouseLeave = () => {
+          // Delay hiding to allow moving mouse to tooltip
+          ref.hideTimeout = setTimeout(() => {
+            // Check if mouse is still not over trigger or tooltip
+            const isOverTrigger = trigger.matches(':hover');
+            const isOverTooltip = ref.tooltipElement?.matches(':hover');
+            
+            if (!isOverTrigger && !isOverTooltip) {
+              hideTooltip();
+            }
+          }, 150);
+        };
         
-        cleanupFunctions.push(() => {
-          trigger.removeEventListener('mouseenter', showTooltip);
-          trigger.removeEventListener('focus', showTooltip);
-        });
+        // Setup trigger events
+        ref.mouseEnterHandler = showTooltip;
+        ref.mouseLeaveHandler = handleMouseLeave;
+        ref.focusHandler = showTooltip;
+        ref.blurHandler = hideTooltip;
+        
+        trigger.addEventListener('mouseenter', ref.mouseEnterHandler);
+        trigger.addEventListener('mouseleave', ref.mouseLeaveHandler);
+        trigger.addEventListener('focus', ref.focusHandler);
+        trigger.addEventListener('blur', ref.blurHandler);
+      });
+    };
+    
+    // Initial initialization
+    initializeTooltips();
+    
+    // Use MutationObserver to watch for new tooltip triggers (debounced)
+    const observer = new MutationObserver(() => {
+      // Debounce to avoid too many re-initializations
+      if (debounceTimeout) {
+        clearTimeout(debounceTimeout);
       }
+      debounceTimeout = setTimeout(() => {
+        initializeTooltips();
+      }, 100);
+    });
+    
+    observer.observe(container, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class', 'data-tooltip-keyword', 'data-tooltip-content'],
     });
 
     return () => {
-      cleanupFunctions.forEach(cleanup => cleanup());
+      observer.disconnect();
+      
+      // Clear debounce timeout
+      if (debounceTimeout) {
+        clearTimeout(debounceTimeout);
+      }
+      
+      // Cleanup all tooltips and event listeners
+      tooltipRefs.forEach((ref, trigger) => {
+        if (ref.hideTimeout) {
+          clearTimeout(ref.hideTimeout);
+        }
+        if (ref.tooltipElement) {
+          ref.tooltipElement.remove();
+        }
+        if (ref.scrollHandler) {
+          window.removeEventListener('scroll', ref.scrollHandler, true);
+        }
+        if (ref.resizeHandler) {
+          window.removeEventListener('resize', ref.resizeHandler);
+        }
+        if (ref.mouseEnterHandler && trigger.isConnected) {
+          trigger.removeEventListener('mouseenter', ref.mouseEnterHandler);
+        }
+        if (ref.mouseLeaveHandler && trigger.isConnected) {
+          trigger.removeEventListener('mouseleave', ref.mouseLeaveHandler);
+        }
+        if (ref.focusHandler && trigger.isConnected) {
+          trigger.removeEventListener('focus', ref.focusHandler);
+        }
+        if (ref.blurHandler && trigger.isConnected) {
+          trigger.removeEventListener('blur', ref.blurHandler);
+        }
+      });
+      
+      tooltipRefs.clear();
     };
   }, [specs]);
 

@@ -12,7 +12,7 @@ export class HomepagePlaceholdersService {
     });
   }
 
-  async findBySection(sectionKey: string) {
+  async findBySectionKey(sectionKey: string) {
     const placeholder = await this.prisma.homepagePlaceholder.findUnique({
       where: { sectionKey },
       include: { image: true },
@@ -47,4 +47,3 @@ export class HomepagePlaceholdersService {
     }
   }
 }
-

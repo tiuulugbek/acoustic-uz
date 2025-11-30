@@ -384,3 +384,7 @@ Agar barcha optimizatsiyalarni amalga oshirsak, sayt tezligi **5-10x** tezroq bo
 2. **Google Analytics:** User behavior
 3. **Real User Monitoring (RUM):** Real performance data
 
+
+
+
+

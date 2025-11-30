@@ -884,33 +884,33 @@ export default async function CatalogPage({
   } else {
     // Fallback to default brands: Oticon, ReSound, Signia
     mainBrands = brandsData?.filter((brand) => {
-      const brandName = brand.name?.toLowerCase() || '';
-      const brandSlug = brand.slug?.toLowerCase() || '';
-      return (
-        brandName.includes('oticon') ||
-        brandName.includes('resound') ||
-        brandName.includes('signia') ||
-        brandSlug.includes('oticon') ||
-        brandSlug.includes('resound') ||
-        brandSlug.includes('signia')
-      );
-    }) || [];
-    
-    // Check if Signia exists in the filtered brands
-    const hasSignia = mainBrands.some(b => {
-      const name = (b.name || '').toLowerCase();
-      const slug = (b.slug || '').toLowerCase();
-      return name.includes('signia') || slug.includes('signia');
-    });
-    
-    // If Signia is not found in backend, add it manually
-    if (!hasSignia) {
-      mainBrands.push({
-        id: 'signia-manual',
-        name: 'Signia',
-        slug: 'signia',
-        logo: null,
-      } as BrandResponse);
+    const brandName = brand.name?.toLowerCase() || '';
+    const brandSlug = brand.slug?.toLowerCase() || '';
+    return (
+      brandName.includes('oticon') ||
+      brandName.includes('resound') ||
+      brandName.includes('signia') ||
+      brandSlug.includes('oticon') ||
+      brandSlug.includes('resound') ||
+      brandSlug.includes('signia')
+    );
+  }) || [];
+  
+  // Check if Signia exists in the filtered brands
+  const hasSignia = mainBrands.some(b => {
+    const name = (b.name || '').toLowerCase();
+    const slug = (b.slug || '').toLowerCase();
+    return name.includes('signia') || slug.includes('signia');
+  });
+  
+  // If Signia is not found in backend, add it manually
+  if (!hasSignia) {
+    mainBrands.push({
+      id: 'signia-manual',
+      name: 'Signia',
+      slug: 'signia',
+      logo: null,
+    } as BrandResponse);
     }
   }
   
@@ -922,49 +922,49 @@ export default async function CatalogPage({
         return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
       })
     : [...mainBrands].sort((a, b) => {
-        const aName = (a.name || '').toLowerCase();
-        const bName = (b.name || '').toLowerCase();
-        const aSlug = (a.slug || '').toLowerCase();
-        const bSlug = (b.slug || '').toLowerCase();
-        const order = ['oticon', 'resound', 'signia'];
-        const aIndex = order.findIndex(o => aName.includes(o) || aSlug.includes(o));
-        const bIndex = order.findIndex(o => bName.includes(o) || bSlug.includes(o));
-        return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
-      });
+    const aName = (a.name || '').toLowerCase();
+    const bName = (b.name || '').toLowerCase();
+    const aSlug = (a.slug || '').toLowerCase();
+    const bSlug = (b.slug || '').toLowerCase();
+    const order = ['oticon', 'resound', 'signia'];
+    const aIndex = order.findIndex(o => aName.includes(o) || aSlug.includes(o));
+    const bIndex = order.findIndex(o => bName.includes(o) || bSlug.includes(o));
+    return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
+  });
 
   // Get sidebar sections from settings, fallback to default
   const otherSections = (settingsData?.sidebarSections && Array.isArray(settingsData.sidebarSections) && settingsData.sidebarSections.length > 0)
     ? settingsData.sidebarSections.sort((a, b) => (a.order || 0) - (b.order || 0))
     : [
-        {
-          id: 'accessories',
-          title_uz: 'Aksessuarlar',
-          title_ru: 'Аксессуары',
-          link: '/catalog/accessories',
-          icon: '📱',
-        },
-        {
-          id: 'earmolds',
-          title_uz: 'Quloq qo\'shimchalari',
-          title_ru: 'Ушные вкладыши',
-          link: '/catalog/earmolds',
-          icon: '👂',
-        },
-        {
-          id: 'batteries',
-          title_uz: 'Batareyalar',
-          title_ru: 'Батарейки',
-          link: '/catalog/batteries',
-          icon: '🔋',
-        },
-        {
-          id: 'care',
-          title_uz: 'Parvarish vositalari',
-          title_ru: 'Средства ухода',
-          link: '/catalog/care',
-          icon: '🧴',
-        },
-      ];
+    {
+      id: 'accessories',
+      title_uz: 'Aksessuarlar',
+      title_ru: 'Аксессуары',
+      link: '/catalog/accessories',
+      icon: '📱',
+    },
+    {
+      id: 'earmolds',
+      title_uz: 'Quloq qo\'shimchalari',
+      title_ru: 'Ушные вкладыши',
+      link: '/catalog/earmolds',
+      icon: '👂',
+    },
+    {
+      id: 'batteries',
+      title_uz: 'Batareyalar',
+      title_ru: 'Батарейки',
+      link: '/catalog/batteries',
+      icon: '🔋',
+    },
+    {
+      id: 'care',
+      title_uz: 'Parvarish vositalari',
+      title_ru: 'Средства ухода',
+      link: '/catalog/care',
+      icon: '🧴',
+    },
+  ];
 
   // Transform catalogs for display
   const catalogItems = (catalogsData && catalogsData.length > 0 ? catalogsData : []).map((catalog) => {

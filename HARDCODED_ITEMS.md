@@ -147,3 +147,7 @@ placeholder="+998 90 123 45 67"
 4. ⚠️ Site name'ni settings'ga ko'chirish
 5. ⚠️ Social media linklarini settings'ga ko'chirish
 
+
+
+
+

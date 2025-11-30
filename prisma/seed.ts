@@ -854,18 +854,68 @@ async function seedFaq() {
 }
 
 async function seedBranches() {
-  const branches = Array.from({ length: 4 }).map((_, index) => ({
-    name_uz: `Filial ${index + 1}`,
-    name_ru: `Филиал ${index + 1}`,
-    address_uz: `Toshkent, ${index + 1}-ko'cha, ${index + 1}-uy`,
-    address_ru: `Ташкент, улица ${index + 1}, дом ${index + 1}`,
-    phone: `+998 71 202 ${1400 + index}`,
-    phones: [`+998 90 123 ${5600 + index}`],
-    map_iframe: 'https://maps.google.com',
-    order: index + 1,
-  }));
+  const FILIALLAR = {
+    "chilonzor": {"nomi": "Acoustic - Chilonzor filiali", "kenglik": 41.297306266331134, "uzunlik": 69.20506945414891, "tel": "712884444", "manzil": "Toshkent sh, Chilonzor 7-45-3"},
+    "yunusobod": {"nomi": "Acoustic - Yunusobod filiali", "kenglik": 41.36200701177543, "uzunlik": 69.28818898298819, "tel": "945904114", "manzil": "Toshkent shahar, Yunusobod 2-mavze 6-uy. Mo'ljal Asaka Bank. The Elements mehmonxona ro'parasida"},
+    "yakkasaroy": {"nomi": "Acoustic - Yakkasaroy filiali", "kenglik": 41.29482805319527, "uzunlik": 69.2537342099695, "tel": "712156850", "manzil": "Aniqlik kiritilmoqda"},
+    "toshmi": {"nomi": "Acoustic - Toshmi filiali", "kenglik": 41.34892415113293, "uzunlik": 69.17652213409222, "tel": "998804114", "manzil": "Toshkent shahar, Shayhontoxur tumani, Farobiy 35. Mo'ljal Safia Bakery to'g'risida"},
+    "sergeli": {"nomi": "Acoustic - Sergeli filiali", "kenglik": 41.219489304004405, "uzunlik": 69.22274179647307, "tel": "903224114", "manzil": "Toshkent sh, Sergeli tumani, Sergeli 8 mavzesi, shokirariq ko'chasi, Mo'ljal: Baxt uyi to'yxona orqasida"},
+    "qoyliq": {"nomi": "Acoustic - Qo'yliq filiali", "kenglik": 41.241842586370325, "uzunlik": 69.33474558113085, "tel": "903934114", "manzil": "Aniqlik kiritilmoqda"},
+    "sebzor": {"nomi": "Acoustic - Sebzor filiali", "kenglik": 41.3384931847745, "uzunlik": 69.25241099169301, "tel": "771514114", "manzil": "Toshkent shahar, Olmazor tumani, Sebzor 35V"},
+    "guliston": {"nomi": "Acoustic - Guliston filiali", "kenglik": 40.50459092587306, "uzunlik": 68.7707139810919, "tel": "903324114", "manzil": "Sirdaryo viloyat, Guliston shahar, Birlashgan ko`chasi, 6B-uy. Mo`ljal: Suzish havzasi orqasida"},
+    "samarqand": {"nomi": "Acoustic - Samarqand filiali", "kenglik": 39.66356652899635, "uzunlik": 66.93702432979721, "tel": "994474114", "manzil": "Aniqlik kiritilmoqda"},
+    "navoiy": {"nomi": "Acoustic - Navoiy filiali", "kenglik": 40.0904468842983, "uzunlik": 65.37393329641368, "tel": "937664114", "manzil": "Navoiy shahar Zarafshon MFY Lev Tolstoy ko'chasi 1/30-31 uy."},
+    "buxoro": {"nomi": "Acoustic - Buxoro filiali", "kenglik": 39.75176019168013, "uzunlik": 64.43596539454518, "tel": "935130049", "manzil": "Aniqlik kiritilmoqda"},
+    "qarshi": {"nomi": "Acoustic - Qarshi filiali", "kenglik": 38.87481581351129, "uzunlik": 65.80650890984371, "tel": "908744114", "manzil": "Qarshi shahar, Chaqar MFY, Islom Karimov Ko'chasi, 353-uy. Mo'ljal: Eski shahar 4- maktab yonida"},
+    "shahrisabz": {"nomi": "Acoustic - Shahrisabz filiali", "kenglik": 39.05949178901263, "uzunlik": 66.84198368286825, "tel": "998040605", "manzil": "Aniqlik kiritilmoqda"},
+    "termiz": {"nomi": "Acoustic - Termiz filiali", "kenglik": 37.22774555440551, "uzunlik": 67.27256185209002, "tel": "909794114", "manzil": "Surxondaryo viloyati. Termiz shahar, Taraqqiyot ko'chasi. 36 A. Mo'ljal: Viloyat prokuraturasi yonida."},
+    "urganch": {"nomi": "Acoustic - Urganch filiali", "kenglik": 41.56322416092417, "uzunlik": 60.625337067655515, "tel": "902224114", "manzil": "Aniqlik kiritilmoqda"},
+    "nukus": {"nomi": "Acoustic - Nukus filiali", "kenglik": 42.466655629545826, "uzunlik": 59.61873943886847, "tel": "907094114", "manzil": "Aniqlik kiritilmoqda"},
+    "andijon": {"nomi": "Acoustic - Andijon filiali", "kenglik": 40.77613236348919, "uzunlik": 72.3559091811062, "tel": "994204114", "manzil": "Andijon shahar, Alisher Navoiy shox ko'chasi 86/88-uy"},
+    "fargona": {"nomi": "Acoustic - Farg'ona filiali", "kenglik": 40.38304233120668, "uzunlik": 71.78483432341388, "tel": "911614114", "manzil": "Aniqlik kiritilmoqda"},
+    "namangan": {"nomi": "Acoustic - Namangan filiali", "kenglik": 40.99393111918123, "uzunlik": 71.67986242344605, "tel": "932084114", "manzil": "Namangan shahar, Boburshox ko'chasi,  16/4. Mo'ljal 11-maktab ro'pparasida."},
+    "qoqon": {"nomi": "Acoustic - Qo'qon filiali", "kenglik": 40.53595158781408, "uzunlik": 70.95132830992938, "tel": "916795334", "manzil": "Qo'qon shahar, Yangi Chorsu 219-uy."},
+    "jizzax": {"nomi": "Acoustic - Jizzax filiali", "kenglik": 40.12635503885972, "uzunlik": 67.82918768107209, "tel": "933654114", "manzil": "Jizzax shahar, Toshloq MFY, Shifokorlar ko'chasi, 8A uy"}
+  };
 
-  await prisma.branch.createMany({ data: branches });
+  const branches = Object.entries(FILIALLAR).map(([slug, data], index) => {
+    // Telefon raqamini formatlash
+    let phone = data.tel;
+    if (!phone.startsWith('+998')) {
+      if (phone.startsWith('998')) {
+        phone = `+${phone}`;
+      } else if (phone.length === 9) {
+        phone = `+998${phone}`;
+      } else {
+        phone = `+998${phone}`;
+      }
+    }
+
+    // Nomni o'zbek va rus tillariga ajratish
+    const nomi = data.nomi;
+    const name_uz = nomi.replace('Acoustic - ', '').replace(' filiali', '');
+    const name_ru = name_uz; // Rus tilida ham xuddi shu nomni ishlatamiz
+
+    return {
+      name_uz: name_uz,
+      name_ru: name_ru,
+      slug: slug,
+      address_uz: data.manzil,
+      address_ru: data.manzil, // Rus tilida ham xuddi shu manzilni ishlatamiz
+      phone: phone,
+      phones: [],
+      latitude: data.kenglik,
+      longitude: data.uzunlik,
+      order: index + 1,
+    };
+  });
+
+  await prisma.branch.createMany({ 
+    data: branches,
+    skipDuplicates: true,
+  });
+
+  console.log(`✅ Created ${branches.length} branches`);
 }
 
 async function seedPages() {
@@ -891,6 +941,373 @@ async function seedPages() {
   await prisma.page.createMany({ data: pages });
 }
 
+async function seedHomepageContent() {
+  // Homepage Sections
+  const sections = [
+    {
+      key: 'services',
+      title_uz: 'Xizmatlarimiz',
+      title_ru: 'Наши услуги',
+      subtitle_uz: 'Professional eshitish yechimlari',
+      subtitle_ru: 'Профессиональные слуховые решения',
+      description_uz: 'Biz sizga eng yaxshi eshitish yechimlarini taklif etamiz',
+      description_ru: 'Мы предлагаем вам лучшие слуховые решения',
+      showTitle: true,
+      showSubtitle: true,
+      showDescription: false,
+      order: 1,
+      status: 'published',
+    },
+    {
+      key: 'hearing-aids',
+      title_uz: 'Eshitish apparatlari',
+      title_ru: 'Слуховые аппараты',
+      subtitle_uz: 'Zamonaviy texnologiyalar',
+      subtitle_ru: 'Современные технологии',
+      description_uz: 'Eng yaxshi brendlar va modellar',
+      description_ru: 'Лучшие бренды и модели',
+      showTitle: true,
+      showSubtitle: true,
+      showDescription: false,
+      order: 2,
+      status: 'published',
+    },
+    {
+      key: 'interacoustics',
+      title_uz: 'Interacoustics',
+      title_ru: 'Interacoustics',
+      subtitle_uz: 'Diagnostika uskunalari',
+      subtitle_ru: 'Диагностическое оборудование',
+      description_uz: 'Professional diagnostika va tekshiruv',
+      description_ru: 'Профессиональная диагностика и обследование',
+      showTitle: true,
+      showSubtitle: true,
+      showDescription: false,
+      order: 3,
+      status: 'published',
+    },
+    {
+      key: 'cochlear',
+      title_uz: 'Cochlear implantlar',
+      title_ru: 'Кохлеарные импланты',
+      subtitle_uz: 'Chuqur eshitish yo\'qotilishi uchun',
+      subtitle_ru: 'Для глубокой потери слуха',
+      description_uz: 'Koxlear implantlar va aksessuarlar',
+      description_ru: 'Кохлеарные импланты и аксессуары',
+      showTitle: true,
+      showSubtitle: true,
+      showDescription: false,
+      order: 4,
+      status: 'published',
+    },
+    {
+      key: 'path-to-better-hearing',
+      title_uz: 'Yaxshi eshitishga yo\'l',
+      title_ru: 'Путь к лучшему слуху',
+      subtitle_uz: '4 qadamda',
+      subtitle_ru: 'В 4 шага',
+      description_uz: 'Bizning jarayonimiz',
+      description_ru: 'Наш процесс',
+      showTitle: true,
+      showSubtitle: true,
+      showDescription: false,
+      order: 5,
+      status: 'published',
+    },
+    {
+      key: 'fresh-posts',
+      title_uz: 'So\'nggi yangiliklar',
+      title_ru: 'Последние новости',
+      subtitle_uz: 'Maqolalar va yangiliklar',
+      subtitle_ru: 'Статьи и новости',
+      description_uz: 'Eshitish va sog\'liq haqida',
+      description_ru: 'О слухе и здоровье',
+      showTitle: true,
+      showSubtitle: true,
+      showDescription: false,
+      order: 6,
+      status: 'published',
+    },
+    {
+      key: 'faq',
+      title_uz: 'Savol-Javob',
+      title_ru: 'Вопросы и ответы',
+      subtitle_uz: 'Tez-tez so\'raladigan savollar',
+      subtitle_ru: 'Часто задаваемые вопросы',
+      description_uz: 'Eshitish apparatlari haqida',
+      description_ru: 'О слуховых аппаратах',
+      showTitle: true,
+      showSubtitle: false,
+      showDescription: false,
+      order: 7,
+      status: 'published',
+    },
+    {
+      key: 'branches',
+      title_uz: 'Filiallarimiz',
+      title_ru: 'Наши филиалы',
+      subtitle_uz: 'Bizning manzillar',
+      subtitle_ru: 'Наши адреса',
+      description_uz: 'Barcha filiallar va kontaktlar',
+      description_ru: 'Все филиалы и контакты',
+      showTitle: true,
+      showSubtitle: true,
+      showDescription: false,
+      order: 8,
+      status: 'published',
+    },
+  ];
+
+  await prisma.homepageSection.createMany({
+    data: sections,
+    skipDuplicates: true,
+  });
+
+  console.log(`✅ Created ${sections.length} homepage sections`);
+
+  // Homepage Links
+  const links = [
+    {
+      sectionKey: 'services',
+      text_uz: 'Barcha xizmatlarni ko\'rish',
+      text_ru: 'Посмотреть все услуги',
+      href: '/services',
+      icon: 'arrow-right',
+      position: 'bottom',
+      order: 1,
+      status: 'published',
+    },
+    {
+      sectionKey: 'hearing-aids',
+      text_uz: 'Katalogga o\'tish',
+      text_ru: 'Перейти в каталог',
+      href: '/catalog',
+      icon: 'arrow-right',
+      position: 'bottom',
+      order: 1,
+      status: 'published',
+    },
+    {
+      sectionKey: 'interacoustics',
+      text_uz: 'Batafsil',
+      text_ru: 'Подробнее',
+      href: '/catalog/interacoustics',
+      icon: 'arrow-right',
+      position: 'bottom',
+      order: 1,
+      status: 'published',
+    },
+    {
+      sectionKey: 'cochlear',
+      text_uz: 'Batafsil',
+      text_ru: 'Подробнее',
+      href: '/catalog/cochlear',
+      icon: 'arrow-right',
+      position: 'bottom',
+      order: 1,
+      status: 'published',
+    },
+    {
+      sectionKey: 'fresh-posts',
+      text_uz: 'Barcha maqolalarni ko\'rish',
+      text_ru: 'Посмотреть все статьи',
+      href: '/posts',
+      icon: 'arrow-right',
+      position: 'bottom',
+      order: 1,
+      status: 'published',
+    },
+    {
+      sectionKey: 'branches',
+      text_uz: 'Barcha filiallarni ko\'rish',
+      text_ru: 'Посмотреть все филиалы',
+      href: '/branches',
+      icon: 'arrow-right',
+      position: 'bottom',
+      order: 1,
+      status: 'published',
+    },
+  ];
+
+  await prisma.homepageLink.createMany({
+    data: links,
+    skipDuplicates: true,
+  });
+
+  console.log(`✅ Created ${links.length} homepage links`);
+
+  // Homepage Placeholders
+  const placeholders = [
+    {
+      sectionKey: 'services',
+      text_uz: 'Xizmatlar tez orada qo\'shiladi',
+      text_ru: 'Услуги будут добавлены в ближайшее время',
+      backgroundColor: '#f0f0f0',
+      textColor: '#666',
+    },
+    {
+      sectionKey: 'hearing-aids',
+      text_uz: 'Mahsulotlar tez orada qo\'shiladi',
+      text_ru: 'Продукты будут добавлены в ближайшее время',
+      backgroundColor: '#f0f0f0',
+      textColor: '#666',
+    },
+  ];
+
+  for (const placeholder of placeholders) {
+    await prisma.homepagePlaceholder.upsert({
+      where: { sectionKey: placeholder.sectionKey },
+      create: placeholder,
+      update: placeholder,
+    });
+  }
+
+  console.log(`✅ Created ${placeholders.length} homepage placeholders`);
+
+  // Homepage Empty States
+  const emptyStates = [
+    {
+      sectionKey: 'services',
+      message_uz: 'Hozircha xizmatlar mavjud emas',
+      message_ru: 'Услуги пока недоступны',
+      icon: 'info',
+    },
+    {
+      sectionKey: 'hearing-aids',
+      message_uz: 'Hozircha mahsulotlar mavjud emas',
+      message_ru: 'Продукты пока недоступны',
+      icon: 'empty-box',
+    },
+  ];
+
+  for (const emptyState of emptyStates) {
+    await prisma.homepageEmptyState.upsert({
+      where: { sectionKey: emptyState.sectionKey },
+      create: emptyState,
+      update: emptyState,
+    });
+  }
+
+  console.log(`✅ Created ${emptyStates.length} homepage empty states`);
+
+  // Catalog Page Config
+  await prisma.catalogPageConfig.upsert({
+    where: { id: 'singleton' },
+    create: {
+      id: 'singleton',
+      hearingAidsTitle_uz: 'Eshitish apparatlari',
+      hearingAidsTitle_ru: 'Слуховые аппараты',
+      interacousticsTitle_uz: 'Interacoustics',
+      interacousticsTitle_ru: 'Interacoustics',
+      accessoriesTitle_uz: 'Aksessuarlar',
+      accessoriesTitle_ru: 'Аксессуары',
+    },
+    update: {
+      hearingAidsTitle_uz: 'Eshitish apparatlari',
+      hearingAidsTitle_ru: 'Слуховые аппараты',
+      interacousticsTitle_uz: 'Interacoustics',
+      interacousticsTitle_ru: 'Interacoustics',
+      accessoriesTitle_uz: 'Aksessuarlar',
+      accessoriesTitle_ru: 'Аксессуары',
+    },
+  });
+
+  console.log('✅ Created catalog page config');
+
+  // Common Texts
+  const commonTexts = [
+    {
+      key: 'read-more',
+      text_uz: 'Batafsil',
+      text_ru: 'Подробнее',
+      category: 'buttons',
+    },
+    {
+      key: 'learn-more',
+      text_uz: 'Ko\'proq o\'rganish',
+      text_ru: 'Узнать больше',
+      category: 'buttons',
+    },
+    {
+      key: 'contact-us',
+      text_uz: 'Biz bilan bog\'lanish',
+      text_ru: 'Связаться с нами',
+      category: 'buttons',
+    },
+    {
+      key: 'call-now',
+      text_uz: 'Hozir qo\'ng\'iroq qiling',
+      text_ru: 'Позвоните сейчас',
+      category: 'buttons',
+    },
+    {
+      key: 'free-consultation',
+      text_uz: 'Bepul konsultatsiya',
+      text_ru: 'Бесплатная консультация',
+      category: 'services',
+    },
+    {
+      key: 'free-delivery',
+      text_uz: 'Bepul yetkazib berish',
+      text_ru: 'Бесплатная доставка',
+      category: 'services',
+    },
+  ];
+
+  for (const text of commonTexts) {
+    await prisma.commonText.upsert({
+      where: { key: text.key },
+      create: text,
+      update: text,
+    });
+  }
+
+  console.log(`✅ Created ${commonTexts.length} common texts`);
+
+  // Availability Statuses
+  const availabilityStatuses = [
+    {
+      key: 'in-stock',
+      label_uz: 'Mavjud',
+      label_ru: 'В наличии',
+      schema: 'https://schema.org/InStock',
+      colorClass: 'text-green-600 bg-green-50',
+      order: 1,
+    },
+    {
+      key: 'out-of-stock',
+      label_uz: 'Mavjud emas',
+      label_ru: 'Нет в наличии',
+      schema: 'https://schema.org/OutOfStock',
+      colorClass: 'text-red-600 bg-red-50',
+      order: 2,
+    },
+    {
+      key: 'preorder',
+      label_uz: 'Oldindan buyurtma',
+      label_ru: 'Предзаказ',
+      schema: 'https://schema.org/PreOrder',
+      colorClass: 'text-blue-600 bg-blue-50',
+      order: 3,
+    },
+    {
+      key: 'coming-soon',
+      label_uz: 'Tez orada',
+      label_ru: 'Скоро',
+      schema: 'https://schema.org/PreOrder',
+      colorClass: 'text-yellow-600 bg-yellow-50',
+      order: 4,
+    },
+  ];
+
+  await prisma.availabilityStatus.createMany({
+    data: availabilityStatuses,
+    skipDuplicates: true,
+  });
+
+  console.log(`✅ Created ${availabilityStatuses.length} availability statuses`);
+}
+
 async function main() {
   console.log('🌱 Starting database seed...');
 
@@ -908,6 +1325,7 @@ async function main() {
   await seedFaq();
   await seedBranches();
   await seedPages();
+  await seedHomepageContent();
 
   console.log('✅ Database seeded successfully!');
 }

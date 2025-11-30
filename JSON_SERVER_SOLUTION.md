@@ -125,3 +125,7 @@ Agar build time pre-populate qilishni xohlamasangiz:
 - ✅ Avtomatik yangilanadi
 - ⚠️ Writable directory kerak
 
+
+
+
+

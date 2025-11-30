@@ -36,6 +36,7 @@ import {
   ApiError,
 } from '../lib/api';
 import MediaLibraryModal from '../components/MediaLibraryModal';
+import HomepageContentTab from '../components/HomepageContentTab';
 
 export default function SettingsPage() {
   const queryClient = useQueryClient();
@@ -405,390 +406,484 @@ export default function SettingsPage() {
     return <div>Yuklanmoqda...</div>;
   }
 
+  // Handle general settings save
+  const handleGeneralSettingsSave = async () => {
+    try {
+      const values = await form.validateFields(['phonePrimary', 'phoneSecondary', 'email', 'brandPrimary', 'brandAccent', 'telegramBotToken', 'telegramChatId']);
+      const payload: UpdateSettingsPayload = {
+        phonePrimary: values.phonePrimary || undefined,
+        phoneSecondary: values.phoneSecondary || undefined,
+        email: values.email || undefined,
+        telegramBotToken: values.telegramBotToken || undefined,
+        telegramChatId: values.telegramChatId || undefined,
+        brandPrimary: values.brandPrimary || undefined,
+        brandAccent: values.brandAccent || undefined,
+      };
+      await updateMutation.mutateAsync(payload);
+    } catch (error) {
+      console.error('Form validation error:', error);
+    }
+  };
+
+  // Handle images save
+  const handleImagesSave = async () => {
+    try {
+      const values = await form.validateFields(['catalogHeroImageId', 'logoId']);
+      const payload: UpdateSettingsPayload = {
+        catalogHeroImageId: values.catalogHeroImageId || null,
+        logoId: values.logoId || null,
+      };
+      await updateMutation.mutateAsync(payload);
+    } catch (error) {
+      console.error('Form validation error:', error);
+    }
+  };
+
+  // Handle AmoCRM save
+  const handleAmoCRMSave = async () => {
+    try {
+      const values = await form.validateFields(['amocrmDomain', 'amocrmClientId', 'amocrmClientSecret', 'amocrmPipelineId', 'amocrmStatusId']);
+      const payload: UpdateSettingsPayload = {
+        amocrmDomain: values.amocrmDomain?.trim() || undefined,
+        amocrmClientId: values.amocrmClientId?.trim() || undefined,
+        amocrmClientSecret: values.amocrmClientSecret?.trim() || undefined,
+        amocrmPipelineId: values.amocrmPipelineId?.trim() || undefined,
+        amocrmStatusId: values.amocrmStatusId?.trim() || undefined,
+      };
+      await updateMutation.mutateAsync(payload);
+    } catch (error) {
+      console.error('Form validation error:', error);
+    }
+  };
+
   return (
     <div>
       <h2 style={{ fontSize: '20px', fontWeight: 600, marginBottom: '24px' }}>Sozlamalar</h2>
       
-      <Form form={form} layout="vertical" onFinish={handleSubmit}>
-        <Row gutter={[24, 24]}>
-          {/* Left Column - General Settings */}
-          <Col xs={24} lg={12}>
-            <Card title="Umumiy sozlamalar" style={{ marginBottom: 24 }}>
-              <Form.Item
-                label="Asosiy telefon"
-                name="phonePrimary"
-                rules={[{ required: true, message: 'Telefon raqami kiritilishi kerak' }]}
-              >
-                <Input placeholder="1385" />
-              </Form.Item>
+      <Tabs
+        defaultActiveKey="general"
+        items={[
+          {
+            key: 'general',
+            label: 'Umumiy sozlamalar',
+            children: (
+              <Form form={form} layout="vertical">
+                <Card>
+                  <Form.Item
+                    label="Asosiy telefon"
+                    name="phonePrimary"
+                    rules={[{ required: true, message: 'Telefon raqami kiritilishi kerak' }]}
+                  >
+                    <Input placeholder="1385" />
+                  </Form.Item>
 
-              <Form.Item
-                label="Qo'shimcha telefon"
-                name="phoneSecondary"
-              >
-                <Input placeholder="+998 71 202 14 41" />
-              </Form.Item>
+                  <Form.Item
+                    label="Qo'shimcha telefon"
+                    name="phoneSecondary"
+                  >
+                    <Input placeholder="+998 71 202 14 41" />
+                  </Form.Item>
 
-              <Form.Item
-                label="Email"
-                name="email"
-                rules={[{ type: 'email', message: 'Noto\'g\'ri email' }]}
-              >
-                <Input placeholder="info@acoustic.uz" />
-              </Form.Item>
+                  <Form.Item
+                    label="Email"
+                    name="email"
+                    rules={[{ type: 'email', message: 'Noto\'g\'ri email' }]}
+                  >
+                    <Input placeholder="info@acoustic.uz" />
+                  </Form.Item>
 
-              <Divider />
+                  <Divider />
 
-              <Form.Item
-                label="Asosiy rang (Brand Primary)"
-                name="brandPrimary"
-              >
-                <Input type="color" style={{ width: '100%', height: '40px' }} />
-              </Form.Item>
+                  <Form.Item
+                    label="Asosiy rang (Brand Primary)"
+                    name="brandPrimary"
+                  >
+                    <Input type="color" style={{ width: '100%', height: '40px' }} />
+                  </Form.Item>
 
-              <Form.Item
-                label="Ikkinchi rang (Brand Accent)"
-                name="brandAccent"
-              >
-                <Input type="color" style={{ width: '100%', height: '40px' }} />
-              </Form.Item>
-            </Card>
+                  <Form.Item
+                    label="Ikkinchi rang (Brand Accent)"
+                    name="brandAccent"
+                  >
+                    <Input type="color" style={{ width: '100%', height: '40px' }} />
+                  </Form.Item>
 
-            <Card title="Telegram sozlamalari">
-              <Form.Item
-                label="Telegram Bot Token"
-                name="telegramBotToken"
-              >
-                <Input.Password placeholder="Bot token" />
-              </Form.Item>
+                  <Divider />
 
-              <Form.Item
-                label="Telegram Chat ID"
-                name="telegramChatId"
-              >
-                <Input placeholder="Chat ID" />
-              </Form.Item>
-            </Card>
+                  <h3 style={{ marginBottom: 16 }}>Telegram sozlamalari</h3>
+                  <Form.Item
+                    label="Telegram Bot Token"
+                    name="telegramBotToken"
+                  >
+                    <Input.Password placeholder="Bot token" />
+                  </Form.Item>
 
-            <Card 
-              title={
-                <Space>
-                  <span>AmoCRM integratsiyasi</span>
-                  {settings?.amocrmAccessToken ? (
-                    <Tag color="green" icon={<CheckCircleOutlined />}>
-                      Ulangan
-                    </Tag>
-                  ) : (
-                    <Tag color="default" icon={<CloseCircleOutlined />}>
-                      Ulanmagan
-                    </Tag>
-                  )}
-                </Space>
-              }
-              style={{ marginTop: 16 }}
-            >
-              {/* Connection Status Alert */}
-              {amocrmTestResult && (
-                <Alert
-                  type={amocrmTestResult.success ? 'success' : 'warning'}
-                  message={amocrmTestResult.message}
-                  style={{ marginBottom: 16 }}
-                  closable
-                  onClose={() => setAmocrmTestResult(null)}
-                />
-              )}
+                  <Form.Item
+                    label="Telegram Chat ID"
+                    name="telegramChatId"
+                  >
+                    <Input placeholder="Chat ID" />
+                  </Form.Item>
 
-              <Form.Item
-                label="AmoCRM Domain"
-                name="amocrmDomain"
-                extra="Masalan: yourcompany.amocrm.ru"
-                rules={[{ required: true, message: 'Domain kiritilishi kerak' }]}
-              >
-                <Input placeholder="yourcompany.amocrm.ru" />
-              </Form.Item>
-
-              <Form.Item
-                label="Client ID"
-                name="amocrmClientId"
-                extra="AmoCRM Integration'dan olingan Client ID"
-                rules={[{ required: true, message: 'Client ID kiritilishi kerak' }]}
-              >
-                <Input placeholder="Client ID" />
-              </Form.Item>
-
-              <Form.Item
-                label="Client Secret"
-                name="amocrmClientSecret"
-                extra="AmoCRM Integration'dan olingan Client Secret"
-                rules={[{ required: true, message: 'Client Secret kiritilishi kerak' }]}
-              >
-                <Input.Password placeholder="Client Secret" />
-              </Form.Item>
-
-              <Divider />
-
-              <Form.Item
-                label="Pipeline ID"
-                name="amocrmPipelineId"
-                extra="Lead yaratiladigan Pipeline ID (ixtiyoriy)"
-              >
-                <Input placeholder="Pipeline ID" />
-              </Form.Item>
-
-              <Form.Item
-                label="Status ID"
-                name="amocrmStatusId"
-                extra="Lead yaratiladigan Status ID (ixtiyoriy)"
-              >
-                <Input placeholder="Status ID" />
-              </Form.Item>
-
-              <Divider />
-
-              {/* Action Buttons */}
-              <Space direction="vertical" style={{ width: '100%' }} size="middle">
-                {settings?.amocrmAccessToken ? (
-                  <>
+                  <div style={{ marginTop: 24, textAlign: 'right' }}>
                     <Button
                       type="primary"
-                      icon={<ThunderboltOutlined />}
-                      onClick={handleTestAmoCRM}
-                      loading={testingAmoCRM}
-                      block
+                      icon={<SaveOutlined />}
+                      onClick={handleGeneralSettingsSave}
+                      loading={updateMutation.isPending}
+                      size="large"
                     >
-                      Ulanishni tekshirish
+                      Saqlash
                     </Button>
+                  </div>
+                </Card>
+              </Form>
+            ),
+          },
+          {
+            key: 'images',
+            label: 'Rasmlar',
+            children: (
+              <Form form={form} layout="vertical">
+                <Card>
+                  {/* Catalog Hero Image */}
+                  <div style={{ marginBottom: 24 }}>
+                    <Form.Item
+                      label="Catalog Hero Rasm"
+                      name="catalogHeroImageId"
+                      tooltip="Catalog sahifasidagi promotional banner uchun rasm"
+                    >
+                      <div>
+                        {previewCatalogHero ? (
+                          <div style={{ marginBottom: 16 }}>
+                            <Image
+                              src={normalizeImageUrl(previewCatalogHero)}
+                              alt="Catalog Hero"
+                              style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain' }}
+                              preview={false}
+                            />
+                            <Button
+                              type="link"
+                              danger
+                              icon={<DeleteOutlined />}
+                              onClick={handleRemoveCatalogHero}
+                              style={{ marginTop: 8 }}
+                            >
+                              O'chirish
+                            </Button>
+                          </div>
+                        ) : null}
+                        
+                        <Upload
+                          customRequest={handleCatalogHeroUpload}
+                          showUploadList={false}
+                          accept="image/*"
+                        >
+                          <Button icon={<UploadOutlined />} loading={uploadingCatalogHero} block>
+                            {previewCatalogHero ? 'Rasmni almashtirish' : 'Rasm yuklash'}
+                          </Button>
+                        </Upload>
+
+                        <div style={{ marginTop: 16 }}>
+                          <Button
+                            icon={<FolderOutlined />}
+                            onClick={() => setCatalogHeroModalOpen(true)}
+                            block
+                            style={{ marginBottom: 8 }}
+                          >
+                            Mavjud rasmdan tanlash
+                          </Button>
+                          {form.getFieldValue('catalogHeroImageId') && (
+                            <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
+                              Tanlangan: {mediaList?.find(m => m.id === form.getFieldValue('catalogHeroImageId'))?.filename || 'Noma\'lum'}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </Form.Item>
+                  </div>
+
+                  {/* Logo */}
+                  <div style={{ marginBottom: 24 }}>
+                    <Form.Item
+                      label="Logo"
+                      name="logoId"
+                      tooltip="Sayt header'idagi logo rasm"
+                    >
+                      <div>
+                        {previewLogo ? (
+                          <div style={{ marginBottom: 16 }}>
+                            <Image
+                              src={normalizeImageUrl(previewLogo)}
+                              alt="Logo"
+                              style={{ maxWidth: '100%', maxHeight: '100px', objectFit: 'contain' }}
+                              preview={false}
+                            />
+                            <Button
+                              type="link"
+                              danger
+                              icon={<DeleteOutlined />}
+                              onClick={handleRemoveLogo}
+                              style={{ marginTop: 8 }}
+                            >
+                              O'chirish
+                            </Button>
+                          </div>
+                        ) : null}
+                        
+                        <Upload
+                          customRequest={handleLogoUpload}
+                          showUploadList={false}
+                          accept="image/*"
+                        >
+                          <Button icon={<UploadOutlined />} loading={uploadingLogo} block>
+                            {previewLogo ? 'Logoni almashtirish' : 'Logo yuklash'}
+                          </Button>
+                        </Upload>
+
+                        <div style={{ marginTop: 16 }}>
+                          <Button
+                            icon={<FolderOutlined />}
+                            onClick={() => setLogoModalOpen(true)}
+                            block
+                            style={{ marginBottom: 8 }}
+                          >
+                            Mavjud rasmdan tanlash
+                          </Button>
+                          {form.getFieldValue('logoId') && (
+                            <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
+                              Tanlangan: {mediaList?.find(m => m.id === form.getFieldValue('logoId'))?.filename || 'Noma\'lum'}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </Form.Item>
+                  </div>
+
+                  <div style={{ marginTop: 24, textAlign: 'right' }}>
                     <Button
-                      icon={<LinkOutlined />}
-                      onClick={handleAmoCRMAuthorize}
-                      block
+                      type="primary"
+                      icon={<SaveOutlined />}
+                      onClick={handleImagesSave}
+                      loading={updateMutation.isPending}
+                      size="large"
                     >
-                      Qayta avtorizatsiya qilish
+                      Saqlash
                     </Button>
-                  </>
+                  </div>
+                </Card>
+              </Form>
+            ),
+          },
+          {
+            key: 'sidebar',
+            label: 'Sidebar boshqaruvi',
+            children: (
+              <Card>
+                <Tabs
+                  defaultActiveKey="catalog"
+                  items={[
+                    {
+                      key: 'catalog',
+                      label: 'Catalog sahifasi',
+                      children: <SidebarConfigTab 
+                        pageType="catalog"
+                        config={sidebarConfigs.catalog || { sections: [], brandIds: [] }}
+                        onUpdate={(config) => setSidebarConfigs({ ...sidebarConfigs, catalog: config })}
+                        onSave={() => handleSidebarConfigSave('catalog')}
+                        brandsList={brandsList || []}
+                        imageModals={sidebarConfigImageModals.catalog || {}}
+                        onImageModalChange={(modals) => setSidebarConfigImageModals({ ...sidebarConfigImageModals, catalog: modals })}
+                        isSaving={updateMutation.isPending}
+                      />,
+                    },
+                    {
+                      key: 'products',
+                      label: 'Mahsulot sahifasi',
+                      children: <SidebarConfigTab 
+                        pageType="products"
+                        config={sidebarConfigs.products || { sections: [], brandIds: [] }}
+                        onUpdate={(config) => setSidebarConfigs({ ...sidebarConfigs, products: config })}
+                        onSave={() => handleSidebarConfigSave('products')}
+                        brandsList={brandsList || []}
+                        imageModals={sidebarConfigImageModals.products || {}}
+                        onImageModalChange={(modals) => setSidebarConfigImageModals({ ...sidebarConfigImageModals, products: modals })}
+                        isSaving={updateMutation.isPending}
+                      />,
+                    },
+                    {
+                      key: 'services',
+                      label: 'Xizmat sahifasi',
+                      children: <SidebarConfigTab 
+                        pageType="services"
+                        config={sidebarConfigs.services || { sections: [], brandIds: [] }}
+                        onUpdate={(config) => setSidebarConfigs({ ...sidebarConfigs, services: config })}
+                        onSave={() => handleSidebarConfigSave('services')}
+                        brandsList={brandsList || []}
+                        imageModals={sidebarConfigImageModals.services || {}}
+                        onImageModalChange={(modals) => setSidebarConfigImageModals({ ...sidebarConfigImageModals, services: modals })}
+                        isSaving={updateMutation.isPending}
+                      />,
+                    },
+                    {
+                      key: 'posts',
+                      label: 'Maqola sahifasi',
+                      children: <SidebarConfigTab 
+                        pageType="posts"
+                        config={sidebarConfigs.posts || { sections: [], brandIds: [] }}
+                        onUpdate={(config) => setSidebarConfigs({ ...sidebarConfigs, posts: config })}
+                        onSave={() => handleSidebarConfigSave('posts')}
+                        brandsList={brandsList || []}
+                        imageModals={sidebarConfigImageModals.posts || {}}
+                        onImageModalChange={(modals) => setSidebarConfigImageModals({ ...sidebarConfigImageModals, posts: modals })}
+                        isSaving={updateMutation.isPending}
+                      />,
+                    },
+                  ]}
+                />
+              </Card>
+            ),
+          },
+          {
+            key: 'amocrm',
+            label: (
+              <Space>
+                <span>AmoCRM integratsiyasi</span>
+                {settings?.amocrmAccessToken ? (
+                  <Tag color="green" icon={<CheckCircleOutlined />}>
+                    Ulangan
+                  </Tag>
                 ) : (
-                  <Button
-                    type="primary"
-                    icon={<LinkOutlined />}
-                    onClick={handleAmoCRMAuthorize}
-                    block
-                    disabled={!form.getFieldValue('amocrmDomain') || !form.getFieldValue('amocrmClientId')}
-                  >
-                    AmoCRM'ga ulanish
-                  </Button>
+                  <Tag color="default" icon={<CloseCircleOutlined />}>
+                    Ulanmagan
+                  </Tag>
                 )}
               </Space>
+            ),
+            children: (
+              <Form form={form} layout="vertical">
+                <Card>
+                  {amocrmTestResult && (
+                    <Alert
+                      type={amocrmTestResult.success ? 'success' : 'warning'}
+                      message={amocrmTestResult.message}
+                      style={{ marginBottom: 16 }}
+                      closable
+                      onClose={() => setAmocrmTestResult(null)}
+                    />
+                  )}
 
-              <div style={{ marginTop: 16, padding: 12, background: '#f0f0f0', borderRadius: 4 }}>
-                <div style={{ fontSize: 12, color: '#666' }}>
-                  <strong>Qo'llanma:</strong> AmoCRM integratsiyasini sozlash uchun{' '}
-                  <a href="/AMOCRM_INTEGRATSIYA_QOLLANMASI.md" target="_blank" rel="noopener noreferrer">
-                    qo'llanmani ko'ring
-                  </a>
-                </div>
-              </div>
-            </Card>
-          </Col>
+                  <Form.Item
+                    label="AmoCRM Domain"
+                    name="amocrmDomain"
+                    extra="Masalan: yourcompany.amocrm.ru"
+                    rules={[{ required: true, message: 'Domain kiritilishi kerak' }]}
+                  >
+                    <Input placeholder="yourcompany.amocrm.ru" />
+                  </Form.Item>
 
-          {/* Right Column - Images */}
-          <Col xs={24} lg={12}>
-            <Card title="Rasmlar">
-              {/* Catalog Hero Image */}
-              <div style={{ marginBottom: 24 }}>
-                <Form.Item
-                  label="Catalog Hero Rasm"
-                  name="catalogHeroImageId"
-                  tooltip="Catalog sahifasidagi promotional banner uchun rasm"
-                >
-                  <div>
-                    {previewCatalogHero ? (
-                      <div style={{ marginBottom: 16 }}>
-                        <Image
-                          src={normalizeImageUrl(previewCatalogHero)}
-                          alt="Catalog Hero"
-                          style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain' }}
-                          preview={false}
-                        />
+                  <Form.Item
+                    label="Client ID"
+                    name="amocrmClientId"
+                    extra="AmoCRM Integration'dan olingan Client ID"
+                    rules={[{ required: true, message: 'Client ID kiritilishi kerak' }]}
+                  >
+                    <Input placeholder="Client ID" />
+                  </Form.Item>
+
+                  <Form.Item
+                    label="Client Secret"
+                    name="amocrmClientSecret"
+                    extra="AmoCRM Integration'dan olingan Client Secret"
+                    rules={[{ required: true, message: 'Client Secret kiritilishi kerak' }]}
+                  >
+                    <Input.Password placeholder="Client Secret" />
+                  </Form.Item>
+
+                  <Divider />
+
+                  <Form.Item
+                    label="Pipeline ID"
+                    name="amocrmPipelineId"
+                    extra="Lead yaratiladigan Pipeline ID (ixtiyoriy)"
+                  >
+                    <Input placeholder="Pipeline ID" />
+                  </Form.Item>
+
+                  <Form.Item
+                    label="Status ID"
+                    name="amocrmStatusId"
+                    extra="Lead yaratiladigan Status ID (ixtiyoriy)"
+                  >
+                    <Input placeholder="Status ID" />
+                  </Form.Item>
+
+                  <Divider />
+
+                  <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                    {settings?.amocrmAccessToken ? (
+                      <>
                         <Button
-                          type="link"
-                          danger
-                          icon={<DeleteOutlined />}
-                          onClick={handleRemoveCatalogHero}
-                          style={{ marginTop: 8 }}
+                          type="primary"
+                          icon={<ThunderboltOutlined />}
+                          onClick={handleTestAmoCRM}
+                          loading={testingAmoCRM}
+                          block
                         >
-                          O'chirish
+                          Ulanishni tekshirish
                         </Button>
-                      </div>
-                    ) : null}
-                    
-                    <Upload
-                      customRequest={handleCatalogHeroUpload}
-                      showUploadList={false}
-                      accept="image/*"
-                    >
-                      <Button icon={<UploadOutlined />} loading={uploadingCatalogHero} block>
-                        {previewCatalogHero ? 'Rasmni almashtirish' : 'Rasm yuklash'}
-                      </Button>
-                    </Upload>
-
-                    {/* Select from existing media */}
-                    <div style={{ marginTop: 16 }}>
+                        <Button
+                          icon={<LinkOutlined />}
+                          onClick={handleAmoCRMAuthorize}
+                          block
+                        >
+                          Qayta avtorizatsiya qilish
+                        </Button>
+                      </>
+                    ) : (
                       <Button
-                        icon={<FolderOutlined />}
-                        onClick={() => setCatalogHeroModalOpen(true)}
+                        type="primary"
+                        icon={<LinkOutlined />}
+                        onClick={handleAmoCRMAuthorize}
                         block
-                        style={{ marginBottom: 8 }}
+                        disabled={!form.getFieldValue('amocrmDomain') || !form.getFieldValue('amocrmClientId')}
                       >
-                        Mavjud rasmdan tanlash
+                        AmoCRM'ga ulanish
                       </Button>
-                      {form.getFieldValue('catalogHeroImageId') && (
-                        <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
-                          Tanlangan: {mediaList?.find(m => m.id === form.getFieldValue('catalogHeroImageId'))?.filename || 'Noma\'lum'}
-                        </div>
-                      )}
+                    )}
+                  </Space>
+
+                  <div style={{ marginTop: 16, padding: 12, background: '#f0f0f0', borderRadius: 4 }}>
+                    <div style={{ fontSize: 12, color: '#666' }}>
+                      <strong>Qo'llanma:</strong> AmoCRM integratsiyasini sozlash uchun{' '}
+                      <a href="/AMOCRM_INTEGRATSIYA_QOLLANMASI.md" target="_blank" rel="noopener noreferrer">
+                        qo'llanmani ko'ring
+                      </a>
                     </div>
                   </div>
-                </Form.Item>
-              </div>
 
-              {/* Logo */}
-              <div style={{ marginBottom: 24 }}>
-                <Form.Item
-                  label="Logo"
-                  name="logoId"
-                  tooltip="Sayt header'idagi logo rasm"
-                >
-                  <div>
-                    {previewLogo ? (
-                      <div style={{ marginBottom: 16 }}>
-                        <Image
-                          src={normalizeImageUrl(previewLogo)}
-                          alt="Logo"
-                          style={{ maxWidth: '100%', maxHeight: '100px', objectFit: 'contain' }}
-                          preview={false}
-                        />
-                        <Button
-                          type="link"
-                          danger
-                          icon={<DeleteOutlined />}
-                          onClick={handleRemoveLogo}
-                          style={{ marginTop: 8 }}
-                        >
-                          O'chirish
-                        </Button>
-                      </div>
-                    ) : null}
-                    
-                    <Upload
-                      customRequest={handleLogoUpload}
-                      showUploadList={false}
-                      accept="image/*"
+                  <div style={{ marginTop: 24, textAlign: 'right' }}>
+                    <Button
+                      type="primary"
+                      icon={<SaveOutlined />}
+                      onClick={handleAmoCRMSave}
+                      loading={updateMutation.isPending}
+                      size="large"
                     >
-                      <Button icon={<UploadOutlined />} loading={uploadingLogo} block>
-                        {previewLogo ? 'Logoni almashtirish' : 'Logo yuklash'}
-                      </Button>
-                    </Upload>
-
-                    {/* Select from existing media */}
-                    <div style={{ marginTop: 16 }}>
-                      <Button
-                        icon={<FolderOutlined />}
-                        onClick={() => setLogoModalOpen(true)}
-                        block
-                        style={{ marginBottom: 8 }}
-                      >
-                        Mavjud rasmdan tanlash
-                      </Button>
-                      {form.getFieldValue('logoId') && (
-                        <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
-                          Tanlangan: {mediaList?.find(m => m.id === form.getFieldValue('logoId'))?.filename || 'Noma\'lum'}
-                        </div>
-                      )}
-                    </div>
+                      Saqlash
+                    </Button>
                   </div>
-                </Form.Item>
-              </div>
-            </Card>
-
-            {/* Sidebar Boshqaruvi - Har bir sahifa turi uchun */}
-            <Card title="Sidebar boshqaruvi (har bir sahifa turi uchun)" style={{ marginTop: 24 }}>
-              <Tabs
-                defaultActiveKey="catalog"
-                items={[
-                  {
-                    key: 'catalog',
-                    label: 'Catalog sahifasi',
-                    children: <SidebarConfigTab 
-                      pageType="catalog"
-                      config={sidebarConfigs.catalog || { sections: [], brandIds: [] }}
-                      onUpdate={(config) => setSidebarConfigs({ ...sidebarConfigs, catalog: config })}
-                      onSave={() => handleSidebarConfigSave('catalog')}
-                      brandsList={brandsList || []}
-                      imageModals={sidebarConfigImageModals.catalog || {}}
-                      onImageModalChange={(modals) => setSidebarConfigImageModals({ ...sidebarConfigImageModals, catalog: modals })}
-                      isSaving={updateMutation.isPending}
-                    />,
-                  },
-                  {
-                    key: 'products',
-                    label: 'Mahsulot sahifasi',
-                    children: <SidebarConfigTab 
-                      pageType="products"
-                      config={sidebarConfigs.products || { sections: [], brandIds: [] }}
-                      onUpdate={(config) => setSidebarConfigs({ ...sidebarConfigs, products: config })}
-                      onSave={() => handleSidebarConfigSave('products')}
-                      brandsList={brandsList || []}
-                      imageModals={sidebarConfigImageModals.products || {}}
-                      onImageModalChange={(modals) => setSidebarConfigImageModals({ ...sidebarConfigImageModals, products: modals })}
-                      isSaving={updateMutation.isPending}
-                    />,
-                  },
-                  {
-                    key: 'services',
-                    label: 'Xizmat sahifasi',
-                    children: <SidebarConfigTab 
-                      pageType="services"
-                      config={sidebarConfigs.services || { sections: [], brandIds: [] }}
-                      onUpdate={(config) => setSidebarConfigs({ ...sidebarConfigs, services: config })}
-                      onSave={() => handleSidebarConfigSave('services')}
-                      brandsList={brandsList || []}
-                      imageModals={sidebarConfigImageModals.services || {}}
-                      onImageModalChange={(modals) => setSidebarConfigImageModals({ ...sidebarConfigImageModals, services: modals })}
-                      isSaving={updateMutation.isPending}
-                    />,
-                  },
-                  {
-                    key: 'posts',
-                    label: 'Maqola sahifasi',
-                    children: <SidebarConfigTab 
-                      pageType="posts"
-                      config={sidebarConfigs.posts || { sections: [], brandIds: [] }}
-                      onUpdate={(config) => setSidebarConfigs({ ...sidebarConfigs, posts: config })}
-                      onSave={() => handleSidebarConfigSave('posts')}
-                      brandsList={brandsList || []}
-                      imageModals={sidebarConfigImageModals.posts || {}}
-                      onImageModalChange={(modals) => setSidebarConfigImageModals({ ...sidebarConfigImageModals, posts: modals })}
-                      isSaving={updateMutation.isPending}
-                    />,
-                  },
-                ]}
-              />
-            </Card>
-          </Col>
-        </Row>
-
-        <div style={{ marginTop: 24, textAlign: 'right' }}>
-          <Button
-            type="primary"
-            icon={<SaveOutlined />}
-            onClick={handleSubmit}
-            loading={updateMutation.isPending}
-            size="large"
-          >
-            Saqlash
-          </Button>
-        </div>
-      </Form>
+                </Card>
+              </Form>
+            ),
+          },
+          {
+            key: 'homepage-content',
+            label: 'Bosh sahifa kontenti',
+            children: <HomepageContentTab />,
+          },
+        ]}
+      />
 
       {/* Media Library Modals */}
       <MediaLibraryModal

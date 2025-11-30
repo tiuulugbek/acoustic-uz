@@ -30,6 +30,13 @@ import { MenusModule } from './menus/menus.module';
 import { AuditLogModule } from './audit-log/audit-log.module';
 import { HomepageModule } from './homepage/homepage.module';
 import { DoctorsModule } from './doctors/doctors.module';
+import { HomepageSectionsModule } from './homepage-sections/homepage-sections.module';
+import { HomepageLinksModule } from './homepage-links/homepage-links.module';
+import { HomepagePlaceholdersModule } from './homepage-placeholders/homepage-placeholders.module';
+import { HomepageEmptyStatesModule } from './homepage-empty-states/homepage-empty-states.module';
+import { CatalogPageConfigModule } from './catalog-page-config/catalog-page-config.module';
+import { CommonTextsModule } from './common-texts/common-texts.module';
+import { AvailabilityStatusesModule } from './availability-statuses/availability-statuses.module';
 import { LocaleCacheInterceptor } from './common/interceptors/locale-cache.interceptor';
 
 @Module({
@@ -101,6 +108,13 @@ import { LocaleCacheInterceptor } from './common/interceptors/locale-cache.inter
     AuditLogModule,
     HomepageModule,
     DoctorsModule,
+    HomepageSectionsModule,
+    HomepageLinksModule,
+    HomepagePlaceholdersModule,
+    HomepageEmptyStatesModule,
+    CatalogPageConfigModule,
+    CommonTextsModule,
+    AvailabilityStatusesModule,
   ],
   providers: [
     {

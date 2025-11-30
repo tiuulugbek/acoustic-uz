@@ -132,3 +132,7 @@ ssh user1@192.168.20.66 "cd /var/www/acousticuz && ./restart.sh"
 ⚠️ **Node.js versiyasi** mos bo'lishi kerak  
 ⚠️ **Environment variables** ikkala joyda ham sozlash kerak  
 
+
+
+
+

@@ -6,13 +6,8 @@ import { Prisma } from '@prisma/client';
 export class CommonTextsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(category?: string) {
-    const where: Prisma.CommonTextWhereInput = {};
-    if (category) {
-      where.category = category;
-    }
+  async findAll() {
     return this.prisma.commonText.findMany({
-      where,
       orderBy: { key: 'asc' },
     });
   }
@@ -50,4 +45,3 @@ export class CommonTextsService {
     }
   }
 }
-

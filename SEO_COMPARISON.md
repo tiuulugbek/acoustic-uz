@@ -268,3 +268,7 @@ export async function getHomepageSection(locale: 'uz' | 'ru', sectionKey: string
 **Status**: 📋 Analysis
 **Conclusion**: Database yondashuv SEO uchun yaxshiroq, lekin Hybrid yondashuv ideal
 
+
+
+
+

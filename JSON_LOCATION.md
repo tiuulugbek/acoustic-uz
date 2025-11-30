@@ -140,3 +140,7 @@ ls -la /var/www/acousticuz/data/
 - `JSON_DATA_DIR` environment variable bo'lsa → u yerda
 - Bo'lmasa → `data/` papkasida (project root'da)
 
+
+
+
+

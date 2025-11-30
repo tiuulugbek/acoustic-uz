@@ -1,0 +1,427 @@
+{
+  "project_name": "acoustic-uz",
+  "project_type": "monorepo",
+  "package_manager": "pnpm@8.15.0",
+  "node_version": ">=18.0.0",
+  
+  "frontend": {
+    "name": "@acoustic/frontend",
+    "framework": "Next.js",
+    "version": "^14.0.4",
+    "language": "TypeScript",
+    "build_tool": "Next.js built-in",
+    "build_command": "next build",
+    "start_command": "next start",
+    "dev_command": "next dev",
+    "output_mode": "standalone",
+    "port": 3000,
+    "technologies": {
+      "ui_framework": "React 18.2.0",
+      "styling": "Tailwind CSS 3.4.0",
+      "ui_components": "shadcn/ui",
+      "state_management": "@tanstack/react-query 5.17.0",
+      "i18n": "i18next 23.7.6, next-i18next 15.2.0, react-i18next 14.0.0",
+      "validation": "zod 3.22.4",
+      "icons": "lucide-react 0.303.0",
+      "maps": "@react-map/uzbekistan 1.0.9"
+    },
+    "features": {
+      "ssr": true,
+      "isr": true,
+      "image_optimization": true,
+      "webp_support": true,
+      "locale_detection": "cookie-based"
+    }
+  },
+  
+  "admin": {
+    "name": "@acoustic/admin",
+    "framework": "Vite",
+    "version": "^5.0.8",
+    "language": "TypeScript",
+    "build_tool": "Vite",
+    "build_command": "tsc && vite build",
+    "dev_command": "vite",
+    "preview_command": "vite preview",
+    "port": 3002,
+    "production_port": 80,
+    "technologies": {
+      "ui_framework": "React 18.2.0",
+      "ui_library": "Ant Design 5.12.2",
+      "routing": "react-router-dom 6.21.1",
+      "form_management": "react-hook-form 7.49.2",
+      "validation": "zod 3.22.4",
+      "state_management": "@tanstack/react-query 5.17.0",
+      "rich_text_editor": "Tiptap 3.11.0, react-quill 2.0.0",
+      "image_compression": "browser-image-compression 2.0.2",
+      "date_handling": "dayjs 1.11.19"
+    },
+    "features": {
+      "spa": true,
+      "static_export": true,
+      "nginx_served": true
+    }
+  },
+  
+  "backend": {
+    "name": "@acoustic/backend",
+    "framework": "NestJS",
+    "version": "^10.3.0",
+    "language": "TypeScript",
+    "runtime": "Node.js",
+    "build_tool": "NestJS CLI",
+    "build_command": "nest build",
+    "start_command": "node dist/main",
+    "dev_command": "pnpm build && nest start --watch",
+    "port": 3001,
+    "api_prefix": "/api",
+    "technologies": {
+      "orm": "Prisma 5.22.0",
+      "validation": "class-validator 0.14.0, zod 3.22.4",
+      "authentication": "JWT (@nestjs/jwt 10.2.0, passport-jwt 4.0.1)",
+      "security": "helmet 7.1.0, bcrypt 5.1.1",
+      "rate_limiting": "@nestjs/throttler 5.0.1",
+      "logging": "pino 8.17.2, nestjs-pino 3.1.1",
+      "api_docs": "@nestjs/swagger 7.1.17",
+      "file_upload": "multer 2.0.2",
+      "image_processing": "sharp 0.34.5",
+      "http_client": "axios 1.6.2, @nestjs/axios 3.1.3",
+      "excel": "xlsx 0.18.5"
+    },
+    "features": {
+      "rest_api": true,
+      "swagger_docs": true,
+      "cors": true,
+      "static_file_serving": true,
+      "cookie_auth": true,
+      "rbac": true
+    }
+  },
+  
+  "database": {
+    "type": "PostgreSQL",
+    "version": "15-alpine",
+    "orm": "Prisma",
+    "prisma_version": "5.22.0",
+    "connection_string_format": "postgresql://USERNAME:PASSWORD@HOST:PORT/DATABASE_NAME",
+    "default_port": 5432,
+    "migration_tool": "Prisma Migrate",
+    "seed_script": "prisma/seed.ts",
+    "studio_port": "Prisma Studio (dynamic)"
+  },
+  
+  "external_services": {
+    "telegram": {
+      "enabled": true,
+      "optional": true,
+      "library": "node-telegram-bot-api 0.64.0",
+      "purpose": "Lead notifications",
+      "config_vars": ["TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"]
+    },
+    "amocrm": {
+      "enabled": true,
+      "optional": true,
+      "library": "axios",
+      "purpose": "CRM integration for leads",
+      "config_vars": [
+        "AMOCRM_DOMAIN",
+        "AMOCRM_CLIENT_ID",
+        "AMOCRM_CLIENT_SECRET",
+        "AMOCRM_ACCESS_TOKEN",
+        "AMOCRM_REFRESH_TOKEN",
+        "AMOCRM_PIPELINE_ID",
+        "AMOCRM_STATUS_ID"
+      ]
+    },
+    "aws_s3": {
+      "enabled": true,
+      "optional": true,
+      "library": "aws-sdk 2.1518.0",
+      "purpose": "File storage",
+      "config_vars": [
+        "STORAGE_DRIVER",
+        "S3_BUCKET",
+        "S3_ENDPOINT",
+        "S3_ACCESS_KEY",
+        "S3_SECRET_KEY",
+        "S3_USE_SSL"
+      ],
+      "alternatives": ["local storage"]
+    }
+  },
+  
+  "ports": {
+    "frontend": {
+      "development": 3000,
+      "production": 3000,
+      "docker": 3000
+    },
+    "admin": {
+      "development": 3002,
+      "production": 80,
+      "docker": 80
+    },
+    "backend": {
+      "development": 3001,
+      "production": 3001,
+      "docker": 3001,
+      "api_docs": "/api/docs"
+    },
+    "postgresql": {
+      "default": 5432,
+      "docker": 5432
+    },
+    "redis": {
+      "default": 6379,
+      "docker": 6379,
+      "optional": true
+    },
+    "nginx": {
+      "http": 80,
+      "https": 443
+    }
+  },
+  
+  "environment_variables": {
+    "required": {
+      "DATABASE_URL": "PostgreSQL connection string",
+      "JWT_ACCESS_SECRET": "Secret for JWT access tokens",
+      "JWT_REFRESH_SECRET": "Secret for JWT refresh tokens"
+    },
+    "backend": {
+      "NODE_ENV": "development | production",
+      "PORT": "Backend server port (default: 3001)",
+      "CORS_ORIGIN": "Comma-separated list of allowed origins",
+      "RATE_LIMIT_TTL": "Rate limit time window in seconds (default: 60)",
+      "RATE_LIMIT_MAX": "Max requests per window (default: 100)",
+      "STORAGE_DRIVER": "local | s3",
+      "S3_BUCKET": "S3 bucket name",
+      "S3_ENDPOINT": "S3 endpoint URL",
+      "S3_ACCESS_KEY": "S3 access key",
+      "S3_SECRET_KEY": "S3 secret key",
+      "S3_USE_SSL": "true | false",
+      "TELEGRAM_BOT_TOKEN": "Telegram bot token (optional)",
+      "TELEGRAM_CHAT_ID": "Telegram chat ID (optional)",
+      "AMOCRM_DOMAIN": "AmoCRM domain (optional)",
+      "AMOCRM_CLIENT_ID": "AmoCRM client ID (optional)",
+      "AMOCRM_CLIENT_SECRET": "AmoCRM client secret (optional)",
+      "AMOCRM_ACCESS_TOKEN": "AmoCRM access token (optional)",
+      "AMOCRM_REFRESH_TOKEN": "AmoCRM refresh token (optional)",
+      "AMOCRM_PIPELINE_ID": "AmoCRM pipeline ID (optional)",
+      "AMOCRM_STATUS_ID": "AmoCRM status ID (optional)",
+      "APP_URL": "Application URL for OAuth callbacks"
+    },
+    "frontend": {
+      "NEXT_PUBLIC_API_URL": "Backend API URL",
+      "NEXT_PUBLIC_SITE_URL": "Frontend site URL",
+      "NEXT_TELEMETRY_DISABLED": "1"
+    },
+    "admin": {
+      "VITE_API_URL": "Backend API URL"
+    },
+    "docker": {
+      "POSTGRES_USER": "PostgreSQL username (default: acoustic)",
+      "POSTGRES_PASSWORD": "PostgreSQL password (default: acoustic123)",
+      "POSTGRES_DB": "PostgreSQL database name (default: acoustic)"
+    }
+  },
+  
+  "docker": {
+    "enabled": true,
+    "compose_file": "docker-compose.yml",
+    "services": {
+      "postgres": {
+        "image": "postgres:15-alpine",
+        "port": "5432:5432",
+        "volumes": ["postgres_data:/var/lib/postgresql/data"],
+        "healthcheck": true
+      },
+      "redis": {
+        "image": "redis:7-alpine",
+        "port": "6379:6379",
+        "volumes": ["redis_data:/data"],
+        "healthcheck": true,
+        "optional": true
+      },
+      "backend": {
+        "dockerfile": "apps/backend/Dockerfile",
+        "base_image": "node:18-alpine",
+        "port": "3001:3001",
+        "volumes": ["./uploads:/app/uploads"],
+        "depends_on": ["postgres"]
+      },
+      "frontend": {
+        "dockerfile": "apps/frontend/Dockerfile",
+        "base_image": "node:18-alpine",
+        "port": "3000:3000",
+        "depends_on": ["backend"],
+        "output_mode": "standalone"
+      },
+      "admin": {
+        "dockerfile": "apps/admin/Dockerfile",
+        "base_image": "node:18-alpine",
+        "final_image": "nginx:alpine",
+        "port": "3002:80",
+        "depends_on": ["backend"],
+        "served_by": "nginx"
+      },
+      "nginx": {
+        "image": "nginx:alpine",
+        "ports": ["80:80", "443:443"],
+        "volumes": [
+          "./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro",
+          "./infra/nginx/conf.d:/etc/nginx/conf.d:ro"
+        ],
+        "depends_on": ["frontend", "admin", "backend"]
+      }
+    }
+  },
+  
+  "build_and_deploy_steps": {
+    "development": {
+      "steps": [
+        "pnpm install",
+        "cp .env.example .env",
+        "Update DATABASE_URL in .env",
+        "pnpm db:generate",
+        "pnpm db:migrate",
+        "pnpm db:seed",
+        "pnpm dev"
+      ]
+    },
+    "production": {
+      "backend": [
+        "pnpm install --frozen-lockfile",
+        "pnpm db:generate",
+        "pnpm db:migrate:deploy",
+        "pnpm --filter @acoustic/backend build",
+        "pnpm --filter @acoustic/backend start:prod"
+      ],
+      "frontend": [
+        "pnpm install --frozen-lockfile",
+        "pnpm --filter @acoustic/frontend build",
+        "pnpm --filter @acoustic/frontend start"
+      ],
+      "admin": [
+        "pnpm install --frozen-lockfile",
+        "pnpm --filter @acoustic/admin build",
+        "Serve dist/ with nginx or static file server"
+      ]
+    },
+    "docker": {
+      "steps": [
+        "docker-compose up -d postgres",
+        "docker-compose exec backend pnpm db:generate",
+        "docker-compose exec backend pnpm db:migrate",
+        "docker-compose exec backend pnpm db:seed",
+        "docker-compose up -d"
+      ]
+    }
+  },
+  
+  "deployment_requirements": {
+    "server_requirements": {
+      "node_version": ">=18.0.0",
+      "pnpm_version": ">=8.0.0",
+      "postgresql_version": ">=14.0",
+      "docker_version": ">=20.0.0 (optional)",
+      "nginx_version": ">=1.18.0 (recommended)"
+    },
+    "reverse_proxy": {
+      "required": true,
+      "recommended": "nginx",
+      "purpose": "SSL termination, load balancing, static file serving",
+      "ssl": {
+        "required": true,
+        "recommended": "Let's Encrypt",
+        "ports": {
+          "http": 80,
+          "https": 443
+        }
+      }
+    },
+    "background_services": {
+      "workers": false,
+      "cron_jobs": false,
+      "queue_system": false,
+      "cache": {
+        "redis": {
+          "optional": true,
+          "port": 6379,
+          "purpose": "Caching (currently not implemented)"
+        }
+      }
+    },
+    "file_storage": {
+      "local": {
+        "path": "./uploads",
+        "permissions": "read/write"
+      },
+      "s3": {
+        "optional": true,
+        "recommended_for_production": true
+      }
+    },
+    "monitoring": {
+      "logging": "Pino (built-in)",
+      "external_monitoring": "Not configured",
+      "health_checks": "Docker healthchecks configured"
+    },
+    "backup": {
+      "database": {
+        "script": "./scripts/backup.sh",
+        "location": "./backups/",
+        "retention": "7 days"
+      },
+      "uploads": "Manual or S3 versioning"
+    }
+  },
+  
+  "monorepo": {
+    "tool": "Turborepo",
+    "version": "^1.10.12",
+    "workspace_manager": "pnpm workspaces",
+    "packages": {
+      "shared": {
+        "name": "@acoustic/shared",
+        "type": "library",
+        "purpose": "Shared types, Zod schemas, utilities",
+        "build_command": "tsc"
+      }
+    }
+  },
+  
+  "security": {
+    "authentication": {
+      "method": "JWT",
+      "token_storage": "httpOnly cookies",
+      "rbac": true,
+      "roles": ["superadmin", "admin", "editor", "viewer"]
+    },
+    "headers": {
+      "helmet": true,
+      "cors": true,
+      "rate_limiting": true
+    },
+    "ssl": {
+      "required": true,
+      "ports": [80, 443]
+    }
+  },
+  
+  "api": {
+    "base_path": "/api",
+    "documentation": "/api/docs",
+    "swagger": true,
+    "authentication": {
+      "bearer_token": true,
+      "cookie_auth": true
+    },
+    "rate_limiting": {
+      "enabled": true,
+      "default_ttl": 60,
+      "default_limit": 100
+    }
+  }
+}
+

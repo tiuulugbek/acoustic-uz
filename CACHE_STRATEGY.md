@@ -103,3 +103,7 @@ const cachedApiCall = unstable_cache(
 3. **Cache Monitoring**: Cache holatini kuzatish
 4. **Adaptive Revalidation**: Backend yuklanishiga qarab revalidate vaqtini o'zgartirish
 
+
+
+
+

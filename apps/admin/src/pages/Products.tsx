@@ -47,6 +47,7 @@ import {
   DeleteOutlined,
   PlusOutlined,
 } from '@ant-design/icons';
+import TooltipHelper from '../components/TooltipHelper';
 
 const statusOptions = [
   { label: 'Nashr etilgan', value: 'published' },
@@ -71,7 +72,9 @@ const formFactorOptions = [
   { label: 'Mini BTE', value: 'mini-bte' },
   { label: 'ITE (quloq ichida)', value: 'ite' },
   { label: 'ITC (kanal ichida)', value: 'itc' },
-  { label: 'CIC/IIC (ko‘rinmas)', value: 'cic-iic' },
+  { label: 'CIC (chuqur kanal)', value: 'cic' },
+  { label: 'IIC (chuqur ko\'rinmas)', value: 'iic' },
+  { label: 'CIC/IIC (ko\'rinmas)', value: 'cic-iic' },
   { label: 'RIC', value: 'ric' },
 ];
 
@@ -721,12 +724,34 @@ export default function ProductsPage() {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item label="Mahsulot tavsifi (uz)" name="description_uz">
-                <Input.TextArea rows={4} placeholder="Uzbekcha tavsif" />
+                <div>
+                  <TooltipHelper
+                    value={form.getFieldValue('description_uz') || ''}
+                    onChange={(newValue) => form.setFieldsValue({ description_uz: newValue })}
+                    fieldName="description_uz"
+                  />
+                  <Input.TextArea 
+                    rows={4} 
+                    placeholder="Uzbekcha tavsif"
+                    style={{ marginTop: 8 }}
+                  />
+                </div>
               </Form.Item>
             </Col>
             <Col span={12}>
               <Form.Item label="Mahsulot tavsifi (ru)" name="description_ru">
-                <Input.TextArea rows={4} placeholder="Описание на русском" />
+                <div>
+                  <TooltipHelper
+                    value={form.getFieldValue('description_ru') || ''}
+                    onChange={(newValue) => form.setFieldsValue({ description_ru: newValue })}
+                    fieldName="description_ru"
+                  />
+                  <Input.TextArea 
+                    rows={4} 
+                    placeholder="Описание на русском"
+                    style={{ marginTop: 8 }}
+                  />
+                </div>
               </Form.Item>
             </Col>
           </Row>
@@ -830,7 +855,7 @@ export default function ProductsPage() {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item label="Regulyator maʼlumoti (uz)" name="regulatoryNote_uz">
-                <Input.TextArea rows={2} placeholder="Masalan, tibbiy ro‘yxatdan o‘tganligi" />
+                <Input.TextArea rows={2} placeholder="Masalan, tibbiy ro'yxatdan o'tganligi" />
               </Form.Item>
             </Col>
             <Col span={12}>
@@ -840,7 +865,18 @@ export default function ProductsPage() {
             </Col>
           </Row>
 
-          <Divider orientation="left">Media va bog‘liqlik</Divider>
+          <Form.Item 
+            label="Asosiy xususiyatlar (Specs Table)" 
+            name="specsText"
+            extra="HTML table formatida. Frontend'da 'Asosiy xususiyatlar' bo'limida ko'rsatiladi. Masalan: <table><tr><td>Xususiyat</td><td>Qiymat</td></tr></table>"
+          >
+            <Input.TextArea 
+              rows={8} 
+              placeholder='<table><tr><td>Chastota diapazoni</td><td>125-8000 Hz</td></tr><tr><td>Signal ishlov berish</td><td>Raqamli</td></tr></table>' 
+            />
+          </Form.Item>
+
+          <Divider orientation="left">Media va bog'liqlik</Divider>
 
           <Form.List name="galleryUrls">
             {(fields, { add, remove, move }) => (

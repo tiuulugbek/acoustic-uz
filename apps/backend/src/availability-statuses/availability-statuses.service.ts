@@ -24,6 +24,12 @@ export class AvailabilityStatusesService {
     return status;
   }
 
+  async create(data: Prisma.AvailabilityStatusCreateInput) {
+    return this.prisma.availabilityStatus.create({
+      data,
+    });
+  }
+
   async update(key: string, data: Prisma.AvailabilityStatusUpdateInput) {
     try {
       return await this.prisma.availabilityStatus.update({
@@ -37,5 +43,17 @@ export class AvailabilityStatusesService {
       throw error;
     }
   }
-}
 
+  async delete(key: string) {
+    try {
+      return await this.prisma.availabilityStatus.delete({
+        where: { key },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new NotFoundException(`Availability status with key "${key}" not found`);
+      }
+      throw error;
+    }
+  }
+}

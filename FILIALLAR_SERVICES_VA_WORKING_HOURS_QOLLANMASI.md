@@ -176,3 +176,7 @@ Bu log'lar browser console'da ko'rinadi va muammoni aniqlashga yordam beradi.
 
 
 
+
+
+
+

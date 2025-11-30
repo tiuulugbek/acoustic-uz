@@ -150,3 +150,7 @@ npm run build
 - Variant A (Avtomatik) - oddiy va ishonchli
 - Variant B (Pre-populate) - agar birinchi so'rov tez bo'lishi kerak bo'lsa
 
+
+
+
+

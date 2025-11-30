@@ -125,3 +125,7 @@ Hal qilingandan keyin:
 - ✅ Minimal hardcoded qiymatlar
 - ✅ Admin panel orqali barcha narsalarni boshqarish mumkin
 
+
+
+
+

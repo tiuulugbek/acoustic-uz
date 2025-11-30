@@ -148,3 +148,7 @@ echo "   3. Run migrations: cd ${SERVER_PATH}/backend && npx prisma migrate depl
 echo "   4. Start backend: cd ${SERVER_PATH}/backend && node dist/main.js"
 echo ""
 
+
+
+
+

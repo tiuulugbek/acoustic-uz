@@ -549,6 +549,290 @@ export const deleteHomepageService = (id: string) =>
     method: 'DELETE',
   });
 
+// Homepage Sections
+export interface HomepageSectionDto {
+  id: string;
+  key: string;
+  title_uz?: string | null;
+  title_ru?: string | null;
+  subtitle_uz?: string | null;
+  subtitle_ru?: string | null;
+  description_uz?: string | null;
+  description_ru?: string | null;
+  showTitle: boolean;
+  showSubtitle: boolean;
+  showDescription: boolean;
+  order: number;
+  status: 'published' | 'draft' | 'hidden';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CreateHomepageSectionPayload = {
+  key: string;
+  title_uz?: string | null;
+  title_ru?: string | null;
+  subtitle_uz?: string | null;
+  subtitle_ru?: string | null;
+  description_uz?: string | null;
+  description_ru?: string | null;
+  showTitle?: boolean;
+  showSubtitle?: boolean;
+  showDescription?: boolean;
+  order?: number;
+  status?: HomepageSectionDto['status'];
+};
+
+export type UpdateHomepageSectionPayload = Partial<CreateHomepageSectionPayload>;
+
+export const getHomepageSections = () => request<HomepageSectionDto[]>('/homepage/sections');
+export const createHomepageSection = (payload: CreateHomepageSectionPayload) =>
+  request<HomepageSectionDto>('/homepage/sections', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+export const updateHomepageSection = (key: string, payload: UpdateHomepageSectionPayload) =>
+  request<HomepageSectionDto>(`/homepage/sections/${key}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+export const deleteHomepageSection = (key: string) =>
+  request<void>(`/homepage/sections/${key}`, {
+    method: 'DELETE',
+  });
+
+// Homepage Links
+export interface HomepageLinkDto {
+  id: string;
+  sectionKey: string;
+  text_uz: string;
+  text_ru: string;
+  href: string;
+  icon?: string | null;
+  position: 'bottom' | 'header' | 'inline';
+  order: number;
+  status: 'published' | 'draft';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CreateHomepageLinkPayload = {
+  sectionKey: string;
+  text_uz: string;
+  text_ru: string;
+  href: string;
+  icon?: string | null;
+  position: 'bottom' | 'header' | 'inline';
+  order?: number;
+  status?: HomepageLinkDto['status'];
+};
+
+export type UpdateHomepageLinkPayload = Partial<CreateHomepageLinkPayload>;
+
+export const getHomepageLinks = () => request<HomepageLinkDto[]>('/homepage/links');
+export const createHomepageLink = (payload: CreateHomepageLinkPayload) =>
+  request<HomepageLinkDto>('/homepage/links', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+export const updateHomepageLink = (id: string, payload: UpdateHomepageLinkPayload) =>
+  request<HomepageLinkDto>(`/homepage/links/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+export const deleteHomepageLink = (id: string) =>
+  request<void>(`/homepage/links/${id}`, {
+    method: 'DELETE',
+  });
+
+// Homepage Placeholders
+export interface HomepagePlaceholderDto {
+  id: string;
+  sectionKey: string;
+  text_uz?: string | null;
+  text_ru?: string | null;
+  backgroundColor?: string | null;
+  textColor?: string | null;
+  fontSize?: string | null;
+  fontWeight?: string | null;
+  imageId?: string | null;
+  image?: {
+    id: string;
+    url: string;
+  } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CreateHomepagePlaceholderPayload = {
+  sectionKey: string;
+  text_uz?: string | null;
+  text_ru?: string | null;
+  backgroundColor?: string | null;
+  textColor?: string | null;
+  fontSize?: string | null;
+  fontWeight?: string | null;
+  imageId?: string | null;
+};
+
+export type UpdateHomepagePlaceholderPayload = Partial<CreateHomepagePlaceholderPayload>;
+
+export const getHomepagePlaceholders = () => request<HomepagePlaceholderDto[]>('/homepage/placeholders');
+export const createHomepagePlaceholder = (payload: CreateHomepagePlaceholderPayload) =>
+  request<HomepagePlaceholderDto>('/homepage/placeholders', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+export const updateHomepagePlaceholder = (sectionKey: string, payload: UpdateHomepagePlaceholderPayload) =>
+  request<HomepagePlaceholderDto>(`/homepage/placeholders/${sectionKey}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+export const deleteHomepagePlaceholder = (sectionKey: string) =>
+  request<void>(`/homepage/placeholders/${sectionKey}`, {
+    method: 'DELETE',
+  });
+
+// Homepage Empty States
+export interface HomepageEmptyStateDto {
+  id: string;
+  sectionKey: string;
+  message_uz: string;
+  message_ru: string;
+  icon?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CreateHomepageEmptyStatePayload = {
+  sectionKey: string;
+  message_uz: string;
+  message_ru: string;
+  icon?: string | null;
+};
+
+export type UpdateHomepageEmptyStatePayload = Partial<CreateHomepageEmptyStatePayload>;
+
+export const getHomepageEmptyStates = () => request<HomepageEmptyStateDto[]>('/homepage/empty-states');
+export const createHomepageEmptyState = (payload: CreateHomepageEmptyStatePayload) =>
+  request<HomepageEmptyStateDto>('/homepage/empty-states', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+export const updateHomepageEmptyState = (sectionKey: string, payload: UpdateHomepageEmptyStatePayload) =>
+  request<HomepageEmptyStateDto>(`/homepage/empty-states/${sectionKey}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+export const deleteHomepageEmptyState = (sectionKey: string) =>
+  request<void>(`/homepage/empty-states/${sectionKey}`, {
+    method: 'DELETE',
+  });
+
+// Catalog Page Config
+export interface CatalogPageConfigDto {
+  id: string;
+  hearingAidsTitle_uz?: string | null;
+  hearingAidsTitle_ru?: string | null;
+  interacousticsTitle_uz?: string | null;
+  interacousticsTitle_ru?: string | null;
+  accessoriesTitle_uz?: string | null;
+  accessoriesTitle_ru?: string | null;
+  updatedAt: string;
+}
+
+export type UpdateCatalogPageConfigPayload = Partial<{
+  hearingAidsTitle_uz?: string | null;
+  hearingAidsTitle_ru?: string | null;
+  interacousticsTitle_uz?: string | null;
+  interacousticsTitle_ru?: string | null;
+  accessoriesTitle_uz?: string | null;
+  accessoriesTitle_ru?: string | null;
+}>;
+
+export const getCatalogPageConfig = () => request<CatalogPageConfigDto>('/catalog-page-config');
+export const updateCatalogPageConfig = (payload: UpdateCatalogPageConfigPayload) =>
+  request<CatalogPageConfigDto>('/catalog-page-config', {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+
+// Common Texts
+export interface CommonTextDto {
+  id: string;
+  key: string;
+  text_uz: string;
+  text_ru: string;
+  category?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CreateCommonTextPayload = {
+  key: string;
+  text_uz: string;
+  text_ru: string;
+  category?: string | null;
+};
+
+export type UpdateCommonTextPayload = Partial<CreateCommonTextPayload>;
+
+export const getCommonTexts = () => request<CommonTextDto[]>('/common-texts');
+export const createCommonText = (payload: CreateCommonTextPayload) =>
+  request<CommonTextDto>('/common-texts', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+export const updateCommonText = (key: string, payload: UpdateCommonTextPayload) =>
+  request<CommonTextDto>(`/common-texts/${key}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+export const deleteCommonText = (key: string) =>
+  request<void>(`/common-texts/${key}`, {
+    method: 'DELETE',
+  });
+
+// Availability Statuses
+export interface AvailabilityStatusDto {
+  id: string;
+  key: string;
+  label_uz: string;
+  label_ru: string;
+  schema?: string | null;
+  colorClass?: string | null;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CreateAvailabilityStatusPayload = {
+  key: string;
+  label_uz: string;
+  label_ru: string;
+  schema?: string | null;
+  colorClass?: string | null;
+  order?: number;
+};
+
+export type UpdateAvailabilityStatusPayload = Partial<CreateAvailabilityStatusPayload>;
+
+export const getAvailabilityStatuses = () => request<AvailabilityStatusDto[]>('/availability-statuses');
+export const createAvailabilityStatus = (payload: CreateAvailabilityStatusPayload) =>
+  request<AvailabilityStatusDto>('/availability-statuses', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+export const updateAvailabilityStatus = (key: string, payload: UpdateAvailabilityStatusPayload) =>
+  request<AvailabilityStatusDto>(`/availability-statuses/${key}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+export const deleteAvailabilityStatus = (key: string) =>
+  request<void>(`/availability-statuses/${key}`, {
+    method: 'DELETE',
+  });
+
 export interface BannerDto {
   id: string;
   title_uz: string;
@@ -614,11 +898,12 @@ export interface MediaDto {
 }
 
 export const getMedia = () => request<MediaDto[]>('/media');
-export const uploadMedia = async (file: File, alt_uz?: string, alt_ru?: string): Promise<MediaDto> => {
+export const uploadMedia = async (file: File, alt_uz?: string, alt_ru?: string, skipWebp?: boolean): Promise<MediaDto> => {
   const formData = new FormData();
   formData.append('file', file);
   if (alt_uz) formData.append('alt_uz', alt_uz);
   if (alt_ru) formData.append('alt_ru', alt_ru);
+  if (skipWebp) formData.append('skipWebp', 'true');
 
   const response = await fetch(`${API_BASE}/media`, {
     method: 'POST',

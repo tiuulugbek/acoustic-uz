@@ -54,6 +54,7 @@ export class MediaController {
         },
         alt_uz: { type: 'string' },
         alt_ru: { type: 'string' },
+        skipWebp: { type: 'boolean', description: 'Skip WebP conversion (useful for panorama images)' },
       },
     },
   })
@@ -61,9 +62,11 @@ export class MediaController {
   upload(
     @UploadedFile() file: StoredFile,
     @Body('alt_uz') alt_uz?: string,
-    @Body('alt_ru') alt_ru?: string
+    @Body('alt_ru') alt_ru?: string,
+    @Body('skipWebp') skipWebp?: string
   ) {
-    return this.mediaService.create(file, alt_uz, alt_ru);
+    const shouldSkipWebp = skipWebp === 'true';
+    return this.mediaService.create(file, alt_uz, alt_ru, shouldSkipWebp);
   }
 
   @Patch(':id')

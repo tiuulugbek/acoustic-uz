@@ -225,3 +225,7 @@ export default function SearchResults({ query, locale }: SearchResultsProps) {
 }
 
 
+
+
+
+

@@ -59,6 +59,7 @@ model Media {
   doctors             Doctor[]
   settingsCatalogHero Setting? @relation("SettingCatalogHero")
   settingsLogo        Setting? @relation("SettingLogo")
+  homepagePlaceholders HomepagePlaceholder[]
 
   @@index([url])
 }
@@ -519,4 +520,111 @@ model Doctor {
 
   @@index([slug])
   @@index([status, order])
+}
+
+model HomepageSection {
+  id              String   @id @default(cuid())
+  key             String   @unique
+  title_uz        String?
+  title_ru        String?
+  subtitle_uz     String?
+  subtitle_ru     String?
+  description_uz  String?  @db.Text
+  description_ru  String?  @db.Text
+  showTitle       Boolean  @default(true)
+  showSubtitle    Boolean  @default(false)
+  showDescription Boolean  @default(false)
+  order           Int      @default(0)
+  status          String   @default("published") // published, draft, hidden
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([key])
+  @@index([status, order])
+}
+
+model HomepageLink {
+  id         String   @id @default(cuid())
+  sectionKey String
+  text_uz    String
+  text_ru    String
+  href       String
+  icon       String?
+  position   String   @default("bottom") // bottom, header, inline
+  order      Int      @default(0)
+  status     String   @default("published") // published, draft
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([sectionKey])
+  @@index([position, order])
+  @@index([status])
+}
+
+model HomepagePlaceholder {
+  id            String   @id @default(cuid())
+  sectionKey    String   @unique
+  text_uz       String?
+  text_ru       String?
+  backgroundColor String?
+  textColor     String?
+  fontSize      String?
+  fontWeight    String?
+  imageId       String?
+  image         Media?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([sectionKey])
+}
+
+model HomepageEmptyState {
+  id         String   @id @default(cuid())
+  sectionKey String   @unique
+  message_uz String
+  message_ru String
+  icon       String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([sectionKey])
+}
+
+model CatalogPageConfig {
+  id                  String   @id @default("singleton")
+  hearingAidsTitle_uz String?
+  hearingAidsTitle_ru String?
+  interacousticsTitle_uz String?
+  interacousticsTitle_ru String?
+  accessoriesTitle_uz String?
+  accessoriesTitle_ru String?
+  updatedAt          DateTime @updatedAt
+}
+
+model CommonText {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  text_uz   String
+  text_ru   String
+  category  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+  @@index([category])
+}
+
+model AvailabilityStatus {
+  id         String   @id @default(cuid())
+  key        String   @unique
+  label_uz   String
+  label_ru   String
+  schema     String?  // Schema.org URL
+  colorClass String?  // Tailwind CSS classes
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([key])
+  @@index([order])
 }

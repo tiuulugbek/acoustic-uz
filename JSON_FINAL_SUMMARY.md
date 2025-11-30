@@ -118,3 +118,7 @@ pnpm --filter @acoustic/frontend build
 2. ⏳ Test qilish kerak
 3. ⏳ Production'da sinab ko'rish kerak
 
+
+
+
+

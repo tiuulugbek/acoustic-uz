@@ -181,3 +181,7 @@ Lekin quyidagi yaxshilanishlar kerak:
 3. **File locking** - Concurrency muammosini hal qilish
 4. **Compression** - Disk maydonini tejash
 
+
+
+
+

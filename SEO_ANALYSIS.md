@@ -434,3 +434,7 @@ Agar yuqoridagi tavsiyalarni amalga oshirsak:
 
 **Kutilayotgan natija:** Agar barcha tavsiyalarni amalga oshirsak, SEO reytingi **9/10** ga yetishi mumkin.
 
+
+
+
+

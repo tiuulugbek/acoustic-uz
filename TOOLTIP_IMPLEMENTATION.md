@@ -161,3 +161,7 @@ Tooltip orqali kiritish tizimi muvaffaqiyatli amalga oshirildi:
 
 Foydalanuvchilar endi maydonlar haqida tooltip orqali tezda ma'lumot olishadi!
 
+
+
+
+

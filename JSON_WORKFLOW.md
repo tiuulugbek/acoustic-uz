@@ -173,3 +173,7 @@ npm run build
 - ✅ Debug oson
 - ⚠️ Manual yangilanish kerak bo'lishi mumkin (lekin avtomatik ham bo'lishi mumkin)
 
+
+
+
+

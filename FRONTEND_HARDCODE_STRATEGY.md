@@ -579,3 +579,7 @@ Lekin bu yondashuvda JSON fayllar to'g'ridan-to'g'ri frontend'da bo'ladi va back
 **Priority**: High
 **Estimated Time**: 1-2 hafta
 
+
+
+
+

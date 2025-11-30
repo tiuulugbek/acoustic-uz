@@ -6,24 +6,9 @@ import { Prisma } from '@prisma/client';
 export class HomepageLinksService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(publicOnly = false, sectionKey?: string, position?: string) {
-    const where: Prisma.HomepageLinkWhereInput = {};
-    
-    if (publicOnly) {
-      where.status = 'published';
-    }
-    
-    if (sectionKey) {
-      where.sectionKey = sectionKey;
-    }
-    
-    if (position) {
-      where.position = position;
-    }
-    
+  async findAll() {
     return this.prisma.homepageLink.findMany({
-      where,
-      orderBy: [{ sectionKey: 'asc' }, { order: 'asc' }],
+      orderBy: { order: 'asc' },
     });
   }
 
@@ -72,4 +57,3 @@ export class HomepageLinksService {
     }
   }
 }
-

@@ -27,8 +27,8 @@ export class MediaService {
     return media;
   }
 
-  async create(file: UploadedFile, alt_uz?: string, alt_ru?: string) {
-    const uploadResult = await this.storageService.upload(file);
+  async create(file: UploadedFile, alt_uz?: string, alt_ru?: string, skipWebp?: boolean) {
+    const uploadResult = await this.storageService.upload(file, skipWebp);
 
     return this.prisma.media.create({
       data: {

@@ -57,6 +57,9 @@ interface Tour3DEditorProps {
 
 export default function Tour3DEditor({ value, onChange, mediaList = [] }: Tour3DEditorProps) {
   const [scenes, setScenes] = useState<Scene[]>([]);
+  const [defaultPitch, setDefaultPitch] = useState<number>(0);
+  const [defaultYaw, setDefaultYaw] = useState<number>(0);
+  const [defaultHfov, setDefaultHfov] = useState<number>(100);
   const [editingScene, setEditingScene] = useState<Scene | null>(null);
   const [editingHotSpot, setEditingHotSpot] = useState<HotSpot | null>(null);
   const [sceneModalOpen, setSceneModalOpen] = useState(false);
@@ -74,6 +77,14 @@ export default function Tour3DEditor({ value, onChange, mediaList = [] }: Tour3D
     if (value) {
       try {
         const config = typeof value === 'string' ? JSON.parse(value) : value;
+        
+        // Load default values from config
+        if (config.default) {
+          setDefaultPitch(config.default.pitch ?? 0);
+          setDefaultYaw(config.default.yaw ?? 0);
+          setDefaultHfov(config.default.hfov ?? 100);
+        }
+        
         if (config.scenes) {
           const scenesList = Object.entries(config.scenes).map(([id, scene]: [string, any]) => ({
             id,
@@ -82,8 +93,8 @@ export default function Tour3DEditor({ value, onChange, mediaList = [] }: Tour3D
             title_uz: typeof scene.title === 'string' ? scene.title : scene.title?.uz || '',
             title_ru: typeof scene.title === 'string' ? scene.title : scene.title?.ru || '',
             hfov: scene.hfov || 100,
-            pitch: scene.pitch || 0,
-            yaw: scene.yaw || 0,
+            pitch: scene.pitch ?? config.default?.pitch ?? 0,
+            yaw: scene.yaw ?? config.default?.yaw ?? 0,
             hotSpots: (scene.hotSpots || []).map((hs: any, index: number) => ({
               id: `hs-${id}-${index}`,
               ...hs,
@@ -110,9 +121,9 @@ export default function Tour3DEditor({ value, onChange, mediaList = [] }: Tour3D
     const config = {
       default: {
         firstScene: sortedScenes[0]?.id || '',
-        hfov: 100,
-        pitch: 0,
-        yaw: 0,
+        hfov: defaultHfov,
+        pitch: defaultPitch,
+        yaw: defaultYaw,
         autoLoad: true,
         autoRotate: -2,
         compass: true,
@@ -152,7 +163,7 @@ export default function Tour3DEditor({ value, onChange, mediaList = [] }: Tour3D
     });
 
     onChange?.(config);
-  }, [onChange]);
+  }, [onChange, defaultPitch, defaultYaw, defaultHfov]);
 
   const handleAddScene = useCallback(() => {
     setEditingScene(null);
@@ -512,6 +523,67 @@ export default function Tour3DEditor({ value, onChange, mediaList = [] }: Tour3D
 
   return (
     <div>
+      <Card style={{ marginBottom: 16 }} title="Boshlang'ich ko'rinish sozlamalari" size="small">
+        <Row gutter={16}>
+          <Col span={8}>
+            <div>
+              <strong>Default HFOV:</strong>
+              <InputNumber
+                min={50}
+                max={150}
+                value={defaultHfov}
+                onChange={(val) => {
+                  const newVal = val ?? 100;
+                  setDefaultHfov(newVal);
+                  updateConfig(scenes);
+                }}
+                style={{ width: '100%', marginTop: 4 }}
+              />
+            </div>
+          </Col>
+          <Col span={8}>
+            <div>
+              <strong>Default Pitch:</strong>
+              <InputNumber
+                min={-90}
+                max={90}
+                value={defaultPitch}
+                onChange={(val) => {
+                  const newVal = val ?? 0;
+                  setDefaultPitch(newVal);
+                  updateConfig(scenes);
+                }}
+                style={{ width: '100%', marginTop: 4 }}
+              />
+              <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>
+                -90 (past) dan +90 (yuqori) gacha
+              </div>
+            </div>
+          </Col>
+          <Col span={8}>
+            <div>
+              <strong>Default Yaw:</strong>
+              <InputNumber
+                min={-180}
+                max={180}
+                value={defaultYaw}
+                onChange={(val) => {
+                  const newVal = val ?? 0;
+                  setDefaultYaw(newVal);
+                  updateConfig(scenes);
+                }}
+                style={{ width: '100%', marginTop: 4 }}
+              />
+              <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>
+                -180 (chap) dan +180 (o'ng) gacha
+              </div>
+            </div>
+          </Col>
+        </Row>
+        <div style={{ fontSize: 12, color: '#666', marginTop: 8 }}>
+          💡 Bu qiymatlar panoramani boshlanish nuqtasini belgilaydi. Agar sahna'da pitch/yaw belgilanmagan bo'lsa, bu default qiymatlar ishlatiladi.
+        </div>
+      </Card>
       <div style={{ marginBottom: 16 }}>
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAddScene}>
           Yangi sahna qo'shish

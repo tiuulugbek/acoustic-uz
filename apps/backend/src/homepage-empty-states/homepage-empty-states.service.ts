@@ -10,7 +10,7 @@ export class HomepageEmptyStatesService {
     return this.prisma.homepageEmptyState.findMany();
   }
 
-  async findBySection(sectionKey: string) {
+  async findBySectionKey(sectionKey: string) {
     const emptyState = await this.prisma.homepageEmptyState.findUnique({
       where: { sectionKey },
     });
@@ -43,4 +43,3 @@ export class HomepageEmptyStatesService {
     }
   }
 }
-

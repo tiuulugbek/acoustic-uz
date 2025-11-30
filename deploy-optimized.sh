@@ -99,3 +99,7 @@ echo "   3. Update .env.production with correct values"
 echo "   4. Start: node server.js"
 echo ""
 
+
+
+
+
