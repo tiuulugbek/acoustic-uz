@@ -15,8 +15,8 @@
     "test:cov": "jest --coverage",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "db:generate": "bash ../../scripts/generate-prisma-workaround.sh",
-    "db:migrate": "pnpm dlx prisma migrate dev --schema=../../prisma/schema.prisma",
-    "db:migrate:deploy": "pnpm dlx prisma migrate deploy --schema=../../prisma/schema.prisma",
+    "db:migrate": "npx prisma@5.22.0 migrate dev --schema=../../prisma/schema.prisma",
+    "db:migrate:deploy": "npx prisma@5.22.0 migrate deploy --schema=../../prisma/schema.prisma",
     "db:seed": "pnpm exec ts-node --transpile-only --project tsconfig.json ../../prisma/seed.ts",
     "db:studio": "pnpm dlx prisma studio --schema=../../prisma/schema.prisma",
     "db:migrate-services": "pnpm exec ts-node --transpile-only --project tsconfig.json ../../scripts/migrate-services-to-homepage.ts"
