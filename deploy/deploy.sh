@@ -72,10 +72,25 @@ fi
 # Step 5: Database setup
 echo -e "${YELLOW}🗄️  Setting up database...${NC}"
 pnpm db:generate || echo "Database generate failed, continuing..."
-pnpm db:migrate:deploy || echo "Database migrate failed, continuing..."
+
+# Build shared package first (required for backend)
+echo -e "${YELLOW}📦 Building shared package...${NC}"
+pnpm --filter @acoustic/shared build || echo "Shared package build failed, continuing..."
+
+# Run migrations
+cd apps/backend
+pnpm db:migrate:deploy || pnpm db:migrate || echo "Database migrate failed, continuing..."
+cd ../..
 
 # Step 6: Build applications
 echo -e "${YELLOW}🔨 Building applications...${NC}"
+
+# Ensure shared package is built
+echo "Ensuring shared package is built..."
+pnpm --filter @acoustic/shared build || {
+    echo -e "${RED}❌ Shared package build failed!${NC}"
+    exit 1
+}
 
 # Build backend
 echo "Building backend..."
