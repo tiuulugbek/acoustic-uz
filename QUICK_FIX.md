@@ -1,37 +1,79 @@
-# Quick Fix for Prisma Generation Issue
+# Backend Build Muammosini Hal Qilish - Aniq Yechim
 
-## Problem
-Prisma's `generate` command is trying to install itself in pnpm workspaces, which is failing.
+## Muammo
+Backend build qilinmoqda, lekin `dist/main.js` topilmayapti.
 
-## Solution
+## Serverda Quyidagi Buyruqlarni Bajaring:
 
-Run Prisma generate from the backend directory using one of these methods:
+### Variant 1: Script orqali (Tavsiya etiladi)
 
-### Method 1: Use the script (Recommended)
 ```bash
+cd /var/www/news.acoustic.uz
+git pull origin main
+chmod +x deploy/fix-backend-build.sh
+./deploy/fix-backend-build.sh
+```
+
+### Variant 2: Qo'lda (Agar script ishlamasa)
+
+```bash
+cd /var/www/news.acoustic.uz
+
+# 1. Shared package build
+pnpm --filter @acoustic/shared build
+
+# 2. Backend dist papkasini o'chirish
+rm -rf apps/backend/dist
+
+# 3. Backend build qilish
 cd apps/backend
-bash ../../scripts/generate-prisma.sh
+pnpm build 2>&1 | tee /tmp/backend-build.log
+
+# 4. Build natijasini tekshirish
+ls -la dist/
+ls -la dist/main.js
+
+# 5. Agar dist/main.js topilmasa, TypeScript kompilyatsiya qilish
+if [ ! -f "dist/main.js" ]; then
+    echo "TypeScript kompilyatsiya qilish..."
+    npx tsc --project tsconfig.json
+    ls -la dist/main.js
+fi
+
+# 6. PM2 ni ishga tushirish
+cd ../..
+pm2 delete all 2>/dev/null || true
+pm2 start deploy/ecosystem.config.js
+pm2 status
 ```
 
-### Method 2: Direct node execution
+### Variant 3: Debug (Agar hali ham muammo bo'lsa)
+
 ```bash
-cd apps/backend
-node ../../node_modules/.pnpm/prisma@5.22.0/node_modules/prisma/build/index.js generate --schema=../../prisma/schema.prisma
+cd /var/www/news.acoustic.uz/apps/backend
+
+# Build log ni ko'rish
+cat /tmp/backend-build.log
+
+# NestJS CLI versiyasini tekshirish
+npx nest --version
+
+# TypeScript versiyasini tekshirish
+npx tsc --version
+
+# Node.js versiyasini tekshirish
+node --version
+
+# Barcha JS fayllarni qidirish
+find . -name "*.js" -type f | grep -E "(main|index)" | head -10
+
+# Dist papkasini to'liq ko'rish
+ls -la dist/ 2>/dev/null || echo "Dist papkasi mavjud emas!"
 ```
 
-### Method 3: Use pnpm exec from root
-```bash
-cd apps/backend  
-pnpm exec -- prisma generate --schema=../../prisma/schema.prisma
-```
+## Agar Muammo Davom Etsa
 
-### Method 4: Install Prisma globally temporarily
-```bash
-npm install -g prisma@5.22.0
-cd apps/backend
-prisma generate --schema=../../prisma/schema.prisma
-```
-
-## Note
-The Prisma client will be generated in `apps/backend/node_modules/.prisma/client` by default. The `@prisma/client` package is already installed, so once generation succeeds, everything should work.
-
+1. Build log ni tekshiring: `cat /tmp/backend-build.log`
+2. NestJS konfiguratsiyasini tekshiring: `cat nest-cli.json`
+3. TypeScript konfiguratsiyasini tekshiring: `cat tsconfig.json`
+4. Dependencies ni yangilang: `pnpm install`
