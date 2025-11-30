@@ -88,7 +88,7 @@ export default function ProductSpecsTable({ specsText, locale }: ProductSpecsTab
           
           // Clean HTML tags but keep tooltip spans
           const cleanedText = cellText
-            .replace(/<(?!(span|/span))[^>]+>/g, '') // Remove all tags except span
+            .replace(/<(?!\/?span\b)[^>]+>/g, '') // Remove all tags except span
             .replace(/&nbsp;/g, ' ')
             .replace(/&amp;/g, '&')
             .replace(/&lt;/g, '<')

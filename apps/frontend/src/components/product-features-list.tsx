@@ -88,7 +88,7 @@ export default function ProductFeaturesList({ description, locale }: ProductFeat
           
           // Clean nameHtml but keep tooltip spans
           const nameHtmlClean = nameWithTooltips
-            .replace(/<(?!(span|/span))[^>]+>/g, '') // Remove all tags except span
+            .replace(/<(?!\/?span\b)[^>]+>/g, '') // Remove all tags except span
             .replace(/&nbsp;/g, ' ')
             .trim();
           
