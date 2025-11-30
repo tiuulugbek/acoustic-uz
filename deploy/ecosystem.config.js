@@ -20,7 +20,7 @@ module.exports = {
     },
     {
       name: 'acoustic-frontend',
-      script: 'apps/frontend/.next/standalone/server.js',
+      script: 'apps/frontend/.next/standalone/apps/frontend/server.js',
       cwd: '/var/www/news.acoustic.uz',
       instances: 2,
       exec_mode: 'cluster',
