@@ -48,6 +48,7 @@ import {
   PlusOutlined,
 } from '@ant-design/icons';
 import TooltipHelper from '../components/TooltipHelper';
+import { createSlug } from '../utils/slug';
 
 const statusOptions = [
   { label: 'Nashr etilgan', value: 'published' },

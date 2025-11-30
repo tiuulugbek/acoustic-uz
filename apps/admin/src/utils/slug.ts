@@ -18,7 +18,6 @@ const transliterate = (text: string): string => {
   const uzbekMap: Record<string, string> = {
     'ў': 'o\'', 'ғ': 'g\'', 'ҳ': 'h', 'қ': 'q',
     'Ў': 'O\'', 'Ғ': 'G\'', 'Ҳ': 'H', 'Қ': 'Q',
-    'ў': 'o\'', 'ғ': 'g\'', 'ҳ': 'h', 'қ': 'q',
   };
 
   let result = text;
