@@ -19,6 +19,7 @@
     "import:products": "pnpm --filter @acoustic/backend exec ts-node --transpile-only --project tsconfig.json ../../scripts/import-products.ts",
     "fix:unknown-products": "pnpm --filter @acoustic/backend exec ts-node --transpile-only --project tsconfig.json ../../scripts/fix-unknown-products.ts",
     "fix:interacoustics-type": "pnpm --filter @acoustic/backend exec ts-node --transpile-only --project tsconfig.json ../../scripts/fix-interacoustics-product-type.ts",
+    "fix:localhost-urls": "pnpm --filter @acoustic/backend exec ts-node --transpile-only --project tsconfig.json ../../scripts/fix-localhost-urls.ts",
     "update:translations": "pnpm --filter @acoustic/backend exec ts-node --transpile-only --project tsconfig.json ../../scripts/update_products_translations.ts",
     "translate:uzbek": "pnpm --filter @acoustic/backend exec ts-node --transpile-only --project tsconfig.json ../../scripts/translate_uzbek_descriptions.ts",
     "clean:reimport": "pnpm --filter @acoustic/backend exec ts-node --transpile-only --project tsconfig.json ../../scripts/clean_and_reimport_products.ts",
