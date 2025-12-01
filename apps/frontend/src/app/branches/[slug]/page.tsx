@@ -153,19 +153,10 @@ export default async function BranchPage({ params }: BranchPageProps) {
 
       {/* Main Content */}
       <section className="bg-white py-4 sm:py-8">
-        <div className="mx-auto max-w-6xl px-4 md:px-6">
-          <div className="grid gap-6 lg:gap-8 lg:grid-cols-[2fr_1fr]">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div className="grid gap-4 sm:gap-6 lg:gap-8 lg:grid-cols-[2fr_1fr]">
             {/* Left Column - Main Content */}
-            <div className="space-y-8">
-              {/* Title and Description */}
-              <div>
-                <h1 className="mb-3 text-2xl sm:text-3xl font-bold text-foreground" suppressHydrationWarning>
-                  {name}
-                </h1>
-                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed" suppressHydrationWarning>
-                  {address}
-                </p>
-              </div>
+            <div className="space-y-6 sm:space-y-8">
 
               {/* Services Section */}
               {services.length > 0 && (
@@ -180,8 +171,8 @@ export default async function BranchPage({ params }: BranchPageProps) {
                         href={`/services/${service.slug}`}
                         className="flex items-start gap-2 group hover:text-brand-primary transition-colors"
                       >
-                        <span className="mt-1 text-brand-primary">•</span>
-                        <span className="text-foreground group-hover:text-brand-primary" suppressHydrationWarning>
+                        <span className="mt-1 text-brand-primary flex-shrink-0">•</span>
+                        <span className="text-sm sm:text-base text-foreground group-hover:text-brand-primary break-words" suppressHydrationWarning>
                           {getBilingualText(service.title_uz, service.title_ru, locale)}
                         </span>
                       </Link>
@@ -316,15 +307,15 @@ export default async function BranchPage({ params }: BranchPageProps) {
               <div className="rounded-lg border border-border bg-white p-4 sm:p-6 shadow-sm space-y-4 sm:space-y-6">
                 {/* Table of Contents */}
                 <div>
-                  <h3 className="mb-3 text-lg font-bold text-foreground" suppressHydrationWarning>
+                  <h3 className="mb-2 sm:mb-3 text-base sm:text-lg font-bold text-foreground" suppressHydrationWarning>
                     {locale === 'ru' ? 'В этой статье' : 'Bu maqolada'}
                   </h3>
-                  <nav className="space-y-2">
+                  <nav className="space-y-1.5 sm:space-y-2">
                     {tocSections.map((section) => (
                       <a
                         key={section.id}
                         href={`#${section.id}`}
-                        className="block text-sm text-brand-primary hover:underline"
+                        className="block text-xs sm:text-sm text-brand-primary hover:underline break-words"
                         suppressHydrationWarning
                       >
                         {section.label}
@@ -335,35 +326,35 @@ export default async function BranchPage({ params }: BranchPageProps) {
 
                 {/* Address */}
                 <div>
-                  <h3 className="mb-2 text-sm font-semibold text-foreground uppercase" suppressHydrationWarning>
+                  <h3 className="mb-2 text-xs sm:text-sm font-semibold text-foreground uppercase" suppressHydrationWarning>
                     {locale === 'ru' ? 'Адрес' : 'Manzil'}
                   </h3>
-                  <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                    <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0 text-brand-primary" />
-                    <span suppressHydrationWarning>{address}</span>
+                  <div className="flex items-start gap-2 text-xs sm:text-sm text-muted-foreground">
+                    <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 mt-0.5 flex-shrink-0 text-brand-primary" />
+                    <span className="break-words" suppressHydrationWarning>{address}</span>
                   </div>
                 </div>
 
                 {/* Phones */}
                 <div>
-                  <h3 className="mb-2 text-sm font-semibold text-foreground uppercase" suppressHydrationWarning>
+                  <h3 className="mb-2 text-xs sm:text-sm font-semibold text-foreground uppercase" suppressHydrationWarning>
                     {locale === 'ru' ? 'Телефоны' : 'Telefonlar'}
                   </h3>
                   <div className="space-y-2">
                     <a
                       href={`tel:${branch.phone}`}
-                      className="flex items-center gap-2 text-sm text-brand-primary hover:underline"
+                      className="flex items-center gap-2 text-xs sm:text-sm text-brand-primary hover:underline break-all"
                     >
-                      <Phone className="h-4 w-4" />
-                      {branch.phone}
+                      <Phone className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                      <span>{branch.phone}</span>
                     </a>
                     {branch.phones && branch.phones.length > 0 && (
-                      <div className="ml-6 space-y-1">
+                      <div className="ml-5 sm:ml-6 space-y-1">
                         {branch.phones.map((phone, idx) => (
                           <a
                             key={idx}
                             href={`tel:${phone}`}
-                            className="block text-sm text-brand-primary hover:underline"
+                            className="block text-xs sm:text-sm text-brand-primary hover:underline break-all"
                           >
                             {phone}
                           </a>
@@ -375,7 +366,7 @@ export default async function BranchPage({ params }: BranchPageProps) {
 
                 {/* Navigation Links */}
                 <div>
-                  <h3 className="mb-2 text-sm font-semibold text-foreground uppercase" suppressHydrationWarning>
+                  <h3 className="mb-2 text-xs sm:text-sm font-semibold text-foreground uppercase" suppressHydrationWarning>
                     {locale === 'ru' ? 'Навигация' : 'Navigatsiya'}
                   </h3>
                   <div className="space-y-2">
@@ -383,25 +374,25 @@ export default async function BranchPage({ params }: BranchPageProps) {
                       href={yandexNavUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-sm text-brand-primary hover:underline"
+                      className="flex items-center gap-2 text-xs sm:text-sm text-brand-primary hover:underline"
                     >
-                      <Navigation className="h-4 w-4" />
-                      <span suppressHydrationWarning>
+                      <Navigation className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                      <span className="break-words" suppressHydrationWarning>
                         {locale === 'ru' ? 'Яндекс Навигатор' : 'Yandex Navigator'}
                       </span>
-                      <ExternalLink className="h-3 w-3" />
+                      <ExternalLink className="h-3 w-3 flex-shrink-0" />
                     </a>
                     <a
                       href={googleNavUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-sm text-brand-primary hover:underline"
+                      className="flex items-center gap-2 text-xs sm:text-sm text-brand-primary hover:underline"
                     >
-                      <Navigation className="h-4 w-4" />
-                      <span suppressHydrationWarning>
+                      <Navigation className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                      <span className="break-words" suppressHydrationWarning>
                         {locale === 'ru' ? 'Google Навигатор' : 'Google Navigator'}
                       </span>
-                      <ExternalLink className="h-3 w-3" />
+                      <ExternalLink className="h-3 w-3 flex-shrink-0" />
                     </a>
                   </div>
                 </div>
@@ -409,17 +400,17 @@ export default async function BranchPage({ params }: BranchPageProps) {
                 {/* Working Hours */}
                 {(branch.workingHours_uz || branch.workingHours_ru) ? (
                   <div>
-                    <h3 className="mb-2 text-sm font-semibold text-foreground uppercase" suppressHydrationWarning>
+                    <h3 className="mb-2 text-xs sm:text-sm font-semibold text-foreground uppercase" suppressHydrationWarning>
                       {locale === 'ru' ? 'Время работы' : 'Ish vaqti'}
                     </h3>
-                    <div className="space-y-1 text-sm text-muted-foreground">
+                    <div className="space-y-1 text-xs sm:text-sm text-muted-foreground">
                       {getBilingualText(branch.workingHours_uz, branch.workingHours_ru, locale)
                         ?.split('\n')
                         .filter(line => line.trim())
                         .map((line, idx) => (
-                          <div key={idx} className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-brand-primary flex-shrink-0" />
-                            <span suppressHydrationWarning>{line.trim()}</span>
+                          <div key={idx} className="flex items-start gap-2">
+                            <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-brand-primary flex-shrink-0 mt-0.5" />
+                            <span className="break-words" suppressHydrationWarning>{line.trim()}</span>
                           </div>
                         ))}
                     </div>
@@ -427,19 +418,19 @@ export default async function BranchPage({ params }: BranchPageProps) {
                 ) : (
                   // Fallback: Show default working hours if not set
                   <div>
-                    <h3 className="mb-2 text-sm font-semibold text-foreground uppercase" suppressHydrationWarning>
+                    <h3 className="mb-2 text-xs sm:text-sm font-semibold text-foreground uppercase" suppressHydrationWarning>
                       {locale === 'ru' ? 'Время работы' : 'Ish vaqti'}
                     </h3>
-                    <div className="space-y-1 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-brand-primary" />
-                        <span suppressHydrationWarning>
+                    <div className="space-y-1 text-xs sm:text-sm text-muted-foreground">
+                      <div className="flex items-start gap-2">
+                        <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-brand-primary flex-shrink-0 mt-0.5" />
+                        <span className="break-words" suppressHydrationWarning>
                           {locale === 'ru' ? 'Понедельник - Пятница' : 'Dushanba - Juma'}: 09:00-20:00
                         </span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-brand-primary" />
-                        <span suppressHydrationWarning>
+                      <div className="flex items-start gap-2">
+                        <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-brand-primary flex-shrink-0 mt-0.5" />
+                        <span className="break-words" suppressHydrationWarning>
                           {locale === 'ru' ? 'Суббота - Воскресенье' : 'Shanba - Yakshanba'}: 09:00-18:00
                         </span>
                       </div>
