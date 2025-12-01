@@ -4,8 +4,36 @@
  */
 
 import { PrismaClient } from '@prisma/client';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+import * as fs from 'fs';
 
-const prisma = new PrismaClient();
+// Load .env file from project root or apps/backend
+const envPaths = [
+  path.join(__dirname, '..', '.env'),
+  path.join(__dirname, '..', 'apps', 'backend', '.env'),
+];
+
+for (const envPath of envPaths) {
+  if (fs.existsSync(envPath)) {
+    dotenv.config({ path: envPath });
+    console.log(`✅ Loaded .env from: ${envPath}`);
+    break;
+  }
+}
+
+// Also try to load from process.env directly (if already set)
+if (!process.env.DATABASE_URL) {
+  console.warn('⚠️ DATABASE_URL not found in .env files');
+}
+
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL,
+    },
+  },
+});
 
 async function fixLocalhostUrls() {
   console.log('🔍 Searching for localhost:3001 URLs in database...');
