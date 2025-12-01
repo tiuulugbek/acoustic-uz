@@ -17,6 +17,7 @@ import ProductFeaturesList from '@/components/product-features-list';
 import { detectLocale } from '@/lib/locale-server';
 import { getBilingualText } from '@/lib/locale';
 import Sidebar from '@/components/sidebar';
+import { normalizeImageUrl } from '@/lib/image-utils';
 
 // ISR: Revalidate every hour
 export const revalidate = 3600;
@@ -288,57 +289,17 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const priceFormatted = formatPrice(product.price);
   const availability = product.availabilityStatus ? availabilityMap[product.availabilityStatus] : undefined;
   
-  // Helper function to convert relative URLs to absolute URLs
-  const normalizeImageUrl = (url: string | null | undefined): string => {
-    if (!url) return placeholderImage;
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      // URL already absolute, but ensure pathname is properly encoded
-      try {
-        const urlObj = new URL(url);
-        // Only encode the filename part, not the entire path
-        const pathParts = urlObj.pathname.split('/');
-        const filename = pathParts.pop();
-        if (filename) {
-          // Encode only the filename to handle spaces
-          const encodedFilename = encodeURIComponent(filename);
-          urlObj.pathname = [...pathParts, encodedFilename].join('/');
-        }
-        return urlObj.toString();
-      } catch {
-        // If URL parsing fails, return as is (Next.js Image will handle it)
-        return url;
-      }
-    }
-    if (url.startsWith('/uploads/')) {
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-      // Properly extract base URL by removing /api from the end
-      let baseUrl = apiBase;
-      if (baseUrl.endsWith('/api')) {
-        baseUrl = baseUrl.slice(0, -4); // Remove '/api'
-      } else if (baseUrl.endsWith('/api/')) {
-        baseUrl = baseUrl.slice(0, -5); // Remove '/api/'
-      }
-      // Ensure baseUrl doesn't end with /
-      if (baseUrl.endsWith('/')) {
-        baseUrl = baseUrl.slice(0, -1);
-      }
-      // Encode only the filename part
-      const pathParts = url.split('/');
-      const filename = pathParts.pop();
-      if (filename) {
-        const encodedFilename = encodeURIComponent(filename);
-        return `${baseUrl}${pathParts.join('/')}/${encodedFilename}`;
-      }
-      return `${baseUrl}${url}`;
-    }
-    return url;
+  // Helper function to normalize image URL with placeholder fallback
+  const normalizeImageUrlWithPlaceholder = (url: string | null | undefined): string => {
+    const normalized = normalizeImageUrl(url);
+    return normalized || placeholderImage;
   };
   
-  const mainImage = normalizeImageUrl(product.galleryUrls?.[0] ?? product.brand?.logo?.url);
+  const mainImage = normalizeImageUrlWithPlaceholder(product.galleryUrls?.[0] ?? product.brand?.logo?.url);
   const gallery = product.galleryUrls?.length 
-    ? product.galleryUrls.map(normalizeImageUrl)
+    ? product.galleryUrls.map(normalizeImageUrlWithPlaceholder)
     : product.brand?.logo?.url 
-      ? [normalizeImageUrl(product.brand.logo.url)] 
+      ? [normalizeImageUrlWithPlaceholder(product.brand.logo.url)] 
       : [];
   const features = product.features_uz?.length || product.features_ru?.length 
     ? [...(product.features_uz || []), ...(product.features_ru || [])].join('\n')
