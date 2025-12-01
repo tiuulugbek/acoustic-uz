@@ -39,6 +39,7 @@ import {
   type MediaDto,
   ApiError,
 } from '../lib/api';
+import { normalizeImageUrl } from '../utils/image';
 import { compressImage } from '../utils/image-compression';
 
 type ViewMode = 'grid' | 'list';

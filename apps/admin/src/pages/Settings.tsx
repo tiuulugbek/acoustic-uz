@@ -37,6 +37,7 @@ import {
 } from '../lib/api';
 import MediaLibraryModal from '../components/MediaLibraryModal';
 import HomepageContentTab from '../components/HomepageContentTab';
+import { normalizeImageUrl } from '../utils/image';
 
 export default function SettingsPage() {
   const queryClient = useQueryClient();
@@ -61,29 +62,6 @@ export default function SettingsPage() {
   }>({});
   const [sidebarConfigImageModals, setSidebarConfigImageModals] = useState<Record<string, Record<string, boolean>>>({});
 
-  // Helper function to normalize image URLs - same as Media.tsx
-  const normalizeImageUrl = (url: string | null | undefined): string => {
-    if (!url) return '';
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return url;
-    }
-    if (url.startsWith('/uploads/')) {
-      const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-      // Properly extract base URL by removing /api from the end
-      let baseUrl = apiBase;
-      if (baseUrl.endsWith('/api')) {
-        baseUrl = baseUrl.slice(0, -4); // Remove '/api'
-      } else if (baseUrl.endsWith('/api/')) {
-        baseUrl = baseUrl.slice(0, -5); // Remove '/api/'
-      }
-      // Ensure baseUrl doesn't end with /
-      if (baseUrl.endsWith('/')) {
-        baseUrl = baseUrl.slice(0, -1);
-      }
-      return `${baseUrl}${url}`;
-    }
-    return url;
-  };
 
   const { data: settings, isLoading } = useQuery<SettingsDto, ApiError>({
     queryKey: ['settings'],
