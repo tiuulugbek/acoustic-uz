@@ -9,6 +9,7 @@ import { detectLocale } from '@/lib/locale-server';
 import PageHeader from '@/components/page-header';
 import CatalogHeroImage from '@/components/catalog-hero-image';
 import Sidebar from '@/components/sidebar';
+import { normalizeImageUrl } from '@/lib/image-utils';
 
 // ISR: Revalidate every 30 minutes
 export const revalidate = 1800;
@@ -137,84 +138,6 @@ export default async function CatalogPage({
       'in-stock': { uz: 'Sotuvda', ru: 'В наличии' },
       preorder: { uz: 'Buyurtmaga', ru: 'Под заказ' },
       'out-of-stock': { uz: 'Tugagan', ru: 'Нет в наличии' },
-    };
-
-    // Helper function to normalize image URLs
-    const normalizeImageUrl = (url: string | null | undefined): string => {
-      if (!url || url.trim() === '') return '';
-      
-      // Fix malformed URLs like "https:/.acoustic.uz/..." -> "https://acoustic.uz/..."
-      let fixedUrl = url.trim();
-      if (fixedUrl.startsWith('https:/') && !fixedUrl.startsWith('https://')) {
-        fixedUrl = fixedUrl.replace(/^https:\//, 'https://');
-      }
-      if (fixedUrl.startsWith('http:/') && !fixedUrl.startsWith('http://')) {
-        fixedUrl = fixedUrl.replace(/^http:\//, 'http://');
-      }
-      
-      // If URL already absolute, ensure pathname is properly encoded
-      if (fixedUrl.startsWith('http://') || fixedUrl.startsWith('https://')) {
-        try {
-          const urlObj = new URL(fixedUrl);
-          // Only encode the filename part, not the entire path
-          const pathParts = urlObj.pathname.split('/');
-          const filename = pathParts.pop();
-          if (filename) {
-            // Encode only the filename to handle spaces
-            const encodedFilename = encodeURIComponent(filename);
-            urlObj.pathname = [...pathParts, encodedFilename].join('/');
-          }
-          return urlObj.toString();
-        } catch {
-          // If URL parsing fails, try to fix common issues
-          // Fix double slashes after domain
-          fixedUrl = fixedUrl.replace(/(https?:\/\/[^\/]+)\/+/g, '$1/');
-          return fixedUrl;
-        }
-      }
-      
-      // If relative URL starting with /uploads/
-      if (fixedUrl.startsWith('/uploads/')) {
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-        // Properly extract base URL by removing /api from the end
-        let baseUrl = apiBase;
-        if (baseUrl.endsWith('/api')) {
-          baseUrl = baseUrl.slice(0, -4); // Remove '/api'
-        } else if (baseUrl.endsWith('/api/')) {
-          baseUrl = baseUrl.slice(0, -5); // Remove '/api/'
-        }
-        // Ensure baseUrl doesn't end with /
-        if (baseUrl.endsWith('/')) {
-          baseUrl = baseUrl.slice(0, -1);
-        }
-        // Encode only the filename part
-        const pathParts = fixedUrl.split('/');
-        const filename = pathParts.pop();
-        if (filename) {
-          const encodedFilename = encodeURIComponent(filename);
-          return `${baseUrl}${pathParts.join('/')}/${encodedFilename}`;
-        }
-        return `${baseUrl}${fixedUrl}`;
-      }
-      
-      // If relative URL without /uploads/, assume it's from API base
-      if (fixedUrl.startsWith('/')) {
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-        // Properly extract base URL by removing /api from the end
-        let baseUrl = apiBase;
-        if (baseUrl.endsWith('/api')) {
-          baseUrl = baseUrl.slice(0, -4); // Remove '/api'
-        } else if (baseUrl.endsWith('/api/')) {
-          baseUrl = baseUrl.slice(0, -5); // Remove '/api/'
-        }
-        // Ensure baseUrl doesn't end with /
-        if (baseUrl.endsWith('/')) {
-          baseUrl = baseUrl.slice(0, -1);
-        }
-        return `${baseUrl}${fixedUrl}`;
-      }
-      
-      return fixedUrl;
     };
     
     return (
