@@ -15,6 +15,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid locale. Must be "uz" or "ru".' }, { status: 400 });
     }
 
+    // Get the actual hostname from Host header (not from nextUrl.origin which might be 0.0.0.0:3000)
+    const hostHeader = request.headers.get('host') || request.headers.get('x-forwarded-host');
+    const protocol = request.headers.get('x-forwarded-proto') || (request.nextUrl.protocol === 'https:' ? 'https' : 'http');
+    const baseUrl = `${protocol}://${hostHeader || 'localhost:3000'}`;
+
     // Get the referer or origin to redirect back to the same page
     const referer = request.headers.get('referer');
     let redirectUrl: URL;
@@ -23,14 +28,16 @@ export async function POST(request: NextRequest) {
       try {
         redirectUrl = new URL(referer);
         // Ensure referer is from the same origin for security
-        if (redirectUrl.origin !== request.nextUrl.origin) {
-          redirectUrl = new URL('/', request.nextUrl.origin);
+        const refererOrigin = redirectUrl.origin;
+        const baseOrigin = new URL(baseUrl).origin;
+        if (refererOrigin !== baseOrigin) {
+          redirectUrl = new URL('/', baseUrl);
         }
       } catch {
-        redirectUrl = new URL('/', request.nextUrl.origin);
+        redirectUrl = new URL('/', baseUrl);
       }
     } else {
-      redirectUrl = new URL('/', request.nextUrl.origin);
+      redirectUrl = new URL('/', baseUrl);
     }
 
     // Calculate expiration date
@@ -85,6 +92,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid locale. Must be "uz" or "ru".' }, { status: 400 });
   }
 
+  // Get the actual hostname from Host header (not from nextUrl.origin which might be 0.0.0.0:3000)
+  const hostHeader = request.headers.get('host') || request.headers.get('x-forwarded-host');
+  const protocol = request.headers.get('x-forwarded-proto') || (request.nextUrl.protocol === 'https:' ? 'https' : 'http');
+  const baseUrl = `${protocol}://${hostHeader || 'localhost:3000'}`;
+
   // Get redirect URL from query param, referer, or default to homepage
   let redirectUrl: URL;
   if (redirectTo) {
@@ -92,24 +104,26 @@ export async function GET(request: NextRequest) {
       // Decode the redirect URL (it's encoded when passed as query param)
       const decodedRedirect = decodeURIComponent(redirectTo);
       
-      // If redirectTo is a full URL, use it directly; otherwise, make it relative to origin
+      // If redirectTo is a full URL, use it directly; otherwise, make it relative to baseUrl
       if (decodedRedirect.startsWith('http://') || decodedRedirect.startsWith('https://')) {
         redirectUrl = new URL(decodedRedirect);
         // Ensure it's from the same origin for security
-        if (redirectUrl.origin !== request.nextUrl.origin) {
-          redirectUrl = new URL('/', request.nextUrl.origin);
+        const redirectOrigin = redirectUrl.origin;
+        const baseOrigin = new URL(baseUrl).origin;
+        if (redirectOrigin !== baseOrigin) {
+          redirectUrl = new URL('/', baseUrl);
         }
       } else {
-        // For relative URLs, create a new URL with the origin
+        // For relative URLs, create a new URL with the baseUrl
         // This handles paths with query parameters correctly
-        redirectUrl = new URL(decodedRedirect, request.nextUrl.origin);
+        redirectUrl = new URL(decodedRedirect, baseUrl);
       }
     } catch (error) {
       // If URL parsing fails, default to homepage
       if (process.env.NODE_ENV === 'development') {
         console.error(`[Locale API] Failed to parse redirect URL: ${redirectTo}`, error);
       }
-      redirectUrl = new URL('/', request.nextUrl.origin);
+      redirectUrl = new URL('/', baseUrl);
     }
   } else {
     // Fallback to referer if no redirect parameter
@@ -118,14 +132,16 @@ export async function GET(request: NextRequest) {
       try {
         redirectUrl = new URL(referer);
         // Ensure referer is from the same origin for security
-        if (redirectUrl.origin !== request.nextUrl.origin) {
-          redirectUrl = new URL('/', request.nextUrl.origin);
+        const refererOrigin = redirectUrl.origin;
+        const baseOrigin = new URL(baseUrl).origin;
+        if (refererOrigin !== baseOrigin) {
+          redirectUrl = new URL('/', baseUrl);
         }
       } catch {
-        redirectUrl = new URL('/', request.nextUrl.origin);
+        redirectUrl = new URL('/', baseUrl);
       }
     } else {
-      redirectUrl = new URL('/', request.nextUrl.origin);
+      redirectUrl = new URL('/', baseUrl);
     }
   }
 
