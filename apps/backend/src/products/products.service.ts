@@ -253,7 +253,8 @@ export class ProductsService {
     
     // Merge with existing galleryUrls (if any)
     // Convert relative URLs to absolute URLs for frontend
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3001';
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 
+                    (process.env.NODE_ENV === 'production' ? 'https://api.acoustic.uz' : 'http://localhost:3001');
     
     // Helper function to normalize URLs
     const normalizeUrl = (url: string): string => {
@@ -285,8 +286,8 @@ export class ProductsService {
       // Fix double slashes after domain
       fixed = fixed.replace(/(https?:\/\/[^\/]+)\/+/g, '$1/');
       
-      // Always replace production URLs with localhost in development
-      if (fixed.includes('acoustic.uz')) {
+      // Only replace production URLs with localhost in development (not in production!)
+      if (process.env.NODE_ENV !== 'production' && fixed.includes('acoustic.uz')) {
         // Extract path from URL
         const urlMatch = fixed.match(/https?:\/\/[^\/]+(\/.*)/);
         if (urlMatch) {
