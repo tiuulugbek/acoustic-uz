@@ -1,5 +1,5 @@
 import { MetadataRoute } from 'next';
-import { getProducts, getPublicServices, getPosts, getCatalogs, getServiceCategories } from '@/lib/api-server';
+import { getProducts, getServices, getPosts, getCatalogs, getServiceCategories } from '@/lib/api-server';
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
 
@@ -45,7 +45,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
 
     // Services
-    const services = await getPublicServices('uz');
+    const services = await getServices('uz');
     if (services) {
       services.forEach((service) => {
         if (service.status === 'published') {
