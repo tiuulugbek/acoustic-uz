@@ -37,7 +37,7 @@ export function normalizeImageUrl(url: string | null | undefined): string {
     const apiBase = process.env.NEXT_PUBLIC_API_URL || 'https://api.acoustic.uz/api';
     
     // Properly extract base URL by removing /api from the end
-    let baseUrl = finalApiBase;
+    let baseUrl = apiBase;
     if (baseUrl.endsWith('/api')) {
       baseUrl = baseUrl.slice(0, -4); // Remove '/api'
     } else if (baseUrl.endsWith('/api/')) {
