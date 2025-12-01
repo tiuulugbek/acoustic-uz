@@ -29,11 +29,12 @@ export function normalizeImageUrl(url: string | null | undefined): string {
       }
       
       // Remove /api from pathname if present (uploads should be directly under domain)
+      // This must happen AFTER domain fix, so we check the full URL
       if (urlObj.pathname.startsWith('/api/uploads/')) {
-        urlObj.pathname = urlObj.pathname.replace('/api', '');
-      } else if (urlObj.pathname.startsWith('/api/')) {
-        // For other /api paths, keep them but ensure correct domain
-        // This handles API endpoints, not uploads
+        urlObj.pathname = urlObj.pathname.replace('/api/uploads/', '/uploads/');
+      } else if (urlObj.pathname.startsWith('/api/') && urlObj.pathname.includes('/uploads/')) {
+        // Handle cases like /api/something/uploads/...
+        urlObj.pathname = urlObj.pathname.replace(/\/api\//, '/');
       }
       
       // Only encode the filename part, not the entire path
@@ -46,8 +47,18 @@ export function normalizeImageUrl(url: string | null | undefined): string {
       }
       return urlObj.toString();
     } catch {
-      // If URL parsing fails, return as is (Next.js Image will handle it)
-      return url;
+      // If URL parsing fails, try simple string replacement as fallback
+      let fixedUrl = url;
+      
+      // Fix acoustic.uz/api/uploads/ -> api.acoustic.uz/uploads/
+      fixedUrl = fixedUrl.replace(/https?:\/\/acoustic\.uz\/api\/uploads\//g, 'https://api.acoustic.uz/uploads/');
+      fixedUrl = fixedUrl.replace(/https?:\/\/www\.acoustic\.uz\/api\/uploads\//g, 'https://api.acoustic.uz/uploads/');
+      
+      // Fix localhost:3001 -> api.acoustic.uz
+      fixedUrl = fixedUrl.replace(/http:\/\/localhost:3001\/uploads\//g, 'https://api.acoustic.uz/uploads/');
+      fixedUrl = fixedUrl.replace(/http:\/\/localhost:3001\/api\/uploads\//g, 'https://api.acoustic.uz/uploads/');
+      
+      return fixedUrl;
     }
   }
   
