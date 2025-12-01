@@ -63,9 +63,36 @@ export default function PanoramaViewer({ config, locale = 'uz', className = '', 
       return url;
     }
     
-    // Get base URL
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 
-                    (typeof window !== 'undefined' ? window.location.origin.replace(':3000', ':3001') : 'http://localhost:3001');
+    // If relative URL starting with /uploads/, make it absolute
+    if (url.startsWith('/uploads/')) {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      // Properly extract base URL by removing /api from the end
+      let baseUrl = apiBase;
+      if (baseUrl.endsWith('/api')) {
+        baseUrl = baseUrl.slice(0, -4); // Remove '/api'
+      } else if (baseUrl.endsWith('/api/')) {
+        baseUrl = baseUrl.slice(0, -5); // Remove '/api/'
+      }
+      // Ensure baseUrl doesn't end with /
+      if (baseUrl.endsWith('/')) {
+        baseUrl = baseUrl.slice(0, -1);
+      }
+      return `${baseUrl}${url}`;
+    }
+    
+    // Get base URL (fallback for other relative URLs)
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+    // Properly extract base URL by removing /api from the end
+    let baseUrl = apiBase;
+    if (baseUrl.endsWith('/api')) {
+      baseUrl = baseUrl.slice(0, -4); // Remove '/api'
+    } else if (baseUrl.endsWith('/api/')) {
+      baseUrl = baseUrl.slice(0, -5); // Remove '/api/'
+    }
+    // Ensure baseUrl doesn't end with /
+    if (baseUrl.endsWith('/')) {
+      baseUrl = baseUrl.slice(0, -1);
+    }
     
     // If starts with /uploads/, prepend API base URL
     if (url.startsWith('/uploads/')) {

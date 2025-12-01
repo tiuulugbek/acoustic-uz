@@ -32,11 +32,27 @@ export default function CatalogHeroImage({ src, alt, locale }: CatalogHeroImageP
   }
 
   // Normalize image URL
-  const normalizedSrc = src.startsWith('http://') || src.startsWith('https://') 
-    ? src 
-    : src.startsWith('/uploads/')
-    ? `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3001'}${src}`
-    : src;
+  const normalizedSrc = (() => {
+    if (src.startsWith('http://') || src.startsWith('https://')) {
+      return src;
+    }
+    if (src.startsWith('/uploads/')) {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      // Properly extract base URL by removing /api from the end
+      let baseUrl = apiBase;
+      if (baseUrl.endsWith('/api')) {
+        baseUrl = baseUrl.slice(0, -4); // Remove '/api'
+      } else if (baseUrl.endsWith('/api/')) {
+        baseUrl = baseUrl.slice(0, -5); // Remove '/api/'
+      }
+      // Ensure baseUrl doesn't end with /
+      if (baseUrl.endsWith('/')) {
+        baseUrl = baseUrl.slice(0, -1);
+      }
+      return `${baseUrl}${src}`;
+    }
+    return src;
+  })();
 
   return (
     <div className="relative h-64 lg:h-80 w-full rounded-lg overflow-hidden">

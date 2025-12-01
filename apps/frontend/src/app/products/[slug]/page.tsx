@@ -310,7 +310,18 @@ export default async function ProductPage({ params }: ProductPageProps) {
       }
     }
     if (url.startsWith('/uploads/')) {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3001';
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+      // Properly extract base URL by removing /api from the end
+      let baseUrl = apiBase;
+      if (baseUrl.endsWith('/api')) {
+        baseUrl = baseUrl.slice(0, -4); // Remove '/api'
+      } else if (baseUrl.endsWith('/api/')) {
+        baseUrl = baseUrl.slice(0, -5); // Remove '/api/'
+      }
+      // Ensure baseUrl doesn't end with /
+      if (baseUrl.endsWith('/')) {
+        baseUrl = baseUrl.slice(0, -1);
+      }
       // Encode only the filename part
       const pathParts = url.split('/');
       const filename = pathParts.pop();
