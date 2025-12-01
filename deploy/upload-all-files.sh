@@ -5,9 +5,16 @@
 set -e
 
 # Server ma'lumotlari
-SERVER_USER="${SERVER_USER:-deploy}"
+SERVER_USER="${SERVER_USER:-root}"
 SERVER_HOST="${SERVER_HOST:-your-server-ip}"
 SERVER_PATH="/var/www/news.acoustic.uz/apps/backend/uploads"
+
+# SSH key path (agar mavjud bo'lsa)
+SSH_KEY="${SSH_KEY:-}"
+SSH_OPTS=""
+if [ -n "$SSH_KEY" ] && [ -f "$SSH_KEY" ]; then
+    SSH_OPTS="-i $SSH_KEY"
+fi
 
 # Local uploads papkasi
 LOCAL_UPLOADS="./apps/backend/uploads"
@@ -47,7 +54,7 @@ fi
 # Serverda uploads papkasini yaratish
 echo ""
 echo "📁 Serverda uploads papkasini yaratish..."
-ssh "$SERVER_USER@$SERVER_HOST" "mkdir -p $SERVER_PATH && chmod 755 $SERVER_PATH" || {
+ssh $SSH_OPTS "$SERVER_USER@$SERVER_HOST" "mkdir -p $SERVER_PATH && chmod 755 $SERVER_PATH" || {
     echo "⚠️ Serverda papka yaratishda muammo bo'ldi (ehtimol mavjud)"
 }
 
@@ -59,14 +66,14 @@ echo "   Bu biroz vaqt olishi mumkin..."
 # rsync ishlatish (agar mavjud bo'lsa) - tezroq va samaraliroq
 if command -v rsync &> /dev/null; then
     echo "   rsync ishlatilmoqda..."
-    rsync -avz --progress "$LOCAL_UPLOADS/" "$SERVER_USER@$SERVER_HOST:$SERVER_PATH/" || {
+    rsync -avz $SSH_OPTS --progress "$LOCAL_UPLOADS/" "$SERVER_USER@$SERVER_HOST:$SERVER_PATH/" || {
         echo "❌ rsync xatosi, scp ishlatilmoqda..."
         # rsync ishlamasa, scp ishlatish
-        scp -r "$LOCAL_UPLOADS"/* "$SERVER_USER@$SERVER_HOST:$SERVER_PATH/"
+        scp $SSH_OPTS -r "$LOCAL_UPLOADS"/* "$SERVER_USER@$SERVER_HOST:$SERVER_PATH/"
     }
 else
     echo "   scp ishlatilmoqda..."
-    scp -r "$LOCAL_UPLOADS"/* "$SERVER_USER@$SERVER_HOST:$SERVER_PATH/"
+    scp $SSH_OPTS -r "$LOCAL_UPLOADS"/* "$SERVER_USER@$SERVER_HOST:$SERVER_PATH/"
 fi
 
 if [ $? -eq 0 ]; then
@@ -76,14 +83,14 @@ if [ $? -eq 0 ]; then
     # Serverda permissions'ni o'rnatish
     echo ""
     echo "🔧 Serverda permissions'ni o'rnatish..."
-    ssh "$SERVER_USER@$SERVER_HOST" "chown -R deploy:deploy $SERVER_PATH && chmod -R 755 $SERVER_PATH" || {
+    ssh $SSH_OPTS "$SERVER_USER@$SERVER_HOST" "chown -R deploy:deploy $SERVER_PATH && chmod -R 755 $SERVER_PATH" || {
         echo "⚠️ Permissions o'rnatishda muammo bo'ldi (sudo kerak bo'lishi mumkin)"
     }
     
     # Serverda fayllarni tekshirish
     echo ""
     echo "🧪 Serverda fayllarni tekshirish..."
-    SERVER_FILE_COUNT=$(ssh "$SERVER_USER@$SERVER_HOST" "find $SERVER_PATH -type f | wc -l" | tr -d ' ')
+    SERVER_FILE_COUNT=$(ssh $SSH_OPTS "$SERVER_USER@$SERVER_HOST" "find $SERVER_PATH -type f | wc -l" | tr -d ' ')
     echo "   Serverda fayllar soni: $SERVER_FILE_COUNT"
     
     if [ "$SERVER_FILE_COUNT" -eq "$FILE_COUNT" ]; then
@@ -96,13 +103,13 @@ if [ $? -eq 0 ]; then
     echo ""
     echo "🧪 Panorama faylini test qilish..."
     TEST_FILE="2025-11-29-1764426305776-img_20251129_192205_430-atdibi.jpg"
-    if ssh "$SERVER_USER@$SERVER_HOST" "test -f $SERVER_PATH/$TEST_FILE"; then
+    if ssh $SSH_OPTS "$SERVER_USER@$SERVER_HOST" "test -f $SERVER_PATH/$TEST_FILE"; then
         echo "   ✅ Panorama fayl topildi: $TEST_FILE"
         
         # HTTP test
         echo ""
         echo "🌐 HTTP test qilish..."
-        HTTP_CODE=$(ssh "$SERVER_USER@$SERVER_HOST" "curl -s -o /dev/null -w '%{http_code}' https://api.acoustic.uz/uploads/$TEST_FILE" || echo "000")
+        HTTP_CODE=$(ssh $SSH_OPTS "$SERVER_USER@$SERVER_HOST" "curl -s -o /dev/null -w '%{http_code}' https://api.acoustic.uz/uploads/$TEST_FILE" || echo "000")
         if [ "$HTTP_CODE" = "200" ]; then
             echo "   ✅ HTTP 200 - Fayl muvaffaqiyatli yuklanmoqda!"
         else
