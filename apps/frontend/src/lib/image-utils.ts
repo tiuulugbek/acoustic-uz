@@ -11,10 +11,31 @@
 export function normalizeImageUrl(url: string | null | undefined): string {
   if (!url) return '';
   
-  // If already absolute URL, ensure pathname is properly encoded
+  // If already absolute URL, ensure pathname is properly encoded and fix domain
   if (url.startsWith('http://') || url.startsWith('https://')) {
     try {
       const urlObj = new URL(url);
+      
+      // Fix incorrect domain: acoustic.uz -> api.acoustic.uz
+      if (urlObj.hostname === 'acoustic.uz' || urlObj.hostname === 'www.acoustic.uz') {
+        urlObj.hostname = 'api.acoustic.uz';
+      }
+      
+      // Fix incorrect domain: localhost:3001 -> api.acoustic.uz (in production)
+      if (urlObj.hostname === 'localhost' && urlObj.port === '3001') {
+        urlObj.hostname = 'api.acoustic.uz';
+        urlObj.port = '';
+        urlObj.protocol = 'https:';
+      }
+      
+      // Remove /api from pathname if present (uploads should be directly under domain)
+      if (urlObj.pathname.startsWith('/api/uploads/')) {
+        urlObj.pathname = urlObj.pathname.replace('/api', '');
+      } else if (urlObj.pathname.startsWith('/api/')) {
+        // For other /api paths, keep them but ensure correct domain
+        // This handles API endpoints, not uploads
+      }
+      
       // Only encode the filename part, not the entire path
       const pathParts = urlObj.pathname.split('/');
       const filename = pathParts.pop();
