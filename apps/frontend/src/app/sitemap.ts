@@ -3,6 +3,10 @@ import { getProducts, getServices, getPosts, getCatalogs, getServiceCategories }
 
 const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
 
+// Force dynamic rendering for sitemap
+export const dynamic = 'force-dynamic';
+export const revalidate = 3600; // Revalidate every hour
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const urls: MetadataRoute.Sitemap = [];
 
@@ -31,8 +35,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   });
 
   try {
-    // Products
-    const productsResponse = await getProducts('uz', { limit: 1000, status: 'published' });
+    // Products - fix parameter order
+    const productsResponse = await getProducts({ limit: 1000, status: 'published' }, 'uz');
     if (productsResponse?.items) {
       productsResponse.items.forEach((product) => {
         urls.push({
