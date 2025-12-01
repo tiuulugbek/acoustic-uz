@@ -996,7 +996,17 @@ export default async function CatalogPage({
     // Build image URL
     let image = catalog.image?.url || '';
     if (image && image.startsWith('/') && !image.startsWith('//')) {
-      const baseUrl = API_BASE_URL.replace('/api', '');
+      // Properly extract base URL by removing /api from the end
+      let baseUrl = API_BASE_URL;
+      if (baseUrl.endsWith('/api')) {
+        baseUrl = baseUrl.slice(0, -4); // Remove '/api'
+      } else if (baseUrl.endsWith('/api/')) {
+        baseUrl = baseUrl.slice(0, -5); // Remove '/api/'
+      }
+      // Ensure baseUrl doesn't end with /
+      if (baseUrl.endsWith('/')) {
+        baseUrl = baseUrl.slice(0, -1);
+      }
       image = `${baseUrl}${image}`;
     }
     
