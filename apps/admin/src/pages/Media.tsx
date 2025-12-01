@@ -177,36 +177,6 @@ export default function MediaPage() {
 
   const isImage = (mimeType: string) => mimeType?.startsWith('image/');
 
-  // Helper function to normalize image URLs - same logic as Settings.tsx
-  const normalizeImageUrl = (url: string | null | undefined): string => {
-    if (!url) return '';
-    // If already absolute URL, return as is
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return url;
-    }
-    // If relative URL starting with /uploads/, make it absolute
-    if (url.startsWith('/uploads/')) {
-      // Use the same API base as Settings.tsx
-      const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-      // Properly extract base URL by removing /api from the end
-      let baseUrl = apiBase;
-      if (baseUrl.endsWith('/api')) {
-        baseUrl = baseUrl.slice(0, -4); // Remove '/api'
-      } else if (baseUrl.endsWith('/api/')) {
-        baseUrl = baseUrl.slice(0, -5); // Remove '/api/'
-      }
-      // Ensure baseUrl doesn't end with /
-      if (baseUrl.endsWith('/')) {
-        baseUrl = baseUrl.slice(0, -1);
-      }
-      const normalized = `${baseUrl}${url}`;
-      console.log('Normalizing URL:', { original: url, normalized, apiBase, baseUrl });
-      return normalized;
-    }
-    console.warn('Unexpected URL format:', url);
-    return url;
-  };
-
   if (isLoading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
