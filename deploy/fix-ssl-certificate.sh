@@ -32,12 +32,14 @@ echo "🔐 SSL sertifikatlarini yangilash/o'rnatish..."
 echo "   Domenlar: news.acoustic.uz, api.acoustic.uz, admins.acoustic.uz"
 
 # Certbot bilan sertifikat olish/yangilash
+# --expand flag'i mavjud sertifikatni kengaytirish uchun
 sudo certbot --nginx \
     -d news.acoustic.uz \
     -d api.acoustic.uz \
     -d admins.acoustic.uz \
     --non-interactive \
     --agree-tos \
+    --expand \
     --email admin@acoustic.uz \
     --redirect
 
