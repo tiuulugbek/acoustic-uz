@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import type { TourConfig, SceneConfig, HotspotConfig } from '@/types/tour';
+import { normalizePanoramaUrl as normalizePanoramaUrlUtil } from '@/lib/image-utils';
 
 declare global {
   interface Window {
