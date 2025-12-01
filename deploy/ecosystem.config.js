@@ -4,8 +4,8 @@ module.exports = {
       name: 'acoustic-backend',
       script: 'apps/backend/dist/main.js',
       cwd: '/var/www/news.acoustic.uz',
-      instances: 2,
-      exec_mode: 'cluster',
+      instances: 1,
+      exec_mode: 'fork',
       env: {
         NODE_ENV: 'production',
         PORT: 3001
@@ -22,8 +22,8 @@ module.exports = {
       name: 'acoustic-frontend',
       script: 'apps/frontend/.next/standalone/apps/frontend/server.js',
       cwd: '/var/www/news.acoustic.uz',
-      instances: 2,
-      exec_mode: 'cluster',
+      instances: 1,
+      exec_mode: 'fork',
       env: {
         NODE_ENV: 'production',
         PORT: 3000

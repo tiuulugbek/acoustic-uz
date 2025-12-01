@@ -17,6 +17,9 @@ pnpm --filter @acoustic/shared build || {
 
 # 2. Admin panel build qilish
 echo "🔨 Admin panel build qilish..."
+# VITE_API_URL ni o'rnatish
+export VITE_API_URL=https://api.acoustic.uz/api
+export NODE_ENV=production
 pnpm --filter @acoustic/admin build || {
     echo "❌ Admin panel build xatosi!"
     exit 1
