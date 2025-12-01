@@ -660,7 +660,7 @@ export default async function CatalogPage({
                 {/* Products Grid - 3x4 = 12 items */}
             {filteredProducts.length > 0 ? (
                   <>
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-2 gap-3 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
                       {filteredProducts.slice(0, pageSize).map((product) => {
                   const productName = locale === 'ru' ? (product.name_ru || '') : (product.name_uz || '');
                   
@@ -683,7 +683,7 @@ export default async function CatalogPage({
                     <Link
                       key={product.id}
                       href={`/products/${product.slug}`}
-                          className="group flex flex-col gap-3 rounded-lg border-[0.5px] border-brand-accent/40 bg-white p-4 shadow-sm transition hover:border-brand-accent/60 hover:shadow-md"
+                          className="group flex flex-col gap-2 sm:gap-3 rounded-lg border-[0.5px] border-brand-accent/40 bg-white p-2 sm:p-4 shadow-sm transition hover:border-brand-accent/60 hover:shadow-md"
                         >
                           {/* Product Image - Top, Large */}
                           <div className="relative aspect-square w-full overflow-hidden rounded-lg border border-brand-accent/60 bg-white">
@@ -692,8 +692,8 @@ export default async function CatalogPage({
                               src={mainImage}
                               alt={productName}
                               fill
-                              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                              className="object-contain p-4 transition-transform duration-300 group-hover:scale-105"
+                              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 33vw"
+                              className="object-contain p-2 sm:p-4 transition-transform duration-300 group-hover:scale-105"
                               suppressHydrationWarning
                               unoptimized
                             />
@@ -705,23 +705,23 @@ export default async function CatalogPage({
                         </div>
                         
                           {/* Product Info */}
-                          <div className="flex flex-col gap-2">
-                            <h3 className="text-base font-semibold text-foreground line-clamp-2 group-hover:text-brand-primary" suppressHydrationWarning>
+                          <div className="flex flex-col gap-1 sm:gap-2">
+                            <h3 className="text-sm sm:text-base font-semibold text-foreground line-clamp-2 group-hover:text-brand-primary" suppressHydrationWarning>
                             {productName}
                           </h3>
                             {priceFormatted && (
-                              <p className="text-lg font-semibold text-brand-primary" suppressHydrationWarning>
+                              <p className="text-base sm:text-lg font-semibold text-brand-primary" suppressHydrationWarning>
                                 {priceFormatted}
                               </p>
                             )}
                             {availability && (
-                              <p className="text-sm text-emerald-600 font-medium" suppressHydrationWarning>
+                              <p className="text-xs sm:text-sm text-emerald-600 font-medium" suppressHydrationWarning>
                                 {locale === 'ru' ? availability.ru : availability.uz}
                               </p>
                             )}
-                            <span className="inline-flex items-center gap-1 text-sm font-medium text-brand-primary group-hover:gap-2 transition-all mt-auto" suppressHydrationWarning>
+                            <span className="inline-flex items-center gap-1 text-xs sm:text-sm font-medium text-brand-primary group-hover:gap-2 transition-all mt-auto" suppressHydrationWarning>
                               {locale === 'ru' ? 'Подробнее' : 'Batafsil'}
-                              <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
+                              <ArrowRight size={12} className="sm:w-3.5 sm:h-3.5 transition-transform group-hover:translate-x-1" />
                         </span>
                       </div>
                     </Link>

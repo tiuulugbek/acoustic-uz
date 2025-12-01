@@ -152,17 +152,17 @@ export default async function BranchPage({ params }: BranchPageProps) {
       />
 
       {/* Main Content */}
-      <section className="bg-white py-8">
+      <section className="bg-white py-4 sm:py-8">
         <div className="mx-auto max-w-6xl px-4 md:px-6">
-          <div className="grid gap-8 lg:grid-cols-[2fr_1fr]">
+          <div className="grid gap-6 lg:gap-8 lg:grid-cols-[2fr_1fr]">
             {/* Left Column - Main Content */}
             <div className="space-y-8">
               {/* Title and Description */}
               <div>
-                <h1 className="mb-4 text-3xl font-bold text-foreground" suppressHydrationWarning>
+                <h1 className="mb-3 text-2xl sm:text-3xl font-bold text-foreground" suppressHydrationWarning>
                   {name}
                 </h1>
-                <p className="text-muted-foreground leading-relaxed" suppressHydrationWarning>
+                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed" suppressHydrationWarning>
                   {address}
                 </p>
               </div>
@@ -170,10 +170,10 @@ export default async function BranchPage({ params }: BranchPageProps) {
               {/* Services Section */}
               {services.length > 0 && (
                 <section id="services" className="scroll-mt-20">
-                  <h2 className="mb-4 text-2xl font-bold text-foreground" suppressHydrationWarning>
+                  <h2 className="mb-3 text-xl sm:text-2xl font-bold text-foreground" suppressHydrationWarning>
                     {locale === 'ru' ? 'Услуги' : 'Xizmatlar'}
                   </h2>
-                  <div className="grid gap-3 md:grid-cols-2">
+                  <div className="grid gap-2 sm:gap-3 sm:grid-cols-2">
                     {services.map((service) => (
                       <Link
                         key={service.id}
@@ -193,10 +193,10 @@ export default async function BranchPage({ params }: BranchPageProps) {
               {/* Doctors Section */}
               {doctors && doctors.length > 0 && (
                 <section id="doctors" className="scroll-mt-20">
-                  <h2 className="mb-4 text-2xl font-bold text-foreground" suppressHydrationWarning>
+                  <h2 className="mb-3 text-xl sm:text-2xl font-bold text-foreground" suppressHydrationWarning>
                     {locale === 'ru' ? 'Врачи' : 'Shifokorlar'}
                   </h2>
-                  <div className="grid gap-6 md:grid-cols-2">
+                  <div className="grid gap-4 sm:gap-6 sm:grid-cols-2">
                     {doctors.slice(0, 4).map((doctor) => {
                       const doctorName = getBilingualText(doctor.name_uz, doctor.name_ru, locale);
                       const position = getBilingualText(doctor.position_uz, doctor.position_ru, locale);
@@ -212,32 +212,32 @@ export default async function BranchPage({ params }: BranchPageProps) {
                         <Link
                           key={doctor.id}
                           href={`/doctors/${doctor.slug}`}
-                          className="group block rounded-lg border border-border bg-white p-4 shadow-sm transition hover:shadow-md"
+                          className="group block rounded-lg border border-border bg-white p-3 sm:p-4 shadow-sm transition hover:shadow-md"
                         >
-                          <div className="flex gap-4">
+                          <div className="flex gap-3 sm:gap-4">
                             {doctorImageUrl ? (
-                              <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg bg-muted/20">
+                              <div className="relative h-16 w-16 sm:h-20 sm:w-20 flex-shrink-0 overflow-hidden rounded-lg bg-muted/20">
                                 <Image
                                   src={doctorImageUrl}
                                   alt={doctorName}
                                   fill
                                   className="object-cover transition-transform duration-300 group-hover:scale-105"
-                                  sizes="80px"
+                                  sizes="(max-width: 640px) 64px, 80px"
                                 />
                               </div>
                             ) : (
-                              <div className="h-20 w-20 flex-shrink-0 rounded-lg bg-gradient-to-br from-brand-primary to-brand-accent flex items-center justify-center">
-                                <span className="text-2xl font-bold text-white">
+                              <div className="h-16 w-16 sm:h-20 sm:w-20 flex-shrink-0 rounded-lg bg-gradient-to-br from-brand-primary to-brand-accent flex items-center justify-center">
+                                <span className="text-xl sm:text-2xl font-bold text-white">
                                   {doctorName.charAt(0).toUpperCase()}
                                 </span>
                               </div>
                             )}
                             <div className="flex-1 min-w-0">
-                              <h3 className="mb-1 font-semibold text-foreground group-hover:text-brand-primary transition-colors" suppressHydrationWarning>
+                              <h3 className="mb-1 text-sm sm:text-base font-semibold text-foreground group-hover:text-brand-primary transition-colors" suppressHydrationWarning>
                                 {doctorName}
                               </h3>
                               {position && (
-                                <p className="text-sm text-muted-foreground" suppressHydrationWarning>
+                                <p className="text-xs sm:text-sm text-muted-foreground" suppressHydrationWarning>
                                   {position}
                                 </p>
                               )}
@@ -258,12 +258,12 @@ export default async function BranchPage({ params }: BranchPageProps) {
               {/* 3D Tour Section */}
               {(branch.tour3d_config || branch.tour3d_iframe) && (
                 <section id="tour3d" className="scroll-mt-20">
-                  <h2 className="mb-4 text-2xl font-bold text-foreground" suppressHydrationWarning>
+                  <h2 className="mb-3 text-xl sm:text-2xl font-bold text-foreground" suppressHydrationWarning>
                     {locale === 'ru' ? '3D Тур' : '3D Tour'}
                   </h2>
                   <div className="rounded-lg overflow-hidden border border-border bg-muted/20">
                     {branch.tour3d_config ? (
-                      <div className="w-full" style={{ aspectRatio: '16 / 9', minHeight: '400px' }}>
+                      <div className="w-full" style={{ aspectRatio: '16 / 9', minHeight: '300px' }}>
                         <PanoramaViewer config={branch.tour3d_config as TourConfig} locale={locale} />
                       </div>
                     ) : (
@@ -280,7 +280,7 @@ export default async function BranchPage({ params }: BranchPageProps) {
 
               {/* Location Section */}
               <section id="location" className="scroll-mt-20">
-                <h2 className="mb-4 text-2xl font-bold text-foreground" suppressHydrationWarning>
+                <h2 className="mb-3 text-xl sm:text-2xl font-bold text-foreground" suppressHydrationWarning>
                   {locale === 'ru' ? 'Как добраться' : 'Qanday yetib borish'}
                 </h2>
                 {branch.latitude && branch.longitude ? (
@@ -289,7 +289,8 @@ export default async function BranchPage({ params }: BranchPageProps) {
                     <iframe
                       src={`https://www.google.com/maps?q=${branch.latitude},${branch.longitude}&hl=${locale === 'ru' ? 'ru' : 'uz'}&z=16&output=embed`}
                       width="100%"
-                      height="480"
+                      height="300"
+                      className="sm:h-[480px]"
                       style={{ border: 0 }}
                       allowFullScreen
                       loading="lazy"
@@ -311,8 +312,8 @@ export default async function BranchPage({ params }: BranchPageProps) {
             </div>
 
             {/* Right Sidebar */}
-            <aside className="lg:sticky lg:top-4 lg:self-start">
-              <div className="rounded-lg border border-border bg-white p-6 shadow-sm space-y-6">
+            <aside className="lg:sticky lg:top-4 lg:self-start order-first lg:order-last">
+              <div className="rounded-lg border border-border bg-white p-4 sm:p-6 shadow-sm space-y-4 sm:space-y-6">
                 {/* Table of Contents */}
                 <div>
                   <h3 className="mb-3 text-lg font-bold text-foreground" suppressHydrationWarning>
