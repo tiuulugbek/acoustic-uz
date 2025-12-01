@@ -46,11 +46,34 @@ function changeLanguage(
   
   // Use API route to set cookie server-side and redirect
   // This is the most reliable method as the cookie is set on the server
+  // IMPORTANT: Use relative URL to ensure it works in both dev and production
+  // Don't use window.location.origin as it might be incorrect (e.g., 0.0.0.0)
   const apiUrl = `/api/locale?locale=${newLocale}&redirect=${encodeURIComponent(currentUrl)}`;
   
   // Navigate to API route - it will set cookie and redirect back
   // Using window.location.href ensures a full page reload with fresh server render
-  window.location.href = apiUrl;
+  // Use relative URL to avoid SSL/protocol issues
+  if (typeof window !== 'undefined') {
+    // Ensure we're using the correct protocol and host
+    const baseUrl = window.location.origin;
+    const fullApiUrl = `${baseUrl}${apiUrl}`;
+    
+    // Validate URL before navigating
+    try {
+      const url = new URL(fullApiUrl);
+      // Only navigate if URL is valid and from same origin
+      if (url.origin === window.location.origin) {
+        window.location.href = apiUrl; // Use relative URL
+      } else {
+        console.error('[LanguageSwitcher] Invalid URL origin:', url.origin);
+        window.location.href = apiUrl; // Fallback to relative URL
+      }
+    } catch (error) {
+      console.error('[LanguageSwitcher] Failed to parse URL:', error);
+      // Fallback: use relative URL directly
+      window.location.href = apiUrl;
+    }
+  }
 }
 
 export default function LanguageSwitcher() {
