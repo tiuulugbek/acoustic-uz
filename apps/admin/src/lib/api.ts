@@ -905,27 +905,63 @@ export const uploadMedia = async (file: File, alt_uz?: string, alt_ru?: string, 
   if (alt_ru) formData.append('alt_ru', alt_ru);
   if (skipWebp) formData.append('skipWebp', 'true');
 
-  const response = await fetch(`${API_BASE}/media`, {
-    method: 'POST',
-    credentials: 'include',
-    body: formData,
+  console.log('📤 Uploading to:', `${API_BASE}/media`);
+  console.log('📦 File info:', {
+    name: file.name,
+    size: (file.size / 1024).toFixed(1) + 'KB',
+    type: file.type,
   });
 
-  if (!response.ok) {
-    const text = await response.text();
-    let message = text || response.statusText;
-    try {
-      const parsed = text ? JSON.parse(text) : null;
-      if (parsed?.message) {
-        message = Array.isArray(parsed.message) ? parsed.message.join(', ') : parsed.message;
-      }
-    } catch (error) {
-      // ignore JSON parse errors
-    }
-    throw new ApiError(message || `Upload failed with status ${response.status}`, response.status);
-  }
+  try {
+    const response = await fetch(`${API_BASE}/media`, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
 
-  return response.json();
+    console.log('📡 Response status:', response.status, response.statusText);
+
+    if (!response.ok) {
+      const text = await response.text();
+      console.error('❌ Upload failed:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: text,
+      });
+      
+      let message = text || response.statusText;
+      try {
+        const parsed = text ? JSON.parse(text) : null;
+        if (parsed?.message) {
+          message = Array.isArray(parsed.message) ? parsed.message.join(', ') : parsed.message;
+        }
+      } catch (error) {
+        // ignore JSON parse errors
+      }
+      
+      // 401 - Authentication muammosi
+      if (response.status === 401) {
+        throw new ApiError('Sessiya tugadi. Iltimos, qayta kiring.', 401);
+      }
+      
+      // 403 - Permission muammosi
+      if (response.status === 403) {
+        throw new ApiError('Rasm yuklash uchun ruxsat yo\'q.', 403);
+      }
+      
+      throw new ApiError(message || `Rasm yuklashda xatolik (${response.status})`, response.status);
+    }
+
+    const result = await response.json();
+    console.log('✅ Upload successful:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ Upload error:', error);
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    throw new ApiError(error instanceof Error ? error.message : 'Rasm yuklashda noma\'lum xatolik', 500);
+  }
 };
 export const deleteMedia = (id: string) =>
   request<void>(`/media/${id}`, {
