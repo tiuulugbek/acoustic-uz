@@ -112,11 +112,17 @@ export async function compressImage(
     // Agar WebP ga o'tkazish kerak bo'lsa va fayl allaqachon WebP emas
     if (compressionOptions.convertToWebP && !file.type.includes('webp')) {
       try {
-        fileToCompress = await convertToWebP(file, compressionOptions.quality, compressionOptions.maxSizeMB || 0.2);
-        console.log('📸 Rasm WebP ga o\'tkazildi');
+        fileToCompress = await convertToWebP(file, compressionOptions.quality, compressionOptions.maxSizeMB || 0.15);
+        console.log('📸 Rasm WebP ga o\'tkazildi:', {
+          original: file.name,
+          webp: fileToCompress.name,
+          originalSize: (file.size / 1024).toFixed(1) + 'KB',
+          webpSize: (fileToCompress.size / 1024).toFixed(1) + 'KB',
+        });
       } catch (webpError) {
-        console.warn('WebP ga o\'tkazishda xatolik, original formatda davom etilmoqda:', webpError);
+        console.warn('⚠️ WebP ga o\'tkazishda xatolik, original formatda davom etilmoqda:', webpError);
         // WebP ga o'tkazishda xatolik bo'lsa, original fayl bilan davom etish
+        fileToCompress = file;
       }
     }
 
