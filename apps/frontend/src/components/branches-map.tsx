@@ -470,7 +470,7 @@ export default function BranchesMap({ branches, locale, onRegionSelect, selected
     <>
       {/* Load simplemaps scripts */}
       <Script
-        src="/maps/countrymap.js"
+        src={`/maps/countrymap.js?v=${Date.now()}`}
         strategy="afterInteractive"
         onLoad={() => {
           // Wait a bit for the script to execute
@@ -484,8 +484,8 @@ export default function BranchesMap({ branches, locale, onRegionSelect, selected
             }
           }, 100);
         }}
-        onError={() => {
-          console.warn('[BranchesMap] Failed to load countrymap.js, map may not display correctly');
+        onError={(e) => {
+          console.warn('[BranchesMap] Failed to load countrymap.js:', e);
           // Try to use mapdata.js as fallback
           if (typeof window !== 'undefined' && (window as any).simplemaps_countrymap_mapdata) {
             const mapData = (window as any).simplemaps_countrymap_mapdata;
