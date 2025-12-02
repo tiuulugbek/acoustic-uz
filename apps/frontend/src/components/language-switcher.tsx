@@ -29,8 +29,8 @@ function getLocaleFromDOM(): Locale {
   return getLocaleFromCookie();
 }
 
-// Function to change language - optimized for performance
-// Uses client-side cookie setting and router navigation instead of full page reload
+// Function to change language
+// Uses API route to set cookie server-side, then redirects to ensure page content updates
 function changeLanguage(
   newLocale: Locale,
   currentPath: string,
@@ -38,7 +38,7 @@ function changeLanguage(
   queryClient: ReturnType<typeof useQueryClient>,
   router: ReturnType<typeof useRouter>
 ) {
-  // Set cookie client-side immediately for instant UI update
+  // Set cookie client-side immediately for instant UI feedback (header/footer)
   if (typeof document !== 'undefined') {
     const expires = new Date();
     expires.setTime(expires.getTime() + 365 * 24 * 60 * 60 * 1000); // 1 year
@@ -67,12 +67,17 @@ function changeLanguage(
     }
   });
   
-  // Use router.refresh() to trigger server-side re-render with new locale
-  // This is faster than full page reload and preserves client state
-  router.refresh();
+  // Use API route to set cookie server-side and redirect
+  // This ensures page content (server-side rendered) updates correctly
+  // Build the current URL with query params
+  const currentUrl = `${currentPath}${queryString ? `?${queryString}` : ''}`;
+  const apiUrl = `/api/locale?locale=${newLocale}&redirect=${encodeURIComponent(currentUrl)}`;
   
-  // Also update the URL to ensure consistency (optional, refresh should handle it)
-  // router.push(currentPath + (queryString ? `?${queryString}` : ''));
+  // Navigate to API route - it will set cookie server-side and redirect back
+  // This ensures both client-side (header/footer) and server-side (page content) update
+  if (typeof window !== 'undefined') {
+    window.location.href = apiUrl;
+  }
 }
 
 export default function LanguageSwitcher() {
