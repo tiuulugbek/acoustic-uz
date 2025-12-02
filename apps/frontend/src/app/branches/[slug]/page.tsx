@@ -144,6 +144,15 @@ export default async function BranchPage({ params }: BranchPageProps) {
           <div className="grid gap-4 sm:gap-6 lg:gap-8 lg:grid-cols-[2fr_1fr]">
             {/* Left Column - Main Content */}
             <div className="space-y-6 sm:space-y-8">
+              {/* Title and Description */}
+              <div>
+                <h1 className="mb-3 text-2xl sm:text-3xl font-bold text-foreground" suppressHydrationWarning>
+                  {name}
+                </h1>
+                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed" suppressHydrationWarning>
+                  {address}
+                </p>
+              </div>
 
               {/* Services Section */}
               {services.length > 0 && (
