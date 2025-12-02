@@ -80,9 +80,9 @@ export default function MediaPage() {
           type: file.type,
         });
         
-        // Rasmni yuklashdan oldin siqish
+        // Rasmni yuklashdan oldin siqish (WebP konvertatsiya o'chirilgan)
         const compressedFile = await compressImage(file, {
-          convertToWebP: true, // WebP ga o'tkazish
+          convertToWebP: false, // WebP ga o'tkazish - muammo bo'lsa false qiling
           maxSizeMB: 0.15,
           quality: 0.65,
         });
