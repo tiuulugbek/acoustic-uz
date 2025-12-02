@@ -966,42 +966,45 @@ export default async function CatalogPage({
             {/* Main Content - 3 columns on large screens */}
             <div className="lg:col-span-3">
               {catalogItems.length > 0 ? (
-                <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+                <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                   {catalogItems.map((item) => (
                     <Link
                       key={item.id}
                       href={item.link}
-                      className="group flex flex-col gap-4 rounded-lg border border-gray-200 bg-white p-4 transition hover:border-brand-primary/50 hover:shadow-md"
+                      className="group flex gap-4 rounded-lg border border-gray-200 bg-white p-4 transition hover:border-brand-primary/50 hover:shadow-md"
                     >
-                      {/* Katalog nomi - yuqorida */}
-                      <h3 className="text-lg font-semibold text-brand-accent leading-tight group-hover:text-brand-primary transition-colors" suppressHydrationWarning>
-                        {item.title}
-                      </h3>
-                      
-                      {/* Rasm - o'rtada */}
-                      <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-brand-primary/10">
+                      {/* Rasm - chapda */}
+                      <div className="relative h-32 w-32 shrink-0 overflow-hidden rounded-lg bg-brand-primary/10">
                         {item.image ? (
                           <Image 
                             src={item.image} 
                             alt={item.title} 
                             fill 
-                            sizes="(max-width: 768px) 100vw, 50vw"
+                            sizes="128px"
                             className="object-cover transition-transform duration-300 group-hover:scale-105"
                             suppressHydrationWarning
                           />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center bg-brand-primary">
-                            <span className="text-white text-sm font-bold">Acoustic</span>
+                            <span className="text-white text-xs font-bold">Acoustic</span>
                           </div>
                         )}
                       </div>
                       
-                      {/* Tavsif - pastda */}
-                      {item.description && (
-                        <p className="text-sm text-muted-foreground leading-relaxed" suppressHydrationWarning>
-                          {item.description}
-                        </p>
-                      )}
+                      {/* Matn - o'ngda */}
+                      <div className="flex flex-col gap-2 flex-1 min-w-0">
+                        {/* Katalog nomi */}
+                        <h3 className="text-base font-semibold text-brand-accent leading-tight group-hover:text-brand-primary transition-colors" suppressHydrationWarning>
+                          {item.title}
+                        </h3>
+                        
+                        {/* Tavsif */}
+                        {item.description && (
+                          <p className="text-sm text-muted-foreground leading-relaxed" suppressHydrationWarning>
+                            {item.description}
+                          </p>
+                        )}
+                      </div>
                     </Link>
                   ))}
                 </div>
