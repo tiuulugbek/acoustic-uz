@@ -2,7 +2,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 // Removed notFound import - we never crash, always show UI
 import type { Metadata } from 'next';
-import { type ProductResponse, type BrandResponse } from '@/lib/api';
+import { type ProductResponse, type BrandResponse, type ProductCategoryResponse } from '@/lib/api';
 import { getProducts, getCategoryBySlug, getCatalogBySlug, getBrands, type ProductListResponse, type CatalogResponse } from '@/lib/api-server';
 import CatalogFilters from '@/components/catalog-filters';
 import CatalogSort from '@/components/catalog-sort';
@@ -156,10 +156,18 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
     ? { ...searchParams, brand: searchParams.brand ? `${searchParams.brand},${brand.slug}` : brand.slug }
     : searchParams;
   
-  // Optimized: Try catalog first (more common), then category
-  // Both work the same way - unified filtering logic
-  const catalog = !brand ? await getCatalogBySlug(params.slug, locale) : null;
-  const category = !brand && !catalog ? await getCategoryBySlug(params.slug, locale) : null;
+  // Optimized: Only fetch catalog/category if NOT a brand
+  // This prevents unnecessary API calls and error logs
+  let catalog: CatalogResponse | null = null;
+  let category: ProductCategoryResponse | null = null;
+  
+  if (!brand) {
+    // Try catalog first (more common), then category
+    catalog = await getCatalogBySlug(params.slug, locale);
+    if (!catalog) {
+      category = await getCategoryBySlug(params.slug, locale);
+    }
+  }
   
   // Determine filter type for products query
   const filterType = catalog ? 'catalog' : category ? 'category' : null;
