@@ -9,51 +9,79 @@ export interface CompressionOptions {
 }
 
 const defaultOptions: CompressionOptions = {
-  maxSizeMB: 0.5, // 500KB dan katta bo'lmasin (yaxshiroq siqish)
+  maxSizeMB: 0.2, // 200KB dan katta bo'lmasin (juda kichik hajm)
   maxWidthOrHeight: 1920, // 1920px dan katta bo'lmasin
   useWebWorker: true, // Web worker ishlatish
-  quality: 0.75, // 75% sifat (yaxshiroq siqish)
+  quality: 0.7, // 70% sifat (yaxshiroq siqish)
   convertToWebP: true, // WebP formatga o'tkazish
 };
 
 /**
  * Rasmni WebP formatga o'tkazish
  */
-async function convertToWebP(file: File, quality: number = 0.75): Promise<File> {
+async function convertToWebP(file: File, quality: number = 0.7, maxSizeMB: number = 0.2): Promise<File> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const img = new Image();
       img.onload = () => {
+        // Rasm o'lchamini tekshirish va kerak bo'lsa kichiklashtirish
+        let width = img.width;
+        let height = img.height;
+        const maxDimension = 1920;
+        
+        if (width > maxDimension || height > maxDimension) {
+          const ratio = Math.min(maxDimension / width, maxDimension / height);
+          width = Math.floor(width * ratio);
+          height = Math.floor(height * ratio);
+        }
+        
         const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
+        canvas.width = width;
+        canvas.height = height;
         const ctx = canvas.getContext('2d');
         if (!ctx) {
           reject(new Error('Canvas context not available'));
           return;
         }
-        ctx.drawImage(img, 0, 0);
-        canvas.toBlob(
-          (blob) => {
-            if (!blob) {
-              reject(new Error('Failed to convert to WebP'));
-              return;
-            }
-            const webpFile = new File([blob], file.name.replace(/\.[^/.]+$/, '.webp'), {
-              type: 'image/webp',
-              lastModified: Date.now(),
-            });
-            resolve(webpFile);
-          },
-          'image/webp',
-          quality
-        );
+        
+        // Rasmni chizish
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        // WebP ga o'tkazish va hajmini tekshirish
+        const convertWithQuality = (q: number): void => {
+          canvas.toBlob(
+            (blob) => {
+              if (!blob) {
+                reject(new Error('Failed to convert to WebP'));
+                return;
+              }
+              
+              const sizeMB = blob.size / (1024 * 1024);
+              
+              // Agar hajm katta bo'lsa, sifatni pasaytirish
+              if (sizeMB > maxSizeMB && q > 0.5) {
+                convertWithQuality(q - 0.1);
+                return;
+              }
+              
+              const webpFile = new File([blob], file.name.replace(/\.[^/.]+$/, '.webp'), {
+                type: 'image/webp',
+                lastModified: Date.now(),
+              });
+              resolve(webpFile);
+            },
+            'image/webp',
+            q
+          );
+        };
+        
+        convertWithQuality(quality);
       };
-      img.onerror = reject;
+      img.onerror = () => reject(new Error('Failed to load image'));
       img.src = e.target?.result as string;
     };
-    reader.onerror = reject;
+    reader.onerror = () => reject(new Error('Failed to read file'));
     reader.readAsDataURL(file);
   });
 }
@@ -84,7 +112,7 @@ export async function compressImage(
     // Agar WebP ga o'tkazish kerak bo'lsa va fayl allaqachon WebP emas
     if (compressionOptions.convertToWebP && !file.type.includes('webp')) {
       try {
-        fileToCompress = await convertToWebP(file, compressionOptions.quality);
+        fileToCompress = await convertToWebP(file, compressionOptions.quality, compressionOptions.maxSizeMB || 0.2);
         console.log('📸 Rasm WebP ga o\'tkazildi');
       } catch (webpError) {
         console.warn('WebP ga o\'tkazishda xatolik, original formatda davom etilmoqda:', webpError);
