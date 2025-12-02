@@ -8,6 +8,7 @@ import type { CatalogResponse, PostResponse, BrandResponse, SettingsResponse } f
 import { detectLocale } from '@/lib/locale-server';
 import CatalogHeroImage from '@/components/catalog-hero-image';
 import Sidebar from '@/components/sidebar';
+import MobileFilterDrawer from '@/components/mobile-filter-drawer';
 import { normalizeImageUrl } from '@/lib/image-utils';
 
 // ISR: Revalidate every 30 minutes
@@ -175,8 +176,8 @@ export default async function CatalogPage({
         <section className="bg-white py-8">
           <div className="mx-auto max-w-6xl px-4 md:px-6">
             <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-              {/* Sidebar - Filter Panel First */}
-              <aside className="space-y-6">
+              {/* Sidebar - Hidden on mobile, shown on desktop */}
+              <aside className="hidden lg:block space-y-6">
                 {/* Filter Panel - Hide for interacoustics */}
                 {searchParams.productType !== 'interacoustics' && (
                   <div className="rounded-lg border border-border/60 bg-white p-4">
@@ -590,11 +591,162 @@ export default async function CatalogPage({
                 )}
               </aside>
 
-              {/* Main Content */}
+              {/* Main Content - Products First on Mobile */}
               <div className="space-y-6">
-                {/* Promotional Hero Section - Before Brand Tabs */}
+                {/* Mobile: Products First, Hero Banner After */}
+                {/* Desktop: Hero Banner First, Products After */}
+                
+                {/* Products Grid - Show First on Mobile */}
+                {filteredProducts.length > 0 ? (
+                  <>
+                    <div className="grid grid-cols-2 gap-3 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:order-2">
+                      {filteredProducts.slice(0, pageSize).map((product) => {
+                        const productName = locale === 'ru' ? (product.name_ru || '') : (product.name_uz || '');
+                        
+                        // Try to get image from galleryUrls, thumbnail, or brand logo
+                        let mainImage = '';
+                        if (product.galleryUrls && product.galleryUrls.length > 0) {
+                          mainImage = normalizeImageUrl(product.galleryUrls[0]);
+                        } else if (product.brand?.logo?.url) {
+                          mainImage = normalizeImageUrl(product.brand.logo.url);
+                        }
+                        
+                        const priceFormatted = product.price 
+                          ? `${new Intl.NumberFormat('uz-UZ').format(Number(product.price))} so'm`
+                          : null;
+                        const availability = product.availabilityStatus 
+                          ? availabilityMap[product.availabilityStatus] 
+                          : null;
+                        
+                        return (
+                          <Link
+                            key={product.id}
+                            href={`/products/${product.slug}`}
+                            className="group flex flex-col gap-2 sm:gap-3 rounded-lg border-[0.5px] border-brand-accent/40 bg-white p-2 sm:p-4 shadow-sm transition hover:border-brand-accent/60 hover:shadow-md"
+                          >
+                            {/* Product Image - Top, Large */}
+                            <div className="relative aspect-square w-full overflow-hidden rounded-lg border border-brand-accent/60 bg-white">
+                              {mainImage ? (
+                                <Image
+                                  src={mainImage}
+                                  alt={productName}
+                                  fill
+                                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 33vw"
+                                  className="object-contain p-2 sm:p-4 transition-transform duration-300 group-hover:scale-105"
+                                  suppressHydrationWarning
+                                  unoptimized
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center bg-brand-primary">
+                                  <span className="text-white text-lg font-bold">Acoustic</span>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Product Info */}
+                            <div className="flex flex-col gap-1 sm:gap-2">
+                              <h3 className="text-sm sm:text-base font-semibold text-foreground line-clamp-2 group-hover:text-brand-primary" suppressHydrationWarning>
+                                {productName}
+                              </h3>
+                              {priceFormatted && (
+                                <p className="text-base sm:text-lg font-semibold text-brand-primary" suppressHydrationWarning>
+                                  {priceFormatted}
+                                </p>
+                              )}
+                              {availability && (
+                                <p className="text-xs sm:text-sm text-emerald-600 font-medium" suppressHydrationWarning>
+                                  {locale === 'ru' ? availability.ru : availability.uz}
+                                </p>
+                              )}
+                              <span className="inline-flex items-center gap-1 text-xs sm:text-sm font-medium text-brand-primary group-hover:gap-2 transition-all mt-auto" suppressHydrationWarning>
+                                {locale === 'ru' ? 'Подробнее' : 'Batafsil'}
+                                <ArrowRight size={12} className="sm:w-3.5 sm:h-3.5 transition-transform group-hover:translate-x-1" />
+                              </span>
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                    
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-center gap-2 pt-6 lg:order-3">
+                        {page > 1 && (
+                          <Link
+                            href={`/catalog?productType=${searchParams.productType}&page=${page - 1}${searchParams.brandId ? `&brandId=${searchParams.brandId}` : ''}${searchParams.sort ? `&sort=${searchParams.sort}` : ''}${searchParams.audience ? `&audience=${searchParams.audience}` : ''}${searchParams.formFactor ? `&formFactor=${searchParams.formFactor}` : ''}${searchParams.signalProcessing ? `&signalProcessing=${searchParams.signalProcessing}` : ''}${searchParams.powerLevel ? `&powerLevel=${searchParams.powerLevel}` : ''}${searchParams.hearingLossLevel ? `&hearingLossLevel=${searchParams.hearingLossLevel}` : ''}${searchParams.smartphoneCompatibility ? `&smartphoneCompatibility=${searchParams.smartphoneCompatibility}` : ''}`}
+                            className="px-4 py-2 rounded-lg border border-border/60 bg-white text-sm font-medium text-foreground transition hover:border-brand-primary/50 hover:bg-muted/20"
+                          >
+                            {locale === 'ru' ? 'Назад' : 'Orqaga'}
+                          </Link>
+                        )}
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                            let pageNum: number;
+                            if (totalPages <= 7) {
+                              pageNum = i + 1;
+                            } else if (page <= 4) {
+                              pageNum = i + 1;
+                            } else if (page >= totalPages - 3) {
+                              pageNum = totalPages - 6 + i;
+                            } else {
+                              pageNum = page - 3 + i;
+                            }
+                            
+                            const isActive = pageNum === page;
+                            const pageParams = new URLSearchParams();
+                            if (searchParams.productType) pageParams.set('productType', searchParams.productType);
+                            if (searchParams.brandId) pageParams.set('brandId', searchParams.brandId);
+                            if (searchParams.sort) pageParams.set('sort', searchParams.sort);
+                            if (searchParams.audience) pageParams.set('audience', searchParams.audience);
+                            if (searchParams.formFactor) pageParams.set('formFactor', searchParams.formFactor);
+                            if (searchParams.signalProcessing) pageParams.set('signalProcessing', searchParams.signalProcessing);
+                            if (searchParams.powerLevel) pageParams.set('powerLevel', searchParams.powerLevel);
+                            if (searchParams.hearingLossLevel) pageParams.set('hearingLossLevel', searchParams.hearingLossLevel);
+                            if (searchParams.smartphoneCompatibility) pageParams.set('smartphoneCompatibility', searchParams.smartphoneCompatibility);
+                            pageParams.set('page', pageNum.toString());
+                            
+                            return (
+                              <Link
+                                key={pageNum}
+                                href={`/catalog?${pageParams.toString()}`}
+                                className={`px-3 py-1.5 rounded text-sm font-medium transition ${
+                                  isActive
+                                    ? 'bg-brand-primary text-white'
+                                    : 'bg-white text-foreground border border-border/60 hover:border-brand-primary/50 hover:bg-muted/20'
+                                }`}
+                              >
+                                {pageNum}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                        {page < totalPages && (
+                          <Link
+                            href={`/catalog?productType=${searchParams.productType}&page=${page + 1}${searchParams.brandId ? `&brandId=${searchParams.brandId}` : ''}${searchParams.sort ? `&sort=${searchParams.sort}` : ''}${searchParams.audience ? `&audience=${searchParams.audience}` : ''}${searchParams.formFactor ? `&formFactor=${searchParams.formFactor}` : ''}${searchParams.signalProcessing ? `&signalProcessing=${searchParams.signalProcessing}` : ''}${searchParams.powerLevel ? `&powerLevel=${searchParams.powerLevel}` : ''}${searchParams.hearingLossLevel ? `&hearingLossLevel=${searchParams.hearingLossLevel}` : ''}${searchParams.smartphoneCompatibility ? `&smartphoneCompatibility=${searchParams.smartphoneCompatibility}` : ''}`}
+                            className="px-4 py-2 rounded-lg border border-border/60 bg-white text-sm font-medium text-foreground transition hover:border-brand-primary/50 hover:bg-muted/20"
+                          >
+                            {locale === 'ru' ? 'Вперед' : 'Keyingi'}
+                          </Link>
+                        )}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="rounded-2xl border border-border/60 bg-muted/20 p-12 text-center lg:order-2">
+                    <p className="text-lg font-semibold text-brand-accent" suppressHydrationWarning>
+                      {locale === 'ru' ? 'Товары не найдены' : 'Mahsulotlar topilmadi'}
+                    </p>
+                    <p className="mt-2 text-sm text-muted-foreground" suppressHydrationWarning>
+                      {locale === 'ru'
+                        ? 'Попробуйте изменить параметры фильтров.'
+                        : "Filtrlarni o'zgartirib ko'ring."}
+                    </p>
+                  </div>
+                )}
+
+                {/* Promotional Hero Section - After Products on Mobile, Before on Desktop */}
                 {searchParams.productType === 'hearing-aids' && (
-                  <section className="relative w-full rounded-lg overflow-hidden">
+                  <section className="relative w-full rounded-lg overflow-hidden lg:order-1">
                     <CatalogHeroImage
                       src={normalizeImageUrl(settingsData?.catalogHeroImage?.url) || '/images/catalog-hero.jpg'}
                       alt={locale === 'ru' ? 'Каталог слуховых аппаратов' : 'Eshitish moslamalari katalogi'}
@@ -646,8 +798,8 @@ export default async function CatalogPage({
                   </div>
                 )}
 
-                {/* Sort */}
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                {/* Sort - Show after products on mobile */}
+                <div className="flex items-center gap-2 text-sm text-muted-foreground lg:order-1">
                   <span>{locale === 'ru' ? 'Сортировать по:' : 'Saralash:'}</span>
                   <Link
                     href={`/catalog?productType=${searchParams.productType}&sort=price_asc${searchParams.brandId ? `&brandId=${searchParams.brandId}` : ''}`}
@@ -657,10 +809,10 @@ export default async function CatalogPage({
                   </Link>
                 </div>
 
-                {/* Products Grid - 3x4 = 12 items */}
+                {/* Products Grid - Show First on Mobile, After Hero on Desktop */}
             {filteredProducts.length > 0 ? (
                   <>
-              <div className="grid grid-cols-2 gap-3 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-2 gap-3 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:order-2">
                       {filteredProducts.slice(0, pageSize).map((product) => {
                   const productName = locale === 'ru' ? (product.name_ru || '') : (product.name_uz || '');
                   
@@ -731,7 +883,7 @@ export default async function CatalogPage({
                     
                     {/* Pagination */}
                     {totalPages > 1 && (
-                      <div className="flex items-center justify-center gap-2 pt-6">
+                      <div className="flex items-center justify-center gap-2 pt-6 lg:order-3">
                         {page > 1 && (
                           <Link
                             href={`/catalog?productType=${searchParams.productType}&page=${page - 1}${searchParams.brandId ? `&brandId=${searchParams.brandId}` : ''}${searchParams.sort ? `&sort=${searchParams.sort}` : ''}${searchParams.audience ? `&audience=${searchParams.audience}` : ''}${searchParams.formFactor ? `&formFactor=${searchParams.formFactor}` : ''}${searchParams.signalProcessing ? `&signalProcessing=${searchParams.signalProcessing}` : ''}${searchParams.powerLevel ? `&powerLevel=${searchParams.powerLevel}` : ''}${searchParams.hearingLossLevel ? `&hearingLossLevel=${searchParams.hearingLossLevel}` : ''}${searchParams.smartphoneCompatibility ? `&smartphoneCompatibility=${searchParams.smartphoneCompatibility}` : ''}`}
@@ -792,7 +944,7 @@ export default async function CatalogPage({
                     )}
                   </>
                 ) : (
-                  <div className="rounded-lg border border-border/60 bg-muted/20 p-12 text-center">
+                  <div className="rounded-lg border border-border/60 bg-muted/20 p-12 text-center lg:order-2">
                 <p className="text-lg font-semibold text-brand-accent" suppressHydrationWarning>
                   {locale === 'ru' ? 'Товары не найдены' : 'Mahsulotlar topilmadi'}
                 </p>
@@ -807,6 +959,15 @@ export default async function CatalogPage({
             </div>
           </div>
         </section>
+
+        {/* Mobile Filter Drawer */}
+        {searchParams.productType && searchParams.productType !== 'interacoustics' && (
+          <MobileFilterDrawer
+            locale={locale}
+            brandTabs={brandTabs}
+            searchParams={searchParams}
+          />
+        )}
       </main>
     );
   }
