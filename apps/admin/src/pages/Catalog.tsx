@@ -463,9 +463,17 @@ function CatalogManager() {
           <Form.Item label="Tavsif (ru)" name="description_ru">
             <Input.TextArea rows={3} placeholder="Краткая информация о каталоге" />
           </Form.Item>
-          <Form.Item label="Rasm" name="imageId" extra="Katalog rasmi">
+          <Form.Item 
+            label="Rasm" 
+            name="imageId" 
+            extra={
+              <div>
+                <ImageSizeHint type="catalog" />
+                <div style={{ marginTop: 8, fontSize: 12, color: '#666' }}>Katalog rasmi</div>
+              </div>
+            }
+          >
             <div>
-              <ImageSizeHint type="catalog" />
               <Row gutter={16}>
                 <Col span={12}>
                   <Upload
