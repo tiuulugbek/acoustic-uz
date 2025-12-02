@@ -6,7 +6,6 @@ import { redirect } from 'next/navigation';
 import { getCatalogs, getPosts, getBrands, getSettings } from '@/lib/api-server';
 import type { CatalogResponse, PostResponse, BrandResponse, SettingsResponse } from '@/lib/api';
 import { detectLocale } from '@/lib/locale-server';
-import PageHeader from '@/components/page-header';
 import CatalogHeroImage from '@/components/catalog-hero-image';
 import Sidebar from '@/components/sidebar';
 import { normalizeImageUrl } from '@/lib/image-utils';
