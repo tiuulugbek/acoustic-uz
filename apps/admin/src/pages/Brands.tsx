@@ -109,13 +109,18 @@ export default function BrandsPage() {
     try {
       const compressedFile = await compressImage(file as File);
       const media = await uploadMedia(compressedFile);
+      if (!media || !media.id) {
+        throw new Error('Media yuklanmadi');
+      }
       form.setFieldsValue({ logoId: media.id });
-      setPreviewLogo(normalizeImageUrl(media.url));
+      const normalizedUrl = normalizeImageUrl(media.url);
+      setPreviewLogo(normalizedUrl);
       message.success('Logo yuklandi');
       queryClient.invalidateQueries({ queryKey: ['media'] });
       onSuccess?.(media);
     } catch (error) {
       const apiError = error as ApiError;
+      console.error('Logo upload error:', error);
       message.error(apiError.message || 'Logo yuklashda xatolik');
       onError?.(error as Error);
     } finally {
@@ -124,7 +129,7 @@ export default function BrandsPage() {
   };
 
   const handleRemoveLogo = () => {
-    form.setFieldsValue({ logoId: null });
+    form.setFieldsValue({ logoId: undefined });
     setPreviewLogo(null);
   };
 
