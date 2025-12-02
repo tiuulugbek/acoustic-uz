@@ -947,24 +947,40 @@ export default async function CatalogPage({
 
   return (
     <main className="min-h-screen bg-background">
-      <PageHeader
-        locale={locale}
-        breadcrumbs={[
-          { label: locale === 'ru' ? 'Главная' : 'Bosh sahifa', href: '/' },
-          { label: locale === 'ru' ? 'Каталог' : 'Katalog' },
-        ]}
-        title={locale === 'ru' ? 'Решения для вашего образа жизни' : 'Turmush tarziga mos eshitish yechimlari'}
-        description={locale === 'ru'
-          ? 'Мы подберём аппарат под ваши привычки, уровень активности и бюджет. Выберите один из разделов, затем просмотрите подходящие товары в каталоге.'
-          : "Biz sizning odatlaringiz, faolligingiz va byudjetingizga mos modelni topamiz. Bo'limlardan birini tanlang, keyin esa katalog ichida mos mahsulotlarni ko'ring."}
-      />
+      {/* Breadcrumbs */}
+      <section className="bg-[hsl(var(--secondary))]">
+        <div className="mx-auto max-w-6xl px-4 py-2 sm:py-3 text-xs font-semibold uppercase tracking-wide text-white sm:px-6">
+          <div className="flex flex-wrap items-center gap-x-2">
+            <Link href="/" className="hover:text-white/80 text-white/70 break-words" suppressHydrationWarning>
+              {locale === 'ru' ? 'Главная' : 'Bosh sahifa'}
+            </Link>
+            <span className="mx-1 sm:mx-2">›</span>
+            <span className="text-white break-words" suppressHydrationWarning>
+              {locale === 'ru' ? 'Каталог' : 'Katalog'}
+            </span>
+          </div>
+        </div>
+      </section>
 
       {/* Main Content with Sidebar */}
-      <section className="bg-white py-16">
+      <section className="bg-[hsl(var(--secondary))] py-8 md:py-12">
         <div className="mx-auto max-w-6xl px-4 md:px-6">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             {/* Main Content - 3 columns on large screens */}
             <div className="lg:col-span-3">
+              {/* Header Title and Description */}
+              <div className="mb-8">
+                <h1 className="text-2xl md:text-3xl font-bold text-white mb-3" suppressHydrationWarning>
+                  {locale === 'ru' ? 'Решения для вашего образа жизни' : 'Turmush tarziga mos eshitish yechimlari'}
+                </h1>
+                <p className="text-base text-white/90 leading-relaxed" suppressHydrationWarning>
+                  {locale === 'ru'
+                    ? 'Мы подберём аппарат под ваши привычки, уровень активности и бюджет. Выберите один из разделов, затем просмотрите подходящие товары в каталоге.'
+                    : "Biz sizning odatlaringiz, faolligingiz va byudjetingizga mos modelni topamiz. Bo'limlardan birini tanlang, keyin esa katalog ichida mos mahsulotlarni ko'ring."}
+                </p>
+              </div>
+
+              {/* Catalog Cards */}
               {catalogItems.length > 0 ? (
                 <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                   {catalogItems.map((item) => (
@@ -1020,7 +1036,9 @@ export default async function CatalogPage({
             </div>
 
             {/* Sidebar - 1 column on large screens */}
-            <Sidebar locale={locale} settingsData={settingsData} brandsData={brandsData} pageType="catalog" />
+            <div className="lg:col-span-1">
+              <Sidebar locale={locale} settingsData={settingsData} brandsData={brandsData} pageType="catalog" />
+            </div>
           </div>
         </div>
       </section>
