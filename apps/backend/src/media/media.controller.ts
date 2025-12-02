@@ -10,6 +10,8 @@ import {
   UploadedFile,
   Patch,
   BadRequestException,
+  Logger,
+  HttpException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
@@ -25,6 +27,8 @@ import { UploadedFile as StoredFile } from './storage/storage.service';
 @UseGuards(JwtAuthGuard, RbacGuard)
 @ApiBearerAuth()
 export class MediaController {
+  private readonly logger = new Logger(MediaController.name);
+
   constructor(private readonly mediaService: MediaService) {}
 
   @Get()
@@ -73,17 +77,47 @@ export class MediaController {
     },
   })
   @ApiOperation({ summary: 'Upload media' })
-  upload(
+  async upload(
     @UploadedFile() file: StoredFile,
     @Body('alt_uz') alt_uz?: string,
     @Body('alt_ru') alt_ru?: string,
     @Body('skipWebp') skipWebp?: string
   ) {
-    if (!file) {
-      throw new BadRequestException('Rasm fayli yuborilmadi');
+    try {
+      this.logger.log(`Upload request received. File: ${file?.originalname || 'none'}, Size: ${file?.size || 0} bytes`);
+      
+      if (!file) {
+        this.logger.warn('Upload request without file');
+        throw new BadRequestException('Rasm fayli yuborilmadi');
+      }
+
+      // File size validation
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (file.size > maxSize) {
+        this.logger.warn(`File too large: ${file.size} bytes (max: ${maxSize})`);
+        throw new BadRequestException(`Rasm hajmi juda katta. Maksimal hajm: 10MB`);
+      }
+
+      // File type validation
+      if (!file.mimetype || !file.mimetype.startsWith('image/')) {
+        this.logger.warn(`Invalid file type: ${file.mimetype}`);
+        throw new BadRequestException('Faqat rasm fayllari qabul qilinadi');
+      }
+
+      const shouldSkipWebp = skipWebp === 'true';
+      const result = await this.mediaService.create(file, alt_uz, alt_ru, shouldSkipWebp);
+      
+      this.logger.log(`Upload successful: ${result.id}`);
+      return result;
+    } catch (error) {
+      this.logger.error(`Upload failed: ${error.message}`, error.stack);
+      
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      
+      throw new BadRequestException(`Rasm yuklashda xatolik: ${error.message || 'Noma'lum xatolik'}`);
     }
-    const shouldSkipWebp = skipWebp === 'true';
-    return this.mediaService.create(file, alt_uz, alt_ru, shouldSkipWebp);
   }
 
   @Patch(':id')
