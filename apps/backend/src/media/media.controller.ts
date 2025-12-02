@@ -9,8 +9,10 @@ import {
   UseInterceptors,
   UploadedFile,
   Patch,
+  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { MediaService } from './media.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -42,7 +44,20 @@ export class MediaController {
 
   @Post()
   @RequirePermissions('media.write')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB
+      },
+      fileFilter: (req, file, cb) => {
+        // Faqat rasm fayllarini qabul qilish
+        if (!file.mimetype.startsWith('image/')) {
+          return cb(new BadRequestException('Faqat rasm fayllari qabul qilinadi'), false);
+        }
+        cb(null, true);
+      },
+    })
+  )
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -65,6 +80,9 @@ export class MediaController {
     @Body('alt_ru') alt_ru?: string,
     @Body('skipWebp') skipWebp?: string
   ) {
+    if (!file) {
+      throw new BadRequestException('Rasm fayli yuborilmadi');
+    }
     const shouldSkipWebp = skipWebp === 'true';
     return this.mediaService.create(file, alt_uz, alt_ru, shouldSkipWebp);
   }
