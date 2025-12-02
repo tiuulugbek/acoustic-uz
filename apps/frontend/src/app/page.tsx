@@ -315,57 +315,41 @@ export default async function HomePage() {
             )}
           </div>
           {hearingItems.length > 0 ? (
-            <div className="grid gap-2.5 md:gap-3 grid-cols-2 md:grid-cols-3">
+            <div className="grid gap-2.5 grid-cols-2 md:grid-cols-4">
               {hearingItems.map((item) => (
                 <Link
                   key={item.id}
                   href={item.link}
-                  className="group flex gap-2.5 md:flex-col md:gap-3 rounded-lg border border-gray-200 bg-white p-2.5 md:p-3 transition hover:border-brand-primary/50 hover:shadow-sm"
+                  className="group flex gap-2.5 md:flex-col md:gap-2 rounded border border-gray-200 bg-white p-2.5 md:p-4 transition hover:border-brand-primary/50 hover:shadow-sm"
                 >
-                  {/* Desktop: sarlavha yuqorida */}
-                  <h3 className="hidden md:block text-sm md:text-base font-semibold text-brand-accent leading-tight group-hover:text-brand-primary transition-colors line-clamp-2" suppressHydrationWarning>
-                    {item.title}
-                  </h3>
-                  
-                  {/* Mobil: rasm va matn gorizontal (Interacoustics kabi), Desktop: rasm va tavsif vertikal */}
-                  <div className="flex md:flex-col gap-2.5 md:gap-3">
-                    {/* Rasm - mobil: chapda kichik kvadrat, desktop: yuqorida */}
-                    <div className="relative h-16 w-16 md:h-auto md:w-full md:aspect-[4/3] shrink-0 overflow-hidden rounded-lg bg-brand-primary/10">
-                      {item.hasImage && item.image ? (
-                        <Image 
-                          src={item.image} 
-                          alt={item.title} 
-                          fill 
-                          sizes="(max-width: 768px) 64px, (max-width: 1024px) 50vw, 33vw" 
-                          className="object-cover transition-transform duration-300 group-hover:scale-105"
-                          suppressHydrationWarning
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-brand-primary">
-                          <span className="text-white text-[10px] md:text-xs font-bold">Acoustic</span>
-                        </div>
-                      )}
-                    </div>
-                    {/* Matn - mobil: o'ngda, desktop: pastda */}
-                    <div className="flex flex-col flex-1 min-w-0 gap-1 md:gap-2 justify-between">
-                      <div className="flex flex-col gap-1">
-                        {/* Mobil: sarlavha */}
-                        <h3 className="md:hidden text-xs font-semibold text-brand-accent leading-tight group-hover:text-brand-primary transition-colors line-clamp-2" suppressHydrationWarning>
-                          {item.title}
-                        </h3>
-                        {/* Tavsif */}
-                        {item.description && (
-                          <p className="text-[10px] md:text-sm text-muted-foreground leading-snug line-clamp-3" suppressHydrationWarning>
-                            {item.description}
-                          </p>
-                        )}
+                  {/* Rasm - mobil: chapda, desktop: yuqorida */}
+                  <div className="relative h-16 w-16 md:h-auto md:w-full md:aspect-[4/3] shrink-0 overflow-hidden rounded bg-brand-primary/10">
+                    {item.hasImage && item.image ? (
+                      <Image 
+                        src={item.image} 
+                        alt={item.title} 
+                        fill 
+                        sizes="(max-width: 768px) 64px, (max-width: 1024px) 50vw, 25vw" 
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        suppressHydrationWarning
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-brand-primary">
+                        <span className="text-white text-[10px] md:text-sm font-bold">Acoustic</span>
                       </div>
-                      {/* Batafsil link - mobil: yashirilgan, desktop: ko'rsatilgan */}
-                      <span className="hidden md:inline-flex items-center gap-1 text-xs md:text-base font-medium text-brand-primary group-hover:text-brand-accent transition-all w-fit" suppressHydrationWarning>
-                        {locale === 'ru' ? 'Подробнее' : 'Batafsil'}
-                        <ArrowRight size={12} className="md:w-4 md:h-4 transition-transform group-hover:translate-x-1" />
-                      </span>
-                    </div>
+                    )}
+                  </div>
+                  {/* Nom va tavsif - mobil: o'ngda, desktop: pastda */}
+                  <div className="flex flex-col flex-1 min-w-0 gap-1">
+                    <h3 className="text-xs md:text-base font-semibold text-brand-accent leading-tight group-hover:text-brand-primary transition-colors line-clamp-2" suppressHydrationWarning>
+                      {item.title}
+                    </h3>
+                    {/* Tavsif */}
+                    {item.description && (
+                      <p className="text-[10px] md:text-sm text-muted-foreground leading-snug line-clamp-3" suppressHydrationWarning>
+                        {item.description}
+                      </p>
+                    )}
                   </div>
                 </Link>
               ))}
