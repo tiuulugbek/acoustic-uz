@@ -962,17 +962,17 @@ export default async function CatalogPage({
       </section>
 
       {/* Main Content with Sidebar */}
-      <section className="bg-[hsl(var(--secondary))] py-8 md:py-12">
+      <section className="bg-white py-8 md:py-12">
         <div className="mx-auto max-w-6xl px-4 md:px-6">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             {/* Main Content - 3 columns on large screens */}
             <div className="lg:col-span-3">
               {/* Header Title and Description */}
               <div className="mb-8">
-                <h1 className="text-2xl md:text-3xl font-bold text-white mb-3" suppressHydrationWarning>
+                <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-3" suppressHydrationWarning>
                   {locale === 'ru' ? 'Решения для вашего образа жизни' : 'Turmush tarziga mos eshitish yechimlari'}
                 </h1>
-                <p className="text-base text-white/90 leading-relaxed" suppressHydrationWarning>
+                <p className="text-base text-muted-foreground leading-relaxed" suppressHydrationWarning>
                   {locale === 'ru'
                     ? 'Мы подберём аппарат под ваши привычки, уровень активности и бюджет. Выберите один из разделов, затем просмотрите подходящие товары в каталоге.'
                     : "Biz sizning odatlaringiz, faolligingiz va byudjetingizga mos modelni topamiz. Bo'limlardan birini tanlang, keyin esa katalog ichida mos mahsulotlarni ko'ring."}
