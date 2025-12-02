@@ -533,22 +533,22 @@ export default function BranchesPage() {
           <Form.Item
             label="Ish vaqti (uz)"
             name="workingHours_uz"
-            extra="Masalan: Dushanba - Juma: 09:00-20:00&#10;Shanba - Yakshanba: 09:00-18:00"
+            extra="Har bir kun alohida qatorga yozing. Hozirgi kun avtomatik ajratib ko'rsatiladi. Masalan:&#10;Dushanba: 09:00-20:00&#10;Seshanba: 09:00-20:00&#10;Chorshanba: 09:00-20:00&#10;Payshanba: 09:00-20:00&#10;Juma: 09:00-20:00&#10;Shanba: 09:00-18:00&#10;Yakshanba: 09:00-18:00&#10;&#10;Yoki oralig'ida:&#10;Dushanba - Juma: 09:00-20:00&#10;Shanba - Yakshanba: 09:00-18:00"
           >
             <Input.TextArea
-              rows={3}
-              placeholder="Dushanba - Juma: 09:00-20:00&#10;Shanba - Yakshanba: 09:00-18:00"
+              rows={7}
+              placeholder="Dushanba: 09:00-20:00&#10;Seshanba: 09:00-20:00&#10;Chorshanba: 09:00-20:00&#10;Payshanba: 09:00-20:00&#10;Juma: 09:00-20:00&#10;Shanba: 09:00-18:00&#10;Yakshanba: 09:00-18:00"
             />
           </Form.Item>
 
           <Form.Item
             label="Ish vaqti (ru)"
             name="workingHours_ru"
-            extra="Masalan: Понедельник - Пятница: 09:00-20:00&#10;Суббота - Воскресенье: 09:00-18:00"
+            extra="Каждый день на отдельной строке. Текущий день будет автоматически выделен. Например:&#10;Понедельник: 09:00-20:00&#10;Вторник: 09:00-20:00&#10;Среда: 09:00-20:00&#10;Четверг: 09:00-20:00&#10;Пятница: 09:00-20:00&#10;Суббота: 09:00-18:00&#10;Воскресенье: 09:00-18:00&#10;&#10;Или диапазоном:&#10;Понедельник - Пятница: 09:00-20:00&#10;Суббота - Воскресенье: 09:00-18:00"
           >
             <Input.TextArea
-              rows={3}
-              placeholder="Понедельник - Пятница: 09:00-20:00&#10;Суббота - Воскресенье: 09:00-18:00"
+              rows={7}
+              placeholder="Понедельник: 09:00-20:00&#10;Вторник: 09:00-20:00&#10;Среда: 09:00-20:00&#10;Четверг: 09:00-20:00&#10;Пятница: 09:00-20:00&#10;Суббота: 09:00-18:00&#10;Воскресенье: 09:00-18:00"
             />
           </Form.Item>
 

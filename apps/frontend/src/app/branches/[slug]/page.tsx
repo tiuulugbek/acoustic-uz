@@ -24,6 +24,94 @@ export const revalidate = 0;
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
+// Helper function to parse working hours and highlight current day
+function parseWorkingHours(workingHours: string, locale: 'uz' | 'ru') {
+  if (!workingHours) return { lines: [], currentDayLine: null };
+  
+  const lines = workingHours.split('\n').filter(line => line.trim());
+  const today = new Date().getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  
+  // Day names mapping (including variations)
+  const dayNames: Record<string, Record<string, number>> = {
+    uz: {
+      'yakshanba': 0,
+      'dushanba': 1,
+      'seshanba': 2,
+      'chorshanba': 3,
+      'payshanba': 4,
+      'juma': 5,
+      'shanba': 6,
+    },
+    ru: {
+      'воскресенье': 0,
+      'понедельник': 1,
+      'вторник': 2,
+      'среда': 3,
+      'четверг': 4,
+      'пятница': 5,
+      'суббота': 6,
+    },
+  };
+  
+  const dayMap = dayNames[locale];
+  let currentDayLine: number | null = null;
+  
+  // Find current day line
+  lines.forEach((line, index) => {
+    const lowerLine = line.toLowerCase();
+    
+    // Check if line contains current day name
+    for (const [dayName, dayNumber] of Object.entries(dayMap)) {
+      if (dayNumber === today && lowerLine.includes(dayName)) {
+        currentDayLine = index;
+        break;
+      }
+    }
+    
+    // Also check for day ranges (e.g., "Понедельник - Пятница" when today is Wednesday)
+    if (currentDayLine === null) {
+      // Check if line contains a range that includes today
+      const rangePatterns: Record<string, Array<[number, number]>> = {
+        uz: [
+          [1, 5], // Dushanba - Juma
+          [5, 6], // Juma - Shanba
+          [6, 0], // Shanba - Yakshanba
+        ],
+        ru: [
+          [1, 5], // Понедельник - Пятница
+          [5, 6], // Пятница - Суббота
+          [6, 0], // Суббота - Воскресенье
+        ],
+      };
+      
+      const ranges = rangePatterns[locale];
+      for (const [startDay, endDay] of ranges) {
+        const startDayName = Object.entries(dayMap).find(([_, num]) => num === startDay)?.[0];
+        const endDayName = Object.entries(dayMap).find(([_, num]) => num === endDay)?.[0];
+        
+        if (startDayName && endDayName && lowerLine.includes(startDayName) && lowerLine.includes(endDayName)) {
+          // Check if today is within the range
+          if (startDay <= endDay) {
+            // Normal range (e.g., Monday to Friday)
+            if (today >= startDay && today <= endDay) {
+              currentDayLine = index;
+              break;
+            }
+          } else {
+            // Wrapping range (e.g., Saturday to Sunday)
+            if (today >= startDay || today <= endDay) {
+              currentDayLine = index;
+              break;
+            }
+          }
+        }
+      }
+    }
+  });
+  
+  return { lines, currentDayLine };
+}
+
 interface BranchPageProps {
   params: {
     slug: string;
@@ -411,24 +499,37 @@ export default async function BranchPage({ params }: BranchPageProps) {
                 </div>
 
                 {/* Working Hours */}
-                {(branch.workingHours_uz || branch.workingHours_ru) ? (
-                  <div>
-                    <h3 className="mb-2 text-xs sm:text-sm font-semibold text-foreground uppercase" suppressHydrationWarning>
-                      {locale === 'ru' ? 'Время работы' : 'Ish vaqti'}
-                    </h3>
-                    <div className="space-y-1 text-xs sm:text-sm text-muted-foreground">
-                      {getBilingualText(branch.workingHours_uz, branch.workingHours_ru, locale)
-                        ?.split('\n')
-                        .filter(line => line.trim())
-                        .map((line, idx) => (
-                          <div key={idx} className="flex items-start gap-2">
-                            <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-brand-primary flex-shrink-0 mt-0.5" />
-                            <span className="break-words" suppressHydrationWarning>{line.trim()}</span>
-                          </div>
-                        ))}
+                {(branch.workingHours_uz || branch.workingHours_ru) ? (() => {
+                  const workingHours = getBilingualText(branch.workingHours_uz, branch.workingHours_ru, locale) || '';
+                  const { lines, currentDayLine } = parseWorkingHours(workingHours, locale);
+                  
+                  return (
+                    <div>
+                      <h3 className="mb-2 text-xs sm:text-sm font-semibold text-foreground uppercase" suppressHydrationWarning>
+                        {locale === 'ru' ? 'Время работы' : 'Ish vaqti'}
+                      </h3>
+                      <div className="space-y-1 text-xs sm:text-sm text-muted-foreground">
+                        {lines.map((line, idx) => {
+                          const isCurrentDay = idx === currentDayLine;
+                          return (
+                            <div 
+                              key={idx} 
+                              className={`flex items-start gap-2 ${isCurrentDay ? 'bg-brand-primary/10 rounded px-2 py-1 -mx-2' : ''}`}
+                            >
+                              <Clock className={`h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0 mt-0.5 ${isCurrentDay ? 'text-brand-primary' : 'text-brand-primary'}`} />
+                              <span 
+                                className={`break-words ${isCurrentDay ? 'font-semibold text-brand-primary' : ''}`} 
+                                suppressHydrationWarning
+                              >
+                                {line.trim()}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                ) : (
+                  );
+                })() : (
                   // Fallback: Show default working hours if not set
                   <div>
                     <h3 className="mb-2 text-xs sm:text-sm font-semibold text-foreground uppercase" suppressHydrationWarning>
