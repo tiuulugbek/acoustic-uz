@@ -291,15 +291,20 @@ export default async function BranchPage({ params }: BranchPageProps) {
                           .replace(/width="[^"]*"/gi, 'width="100%"')
                           .replace(/height="[^"]*"/gi, 'height="100%"')
                           .replace(/style="[^"]*"/gi, 'style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; min-height: 300px;"')
-                          .replace(/<iframe/gi, '<iframe loading="lazy"')
+                          .replace(/<iframe/gi, '<iframe loading="lazy" allowfullscreen')
+                          .replace(/sandbox="[^"]*"/gi, '') // Remove sandbox if present
+                          .replace(/maps\.google\.com\/maps\?q=([^&"']+)/gi, (match, coords) => {
+                            // Fix Google Maps URLs to use embed format
+                            return `maps.google.com/maps?q=${coords}&output=embed`;
+                          })
                       }}
                     />
                   </div>
                 ) : branch.latitude && branch.longitude ? (
-                  // If coordinates are available, use Google Maps embed with marker
+                  // If coordinates are available, use Yandex Maps embed (more reliable than Google Maps)
                   <div className="mb-4 rounded-lg overflow-hidden border border-border bg-gray-100 relative" style={{ paddingBottom: '56.25%', height: 0, minHeight: '300px' }}>
                     <iframe
-                      src={`https://maps.google.com/maps?q=${encodeURIComponent(`${branch.latitude},${branch.longitude}`)}&hl=${locale === 'ru' ? 'ru' : 'uz'}&z=16&output=embed`}
+                      src={`https://yandex.com/map-widget/v1/?ll=${branch.longitude},${branch.latitude}&z=16&pt=${branch.longitude},${branch.latitude}&lang=${locale === 'ru' ? 'ru_RU' : 'uz_UZ'}`}
                       width="100%"
                       height="100%"
                       className="absolute top-0 left-0 w-full h-full"
@@ -308,7 +313,6 @@ export default async function BranchPage({ params }: BranchPageProps) {
                       loading="lazy"
                       referrerPolicy="no-referrer-when-downgrade"
                       title={locale === 'ru' ? 'Карта' : 'Xarita'}
-                      allow="geolocation"
                     />
                   </div>
                 ) : null}
