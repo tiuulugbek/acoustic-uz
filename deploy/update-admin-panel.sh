@@ -15,9 +15,11 @@ cd /var/www/news.acoustic.uz || exit 1
 
 # Set environment variables
 export NODE_ENV=production
+export VITE_API_URL=https://api.acoustic.uz/api
 
 # Build admin panel
 echo "🔨 Building admin panel..."
+echo "📝 Using API URL: $VITE_API_URL"
 pnpm --filter @acoustic/admin build
 
 # Copy dist files to Nginx directory
