@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs/promises';
+import * as fsSync from 'fs';
 import * as path from 'path';
 import { S3 } from 'aws-sdk';
 import sharp from 'sharp';
@@ -33,7 +34,24 @@ export class StorageService {
 
   constructor(private configService: ConfigService) {
     this.driver = this.configService.get<'local' | 's3'>('STORAGE_DRIVER', 'local');
-    this.uploadDir = path.join(process.cwd(), 'uploads');
+    
+    // Use explicit uploads directory path to avoid symlink issues
+    // Try to use backend/uploads if we're in a monorepo structure
+    const backendUploads = path.join(process.cwd(), 'apps', 'backend', 'uploads');
+    const rootUploads = path.join(process.cwd(), 'uploads');
+    
+    // Prefer backend/uploads if it exists or if we're in apps/backend directory
+    if (process.cwd().includes('apps/backend') || fs.existsSync(path.join(process.cwd(), 'apps', 'backend'))) {
+      this.uploadDir = backendUploads;
+    } else {
+      this.uploadDir = rootUploads;
+    }
+    
+    // Allow override via environment variable
+    const envUploadDir = this.configService.get<string>('UPLOADS_DIR');
+    if (envUploadDir) {
+      this.uploadDir = envUploadDir;
+    }
 
     if (this.driver === 's3') {
       this.s3Bucket = this.configService.get<string>('S3_BUCKET', 'acoustic');
