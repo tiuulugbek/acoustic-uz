@@ -9,17 +9,17 @@ export interface CompressionOptions {
 }
 
 const defaultOptions: CompressionOptions = {
-  maxSizeMB: 0.2, // 200KB dan katta bo'lmasin (juda kichik hajm)
+  maxSizeMB: 0.15, // 150KB dan katta bo'lmasin (juda kichik hajm)
   maxWidthOrHeight: 1920, // 1920px dan katta bo'lmasin
   useWebWorker: true, // Web worker ishlatish
-  quality: 0.7, // 70% sifat (yaxshiroq siqish)
+  quality: 0.65, // 65% sifat (yaxshiroq siqish)
   convertToWebP: true, // WebP formatga o'tkazish
 };
 
 /**
  * Rasmni WebP formatga o'tkazish
  */
-async function convertToWebP(file: File, quality: number = 0.7, maxSizeMB: number = 0.2): Promise<File> {
+async function convertToWebP(file: File, quality: number = 0.65, maxSizeMB: number = 0.15): Promise<File> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {

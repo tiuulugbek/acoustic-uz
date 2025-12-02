@@ -316,11 +316,25 @@ export default function BrandsPage() {
                 >
                   Mavjud rasmdan tanlash
                 </Button>
-                {form.getFieldValue('logoId') && (
-                  <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
-                    Tanlangan: {mediaList?.find(m => m.id === form.getFieldValue('logoId'))?.filename || 'Noma\'lum'}
-                  </div>
-                )}
+                {form.getFieldValue('logoId') && (() => {
+                  const selectedMedia = mediaList?.find(m => m.id === form.getFieldValue('logoId'));
+                  if (selectedMedia) {
+                    // Filename'ni tozalash - blob nomlarini olib tashlash
+                    let displayName = selectedMedia.filename || selectedMedia.alt_uz || 'Noma\'lum';
+                    // Blob nomlarini olib tashlash
+                    displayName = displayName.replace(/^[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]+-blob-[a-z0-9]+-?/i, '');
+                    // Fayl kengaytmasini olib tashlash
+                    displayName = displayName.replace(/\.[^/.]+$/, '');
+                    // Hajmni ko'rsatish
+                    const sizeKB = selectedMedia.size ? (selectedMedia.size / 1024).toFixed(1) : '?';
+                    return (
+                      <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
+                        Tanlangan: {displayName} ({sizeKB} KB)
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
             </div>
           </Form.Item>
