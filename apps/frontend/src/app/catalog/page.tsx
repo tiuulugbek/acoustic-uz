@@ -806,60 +806,6 @@ export default async function CatalogPage({
                   </div>
                 )}
 
-                {/* Promotional Hero Section - After Products on Mobile, Before on Desktop */}
-                {searchParams.productType === 'hearing-aids' && (
-                  <section className="relative w-full rounded-lg overflow-hidden lg:order-1">
-                    <CatalogHeroImage
-                      src={normalizeImageUrl(settingsData?.catalogHeroImage?.url) || '/images/catalog-hero.jpg'}
-                      alt={locale === 'ru' ? 'Каталог слуховых аппаратов' : 'Eshitish moslamalari katalogi'}
-                      locale={locale}
-                    />
-                  </section>
-                )}
-
-                {/* Brand Tabs - Hide for interacoustics */}
-                {brandTabs.length > 0 && searchParams.productType !== 'interacoustics' && (
-                  <div className="flex flex-wrap gap-2">
-                    <Link
-                      href={`/catalog?productType=${searchParams.productType}`}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                        !searchParams.brandId
-                          ? 'bg-brand-primary text-white'
-                          : 'bg-muted/30 text-foreground hover:bg-muted/50'
-                      }`}
-                    >
-                      {locale === 'ru' ? 'Все' : 'Barchasi'}
-                    </Link>
-                    {brandTabs.map((brand) => {
-                      const params = new URLSearchParams();
-                      if (searchParams.productType) params.set('productType', searchParams.productType);
-                      params.set('brandId', brand.id);
-                      if (searchParams.sort) params.set('sort', searchParams.sort);
-                      // Preserve filters
-                      if (searchParams.audience) params.set('audience', searchParams.audience);
-                      if (searchParams.formFactor) params.set('formFactor', searchParams.formFactor);
-                      if (searchParams.signalProcessing) params.set('signalProcessing', searchParams.signalProcessing);
-                      if (searchParams.powerLevel) params.set('powerLevel', searchParams.powerLevel);
-                      if (searchParams.hearingLossLevel) params.set('hearingLossLevel', searchParams.hearingLossLevel);
-                      if (searchParams.smartphoneCompatibility) params.set('smartphoneCompatibility', searchParams.smartphoneCompatibility);
-                      
-                      return (
-                        <Link
-                          key={brand.id}
-                          href={`/catalog?${params.toString()}`}
-                          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                            searchParams.brandId === brand.id
-                              ? 'bg-brand-primary text-white'
-                              : 'bg-muted/30 text-foreground hover:bg-muted/50'
-                          }`}
-                        >
-                          {brand.name}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
-
               </div>
             </div>
           </div>
