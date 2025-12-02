@@ -16,6 +16,18 @@ export function normalizeImageUrl(url: string | null | undefined): string {
     try {
       const urlObj = new URL(url);
       
+      // Fix empty or incorrect hostname
+      if (!urlObj.hostname || urlObj.hostname === '' || urlObj.hostname.startsWith('.')) {
+        urlObj.hostname = 'api.acoustic.uz';
+        urlObj.protocol = 'https:';
+      }
+      
+      // Fix empty or incorrect hostname
+      if (!urlObj.hostname || urlObj.hostname === '' || urlObj.hostname.startsWith('.')) {
+        urlObj.hostname = 'api.acoustic.uz';
+        urlObj.protocol = 'https:';
+      }
+      
       // Fix incorrect domain: acoustic.uz -> api.acoustic.uz
       if (urlObj.hostname === 'acoustic.uz' || urlObj.hostname === 'www.acoustic.uz') {
         urlObj.hostname = 'api.acoustic.uz';
@@ -49,6 +61,9 @@ export function normalizeImageUrl(url: string | null | undefined): string {
     } catch {
       // If URL parsing fails, try simple string replacement as fallback
       let fixedUrl = url;
+      
+      // Fix empty hostname (.acoustic.uz -> api.acoustic.uz)
+      fixedUrl = fixedUrl.replace(/https?:\/\/\.acoustic\.uz\//g, 'https://api.acoustic.uz/');
       
       // Fix acoustic.uz/api/uploads/ -> api.acoustic.uz/uploads/
       fixedUrl = fixedUrl.replace(/https?:\/\/acoustic\.uz\/api\/uploads\//g, 'https://api.acoustic.uz/uploads/');
