@@ -512,7 +512,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
             {/* Center Column - Product Info */}
             <div className="space-y-4">
-              {/* Product Details */}
+              {/* Product Details - Vertical List */}
               <div className="space-y-3">
                 {product.brand && (
                   <p className="text-sm text-muted-foreground">
@@ -532,6 +532,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
                     <span className="font-medium">{isRu ? 'Цена' : 'Narx'}:</span> {priceFormatted}
                   </p>
                 )}
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-medium">{isRu ? 'Способ оплаты' : 'To\'lov turi'}:</span>{' '}
+                  {isRu ? 'Наличными, картой Visa/MasterCard' : 'Naqd pul, Visa/MasterCard kartasi'}
+                </p>
                 <Link
                   href="/contact"
                   className="inline-flex items-center gap-2 rounded-lg bg-brand-primary px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-brand-accent hover:shadow-lg"
@@ -541,7 +545,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 </Link>
               </div>
 
-              {/* Description Section - Before Tabs */}
+              {/* Description Section - Separate */}
               {hasDescription && (
                 <div className="mt-6 space-y-4">
                   <h2 className="text-xl font-semibold text-brand-accent" suppressHydrationWarning>
@@ -565,8 +569,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
               )}
             </div>
 
-            {/* Right Column - Sidebar (spans both rows on desktop, hidden on mobile) */}
-            <div className="hidden xl:block xl:col-span-1 xl:row-span-2">
+            {/* Right Column - Sidebar (spans all rows) */}
+            <div className="hidden xl:block xl:col-span-1 xl:row-span-3">
               <Sidebar locale={locale} settingsData={settings} brandsData={brands} pageType="products" />
             </div>
 
