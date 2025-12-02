@@ -73,9 +73,21 @@ export default function MediaPage() {
 
   const { mutateAsync: uploadMutation } = useMutation<MediaDto, ApiError, { file: File; alt_uz?: string; alt_ru?: string }>({
     mutationFn: async ({ file, alt_uz, alt_ru }) => {
-      // Rasmni yuklashdan oldin siqish
-      const compressedFile = await compressImage(file);
-      return uploadMedia(compressedFile, alt_uz, alt_ru);
+      try {
+        // Rasmni yuklashdan oldin siqish
+        const compressedFile = await compressImage(file);
+        console.log('📸 Compressed file:', {
+          name: compressedFile.name,
+          size: compressedFile.size,
+          type: compressedFile.type,
+        });
+        const result = await uploadMedia(compressedFile, alt_uz, alt_ru);
+        console.log('✅ Upload successful:', result);
+        return result;
+      } catch (error) {
+        console.error('❌ Upload error:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['media'] });
@@ -83,7 +95,9 @@ export default function MediaPage() {
       setUploading(false);
     },
     onError: (error) => {
-      message.error(error.message || 'Rasm yuklashda xatolik');
+      console.error('Upload mutation error:', error);
+      const errorMessage = error.message || 'Rasm yuklashda xatolik';
+      message.error(errorMessage);
       setUploading(false);
     },
   });
