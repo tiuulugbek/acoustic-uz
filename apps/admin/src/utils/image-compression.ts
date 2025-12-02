@@ -13,7 +13,7 @@ const defaultOptions: CompressionOptions = {
   maxWidthOrHeight: 1920, // 1920px dan katta bo'lmasin
   useWebWorker: true, // Web worker ishlatish
   quality: 0.65, // 65% sifat (yaxshiroq siqish)
-  convertToWebP: true, // WebP formatga o'tkazish
+  convertToWebP: false, // WebP formatga o'tkazish - ixtiyoriy (muammo bo'lsa false qiling)
 };
 
 /**
