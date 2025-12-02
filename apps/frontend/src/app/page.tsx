@@ -315,38 +315,38 @@ export default async function HomePage() {
             )}
           </div>
           {hearingItems.length > 0 ? (
-            <div className="grid gap-2.5 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            <div className="grid gap-3 sm:gap-6 grid-cols-2 sm:grid-cols-2 lg:grid-cols-3">
               {hearingItems.map((item) => (
                 <Link
                   key={item.id}
                   href={item.link}
-                  className="group flex gap-2.5 md:flex-col md:gap-2 rounded border border-gray-200 bg-white p-2.5 md:p-4 transition hover:border-brand-primary/50 hover:shadow-sm"
+                  className="group flex flex-col gap-2 sm:gap-3 rounded-lg border-[0.5px] border-brand-accent/40 bg-white p-2 sm:p-4 shadow-sm transition hover:border-brand-accent/60 hover:shadow-md"
                 >
-                  {/* Rasm - mobil: chapda, desktop: yuqorida */}
-                  <div className="relative h-16 w-16 md:h-auto md:w-full md:aspect-[4/3] shrink-0 overflow-hidden rounded bg-brand-primary/10">
+                  {/* Rasm - yuqorida, katta */}
+                  <div className="relative aspect-square w-full overflow-hidden rounded-lg border border-brand-accent/60 bg-white">
                     {item.hasImage && item.image ? (
                       <Image 
                         src={item.image} 
                         alt={item.title} 
                         fill 
-                        sizes="(max-width: 768px) 64px, (max-width: 1024px) 50vw, 25vw" 
-                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 33vw" 
+                        className="object-cover p-2 sm:p-4 transition-transform duration-300 group-hover:scale-105"
                         suppressHydrationWarning
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center bg-brand-primary">
-                        <span className="text-white text-[10px] md:text-sm font-bold">Acoustic</span>
+                        <span className="text-white text-lg font-bold">Acoustic</span>
                       </div>
                     )}
                   </div>
-                  {/* Nom va tavsif - mobil: o'ngda, desktop: pastda */}
-                  <div className="flex flex-col flex-1 min-w-0 gap-1">
-                    <h3 className="text-xs md:text-base font-semibold text-brand-accent leading-tight group-hover:text-brand-primary transition-colors line-clamp-2" suppressHydrationWarning>
+                  {/* Nom va tavsif - pastda */}
+                  <div className="flex flex-col gap-1 sm:gap-2">
+                    <h3 className="text-sm sm:text-base font-semibold text-foreground line-clamp-2 group-hover:text-brand-primary transition-colors" suppressHydrationWarning>
                       {item.title}
                     </h3>
                     {/* Tavsif */}
                     {item.description && (
-                      <p className="text-[10px] md:text-sm text-muted-foreground leading-snug line-clamp-3" suppressHydrationWarning>
+                      <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed line-clamp-3" suppressHydrationWarning>
                         {item.description}
                       </p>
                     )}
