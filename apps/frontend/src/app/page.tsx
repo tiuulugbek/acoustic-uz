@@ -328,7 +328,7 @@ export default async function HomePage() {
                   </h3>
                   
                   {/* Rasm - o'rtada */}
-                  <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-brand-primary/10">
+                  <div className="relative aspect-[3/2] w-full max-h-48 overflow-hidden rounded-lg bg-brand-primary/10">
                     {item.hasImage && item.image ? (
                       <Image 
                         src={item.image} 
