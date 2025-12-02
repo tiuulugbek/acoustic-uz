@@ -544,29 +544,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   {isRu ? 'Записаться на подбор' : 'Tanlash uchun yozilish'}
                 </Link>
               </div>
-
-              {/* Description Section - Separate */}
-              {hasDescription && (
-                <div className="mt-6 space-y-4">
-                  <h2 className="text-xl font-semibold text-brand-accent" suppressHydrationWarning>
-                    {isRu ? 'Описание' : 'Tavsif'}
-                  </h2>
-                  <div className="prose prose-sm max-w-none text-muted-foreground">
-                    {descriptionPrimary && (
-                      <div 
-                        className="rich-content"
-                        dangerouslySetInnerHTML={{ __html: descriptionPrimary }}
-                      />
-                    )}
-                    {descriptionSecondary && (
-                      <div 
-                        className="rich-content rich-content--secondary mt-4"
-                        dangerouslySetInnerHTML={{ __html: descriptionSecondary }}
-                      />
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Right Column - Sidebar (spans all rows) */}
@@ -574,7 +551,30 @@ export default async function ProductPage({ params }: ProductPageProps) {
               <Sidebar locale={locale} settingsData={settings} brandsData={brands} pageType="products" />
             </div>
 
-            {/* Second Row - Product Tabs */}
+            {/* Description Section - Below Image and Info */}
+            {hasDescription && (
+              <div className="lg:col-span-2 xl:col-span-2 mt-6 space-y-4">
+                <h2 className="text-xl font-semibold text-brand-accent" suppressHydrationWarning>
+                  {isRu ? 'Описание' : 'Tavsif'}
+                </h2>
+                <div className="prose prose-sm max-w-none text-muted-foreground">
+                  {descriptionPrimary && (
+                    <div 
+                      className="rich-content"
+                      dangerouslySetInnerHTML={{ __html: descriptionPrimary }}
+                    />
+                  )}
+                  {descriptionSecondary && (
+                    <div 
+                      className="rich-content rich-content--secondary mt-4"
+                      dangerouslySetInnerHTML={{ __html: descriptionSecondary }}
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Product Tabs - Below Description */}
             {productTabs.some((tab) => tab.primary || tab.secondary) && (
               <div className="lg:col-span-2 xl:col-span-2">
                 <ProductTabs tabs={productTabs} />
