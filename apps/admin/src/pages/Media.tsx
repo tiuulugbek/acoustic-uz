@@ -74,19 +74,40 @@ export default function MediaPage() {
   const { mutateAsync: uploadMutation } = useMutation<MediaDto, ApiError, { file: File; alt_uz?: string; alt_ru?: string }>({
     mutationFn: async ({ file, alt_uz, alt_ru }) => {
       try {
+        console.log('📤 Starting upload:', {
+          name: file.name,
+          size: (file.size / 1024).toFixed(1) + 'KB',
+          type: file.type,
+        });
+        
         // Rasmni yuklashdan oldin siqish
-        const compressedFile = await compressImage(file);
+        const compressedFile = await compressImage(file, {
+          convertToWebP: true, // WebP ga o'tkazish
+          maxSizeMB: 0.15,
+          quality: 0.65,
+        });
+        
         console.log('📸 Compressed file:', {
           name: compressedFile.name,
-          size: compressedFile.size,
+          size: (compressedFile.size / 1024).toFixed(1) + 'KB',
           type: compressedFile.type,
         });
-        const result = await uploadMedia(compressedFile, alt_uz, alt_ru);
-        console.log('✅ Upload successful:', result);
+        
+        // WebP bo'lsa, backend'ga skipWebp flag yuborish
+        const skipWebp = compressedFile.type === 'image/webp';
+        const result = await uploadMedia(compressedFile, alt_uz, alt_ru, skipWebp);
+        
+        console.log('✅ Upload successful:', {
+          id: result.id,
+          url: result.url,
+          filename: result.filename,
+        });
+        
         return result;
       } catch (error) {
         console.error('❌ Upload error:', error);
-        throw error;
+        const apiError = error as ApiError;
+        throw new ApiError(apiError.message || 'Rasm yuklashda xatolik yuz berdi', apiError.status || 500);
       }
     },
     onSuccess: () => {
