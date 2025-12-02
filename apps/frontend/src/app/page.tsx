@@ -315,42 +315,45 @@ export default async function HomePage() {
             )}
           </div>
           {hearingItems.length > 0 ? (
-            <div className="grid gap-4 grid-cols-2 md:grid-cols-3">
+            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
               {hearingItems.map((item) => (
                 <Link
                   key={item.id}
                   href={item.link}
-                  className="group flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4 transition hover:border-brand-primary/50 hover:shadow-md"
+                  className="group flex gap-4 rounded-lg border border-gray-200 bg-white p-4 transition hover:border-brand-primary/50 hover:shadow-md"
                 >
-                  {/* Katalog nomi - yuqorida */}
-                  <h3 className="text-base font-semibold text-brand-accent leading-tight group-hover:text-brand-primary transition-colors line-clamp-2" suppressHydrationWarning>
-                    {item.title}
-                  </h3>
-                  
-                  {/* Rasm - o'rtada */}
-                  <div className="relative aspect-[3/2] w-full max-h-48 overflow-hidden rounded-lg bg-brand-primary/10">
+                  {/* Rasm - chapda */}
+                  <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-lg bg-brand-primary/10">
                     {item.hasImage && item.image ? (
                       <Image 
                         src={item.image} 
                         alt={item.title} 
                         fill 
-                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 33vw" 
+                        sizes="96px" 
                         className="object-cover transition-transform duration-300 group-hover:scale-105"
                         suppressHydrationWarning
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center bg-brand-primary">
-                        <span className="text-white text-sm font-bold">Acoustic</span>
+                        <span className="text-white text-xs font-bold">Acoustic</span>
                       </div>
                     )}
                   </div>
                   
-                  {/* Tavsif - pastda */}
-                  {item.description && (
-                    <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3" suppressHydrationWarning>
-                      {item.description}
-                    </p>
-                  )}
+                  {/* Matn - o'ngda */}
+                  <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                    {/* Katalog nomi */}
+                    <h3 className="text-base font-semibold text-brand-accent leading-tight group-hover:text-brand-primary transition-colors line-clamp-2" suppressHydrationWarning>
+                      {item.title}
+                    </h3>
+                    
+                    {/* Tavsif */}
+                    {item.description && (
+                      <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3" suppressHydrationWarning>
+                        {item.description}
+                      </p>
+                    )}
+                  </div>
                 </Link>
               ))}
             </div>
