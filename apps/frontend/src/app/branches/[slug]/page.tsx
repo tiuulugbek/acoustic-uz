@@ -12,11 +12,14 @@ import PageHeader from '@/components/page-header';
 // Dynamically import PanoramaViewer for client-side rendering
 const PanoramaViewer = dynamicImport(() => import('@/components/tour/PanoramaViewer'), {
   ssr: false,
-  loading: () => (
-    <div className="flex h-[500px] w-full items-center justify-center bg-gray-100 text-lg text-gray-500">
-      3D Tour yuklanmoqda...
-    </div>
-  ),
+  loading: () => {
+    // We can't access locale here in loading component, so use bilingual text
+    return (
+      <div className="flex h-[500px] w-full items-center justify-center bg-gray-100 text-lg text-gray-500">
+        <span suppressHydrationWarning>3D Tour yuklanmoqda... / Загрузка 3D тура...</span>
+      </div>
+    );
+  },
 });
 
 // Force dynamic rendering

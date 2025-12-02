@@ -1296,8 +1296,10 @@ export default function PanoramaViewer({ config, locale = 'uz', className = '', 
                 </div>
                 <div className="text-xs text-gray-600 text-center">
                   {currentHotspots[hoveredHotspotIndex].type === 'scene' 
-                    ? `${currentHotspots[hoveredHotspotIndex].text}ga o'tish`
-                    : 'Ma\'lumot ko\'rish'}
+                    ? (locale === 'ru' 
+                        ? `Перейти к ${currentHotspots[hoveredHotspotIndex].text}`
+                        : `${currentHotspots[hoveredHotspotIndex].text}ga o'tish`)
+                    : (locale === 'ru' ? 'Просмотр информации' : 'Ma\'lumot ko\'rish')}
                 </div>
               </div>
             </div>
