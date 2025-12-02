@@ -315,15 +315,20 @@ export default async function HomePage() {
             )}
           </div>
           {hearingItems.length > 0 ? (
-            <div className="grid gap-2.5 grid-cols-2 md:grid-cols-3">
+            <div className="grid gap-4 grid-cols-2 md:grid-cols-3">
               {hearingItems.map((item) => (
                 <Link
                   key={item.id}
                   href={item.link}
-                  className="group flex flex-col gap-2 rounded border border-gray-200 bg-white p-2.5 transition hover:border-brand-primary/50 hover:shadow-sm"
+                  className="group flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4 transition hover:border-brand-primary/50 hover:shadow-md"
                 >
-                  {/* Rasm - yuqorida */}
-                  <div className="relative aspect-[4/3] w-full overflow-hidden rounded bg-brand-primary/10">
+                  {/* Katalog nomi - yuqorida */}
+                  <h3 className="text-base font-semibold text-brand-accent leading-tight group-hover:text-brand-primary transition-colors line-clamp-2" suppressHydrationWarning>
+                    {item.title}
+                  </h3>
+                  
+                  {/* Rasm - o'rtada */}
+                  <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-brand-primary/10">
                     {item.hasImage && item.image ? (
                       <Image 
                         src={item.image} 
@@ -335,22 +340,17 @@ export default async function HomePage() {
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center bg-brand-primary">
-                        <span className="text-white text-xs font-bold">Acoustic</span>
+                        <span className="text-white text-sm font-bold">Acoustic</span>
                       </div>
                     )}
                   </div>
-                  {/* Nom va tavsif - pastda */}
-                  <div className="flex flex-col gap-1">
-                    <h3 className="text-xs font-semibold text-brand-accent leading-tight group-hover:text-brand-primary transition-colors line-clamp-2" suppressHydrationWarning>
-                      {item.title}
-                    </h3>
-                    {/* Tavsif */}
-                    {item.description && (
-                      <p className="text-[10px] text-muted-foreground leading-snug line-clamp-2" suppressHydrationWarning>
-                        {item.description}
-                      </p>
-                    )}
-                  </div>
+                  
+                  {/* Tavsif - pastda */}
+                  {item.description && (
+                    <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3" suppressHydrationWarning>
+                      {item.description}
+                    </p>
+                  )}
                 </Link>
               ))}
             </div>
