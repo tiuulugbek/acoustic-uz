@@ -48,6 +48,7 @@ import {
   PlusOutlined,
 } from '@ant-design/icons';
 import TooltipHelper from '../components/TooltipHelper';
+import ImageSizeHint from '../components/ImageSizeHint';
 import { createSlug } from '../utils/slug';
 
 const statusOptions = [
@@ -879,6 +880,7 @@ export default function ProductsPage() {
 
           <Divider orientation="left">Media va bog'liqlik</Divider>
 
+          <ImageSizeHint type="product-gallery" />
           <Form.List name="galleryUrls">
             {(fields, { add, remove, move }) => (
               <Form.Item label="Galereya URL manzillari">

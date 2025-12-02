@@ -38,6 +38,7 @@ import {
 import { createSlug } from '../utils/slug';
 import MediaLibraryModal from '../components/MediaLibraryModal';
 import Tour3DEditor from '../components/Tour3DEditor';
+import ImageSizeHint from '../components/ImageSizeHint';
 import { normalizeImageUrl } from '../utils/image';
 import { compressImage } from '../utils/image-compression';
 
@@ -445,6 +446,7 @@ export default function BranchesPage() {
               placeholder='<iframe src="https://www.google.com/maps/embed?pb=..." width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>'
             />
           </Form.Item>
+          <ImageSizeHint type="branch" />
           <Form.Item label="Rasm" name="imageId" extra="Filial rasmi">
             <div>
               {(previewImage || form.getFieldValue('imageId')) && (

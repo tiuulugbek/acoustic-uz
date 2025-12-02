@@ -46,6 +46,7 @@ import {
   DoctorDto,
 } from '../lib/api';
 import { createSlug } from '../utils/slug';
+import ImageSizeHint from '../components/ImageSizeHint';
 import { normalizeImageUrl } from '../utils/image';
 import { compressImage } from '../utils/image-compression';
 import { ApiError } from '../lib/api';
@@ -464,6 +465,7 @@ function PostsTab() {
             label="Thumbnail rasm"
             name="coverId"
           >
+            <ImageSizeHint type="post" showAsAlert={false} />
             <Space direction="vertical" style={{ width: '100%' }}>
               {coverPreview && (
                 <Image

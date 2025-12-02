@@ -37,6 +37,7 @@ import {
 } from '../lib/api';
 import MediaLibraryModal from '../components/MediaLibraryModal';
 import HomepageContentTab from '../components/HomepageContentTab';
+import ImageSizeHint from '../components/ImageSizeHint';
 import { normalizeImageUrl } from '../utils/image';
 
 export default function SettingsPage() {
@@ -598,6 +599,7 @@ export default function SettingsPage() {
                       name="logoId"
                       tooltip="Sayt header'idagi logo rasm"
                     >
+                      <ImageSizeHint type="logo" showAsAlert={false} />
                       <div>
                         {previewLogo ? (
                           <div style={{ marginBottom: 16 }}>

@@ -67,6 +67,7 @@ import {
   type UpdateHomepageHearingAidPayload,
 } from '../lib/api';
 import MediaLibraryModal from '../components/MediaLibraryModal';
+import ImageSizeHint from '../components/ImageSizeHint';
 import { normalizeImageUrl } from '../utils/image';
 import { compressImage } from '../utils/image-compression';
 
@@ -357,6 +358,7 @@ function HomepageServicesTab() {
               placeholder="xizmat-slug yoki /services/xizmat-slug" 
             />
           </Form.Item>
+          <ImageSizeHint type="service" />
           <Form.Item 
             label={
               <span>
@@ -1209,6 +1211,7 @@ function CatalogsTab() {
           <Form.Item label="Tavsif (ru)" name="description_ru" extra="Краткое описание, которое отображается на карточке каталога на главной странице">
             <Input.TextArea rows={2} placeholder="Например, Невидимые слуховые аппараты" />
           </Form.Item>
+          <ImageSizeHint type="catalog" />
           <Form.Item label="Rasm" name="imageId" extra="Bosh sahifadagi katalog kartasida ko'rinadigan rasm">
             <div>
               <Row gutter={16}>
@@ -1612,6 +1615,7 @@ function InteracousticsTab() {
             name="imageId"
             extra="Bosh sahifadagi mahsulot kartasida ko'rinadigan rasm (ixtiyoriy)"
           >
+            <ImageSizeHint type="product" showAsAlert={false} />
             <div>
               <Row gutter={16}>
                 <Col span={12}>

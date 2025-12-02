@@ -36,6 +36,7 @@ import {
   type MediaDto,
 } from '../lib/api';
 import { createSlug } from '../utils/slug';
+import ImageSizeHint from '../components/ImageSizeHint';
 import { normalizeImageUrl } from '../utils/image';
 import { compressImage } from '../utils/image-compression';
 
@@ -347,6 +348,7 @@ export default function DoctorsPage() {
           >
             <Input placeholder="Avtomatik yaratiladi..." />
           </Form.Item>
+          <ImageSizeHint type="doctor" />
           <Form.Item label="Rasm" name="imageId" extra="Mutaxassis rasmi">
             <div>
               {previewImage ? (
