@@ -6,7 +6,6 @@ import { getBranchBySlug, getDoctors, getServices } from '@/lib/api-server';
 import { detectLocale } from '@/lib/locale-server';
 import { getBilingualText } from '@/lib/locale';
 import { MapPin, Phone, Clock, Navigation, ExternalLink } from 'lucide-react';
-import PageHeader from '@/components/page-header';
 import type { TourConfig } from '@/types/tour';
 
 // Dynamically import PanoramaViewer for client-side rendering
@@ -139,18 +138,6 @@ export default async function BranchPage({ params }: BranchPageProps) {
 
   return (
     <main className="min-h-screen bg-background">
-      <PageHeader
-        locale={locale}
-        breadcrumbs={[
-          { label: locale === 'ru' ? 'Главная' : 'Bosh sahifa', href: '/' },
-          { label: locale === 'ru' ? 'Наши адреса' : 'Bizning manzillarimiz', href: '/branches' },
-          { label: name },
-        ]}
-        title={name}
-        description={address}
-        icon={<MapPin className="h-8 w-8 text-white" />}
-      />
-
       {/* Main Content */}
       <section className="bg-white py-4 sm:py-8">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
