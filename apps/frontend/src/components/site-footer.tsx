@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import React from 'react';
 import { Mail, Phone, Send } from 'lucide-react';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -471,12 +472,12 @@ export default function SiteFooter() {
       <div className="border-t bg-muted/30">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-4 py-4 text-xs font-semibold text-brand-accent/80 md:px-6">
           {socialRowLinksList.map((item, index) => (
-            <>
+            <React.Fragment key={`${item.href}-${index}`}>
               {index > 0 && <span className="text-border/60">|</span>}
-              <Link key={`${item.href}-${index}`} href={item.href} className="transition hover:text-brand-primary" suppressHydrationWarning>
+              <Link href={item.href} className="transition hover:text-brand-primary" suppressHydrationWarning>
                 {item.label}
               </Link>
-            </>
+            </React.Fragment>
           ))}
         </div>
       </div>
