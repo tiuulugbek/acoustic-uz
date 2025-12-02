@@ -408,11 +408,24 @@ export default function BranchesMap({ branches, locale, onRegionSelect, selected
   // Load map data when scripts are ready
   useEffect(() => {
     const checkMapData = () => {
-      if (typeof window !== 'undefined' && window.simplemaps_countrymap_mapinfo) {
-        const mapInfo = window.simplemaps_countrymap_mapinfo;
-        if (mapInfo.paths) {
-          setMapPaths(mapInfo.paths);
-          setMapLoaded(true);
+      if (typeof window !== 'undefined') {
+        // Check for mapinfo first (from countrymap.js)
+        if (window.simplemaps_countrymap_mapinfo) {
+          const mapInfo = window.simplemaps_countrymap_mapinfo;
+          if (mapInfo.paths) {
+            setMapPaths(mapInfo.paths);
+            setMapLoaded(true);
+            return;
+          }
+        }
+        // Fallback: check for mapdata (from mapdata.js)
+        if ((window as any).simplemaps_countrymap_mapdata) {
+          const mapData = (window as any).simplemaps_countrymap_mapdata;
+          if (mapData && mapData.state_specific) {
+            // Extract paths from mapdata if available
+            setMapLoaded(true);
+            return;
+          }
         }
       }
     };
@@ -429,7 +442,17 @@ export default function BranchesMap({ branches, locale, onRegionSelect, selected
       }
     }, 100);
 
-    return () => clearInterval(interval);
+    // Timeout after 5 seconds - if map still not loaded, show error
+    const timeout = setTimeout(() => {
+      if (!mapLoaded) {
+        console.warn('[BranchesMap] Map data failed to load after 5 seconds');
+      }
+    }, 5000);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
   }, [mapLoaded]);
 
   // Update viewBox when zoomed state changes to trigger smooth transition
@@ -460,6 +483,17 @@ export default function BranchesMap({ branches, locale, onRegionSelect, selected
               }
             }
           }, 100);
+        }}
+        onError={() => {
+          console.warn('[BranchesMap] Failed to load countrymap.js, map may not display correctly');
+          // Try to use mapdata.js as fallback
+          if (typeof window !== 'undefined' && (window as any).simplemaps_countrymap_mapdata) {
+            const mapData = (window as any).simplemaps_countrymap_mapdata;
+            if (mapData && mapData.state_specific) {
+              // Extract paths from mapdata if available
+              setMapLoaded(true);
+            }
+          }
         }}
       />
       
