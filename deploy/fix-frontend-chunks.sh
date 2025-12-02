@@ -89,6 +89,37 @@ else
     exit 1
 fi
 
+# 6.5. Public maps fayllarini ko'chirish
+echo ""
+echo "📋 Public maps fayllarini ko'chirish..."
+MAPS_SOURCE="apps/frontend/public/maps"
+MAPS_TARGET="apps/frontend/.next/standalone/apps/frontend/public/maps"
+
+if [ -d "$MAPS_SOURCE" ] && [ "$(ls -A $MAPS_SOURCE 2>/dev/null)" ]; then
+    echo "   ✅ Maps source papkasi mavjud: $MAPS_SOURCE"
+    
+    # Target papkasini yaratish
+    mkdir -p "$MAPS_TARGET"
+    echo "   ✅ Maps target papkasi yaratildi: $MAPS_TARGET"
+    
+    # Maps fayllarini ko'chirish
+    echo "   📦 Maps fayllarini ko'chirish..."
+    cp -r "$MAPS_SOURCE"/* "$MAPS_TARGET"/ 2>&1 || {
+        echo "   ⚠️ Maps ko'chirishda muammo bo'ldi"
+    }
+    
+    # Tekshirish
+    if [ -f "$MAPS_TARGET/countrymap.js" ]; then
+        echo "   ✅ Maps fayllar muvaffaqiyatli ko'chirildi"
+        echo "   📋 Maps fayllari: $(ls -1 $MAPS_TARGET | wc -l)"
+    else
+        echo "   ⚠️ countrymap.js topilmadi, lekin davom etilmoqda..."
+    fi
+else
+    echo "   ⚠️ Maps source papkasi topilmadi yoki bo'sh: $MAPS_SOURCE"
+    echo "   ⚠️ Bu xato emas, agar maps fayllari kerak bo'lmasa"
+fi
+
 # 7. Permissions'ni o'rnatish
 echo ""
 echo "📋 Permissions'ni o'rnatish..."

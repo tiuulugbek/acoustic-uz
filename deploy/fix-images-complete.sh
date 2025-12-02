@@ -25,7 +25,7 @@ bash deploy/fix-uploads-permissions.sh
 echo "🔄 Restarting backend..."
 pm2 restart acoustic-backend
 
-# 4. Rebuild frontend
+# 4. Rebuild frontend (includes maps fix)
 echo "🏗️  Rebuilding frontend..."
 bash deploy/fix-frontend-chunks.sh
 
