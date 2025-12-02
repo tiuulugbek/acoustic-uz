@@ -75,3 +75,4 @@ timeout 10 pm2 logs acoustic-backend --lines 30 || true
 
 echo "✅ NestJS build muammosi hal qilindi!"
 
+

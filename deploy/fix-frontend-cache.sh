@@ -167,3 +167,4 @@ echo ""
 echo "💡 Endi browser'da hard refresh qiling (Ctrl+Shift+R yoki Cmd+Shift+R)"
 echo "   Agar hali ham muammo bo'lsa, browser cache'ni tozalang!"
 
+

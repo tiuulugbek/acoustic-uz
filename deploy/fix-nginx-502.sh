@@ -99,3 +99,4 @@ if [ "$HTTPS_CODE" = "502" ]; then
 fi
 echo "   3. Browser'da cache'ni tozalang va sahifani yangilang"
 
+

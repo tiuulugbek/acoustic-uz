@@ -185,3 +185,4 @@ Lekin quyidagi yaxshilanishlar kerak:
 
 
 
+

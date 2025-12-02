@@ -125,3 +125,4 @@ echo "- Frontend restart: ✅"
 echo ""
 echo "💡 Endi frontend'da rasmlar to'g'ri URL'lar bilan yuklanishi kerak!"
 
+

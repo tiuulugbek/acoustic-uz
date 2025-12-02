@@ -69,3 +69,4 @@ timeout 10 pm2 logs acoustic-frontend --lines 30 || true
 
 echo "✅ Frontend start muammosi hal qilindi!"
 
+

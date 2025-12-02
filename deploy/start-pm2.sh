@@ -41,3 +41,4 @@ pm2 logs --lines 20 --nostream
 
 echo "✅ PM2 muvaffaqiyatli ishga tushirildi!"
 
+

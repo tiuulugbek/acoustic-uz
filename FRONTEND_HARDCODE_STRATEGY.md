@@ -583,3 +583,4 @@ Lekin bu yondashuvda JSON fayllar to'g'ridan-to'g'ri frontend'da bo'ladi va back
 
 
 
+

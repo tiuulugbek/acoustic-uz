@@ -438,3 +438,4 @@ Agar yuqoridagi tavsiyalarni amalga oshirsak:
 
 
 
+

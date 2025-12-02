@@ -5,3 +5,4 @@ ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "thumbnailId" TEXT;
 
 
 
+

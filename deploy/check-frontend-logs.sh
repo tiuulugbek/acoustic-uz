@@ -53,3 +53,4 @@ pm2 status
 
 echo "✅ Frontend tekshiruvi yakunlandi!"
 
+

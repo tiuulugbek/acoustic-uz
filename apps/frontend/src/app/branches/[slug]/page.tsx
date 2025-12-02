@@ -274,28 +274,41 @@ export default async function BranchPage({ params }: BranchPageProps) {
                 <h2 className="mb-3 text-xl sm:text-2xl font-bold text-foreground" suppressHydrationWarning>
                   {locale === 'ru' ? 'Как добраться' : 'Qanday yetib borish'}
                 </h2>
-                {branch.latitude && branch.longitude ? (
+                {branch.map_iframe ? (
+                  // Use custom iframe if available (highest priority)
+                  <div className="mb-4 rounded-lg overflow-hidden border border-border bg-gray-100">
+                    <div
+                      className="w-full"
+                      style={{ 
+                        position: 'relative',
+                        paddingBottom: '56.25%', // 16:9 aspect ratio
+                        height: 0,
+                        overflow: 'hidden',
+                        minHeight: '300px'
+                      }}
+                      dangerouslySetInnerHTML={{ 
+                        __html: branch.map_iframe
+                          .replace(/width="[^"]*"/gi, 'width="100%"')
+                          .replace(/height="[^"]*"/gi, 'height="100%"')
+                          .replace(/style="[^"]*"/gi, 'style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; min-height: 300px;"')
+                          .replace(/<iframe/gi, '<iframe loading="lazy"')
+                      }}
+                    />
+                  </div>
+                ) : branch.latitude && branch.longitude ? (
                   // If coordinates are available, use Google Maps embed with marker
-                  <div className="mb-4 rounded-lg overflow-hidden border border-border relative">
+                  <div className="mb-4 rounded-lg overflow-hidden border border-border bg-gray-100 relative" style={{ paddingBottom: '56.25%', height: 0, minHeight: '300px' }}>
                     <iframe
-                      src={`https://www.google.com/maps?q=${branch.latitude},${branch.longitude}&hl=${locale === 'ru' ? 'ru' : 'uz'}&z=16&output=embed`}
+                      src={`https://maps.google.com/maps?q=${encodeURIComponent(`${branch.latitude},${branch.longitude}`)}&hl=${locale === 'ru' ? 'ru' : 'uz'}&z=16&output=embed`}
                       width="100%"
-                      height="300"
-                      className="sm:h-[480px]"
-                      style={{ border: 0 }}
+                      height="100%"
+                      className="absolute top-0 left-0 w-full h-full"
+                      style={{ border: 0, minHeight: '300px' }}
                       allowFullScreen
                       loading="lazy"
                       referrerPolicy="no-referrer-when-downgrade"
-                    />
-                  </div>
-                ) : branch.map_iframe ? (
-                  // Fallback to custom iframe if no coordinates
-                  <div className="mb-4 rounded-lg overflow-hidden border border-border">
-                    <div
-                      className="w-full aspect-video"
-                      dangerouslySetInnerHTML={{ 
-                        __html: branch.map_iframe.replace(/width="[^"]*"/gi, 'width="100%"')
-                      }}
+                      title={locale === 'ru' ? 'Карта' : 'Xarita'}
+                      allow="geolocation"
                     />
                   </div>
                 ) : null}

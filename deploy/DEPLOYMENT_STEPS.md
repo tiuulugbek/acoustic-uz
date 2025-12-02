@@ -224,3 +224,4 @@ pm2 logs
 sudo tail -f /var/log/nginx/error.log
 ```
 
+

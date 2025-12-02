@@ -65,3 +65,4 @@ fi
 
 echo "✅ Barcha jarayonlar yakunlandi!"
 
+

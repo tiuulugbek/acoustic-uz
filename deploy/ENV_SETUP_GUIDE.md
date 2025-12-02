@@ -272,3 +272,4 @@ grep JWT .env | awk -F= '{print length($2)}'
 # Har ikkalasi ham 64 belgi bo'lishi kerak (hex format)
 ```
 
+

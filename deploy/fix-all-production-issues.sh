@@ -153,3 +153,4 @@ echo "   1. Uploads papkasini ko'chirish: ./deploy/migrate-files.sh (local kompy
 echo "   2. Public/maps papkasini ko'chirish: ./deploy/migrate-files.sh (local kompyuterdan)"
 echo "   3. Browser cache'ni tozalash"
 
+

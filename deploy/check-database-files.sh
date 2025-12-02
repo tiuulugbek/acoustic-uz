@@ -105,3 +105,4 @@ unset PGPASSWORD
 echo ""
 echo "✅ Tekshiruv yakunlandi!"
 
+

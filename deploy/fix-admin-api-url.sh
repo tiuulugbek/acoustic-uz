@@ -97,3 +97,4 @@ echo "- Nginx reload: ✅"
 echo ""
 echo "💡 Endi admin panelda login qilishni sinab ko'ring!"
 
+

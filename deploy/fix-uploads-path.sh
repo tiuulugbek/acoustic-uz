@@ -110,3 +110,4 @@ fi
 echo ""
 echo "✅ Tekshiruv yakunlandi!"
 
+

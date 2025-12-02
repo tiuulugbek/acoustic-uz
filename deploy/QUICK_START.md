@@ -282,3 +282,4 @@ cd /var/www/news.acoustic.uz
 pm2 status
 ```
 
+

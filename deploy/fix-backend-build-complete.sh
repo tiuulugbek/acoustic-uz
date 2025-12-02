@@ -78,3 +78,4 @@ pm2 status
 
 echo "✅ Backend build va PM2 setup muvaffaqiyatli!"
 
+

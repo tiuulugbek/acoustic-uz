@@ -38,3 +38,4 @@ cd ../..
 
 echo "✅ Prisma fixed!"
 
+

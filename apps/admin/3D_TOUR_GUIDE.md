@@ -296,3 +296,4 @@ Agar muammo bo'lsa, quyidagi fayllarni tekshiring:
 - `apps/frontend/src/app/branches/[slug]/page.tsx` - Filial sahifasi
 - `apps/frontend/public/tour-config.example.json` - Misol konfiguratsiya
 
+

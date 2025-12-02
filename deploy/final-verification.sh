@@ -74,3 +74,4 @@ echo "- Frontend: http://localhost:3000"
 echo "- PM2: pm2 status"
 echo "- Logs: pm2 logs"
 
+

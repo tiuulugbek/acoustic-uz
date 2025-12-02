@@ -52,3 +52,4 @@ else
     echo "   ls -lh /var/www/news.acoustic.uz/apps/backend/uploads/"
 fi
 
+

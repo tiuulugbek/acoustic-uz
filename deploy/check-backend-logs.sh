@@ -52,3 +52,4 @@ timeout 10 pm2 logs acoustic-backend --lines 20 || true
 
 echo "✅ Backend tekshiruvi yakunlandi!"
 
+

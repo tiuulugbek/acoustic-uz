@@ -41,3 +41,4 @@ systemctl status nginx --no-pager | head -10 || echo "Nginx status tekshirilmadi
 echo ""
 echo "✅ Barcha servislar tekshirildi!"
 
+

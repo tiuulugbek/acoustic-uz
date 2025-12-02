@@ -72,3 +72,4 @@ timeout 5 pm2 logs acoustic-backend --lines 30 || true
 echo ""
 echo "✅ Backend diagnostika yakunlandi!"
 
+

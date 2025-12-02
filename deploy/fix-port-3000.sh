@@ -54,3 +54,4 @@ timeout 10 pm2 logs acoustic-frontend --lines 30 || true
 
 echo "✅ Port 3000 muammosi hal qilindi!"
 
+

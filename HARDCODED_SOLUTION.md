@@ -129,3 +129,4 @@ Hal qilingandan keyin:
 
 
 
+

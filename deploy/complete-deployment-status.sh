@@ -90,3 +90,4 @@ echo "- Admin Panel: http://admins.acoustic.uz"
 echo "- PM2: pm2 status"
 echo "- Logs: pm2 logs"
 
+

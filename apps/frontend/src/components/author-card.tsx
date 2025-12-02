@@ -100,3 +100,4 @@ export default function AuthorCard({ author, locale }: AuthorCardProps) {
 
 
 
+

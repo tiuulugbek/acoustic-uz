@@ -121,3 +121,4 @@ if [ -d "apps/frontend/public" ]; then
     echo "- Public papkasi: $(du -sh apps/frontend/public | cut -f1)"
 fi
 
+

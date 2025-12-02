@@ -87,3 +87,4 @@ echo "   Yoki admin panel orqali qayta yuklash kerak."
 echo ""
 echo "✅ Tekshiruv yakunlandi!"
 
+

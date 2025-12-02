@@ -234,3 +234,4 @@ pm2 logs --lines 100
 sudo journalctl -u nginx -f
 ```
 
+

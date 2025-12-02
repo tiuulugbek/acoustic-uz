@@ -114,3 +114,4 @@ echo "   1. Uploads papkasini ko'chirish: ./deploy/migrate-files.sh (local kompy
 echo "   2. Nginx config'ni yangilash: sudo cp deploy/production-nginx.conf /etc/nginx/sites-available/acoustic-uz.conf"
 echo "   3. Browser cache'ni tozalash"
 
+

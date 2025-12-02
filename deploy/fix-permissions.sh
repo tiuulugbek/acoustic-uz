@@ -35,3 +35,4 @@ sudo chown -R $CURRENT_USER:$CURRENT_USER "$PROJECT_DIR/uploads" || true
 
 echo "✅ Permissions fixed!"
 
+

@@ -91,3 +91,4 @@ timeout 10 pm2 logs acoustic-backend --lines 30 || true
 
 echo "✅ TypeScript config muammosi hal qilindi!"
 
+

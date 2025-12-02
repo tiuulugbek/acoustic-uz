@@ -50,3 +50,4 @@ if [ -f "/tmp/tsc-build.log" ]; then
     cat /tmp/tsc-build.log
 fi
 
+

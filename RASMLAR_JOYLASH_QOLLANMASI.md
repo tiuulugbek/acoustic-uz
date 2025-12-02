@@ -191,3 +191,4 @@ Agar rasmlarni yuklashda muammo bo'lsa:
 
 
 
+

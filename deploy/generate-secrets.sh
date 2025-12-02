@@ -21,3 +21,4 @@ echo "Example .env entries:"
 echo "JWT_ACCESS_SECRET=$ACCESS_SECRET"
 echo "JWT_REFRESH_SECRET=$REFRESH_SECRET"
 
+

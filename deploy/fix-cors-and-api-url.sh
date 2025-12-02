@@ -131,3 +131,4 @@ echo "- NEXT_PUBLIC_API_URL: $(grep "^NEXT_PUBLIC_API_URL=" .env | cut -d '=' -f
 echo ""
 echo "💡 Frontend endi https://api.acoustic.uz/api ga so'rov yuboradi!"
 
+

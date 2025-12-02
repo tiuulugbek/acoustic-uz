@@ -159,3 +159,4 @@ CREATE INDEX "AvailabilityStatus_order_idx" ON "AvailabilityStatus"("order");
 -- AddForeignKey
 ALTER TABLE "HomepagePlaceholder" ADD CONSTRAINT "HomepagePlaceholder_imageId_fkey" FOREIGN KEY ("imageId") REFERENCES "Media"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
+

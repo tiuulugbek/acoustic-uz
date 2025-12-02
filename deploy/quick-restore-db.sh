@@ -122,3 +122,4 @@ echo "- Database: $DB_NAME"
 echo ""
 echo "💡 Backend restart qilindi va yangi ma'lumotlar bilan ishlayapti!"
 
+
