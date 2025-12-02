@@ -22,12 +22,6 @@ export function normalizeImageUrl(url: string | null | undefined): string {
         urlObj.protocol = 'https:';
       }
       
-      // Fix empty or incorrect hostname
-      if (!urlObj.hostname || urlObj.hostname === '' || urlObj.hostname.startsWith('.')) {
-        urlObj.hostname = 'api.acoustic.uz';
-        urlObj.protocol = 'https:';
-      }
-      
       // Fix incorrect domain: acoustic.uz -> api.acoustic.uz
       if (urlObj.hostname === 'acoustic.uz' || urlObj.hostname === 'www.acoustic.uz') {
         urlObj.hostname = 'api.acoustic.uz';

@@ -26,6 +26,7 @@ import HeroSlider from '@/components/homepage/hero-slider';
 import FAQAccordion from '@/components/homepage/faq-accordion';
 import Script from 'next/script';
 import type { Metadata } from 'next';
+import { normalizeImageUrl } from '@/lib/image-utils';
 
 // ISR: Revalidate every 30 minutes
 export const revalidate = 1800;
@@ -112,10 +113,7 @@ export default async function HomePage() {
     const title = locale === 'ru' ? (service.title_ru || '') : (service.title_uz || '');
     const description = locale === 'ru' ? (service.excerpt_ru || '') : (service.excerpt_uz || '');
     let image = (service as any)?.image?.url ?? (service as any)?.cover?.url ?? '';
-    if (image && image.startsWith('/') && !image.startsWith('//')) {
-      const baseUrl = API_BASE_URL.replace('/api', '');
-      image = `${baseUrl}${image}`;
-    }
+    image = normalizeImageUrl(image);
     // Generate link: use slug as-is, if it starts with / use it directly, otherwise prepend /
     const serviceSlug = service.slug || service.id || `service-${index}`;
     const serviceLink = serviceSlug.startsWith('/') ? serviceSlug : `/${serviceSlug}`;
@@ -136,19 +134,7 @@ export default async function HomePage() {
         const title = locale === 'ru' ? (item.title_ru || '') : (item.title_uz || '');
         const description = locale === 'ru' ? (item.description_ru || '') : (item.description_uz || '');
         let image = item.image?.url || '';
-        // Debug: log image data
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[Homepage] Hearing aid item:', {
-            id: item.id,
-            title,
-            image: item.image,
-            imageUrl: image,
-          });
-        }
-        if (image && image.startsWith('/') && !image.startsWith('//')) {
-          const baseUrl = API_BASE_URL.replace('/api', '');
-          image = `${baseUrl}${image}`;
-        }
+        image = normalizeImageUrl(image);
         const link = item.link || '/catalog';
         return {
           id: item.id,
@@ -166,10 +152,7 @@ export default async function HomePage() {
           const title = locale === 'ru' ? (catalog.name_ru || '') : (catalog.name_uz || '');
           const description = locale === 'ru' ? (catalog.description_ru || '') : (catalog.description_uz || '');
           let image = catalog.image?.url || '';
-          if (image && image.startsWith('/') && !image.startsWith('//')) {
-            const baseUrl = API_BASE_URL.replace('/api', '');
-            image = `${baseUrl}${image}`;
-          }
+          image = normalizeImageUrl(image);
           const link = catalog.slug ? `/catalog/${catalog.slug}` : '/catalog';
           return {
             id: catalog.id,
@@ -194,10 +177,7 @@ export default async function HomePage() {
     } else {
       image = product.brand?.logo?.url || '';
     }
-    if (image && image.startsWith('/') && !image.startsWith('//')) {
-      const baseUrl = API_BASE_URL.replace('/api', '');
-      image = `${baseUrl}${image}`;
-    }
+    image = normalizeImageUrl(image);
     return {
       id: product.slug ?? product.id ?? `interacoustics-${index}`,
       title: title || '',
