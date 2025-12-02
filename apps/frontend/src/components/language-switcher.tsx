@@ -1,9 +1,9 @@
 'use client';
 
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { type Locale, DEFAULT_LOCALE } from '@/lib/locale';
+import { type Locale, DEFAULT_LOCALE, LOCALE_COOKIE_NAME } from '@/lib/locale';
 import { getLocaleFromCookie } from '@/lib/locale-client';
 
 // Helper to get locale from DOM (available on client)
@@ -29,39 +29,57 @@ function getLocaleFromDOM(): Locale {
   return getLocaleFromCookie();
 }
 
-// Function to change language using API route
-// This ensures the cookie is set server-side and all React Query caches are cleared
+// Function to change language - optimized for performance
+// Uses client-side cookie setting and router navigation instead of full page reload
 function changeLanguage(
   newLocale: Locale,
   currentPath: string,
   queryString: string,
-  queryClient: ReturnType<typeof useQueryClient>
+  queryClient: ReturnType<typeof useQueryClient>,
+  router: ReturnType<typeof useRouter>
 ) {
-  // Build the current URL with query params
-  const currentUrl = `${currentPath}${queryString ? `?${queryString}` : ''}`;
-  
-  // Clear ALL React Query caches before redirect to prevent stale data
-  // This ensures fresh data is fetched with the new locale
-  queryClient.clear();
-  
-  // Use API route to set cookie server-side and redirect
-  // This is the most reliable method as the cookie is set on the server
-  // IMPORTANT: Use relative URL to ensure it works in both dev and production
-  // Don't use window.location.origin as it might be incorrect (e.g., 0.0.0.0)
-  const apiUrl = `/api/locale?locale=${newLocale}&redirect=${encodeURIComponent(currentUrl)}`;
-  
-  // Navigate to API route - it will set cookie and redirect back
-  // Using window.location.href ensures a full page reload with fresh server render
-  // Use relative URL directly to avoid SSL/protocol issues with 0.0.0.0:3000
-  if (typeof window !== 'undefined') {
-    window.location.href = apiUrl;
+  // Set cookie client-side immediately for instant UI update
+  if (typeof document !== 'undefined') {
+    const expires = new Date();
+    expires.setTime(expires.getTime() + 365 * 24 * 60 * 60 * 1000); // 1 year
+    document.cookie = `${LOCALE_COOKIE_NAME}=${newLocale}; path=/; max-age=${365 * 24 * 60 * 60}; SameSite=Lax${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`;
+    
+    // Update data-locale attribute immediately for instant UI feedback
+    document.documentElement.setAttribute('data-locale', newLocale);
   }
+  
+  // Only invalidate locale-specific queries, not all caches
+  // This preserves non-locale-dependent data and improves performance
+  queryClient.invalidateQueries({ 
+    predicate: (query) => {
+      const key = query.queryKey;
+      // Invalidate queries that depend on locale
+      return Array.isArray(key) && (
+        key.includes('menu') ||
+        key.includes('catalogs') ||
+        key.includes('services') ||
+        key.includes('products') ||
+        key.includes('branches') ||
+        key.includes('doctors') ||
+        key.includes('settings') ||
+        key.includes('faq')
+      );
+    }
+  });
+  
+  // Use router.refresh() to trigger server-side re-render with new locale
+  // This is faster than full page reload and preserves client state
+  router.refresh();
+  
+  // Also update the URL to ensure consistency (optional, refresh should handle it)
+  // router.push(currentPath + (queryString ? `?${queryString}` : ''));
 }
 
 export default function LanguageSwitcher() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
+  const router = useRouter();
   
   // CRITICAL: Read initial locale synchronously from DOM to match server render
   // This prevents hydration mismatches
@@ -125,9 +143,9 @@ export default function LanguageSwitcher() {
     const currentPath = pathname || '/';
     const queryString = searchParams?.toString() || '';
     
-    // Change language (clears caches, sets cookie, and reloads)
-    changeLanguage(newLocale, currentPath, queryString, queryClient);
-  }, [currentLocale, pathname, searchParams, queryClient]);
+    // Change language (optimized: uses client-side cookie and router.refresh())
+    changeLanguage(newLocale, currentPath, queryString, queryClient, router);
+  }, [currentLocale, pathname, searchParams, queryClient, router]);
 
   // During SSR and initial client render, use initial locale from DOM
   // After hydration, use currentLocale state
@@ -169,6 +187,7 @@ export function LanguageSwitcherMobile() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
+  const router = useRouter();
   
   // CRITICAL: Read initial locale synchronously from DOM to match server render
   const getInitialLocale = (): Locale => {
@@ -225,9 +244,9 @@ export function LanguageSwitcherMobile() {
     const currentPath = pathname || '/';
     const queryString = searchParams?.toString() || '';
     
-    // Change language (clears caches, sets cookie, and reloads)
-    changeLanguage(newLocale, currentPath, queryString, queryClient);
-  }, [currentLocale, pathname, searchParams, queryClient]);
+    // Change language (optimized: uses client-side cookie and router.refresh())
+    changeLanguage(newLocale, currentPath, queryString, queryClient, router);
+  }, [currentLocale, pathname, searchParams, queryClient, router]);
 
   // During SSR and initial client render, use initial locale from DOM
   // After hydration, use currentLocale state

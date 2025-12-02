@@ -240,9 +240,9 @@ export default function SiteHeader({ initialSettings = null }: SiteHeaderProps =
       return result;
     },
     enabled: !!displayLocale, // Don't run query until locale is set
-    staleTime: 0, // Always refetch when locale changes
-    gcTime: 300000, // Keep cache for 5 minutes to preserve data during refetch
-    refetchOnMount: 'always', // Always refetch on mount
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes - improves performance
+    gcTime: 10 * 60 * 1000, // Keep cache for 10 minutes
+    refetchOnMount: false, // Don't refetch on mount if data is fresh (locale in queryKey handles this)
     refetchOnWindowFocus: false, // Don't refetch on window focus (avoid unnecessary requests)
     retry: false,
     throwOnError: false, // Don't throw errors - handle gracefully to prevent menu from disappearing
@@ -308,9 +308,9 @@ export default function SiteHeader({ initialSettings = null }: SiteHeaderProps =
       return result;
     },
     enabled: !!displayLocale, // Don't run query until locale is set
-    staleTime: 0, // Always refetch when locale changes
-    gcTime: 300000, // Keep cache for 5 minutes to preserve data during refetch
-    refetchOnMount: 'always', // Always refetch on mount
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes - improves performance
+    gcTime: 10 * 60 * 1000, // Keep cache for 10 minutes
+    refetchOnMount: false, // Don't refetch on mount if data is fresh (locale in queryKey handles this)
     refetchOnWindowFocus: false, // Don't refetch on window focus (avoid unnecessary requests)
     retry: false,
     throwOnError: false, // Don't throw errors - handle gracefully to prevent menu from disappearing
@@ -325,35 +325,33 @@ export default function SiteHeader({ initialSettings = null }: SiteHeaderProps =
     }
   }, [headerMenu]);
   
-  // Force menu refetch when displayLocale changes
-  // This ensures menu updates immediately when locale changes
-  // Use a ref to prevent multiple simultaneous refetches
+  // Optimized: Only refetch when locale actually changes
+  // Since locale is in queryKey, React Query will automatically use different cache entries
   const refetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
     if (displayLocale && !localeChangeInProgress) {
-      console.log('[SiteHeader] 🔄 displayLocale changed to:', displayLocale, '- invalidating and refetching menu and categories');
-      
       // Clear any pending refetch
       if (refetchTimeoutRef.current) {
         clearTimeout(refetchTimeoutRef.current);
       }
       
-      // Force menu refresh key increment to trigger refetch
-      setMenuRefreshKey(prev => prev + 1);
-      // Remove ALL old cached queries for ALL locales
-      queryClient.removeQueries({ queryKey: ['menu'] });
-      queryClient.removeQueries({ queryKey: ['product-categories'] });
+      // Only invalidate queries for the OLD locale, not all queries
+      // This preserves cache for other locales and improves performance
+      const oldLocale = displayLocale === 'uz' ? 'ru' : 'uz';
+      queryClient.invalidateQueries({ queryKey: ['menu', 'header', oldLocale] });
+      queryClient.invalidateQueries({ queryKey: ['catalogs', oldLocale] });
       
-      // Force immediate refetch with new locale after a brief delay
-      // This ensures the query key has updated with the new menuRefreshKey
+      // Increment refresh key to trigger refetch with new locale
+      setMenuRefreshKey(prev => prev + 1);
+      
+      // Refetch with new locale (queryKey includes displayLocale, so it will fetch fresh data)
       refetchTimeoutRef.current = setTimeout(() => {
-        const currentLocale = displayLocale;
-        console.log('[SiteHeader] ✅ Refetching menu with locale:', currentLocale);
+        console.log('[SiteHeader] ✅ Refetching menu with locale:', displayLocale);
         refetchMenu();
-        queryClient.refetchQueries({ queryKey: ['catalogs', currentLocale] });
+        queryClient.refetchQueries({ queryKey: ['catalogs', displayLocale] });
         refetchTimeoutRef.current = null;
-      }, 100);
+      }, 50); // Reduced delay for faster response
     }
     
     return () => {

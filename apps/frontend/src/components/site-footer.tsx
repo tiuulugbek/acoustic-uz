@@ -165,9 +165,9 @@ export default function SiteFooter() {
       return result;
     },
     enabled: !!displayLocale,
-    staleTime: 0,
-    gcTime: 300000,
-    refetchOnMount: 'always',
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes - improves performance
+    gcTime: 10 * 60 * 1000, // Keep cache for 10 minutes
+    refetchOnMount: false, // Don't refetch on mount if data is fresh (locale in queryKey handles this)
     refetchOnWindowFocus: false,
     retry: false,
     throwOnError: false,
@@ -175,26 +175,28 @@ export default function SiteFooter() {
     placeholderData: (previousData) => previousData,
   });
 
-  // Force menu refetch when displayLocale changes
+  // Optimized: Only refetch when locale actually changes
+  // Since locale is in queryKey, React Query will automatically use different cache entries
   const refetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
     if (displayLocale && !localeChangeInProgress) {
-      console.log('[SiteFooter] 🔄 displayLocale changed to:', displayLocale, '- invalidating and refetching footer menu');
-      
       if (refetchTimeoutRef.current) {
         clearTimeout(refetchTimeoutRef.current);
       }
       
-      setMenuRefreshKey(prev => prev + 1);
-      queryClient.removeQueries({ queryKey: ['menu', 'footer'] });
+      // Only invalidate queries for the OLD locale, not all queries
+      const oldLocale = displayLocale === 'uz' ? 'ru' : 'uz';
+      queryClient.invalidateQueries({ queryKey: ['menu', 'footer', oldLocale] });
       
+      setMenuRefreshKey(prev => prev + 1);
+      
+      // Refetch with new locale (queryKey includes displayLocale, so it will fetch fresh data)
       refetchTimeoutRef.current = setTimeout(() => {
-        const currentLocale = displayLocale;
-        console.log('[SiteFooter] ✅ Refetching footer menu with locale:', currentLocale);
-        queryClient.refetchQueries({ queryKey: ['menu', 'footer', currentLocale] });
+        console.log('[SiteFooter] ✅ Refetching footer menu with locale:', displayLocale);
+        queryClient.refetchQueries({ queryKey: ['menu', 'footer', displayLocale] });
         refetchTimeoutRef.current = null;
-      }, 100);
+      }, 50); // Reduced delay for faster response
     }
     
     return () => {
