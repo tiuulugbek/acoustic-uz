@@ -551,7 +551,8 @@ export default async function CatalogPage({
                     <div className="space-y-3">
                       {postsData.slice(0, 5).map((post) => {
                         const title = locale === 'ru' ? (post.title_ru || '') : (post.title_uz || '');
-                        const coverImage = (post as any).cover?.url || '';
+                        const rawCoverImage = (post as any).cover?.url || '';
+                        const coverImage = normalizeImageUrl(rawCoverImage);
                         return (
                           <Link
                             key={post.id}

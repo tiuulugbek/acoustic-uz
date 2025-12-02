@@ -10,6 +10,7 @@ import CatalogBrandChips from '@/components/catalog-brand-chips';
 import CatalogPagination from '@/components/catalog-pagination';
 import { detectLocale } from '@/lib/locale-server';
 import { getBilingualText } from '@/lib/locale';
+import { normalizeImageUrl } from '@/lib/image-utils';
 
 // Force dynamic rendering to ensure locale is always read from cookies
 // This prevents Next.js from caching the page with a stale locale
@@ -327,7 +328,8 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
                   <>
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                       {paginatedProducts.map((product) => {
-                        const mainImage = product.galleryUrls?.[0] ?? product.brand?.logo?.url ?? placeholderImage;
+                        const rawImage = product.galleryUrls?.[0] ?? product.brand?.logo?.url ?? '';
+                        const mainImage = rawImage ? normalizeImageUrl(rawImage) : placeholderImage;
                         const priceFormatted = formatPrice(product.price);
                         const availability = product.availabilityStatus ? availabilityMap[product.availabilityStatus] : undefined;
                         const productName = getBilingualText(product.name_uz, product.name_ru, locale);
@@ -527,7 +529,8 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
                   <>
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                       {paginatedProducts.map((product) => {
-                        const mainImage = product.galleryUrls?.[0] ?? product.brand?.logo?.url ?? placeholderImage;
+                        const rawImage = product.galleryUrls?.[0] ?? product.brand?.logo?.url ?? '';
+                        const mainImage = rawImage ? normalizeImageUrl(rawImage) : placeholderImage;
                         const priceFormatted = formatPrice(product.price);
                         const availability = product.availabilityStatus ? availabilityMap[product.availabilityStatus] : undefined;
                         const productName = getBilingualText(product.name_uz, product.name_ru, locale);

@@ -3,8 +3,7 @@ import Link from 'next/link';
 import { getSettings, getBrands } from '@/lib/api-server';
 import type { SettingsResponse, BrandResponse, SidebarSection } from '@/lib/api';
 import { detectLocale } from '@/lib/locale-server';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { normalizeImageUrl } from '@/lib/image-utils';
 
 interface SidebarProps {
   locale: 'uz' | 'ru';
@@ -93,11 +92,7 @@ export default async function Sidebar({ locale, settingsData, brandsData, pageTy
               const brandName = brand.name || '';
               const brandSlug = brand.slug || '';
               const brandLogo = brand.logo?.url || '';
-              let logoUrl = brandLogo;
-              if (logoUrl && logoUrl.startsWith('/') && !logoUrl.startsWith('//')) {
-                const baseUrl = API_BASE_URL.replace('/api', '');
-                logoUrl = `${baseUrl}${logoUrl}`;
-              }
+              const logoUrl = normalizeImageUrl(brandLogo);
               const brandLink = brandSlug ? `/catalog/${brandSlug}` : '#';
               return (
                 <Link
