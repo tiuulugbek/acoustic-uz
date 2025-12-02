@@ -39,9 +39,9 @@ const imageSizeConfig: Record<ImageSizeType, { size: string; aspectRatio: string
     description: 'Xizmat kartasi rasmi. Standart format.',
   },
   catalog: {
-    size: '400x300px',
-    aspectRatio: '4:3',
-    description: 'Katalog rasmi. Kichik format, tez yuklanish.',
+    size: '256x256px',
+    aspectRatio: '1:1 (kvadrat)',
+    description: 'Katalog rasmi. Kvadrat format, katalog kartochkalarida ko\'rsatiladi (128x128px ko\'rinishda).',
   },
   doctor: {
     size: '400x400px',

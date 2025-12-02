@@ -59,6 +59,7 @@ import {
   type MediaDto,
 } from '../lib/api';
 import RichTextEditor from '../components/RichTextEditor';
+import ImageSizeHint from '../components/ImageSizeHint';
 import { createSlug } from '../utils/slug';
 import { normalizeImageUrl } from '../utils/image';
 import { compressImage } from '../utils/image-compression';
@@ -464,6 +465,7 @@ function CatalogManager() {
           </Form.Item>
           <Form.Item label="Rasm" name="imageId" extra="Katalog rasmi">
             <div>
+              <ImageSizeHint type="catalog" />
               <Row gutter={16}>
                 <Col span={12}>
                   <Upload
