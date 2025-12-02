@@ -59,6 +59,8 @@ export function normalizeImageUrl(url: string | null | undefined): string {
   // If relative URL starting with /uploads/, make it absolute
   if (url.startsWith('/uploads/')) {
     const apiBase = import.meta.env.VITE_API_URL || 'https://api.acoustic.uz/api';
+    console.log('🔧 Normalizing relative URL:', { url, apiBase });
+    
     // Properly extract base URL by removing /api from the end
     let baseUrl = apiBase;
     if (baseUrl.endsWith('/api')) {
@@ -71,14 +73,20 @@ export function normalizeImageUrl(url: string | null | undefined): string {
       baseUrl = baseUrl.slice(0, -1);
     }
     
+    console.log('🔧 Extracted base URL:', baseUrl);
+    
     // Encode only the filename part
     const pathParts = url.split('/');
     const filename = pathParts.pop();
     if (filename) {
       const encodedFilename = encodeURIComponent(filename);
-      return `${baseUrl}${pathParts.join('/')}/${encodedFilename}`;
+      const normalized = `${baseUrl}${pathParts.join('/')}/${encodedFilename}`;
+      console.log('🔧 Normalized URL:', normalized);
+      return normalized;
     }
-    return `${baseUrl}${url}`;
+    const normalized = `${baseUrl}${url}`;
+    console.log('🔧 Normalized URL (no filename):', normalized);
+    return normalized;
   }
   
   return url;

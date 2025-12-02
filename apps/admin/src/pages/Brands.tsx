@@ -133,6 +133,11 @@ export default function BrandsPage() {
 
       form.setFieldsValue({ logoId: media.id });
       const normalizedUrl = normalizeImageUrl(media.url);
+      console.log('🔗 URL normalization:', {
+        original: media.url,
+        normalized: normalizedUrl,
+        apiBase: import.meta.env.VITE_API_URL,
+      });
       setPreviewLogo(normalizedUrl);
       message.success('Logo yuklandi');
       queryClient.invalidateQueries({ queryKey: ['media'] });
