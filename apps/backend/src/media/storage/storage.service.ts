@@ -103,9 +103,22 @@ export class StorageService {
 
     if (!skipWebp && isImage && file.mimetype !== 'image/webp') {
       try {
-        // Convert to WebP with quality 85 (good balance between quality and size)
-        processedBuffer = await sharp(file.buffer)
-          .webp({ quality: 85, effort: 4 })
+        // Convert to WebP with quality 75 and max width 1920px for better compression
+        const image = sharp(file.buffer);
+        const metadata = await image.metadata();
+        
+        // Resize if image is too large (max width 1920px)
+        let sharpInstance = image;
+        if (metadata.width && metadata.width > 1920) {
+          sharpInstance = image.resize(1920, null, {
+            withoutEnlargement: true,
+            fit: 'inside',
+          });
+        }
+        
+        // Convert to WebP with quality 75 (good balance between quality and size)
+        processedBuffer = await sharpInstance
+          .webp({ quality: 75, effort: 4 })
           .toBuffer();
         
         // Update filename extension to .webp
