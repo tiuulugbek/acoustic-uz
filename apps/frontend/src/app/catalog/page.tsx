@@ -591,15 +591,77 @@ export default async function CatalogPage({
                 )}
               </aside>
 
-              {/* Main Content - Products First on Mobile */}
+              {/* Main Content - Banner and Brand Filter First */}
               <div className="space-y-6">
-                {/* Mobile: Products First, Hero Banner After */}
-                {/* Desktop: Hero Banner First, Products After */}
-                
-                {/* Products Grid - Show First on Mobile */}
+                {/* 1. Promotional Hero Banner - First */}
+                {searchParams.productType === 'hearing-aids' && (
+                  <section className="relative w-full rounded-lg overflow-hidden">
+                    <CatalogHeroImage
+                      src={normalizeImageUrl(settingsData?.catalogHeroImage?.url) || '/images/catalog-hero.jpg'}
+                      alt={locale === 'ru' ? 'Каталог слуховых аппаратов' : 'Eshitish moslamalari katalogi'}
+                      locale={locale}
+                    />
+                  </section>
+                )}
+
+                {/* 2. Brand Tabs - Second */}
+                {brandTabs.length > 0 && searchParams.productType !== 'interacoustics' && (
+                  <div className="flex flex-wrap gap-2">
+                    <Link
+                      href={`/catalog?productType=${searchParams.productType}`}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                        !searchParams.brandId
+                          ? 'bg-brand-primary text-white'
+                          : 'bg-muted/30 text-foreground hover:bg-muted/50'
+                      }`}
+                    >
+                      {locale === 'ru' ? 'Все' : 'Barchasi'}
+                    </Link>
+                    {brandTabs.map((brand) => {
+                      const params = new URLSearchParams();
+                      if (searchParams.productType) params.set('productType', searchParams.productType);
+                      params.set('brandId', brand.id);
+                      if (searchParams.sort) params.set('sort', searchParams.sort);
+                      // Preserve filters
+                      if (searchParams.audience) params.set('audience', searchParams.audience);
+                      if (searchParams.formFactor) params.set('formFactor', searchParams.formFactor);
+                      if (searchParams.signalProcessing) params.set('signalProcessing', searchParams.signalProcessing);
+                      if (searchParams.powerLevel) params.set('powerLevel', searchParams.powerLevel);
+                      if (searchParams.hearingLossLevel) params.set('hearingLossLevel', searchParams.hearingLossLevel);
+                      if (searchParams.smartphoneCompatibility) params.set('smartphoneCompatibility', searchParams.smartphoneCompatibility);
+                      
+                      return (
+                        <Link
+                          key={brand.id}
+                          href={`/catalog?${params.toString()}`}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+                            searchParams.brandId === brand.id
+                              ? 'bg-brand-primary text-white'
+                              : 'bg-muted/30 text-foreground hover:bg-muted/50'
+                          }`}
+                        >
+                          {brand.name}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* 3. Sort */}
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <span>{locale === 'ru' ? 'Сортировать по:' : 'Saralash:'}</span>
+                  <Link
+                    href={`/catalog?productType=${searchParams.productType}&sort=price_asc${searchParams.brandId ? `&brandId=${searchParams.brandId}` : ''}`}
+                    className={`hover:text-brand-primary ${searchParams.sort === 'price_asc' ? 'text-brand-primary font-medium' : ''}`}
+                  >
+                    {locale === 'ru' ? 'цене' : 'narx'}
+                  </Link>
+                </div>
+
+                {/* 4. Products Grid - Third */}
                 {filteredProducts.length > 0 ? (
                   <>
-                    <div className="grid grid-cols-2 gap-3 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:order-2">
+                    <div className="grid grid-cols-2 gap-3 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
                       {filteredProducts.slice(0, pageSize).map((product) => {
                         const productName = locale === 'ru' ? (product.name_ru || '') : (product.name_uz || '');
                         
@@ -670,7 +732,7 @@ export default async function CatalogPage({
                     
                     {/* Pagination */}
                     {totalPages > 1 && (
-                      <div className="flex items-center justify-center gap-2 pt-6 lg:order-3">
+                      <div className="flex items-center justify-center gap-2 pt-6">
                         {page > 1 && (
                           <Link
                             href={`/catalog?productType=${searchParams.productType}&page=${page - 1}${searchParams.brandId ? `&brandId=${searchParams.brandId}` : ''}${searchParams.sort ? `&sort=${searchParams.sort}` : ''}${searchParams.audience ? `&audience=${searchParams.audience}` : ''}${searchParams.formFactor ? `&formFactor=${searchParams.formFactor}` : ''}${searchParams.signalProcessing ? `&signalProcessing=${searchParams.signalProcessing}` : ''}${searchParams.powerLevel ? `&powerLevel=${searchParams.powerLevel}` : ''}${searchParams.hearingLossLevel ? `&hearingLossLevel=${searchParams.hearingLossLevel}` : ''}${searchParams.smartphoneCompatibility ? `&smartphoneCompatibility=${searchParams.smartphoneCompatibility}` : ''}`}
