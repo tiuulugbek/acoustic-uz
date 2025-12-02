@@ -320,48 +320,48 @@ export default async function HomePage() {
                 <Link
                   key={item.id}
                   href={item.link}
-                  className="group flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-3 transition hover:border-brand-primary/50 hover:shadow-sm"
+                  className="group flex gap-2.5 md:flex-col md:gap-3 rounded-lg border border-gray-200 bg-white p-2.5 md:p-3 transition hover:border-brand-primary/50 hover:shadow-sm"
                 >
-                  {/* Desktop: sarlavha yuqorida, Mobil: sarlavha rasm bilan bir qatorda */}
+                  {/* Desktop: sarlavha yuqorida */}
                   <h3 className="hidden md:block text-sm md:text-base font-semibold text-brand-accent leading-tight group-hover:text-brand-primary transition-colors line-clamp-2" suppressHydrationWarning>
                     {item.title}
                   </h3>
                   
-                  {/* Mobil: rasm va sarlavha vertikal, Desktop: rasm va tavsif yonma-yon */}
-                  <div className="flex flex-col md:flex-row gap-3">
-                    {/* Rasm - mobil: yuqorida, desktop: chapda */}
-                    <div className="relative h-40 w-full md:h-20 md:w-24 shrink-0 overflow-hidden rounded-lg bg-brand-primary/10">
+                  {/* Mobil: rasm va matn gorizontal (Interacoustics kabi), Desktop: rasm va tavsif vertikal */}
+                  <div className="flex md:flex-col gap-2.5 md:gap-3">
+                    {/* Rasm - mobil: chapda kichik kvadrat, desktop: yuqorida */}
+                    <div className="relative h-16 w-16 md:h-auto md:w-full md:aspect-[4/3] shrink-0 overflow-hidden rounded-lg bg-brand-primary/10">
                       {item.hasImage && item.image ? (
                         <Image 
                           src={item.image} 
                           alt={item.title} 
                           fill 
-                          sizes="(max-width: 768px) 100vw, 96px" 
+                          sizes="(max-width: 768px) 64px, (max-width: 1024px) 50vw, 33vw" 
                           className="object-cover transition-transform duration-300 group-hover:scale-105"
                           suppressHydrationWarning
                         />
                       ) : (
                         <div className="flex h-full w-full items-center justify-center bg-brand-primary">
-                          <span className="text-white text-xs font-bold">Acoustic</span>
+                          <span className="text-white text-[10px] md:text-xs font-bold">Acoustic</span>
                         </div>
                       )}
                     </div>
-                    {/* Matn - mobil: rasm tagida, desktop: o'ngda */}
-                    <div className="flex flex-col flex-1 min-w-0 gap-2 justify-between">
-                      <div className="flex flex-col gap-1.5">
+                    {/* Matn - mobil: o'ngda, desktop: pastda */}
+                    <div className="flex flex-col flex-1 min-w-0 gap-1 md:gap-2 justify-between">
+                      <div className="flex flex-col gap-1">
                         {/* Mobil: sarlavha */}
-                        <h3 className="md:hidden text-sm font-semibold text-brand-accent leading-tight group-hover:text-brand-primary transition-colors line-clamp-2" suppressHydrationWarning>
+                        <h3 className="md:hidden text-xs font-semibold text-brand-accent leading-tight group-hover:text-brand-primary transition-colors line-clamp-2" suppressHydrationWarning>
                           {item.title}
                         </h3>
                         {/* Tavsif */}
                         {item.description && (
-                          <p className="text-xs md:text-lg text-muted-foreground leading-relaxed" suppressHydrationWarning>
+                          <p className="text-[10px] md:text-sm text-muted-foreground leading-snug line-clamp-3" suppressHydrationWarning>
                             {item.description}
                           </p>
                         )}
                       </div>
-                      {/* Batafsil link */}
-                      <span className="inline-flex items-center gap-1 text-xs md:text-base font-medium text-brand-primary group-hover:text-brand-accent transition-all w-fit" suppressHydrationWarning>
+                      {/* Batafsil link - mobil: yashirilgan, desktop: ko'rsatilgan */}
+                      <span className="hidden md:inline-flex items-center gap-1 text-xs md:text-base font-medium text-brand-primary group-hover:text-brand-accent transition-all w-fit" suppressHydrationWarning>
                         {locale === 'ru' ? 'Подробнее' : 'Batafsil'}
                         <ArrowRight size={12} className="md:w-4 md:h-4 transition-transform group-hover:translate-x-1" />
                       </span>
