@@ -407,14 +407,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
   
   const techTables = techTablesParts.length > 0 ? techTablesParts.join('\n\n') : null;
 
+  // Tabs - only tech and fitting range (description shown separately above)
   const productTabs = [
-    // Description tab - always first, shows full HTML content including tables
-    ...(hasDescription ? [{
-      key: 'description',
-      title: tabTitles.description,
-      primary: descriptionPrimary,
-      secondary: descriptionSecondary,
-    }] : []),
     // Technologies tab
     {
       key: 'tech',
@@ -538,17 +532,37 @@ export default async function ProductPage({ params }: ProductPageProps) {
                     <span className="font-medium">{isRu ? 'Цена' : 'Narx'}:</span> {priceFormatted}
                   </p>
                 )}
-                <p className="text-sm text-muted-foreground">
-                  {isRu ? 'Способ оплаты: Наличными, картой Visa/MasterCard' : 'To\'lov usuli: Naqd pul, Visa/MasterCard kartasi'}
-                </p>
                 <Link
                   href="/contact"
-                  className="inline-flex items-center gap-2 rounded-lg bg-pink-500 px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-pink-600 hover:shadow-lg"
+                  className="inline-flex items-center gap-2 rounded-lg bg-brand-primary px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-brand-accent hover:shadow-lg"
                 >
                   <Phone className="h-4 w-4" />
                   {isRu ? 'Записаться на подбор' : 'Tanlash uchun yozilish'}
                 </Link>
               </div>
+
+              {/* Description Section - Before Tabs */}
+              {hasDescription && (
+                <div className="mt-6 space-y-4">
+                  <h2 className="text-xl font-semibold text-brand-accent" suppressHydrationWarning>
+                    {isRu ? 'Описание' : 'Tavsif'}
+                  </h2>
+                  <div className="prose prose-sm max-w-none text-muted-foreground">
+                    {descriptionPrimary && (
+                      <div 
+                        className="rich-content"
+                        dangerouslySetInnerHTML={{ __html: descriptionPrimary }}
+                      />
+                    )}
+                    {descriptionSecondary && (
+                      <div 
+                        className="rich-content rich-content--secondary mt-4"
+                        dangerouslySetInnerHTML={{ __html: descriptionSecondary }}
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Right Column - Sidebar (spans both rows on desktop, hidden on mobile) */}
