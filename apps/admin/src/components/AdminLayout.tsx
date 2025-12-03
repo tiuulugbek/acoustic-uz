@@ -26,10 +26,6 @@ const { Header, Sider, Content, Footer } = Layout;
 const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.0';
 const BUILD_TIME = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : new Date().toISOString();
 
-// Debug: Log version info
-console.log('[AdminLayout] Version:', APP_VERSION);
-console.log('[AdminLayout] Build Time:', BUILD_TIME);
-
 const menuItems: MenuProps['items'] = [
   {
     key: '/',
@@ -229,13 +225,8 @@ export default function AdminLayout() {
     await logoutMutation();
   };
 
-  // Debug: Log footer info when component mounts
-  useEffect(() => {
-    console.log('[AdminLayout] Component mounted');
-    console.log('[AdminLayout] Version:', APP_VERSION);
-    console.log('[AdminLayout] Build Time:', BUILD_TIME);
-    console.log('[AdminLayout] Footer should be visible');
-  }, []);
+  // Note: Footer is rendered at the bottom of the Layout
+  // Version is also shown in the header for easy visibility
 
   if (isLoading || isLoggingOut) {
     return (
@@ -283,7 +274,19 @@ export default function AdminLayout() {
       <Layout style={{ marginLeft: 220, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         <Header style={{ background: '#fff', padding: '0 24px', borderBottom: '1px solid #f0f0f0', flexShrink: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '100%' }}>
-            <h1 style={{ fontSize: '18px', fontWeight: 600, color: '#F07E22', margin: 0 }}>Admin panel</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <h1 style={{ fontSize: '18px', fontWeight: 600, color: '#F07E22', margin: 0 }}>Admin panel</h1>
+              <span style={{ 
+                fontSize: '11px', 
+                color: '#8c8c8c', 
+                backgroundColor: '#f5f5f5',
+                padding: '2px 8px',
+                borderRadius: '4px',
+                fontFamily: 'monospace'
+              }}>
+                v{APP_VERSION}
+              </span>
+            </div>
             <button
               type="button"
               onClick={handleLogout}
