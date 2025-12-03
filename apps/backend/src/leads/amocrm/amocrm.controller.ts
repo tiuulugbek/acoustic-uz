@@ -23,7 +23,11 @@ export class AmoCRMController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get AmoCRM OAuth authorization URL' })
   @ApiResponse({ status: 200, description: 'Authorization URL generated' })
-  async getAuthorizationUrl() {
+  async getAuthorizationUrl(@Res({ passthrough: false }) res: Response) {
+    // Disable caching for this endpoint
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     const settings = await this.settingsService.get();
     
     if (!settings.amocrmDomain || !settings.amocrmClientId) {
@@ -52,7 +56,7 @@ export class AmoCRMController {
     
     console.log('[AmoCRM] Generated auth URL:', authUrl);
 
-    return { authUrl };
+    return res.json({ authUrl });
   }
 
   @Get('callback')
