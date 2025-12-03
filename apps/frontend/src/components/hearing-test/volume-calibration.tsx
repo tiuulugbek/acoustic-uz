@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Volume2, Play, Square, Headphones } from 'lucide-react';
+import { Volume2, Play, Square, Headphones, VolumeX } from 'lucide-react';
 import type { Locale } from '@/lib/locale';
 
 interface VolumeCalibrationProps {
@@ -54,13 +54,29 @@ export default function VolumeCalibration({
         </p>
       </div>
 
-      {/* Instructions */}
-      <div className="space-y-6 max-w-2xl mx-auto">
+      {/* Instructions - ReSound style */}
+      <div className="space-y-8 max-w-2xl mx-auto">
+        {/* Step 1 */}
         <div className="flex items-start gap-4">
-          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-brand-primary text-white flex items-center justify-center font-bold text-lg">
+          <div className="flex-shrink-0 w-12 h-12 rounded-full bg-brand-primary text-white flex items-center justify-center font-bold text-xl">
             1
           </div>
-          <div className="flex-1 flex items-center justify-between">
+          <div className="flex-1 flex items-center justify-between pt-1">
+            <p className="text-lg text-gray-800">
+              {isRu
+                ? 'Найдите тихое место с минимальным шумом'
+                : 'Juda kam shovqin bo\'lgan sokin joy toping'}
+            </p>
+            <VolumeX className="w-8 h-8 text-gray-400 flex-shrink-0 ml-4" />
+          </div>
+        </div>
+
+        {/* Step 2 */}
+        <div className="flex items-start gap-4">
+          <div className="flex-shrink-0 w-12 h-12 rounded-full bg-brand-primary text-white flex items-center justify-center font-bold text-xl">
+            2
+          </div>
+          <div className="flex-1 flex items-center justify-between pt-1">
             <p className="text-lg text-gray-800">
               {isRu
                 ? 'Установите наушники и устройство на максимальную громкость'
@@ -70,37 +86,48 @@ export default function VolumeCalibration({
           </div>
         </div>
 
+        {/* Step 3 */}
         <div className="flex items-start gap-4">
-          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-brand-primary text-white flex items-center justify-center font-bold text-lg">
-            2
+          <div className="flex-shrink-0 w-12 h-12 rounded-full bg-brand-primary text-white flex items-center justify-center font-bold text-xl">
+            3
           </div>
-          <div className="flex-1 flex items-center justify-between">
-            <p className="text-lg text-gray-800">
-              {isRu
-                ? 'Нажмите кнопку воспроизведения и прослушайте тестовый звук'
-                : 'Ijro etish tugmasini bosing va test ovozini tinglang'}
-            </p>
+          <div className="flex-1 flex items-center justify-between pt-1">
+            <div className="flex-1">
+              <p className="text-lg font-bold text-gray-900 mb-1">
+                {isRu
+                  ? 'Проверьте наушники'
+                  : 'Quloqchinlarni tekshiring'}
+              </p>
+              <p className="text-lg text-gray-800">
+                {isRu
+                  ? 'чтобы убедиться, что они работают правильно'
+                  : 'to\'g\'ri ishlayotganini tekshiring'}
+              </p>
+            </div>
             <Headphones className="w-8 h-8 text-gray-400 flex-shrink-0 ml-4" />
           </div>
         </div>
       </div>
 
-      {/* Test Button */}
-      <div className="flex justify-center py-12">
+      {/* Test Button - ReSound style */}
+      <div className="flex items-center justify-center gap-4 py-8">
         <button
           onClick={isPlaying ? stopTone : handlePlayTest}
-          className={`w-48 h-48 rounded-full flex items-center justify-center text-white transition-all transform ${
+          className={`w-16 h-16 rounded-full flex items-center justify-center text-white transition-all transform ${
             isPlaying
               ? 'bg-red-500 hover:bg-red-600 scale-105'
-              : 'bg-brand-primary hover:bg-brand-primary/90 hover:scale-105'
-          } shadow-2xl`}
+              : 'bg-gray-800 hover:bg-gray-900 hover:scale-105'
+          } shadow-lg`}
         >
           {isPlaying ? (
-            <Square className="w-20 h-20" />
+            <Square className="w-8 h-8" />
           ) : (
-            <Play className="w-20 h-20 ml-3" />
+            <Play className="w-8 h-8 ml-1" />
           )}
         </button>
+        <span className="text-lg font-medium text-gray-900">
+          {isRu ? 'Воспроизвести звук' : 'Ovozni ijro etish'}
+        </span>
       </div>
 
       {/* Instructions after playing */}

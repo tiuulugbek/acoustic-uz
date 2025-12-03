@@ -8,11 +8,12 @@ import type { Locale } from '@/lib/locale';
 import TestIntro from './test-intro';
 import DeviceSelection from './device-selection';
 import VolumeCalibration from './volume-calibration';
+import TestReady from './test-ready';
 import FrequencyTest from './frequency-test';
 import TestResults from './test-results';
 import ContactForm from './contact-form';
 
-type TestStep = 'intro' | 'device' | 'volume' | 'left-ear' | 'right-ear' | 'results' | 'contact';
+type TestStep = 'intro' | 'device' | 'volume' | 'ready-left' | 'left-ear' | 'ready-right' | 'right-ear' | 'results' | 'contact';
 
 const FREQUENCIES = [250, 500, 1000, 2000, 4000, 8000];
 
@@ -44,12 +45,12 @@ export default function HearingTest() {
     // Volume calibration'da foydalanuvchi qurilma ovozini sozlaydi
     // Test ovozini doim maksimal balandlikda ijro etamiz
     setVolumeLevel(1.0); // Maksimal volume
-    setStep('left-ear');
+    setStep('ready-left');
   };
 
   const handleLeftEarComplete = (results: Record<string, boolean>) => {
     setLeftEarResults(results);
-    setStep('right-ear');
+    setStep('ready-right');
   };
 
   const calculateResults = (leftResults: Record<string, boolean>, rightResults: Record<string, boolean>) => {
@@ -145,10 +146,14 @@ export default function HearingTest() {
       setStep('intro');
     } else if (step === 'volume') {
       setStep('device');
-    } else if (step === 'left-ear') {
+    } else if (step === 'ready-left') {
       setStep('volume');
-    } else if (step === 'right-ear') {
+    } else if (step === 'left-ear') {
+      setStep('ready-left');
+    } else if (step === 'ready-right') {
       setStep('left-ear');
+    } else if (step === 'right-ear') {
+      setStep('ready-right');
     } else if (step === 'results') {
       setStep('right-ear');
     } else if (step === 'contact') {
@@ -235,6 +240,15 @@ export default function HearingTest() {
           />
         )}
 
+        {step === 'ready-left' && (
+          <TestReady
+            locale={locale}
+            ear="left"
+            onContinue={() => setStep('left-ear')}
+            onBack={handleBack}
+          />
+        )}
+
         {step === 'left-ear' && (
           <FrequencyTest
             locale={locale}
@@ -246,6 +260,15 @@ export default function HearingTest() {
             stopTone={stopTone}
             isPlaying={isPlaying}
             volume={volumeLevel}
+          />
+        )}
+
+        {step === 'ready-right' && (
+          <TestReady
+            locale={locale}
+            ear="right"
+            onContinue={() => setStep('right-ear')}
+            onBack={handleBack}
           />
         )}
 
