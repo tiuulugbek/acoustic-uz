@@ -449,59 +449,66 @@ export default async function ProductPage({ params }: ProductPageProps) {
       )}
       
       {/* Breadcrumbs */}
-      <section className="bg-muted/40">
-        <div className="mx-auto max-w-6xl px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:px-6">
-          <Link href="/" className="hover:text-brand-primary" suppressHydrationWarning>
-            {locale === 'ru' ? 'Главная' : 'Bosh sahifa'}
-          </Link>
-          <span className="mx-2">›</span>
-          <Link href="/catalog" className="hover:text-brand-primary" suppressHydrationWarning>
-            {locale === 'ru' ? 'Каталог' : 'Katalog'}
-          </Link>
-          <span className="mx-2">›</span>
-          <span className="text-brand-primary" suppressHydrationWarning>{getBilingualText(product.name_uz, product.name_ru, locale)}</span>
+      <section className="bg-[hsl(var(--secondary))]">
+        <div className="mx-auto max-w-6xl px-4 py-2 sm:py-3 text-xs font-semibold uppercase tracking-wide text-white sm:px-6">
+          <div className="flex flex-wrap items-center gap-x-2">
+            <Link href="/" className="hover:text-white/80 text-white/70" suppressHydrationWarning>
+              {locale === 'ru' ? 'Главная' : 'Bosh sahifa'}
+            </Link>
+            <span className="mx-1 sm:mx-2">›</span>
+            <Link href="/catalog" className="hover:text-white/80 text-white/70" suppressHydrationWarning>
+              {locale === 'ru' ? 'Каталог' : 'Katalog'}
+            </Link>
+            <span className="mx-1 sm:mx-2">›</span>
+            <span className="text-white" suppressHydrationWarning>{getBilingualText(product.name_uz, product.name_ru, locale)}</span>
+          </div>
         </div>
       </section>
 
-      {/* Header - White background like sluh.by */}
-      <section className="bg-white py-6">
-        <div className="mx-auto max-w-6xl px-4 md:px-6">
-          <h1 className="text-2xl font-bold text-foreground md:text-3xl" suppressHydrationWarning>
+      {/* Header - Compact like services page */}
+      <section className="bg-[hsl(var(--secondary))] border-t border-white/10">
+        <div className="mx-auto max-w-6xl px-4 py-4 sm:py-6 sm:px-6">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-2 break-words" suppressHydrationWarning>
             {getBilingualText(product.name_uz, product.name_ru, locale)}
           </h1>
+          {product.intro_uz || product.intro_ru ? (
+            <p className="text-sm sm:text-base text-white/90 leading-relaxed break-words" suppressHydrationWarning>
+              {getBilingualText(product.intro_uz, product.intro_ru, locale)}
+            </p>
+          ) : null}
         </div>
       </section>
 
-      {/* Main Content - 3 columns: Image | Info | Sidebar */}
-      <section className="bg-white py-8">
+      {/* Main Content - Compact layout */}
+      <section className="bg-white py-6">
         <div className="mx-auto max-w-6xl px-4 md:px-6">
-          <div className="grid gap-6 lg:grid-cols-[400px_1fr] xl:grid-cols-[400px_1fr_280px]">
-            {/* Left Column - Image */}
-            <div className="space-y-4">
+          <div className="grid gap-6 lg:grid-cols-[280px_1fr] xl:grid-cols-[280px_1fr_280px]">
+            {/* Left Column - Image (smaller) */}
+            <div className="space-y-3">
               {/* Main Image */}
-              <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-white border border-border/40 shadow-sm">
+              <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-white border border-border/40">
                 <Image
                   src={mainImage}
                   alt={getBilingualText(product.name_uz, product.name_ru, locale)}
                   fill
-                  sizes="400px"
-                  className="object-contain p-8"
+                  sizes="280px"
+                  className="object-contain p-4"
                   priority
                   unoptimized
                 />
               </div>
 
-              {/* Gallery */}
+              {/* Gallery - Compact */}
               {gallery.length > 1 && (
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-4 gap-1.5">
                   {gallery.slice(1, 5).map((image, index) => (
-                    <div key={index} className="relative aspect-square w-full overflow-hidden rounded-lg bg-white border border-border/40 shadow-sm">
+                    <div key={index} className="relative aspect-square w-full overflow-hidden rounded bg-white border border-border/40">
                       <Image
                         src={image}
                         alt={`${getBilingualText(product.name_uz, product.name_ru, locale)} ${index + 2}`}
                         fill
-                        sizes="(max-width: 1024px) 25vw, 100px"
-                        className="object-contain p-2"
+                        sizes="(max-width: 1024px) 25vw, 60px"
+                        className="object-contain p-1"
                         unoptimized
                       />
                     </div>
@@ -510,10 +517,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
               )}
             </div>
 
-            {/* Center Column - Product Info */}
-            <div className="space-y-4">
-              {/* Product Details - Vertical List */}
-              <div className="space-y-3">
+            {/* Center Column - Product Info (compact) */}
+            <div className="space-y-3">
+              {/* Product Details - Compact vertical list */}
+              <div className="space-y-2">
                 {product.brand && (
                   <p className="text-sm text-muted-foreground">
                     <span className="font-medium">{isRu ? 'Производитель' : 'Ishlab chiqaruvchi'}:</span> {product.brand.name}
@@ -528,7 +535,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   </p>
                 )}
                 {priceFormatted && (
-                  <p className="text-lg font-semibold text-foreground">
+                  <p className="text-base font-semibold text-foreground">
                     <span className="font-medium">{isRu ? 'Цена' : 'Narx'}:</span> {priceFormatted}
                   </p>
                 )}
@@ -538,7 +545,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 </p>
                 <Link
                   href="/contact"
-                  className="inline-flex items-center gap-2 rounded-lg bg-brand-primary px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-brand-accent hover:shadow-lg"
+                  className="inline-flex items-center gap-2 rounded-lg bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-accent"
                 >
                   <Phone className="h-4 w-4" />
                   {isRu ? 'Записаться на подбор' : 'Tanlash uchun yozilish'}
@@ -546,27 +553,27 @@ export default async function ProductPage({ params }: ProductPageProps) {
               </div>
             </div>
 
-            {/* Right Column - Sidebar (spans all rows) */}
-            <div className="hidden xl:block xl:col-span-1 xl:row-span-3">
+            {/* Right Column - Sidebar */}
+            <div className="hidden xl:block">
               <Sidebar locale={locale} settingsData={settings} brandsData={brands} pageType="products" />
             </div>
 
             {/* Description Section - Below Image and Info */}
             {hasDescription && (
-              <div className="lg:col-span-2 xl:col-span-2 mt-6 space-y-4">
-                <h2 className="text-xl font-semibold text-brand-accent" suppressHydrationWarning>
+              <div className="lg:col-span-2 xl:col-span-2 space-y-3">
+                <h2 className="text-lg font-semibold text-brand-accent" suppressHydrationWarning>
                   {isRu ? 'Описание' : 'Tavsif'}
                 </h2>
                 <div className="prose prose-sm max-w-none text-muted-foreground">
                   {descriptionPrimary && (
                     <div 
-                      className="rich-content"
+                      className="rich-content text-sm leading-relaxed"
                       dangerouslySetInnerHTML={{ __html: descriptionPrimary }}
                     />
                   )}
                   {descriptionSecondary && (
                     <div 
-                      className="rich-content rich-content--secondary mt-4"
+                      className="rich-content rich-content--secondary mt-3 text-sm leading-relaxed"
                       dangerouslySetInnerHTML={{ __html: descriptionSecondary }}
                     />
                   )}
