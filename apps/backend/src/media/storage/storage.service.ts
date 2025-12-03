@@ -41,7 +41,7 @@ export class StorageService {
     const rootUploads = path.join(process.cwd(), 'uploads');
     
     // Prefer backend/uploads if it exists or if we're in apps/backend directory
-    if (process.cwd().includes('apps/backend') || fs.existsSync(path.join(process.cwd(), 'apps', 'backend'))) {
+    if (process.cwd().includes('apps/backend') || fsSync.existsSync(path.join(process.cwd(), 'apps', 'backend'))) {
       this.uploadDir = backendUploads;
     } else {
       this.uploadDir = rootUploads;

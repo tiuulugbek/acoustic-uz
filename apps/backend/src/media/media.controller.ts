@@ -110,13 +110,13 @@ export class MediaController {
       this.logger.log(`Upload successful: ${result.id}`);
       return result;
     } catch (error) {
-      this.logger.error(`Upload failed: ${error.message}`, error.stack);
+      this.logger.error(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`, error instanceof Error ? error.stack : undefined);
       
       if (error instanceof HttpException) {
         throw error;
       }
       
-      throw new BadRequestException(`Rasm yuklashda xatolik: ${error.message || 'Noma'lum xatolik'}`);
+      throw new BadRequestException(`Rasm yuklashda xatolik: ${error instanceof Error ? error.message : 'Noma\'lum xatolik'}`);
     }
   }
 

@@ -51,14 +51,14 @@ export class MediaService {
       this.logger.log(`Media record created: ${media.id}`);
       return media;
     } catch (error) {
-      this.logger.error(`Failed to upload file: ${error.message}`, error.stack);
+      this.logger.error(`Failed to upload file: ${error instanceof Error ? error.message : 'Unknown error'}`, error instanceof Error ? error.stack : undefined);
       
       if (error instanceof NotFoundException || error instanceof InternalServerErrorException) {
         throw error;
       }
       
       throw new InternalServerErrorException(
-        `Rasm yuklashda xatolik: ${error.message || 'Noma'lum xatolik'}`
+        `Rasm yuklashda xatolik: ${error instanceof Error ? error.message : 'Noma\'lum xatolik'}`
       );
     }
   }

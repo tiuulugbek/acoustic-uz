@@ -71,6 +71,7 @@ export class SettingsService {
     amocrmRefreshToken?: string;
     amocrmPipelineId?: string;
     amocrmStatusId?: string;
+    amocrmTokenExpiresAt?: Date | string | null;
   }) {
     try {
       // Extract only valid Prisma fields
@@ -228,7 +229,7 @@ export class SettingsService {
       if (catalogHeroImageId !== undefined) updateData.catalogHeroImageId = catalogHeroImageId || null;
       if (logoId !== undefined) updateData.logoId = logoId || null;
       if (sidebarBrandIds !== undefined) updateData.sidebarBrandIds = sidebarBrandIds || [];
-      };
+      if (data.amocrmTokenExpiresAt !== undefined) updateData.amocrmTokenExpiresAt = data.amocrmTokenExpiresAt || null;
 
       console.log('🔵 [Settings] Update data keys:', Object.keys(updateData));
       console.log('🔵 [Settings] Update data values:', {
