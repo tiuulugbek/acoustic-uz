@@ -149,7 +149,7 @@ export default function TelegramButton() {
             e.preventDefault();
             handleClick();
           }}
-          className="flex items-center gap-2 rounded-full bg-[hsl(var(--brand-primary))] px-4 py-2.5 shadow-lg transition-all hover:scale-105 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-[hsl(var(--brand-primary))] focus:ring-offset-2 animate-in slide-in-from-bottom-4 fade-in"
+          className="flex items-center gap-2 rounded-full bg-brand-primary px-4 py-2.5 shadow-lg transition-all hover:scale-105 hover:shadow-xl hover:bg-brand-primary/90 focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2 animate-in slide-in-from-bottom-4 fade-in"
           aria-label={locale === 'ru' ? 'Записаться на прием' : 'Qabulga yozilish'}
         >
           <span className="text-sm font-semibold text-white whitespace-nowrap" suppressHydrationWarning>
