@@ -55,7 +55,19 @@ export default function FrequencyTest({
     setCurrentVolume(1.0);
     setHasPlayed(false);
     stopTone();
-  }, [currentFrequency, stopTone]);
+    
+    // ReSound kabi: yangi chastota'ga o'tganda avtomatik ovoz ijro etish
+    const timer = setTimeout(() => {
+      playTone({
+        frequency: currentFrequency,
+        volume: 1.0, // Maksimal volume bilan boshlash
+        // duration yo'q - doim ijro etadi
+      });
+      setHasPlayed(true);
+    }, 300); // 300ms kechikishdan keyin avtomatik ijro etish
+    
+    return () => clearTimeout(timer);
+  }, [currentFrequency, stopTone, playTone]);
 
   const handlePlay = () => {
     if (isPlaying) {
