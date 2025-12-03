@@ -19,8 +19,15 @@ if [ ! -d "apps/admin/dist" ] || [ "$1" == "--rebuild" ]; then
     echo "📦 Installing dependencies..."
     pnpm install --force || true
     
+    # Clean old build
+    echo "🧹 Cleaning old build..."
+    rm -rf apps/admin/dist
+    
     # Build with production environment variables
     echo "🏗️  Building admin panel..."
+    cd apps/admin
+    
+    # Set environment variables explicitly for vite
     export NODE_ENV=production
     export VITE_API_URL=https://api.acoustic.uz/api
     
@@ -28,12 +35,31 @@ if [ ! -d "apps/admin/dist" ] || [ "$1" == "--rebuild" ]; then
     echo "  NODE_ENV=$NODE_ENV"
     echo "  VITE_API_URL=$VITE_API_URL"
     
-    pnpm --filter @acoustic/admin build || {
-        echo "⚠️  Build failed, trying again..."
-        cd apps/admin
+    # Verify environment variable is set
+    if [ -z "$VITE_API_URL" ]; then
+        echo "❌ VITE_API_URL is not set!"
+        exit 1
+    fi
+    
+    pnpm build || {
+        echo "⚠️  Build failed, trying again with explicit env..."
         NODE_ENV=production VITE_API_URL=https://api.acoustic.uz/api pnpm build
-        cd "$PROJECT_DIR"
     }
+    
+    cd "$PROJECT_DIR"
+    
+    # Verify build contains correct API URL
+    echo "🔍 Verifying build..."
+    JS_FILE=$(find apps/admin/dist -name "*.js" -type f | head -1)
+    if [ -n "$JS_FILE" ]; then
+        if grep -q "localhost:3001" "$JS_FILE"; then
+            echo "❌ Build still contains localhost:3001!"
+            echo "💡 This means VITE_API_URL was not used during build"
+            exit 1
+        else
+            echo "✅ Build verified - no localhost:3001 found"
+        fi
+    fi
     
     echo "✅ Admin panel build completed!"
 else
