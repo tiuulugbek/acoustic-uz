@@ -275,17 +275,21 @@ export default function AdminLayout() {
         <Header style={{ background: '#fff', padding: '0 24px', borderBottom: '1px solid #f0f0f0', flexShrink: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '100%' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <h1 style={{ fontSize: '18px', fontWeight: 600, color: '#F07E22', margin: 0 }}>Admin panel</h1>
-              <span style={{ 
-                fontSize: '11px', 
-                color: '#8c8c8c', 
-                backgroundColor: '#f5f5f5',
-                padding: '2px 8px',
-                borderRadius: '4px',
-                fontFamily: 'monospace'
-              }}>
-                v{APP_VERSION}
-              </span>
+              <h1 style={{ fontSize: '18px', fontWeight: 600, color: '#F07E22', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                Admin panel
+                <span style={{ 
+                  fontSize: '11px', 
+                  fontWeight: 600,
+                  color: '#F07E22', 
+                  backgroundColor: '#fff3e0',
+                  padding: '2px 8px',
+                  borderRadius: '4px',
+                  fontFamily: 'monospace',
+                  border: '1px solid #ffcc80'
+                }}>
+                  v{APP_VERSION}
+                </span>
+              </h1>
             </div>
             <button
               type="button"
