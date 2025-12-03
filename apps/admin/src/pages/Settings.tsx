@@ -202,7 +202,7 @@ export default function SettingsPage() {
     // This ensures proper browser redirect as per AmoCRM documentation
     // Cookies are automatically sent with the request
     // This is NOT a JavaScript fetch request - it's a proper browser redirect
-    const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api';
+    const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3001/api' : 'https://api.acoustic.uz/api');
     const authUrl = `${API_BASE}/amocrm/authorize`;
     
     // Debug logging - CRITICAL: This should appear in console BEFORE redirect
@@ -945,7 +945,7 @@ export default function SettingsPage() {
                           Ulanishni tekshirish
                         </Button>
                         <a
-                          href={`${import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api'}/amocrm/authorize`}
+                          href={`${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3001/api' : 'https://api.acoustic.uz/api')}/amocrm/authorize`}
                           style={{ display: 'block', width: '100%' }}
                           onClick={(e) => {
                             console.log('[AmoCRM] Using anchor tag redirect to backend for re-authorization');
