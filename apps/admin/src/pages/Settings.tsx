@@ -838,24 +838,49 @@ export default function SettingsPage() {
                         >
                           Ulanishni tekshirish
                         </Button>
-                        <Button
-                          icon={<LinkOutlined />}
-                          onClick={handleAmoCRMAuthorize}
-                          block
+                        <a
+                          href={`${import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api'}/amocrm/authorize`}
+                          style={{ display: 'block', width: '100%' }}
+                          onClick={(e) => {
+                            console.log('[AmoCRM] Using anchor tag redirect to backend for re-authorization');
+                            // Allow default anchor behavior - browser will navigate directly
+                          }}
                         >
-                          Qayta avtorizatsiya qilish
-                        </Button>
+                          <Button
+                            icon={<LinkOutlined />}
+                            block
+                            style={{ width: '100%' }}
+                          >
+                            Qayta avtorizatsiya qilish
+                          </Button>
+                        </a>
                       </>
                     ) : (
-                      <Button
-                        type="primary"
-                        icon={<LinkOutlined />}
-                        onClick={handleAmoCRMAuthorize}
-                        block
-                        disabled={!form.getFieldValue('amocrmDomain') || !form.getFieldValue('amocrmClientId')}
+                      <a
+                        href={`${import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api'}/amocrm/authorize`}
+                        style={{ display: 'block', width: '100%' }}
+                        onClick={(e) => {
+                          const domain = form.getFieldValue('amocrmDomain');
+                          const clientId = form.getFieldValue('amocrmClientId');
+                          if (!domain || !clientId) {
+                            e.preventDefault();
+                            message.error('Iltimos, Domain va Client ID ni kiriting');
+                            return false;
+                          }
+                          // Allow default anchor behavior - browser will navigate directly
+                          console.log('[AmoCRM] Using anchor tag redirect to backend');
+                        }}
                       >
-                        AmoCRM'ga ulanish
-                      </Button>
+                        <Button
+                          type="primary"
+                          icon={<LinkOutlined />}
+                          block
+                          disabled={!form.getFieldValue('amocrmDomain') || !form.getFieldValue('amocrmClientId')}
+                          style={{ width: '100%' }}
+                        >
+                          AmoCRM'ga ulanish
+                        </Button>
+                      </a>
                     )}
                   </Space>
 
