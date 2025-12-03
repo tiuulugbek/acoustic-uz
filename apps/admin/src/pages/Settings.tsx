@@ -194,32 +194,6 @@ export default function SettingsPage() {
     }
   }, [queryClient]);
 
-  const handleAmoCRMAuthorize = () => {
-    // Backend will redirect directly to AmoCRM OAuth page
-    // This ensures proper browser redirect as per AmoCRM documentation
-    // Cookies are automatically sent with the request
-    // This is NOT a JavaScript fetch request - it's a proper browser redirect
-    const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3001/api' : 'https://api.acoustic.uz/api');
-    const authUrl = `${API_BASE}/amocrm/authorize`;
-    
-    // Debug logging - CRITICAL: This should appear in console BEFORE redirect
-    console.log('========================================');
-    console.log('[AmoCRM] STARTING OAuth redirect');
-    console.log('[AmoCRM] Redirecting to backend:', authUrl);
-    console.log('[AmoCRM] API_BASE:', API_BASE);
-    console.log('[AmoCRM] VITE_API_URL:', import.meta.env.VITE_API_URL);
-    console.log('[AmoCRM] Using window.location.replace');
-    console.log('[AmoCRM] This is NOT a fetch request!');
-    console.log('========================================');
-    
-    // CRITICAL: Use window.location.replace (not href) to ensure proper redirect
-    // This will trigger a full page navigation, not a fetch request
-    // Backend will then redirect to AmoCRM OAuth page with 302 status
-    window.location.replace(authUrl);
-    
-    // Prevent any further execution
-    return false;
-  };
 
 
   const handleCatalogHeroUpload: UploadProps['customRequest'] = async (options) => {
