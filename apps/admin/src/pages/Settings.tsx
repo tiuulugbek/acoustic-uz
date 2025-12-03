@@ -199,10 +199,17 @@ export default function SettingsPage() {
     // Cookies are automatically sent with the request
     // This is NOT a JavaScript fetch request - it's a proper browser redirect
     const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api';
+    const authUrl = `${API_BASE}/amocrm/authorize`;
+    
+    // Debug logging
+    console.log('[AmoCRM] Redirecting to backend:', authUrl);
+    console.log('[AmoCRM] API_BASE:', API_BASE);
+    console.log('[AmoCRM] VITE_API_URL:', import.meta.env.VITE_API_URL);
     
     // Direct browser redirect to backend endpoint
     // Backend will then redirect to AmoCRM OAuth page
-    window.location.href = `${API_BASE}/amocrm/authorize`;
+    // Use window.location.replace to prevent back button issues
+    window.location.replace(authUrl);
   };
 
   const handleTestAmoCRM = async () => {

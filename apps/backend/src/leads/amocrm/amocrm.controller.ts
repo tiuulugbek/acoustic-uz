@@ -25,12 +25,17 @@ export class AmoCRMController {
   @ApiOperation({ summary: 'Redirect to AmoCRM OAuth authorization' })
   @ApiResponse({ status: 302, description: 'Redirect to AmoCRM OAuth page' })
   async getAuthorizationUrl(@Res({ passthrough: false }) res: Response) {
+    console.log('[AmoCRM] Authorization request received');
+    
     // Disable ALL caching for this endpoint - critical for OAuth flow
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
     res.removeHeader('ETag'); // Remove ETag to prevent 304 responses
     res.removeHeader('Last-Modified'); // Remove Last-Modified to prevent 304 responses
+    
+    // IMPORTANT: Set status BEFORE redirect to ensure 302 response
+    res.status(302);
     const settings = await this.settingsService.get();
     
     if (!settings.amocrmDomain || !settings.amocrmClientId) {
