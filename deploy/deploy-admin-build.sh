@@ -10,12 +10,23 @@ echo "🚀 Deploying admin panel build..."
 
 cd "$PROJECT_DIR"
 
-# Check if admin dist exists
-if [ ! -d "apps/admin/dist" ]; then
-    echo "❌ Admin dist directory not found! Building admin panel..."
+# Check if admin dist exists or needs rebuild
+if [ ! -d "apps/admin/dist" ] || [ "$1" == "--rebuild" ]; then
+    echo "🔨 Building admin panel..."
     export PNPM_FORCE=true
+    export NODE_ENV=production
+    export VITE_API_URL=https://api.acoustic.uz/api
+    
+    echo "📋 Environment variables:"
+    echo "  NODE_ENV=$NODE_ENV"
+    echo "  VITE_API_URL=$VITE_API_URL"
+    
     pnpm install --force
     pnpm --filter @acoustic/admin build
+    
+    echo "✅ Admin panel build completed!"
+else
+    echo "✅ Admin dist directory exists, skipping build..."
 fi
 
 # Create admin dist directory if it doesn't exist
