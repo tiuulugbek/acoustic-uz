@@ -14,18 +14,24 @@ cd "$PROJECT_DIR"
 if [ ! -d "apps/admin/dist" ] || [ "$1" == "--rebuild" ]; then
     echo "🔨 Building admin panel..."
     export PNPM_FORCE=true
+    
+    # Install dependencies (without NODE_ENV=production to get devDependencies)
+    echo "📦 Installing dependencies..."
+    pnpm install --force || true
+    
+    # Build with production environment variables
+    echo "🏗️  Building admin panel..."
     export NODE_ENV=production
     export VITE_API_URL=https://api.acoustic.uz/api
     
-    echo "📋 Environment variables:"
+    echo "📋 Build environment variables:"
     echo "  NODE_ENV=$NODE_ENV"
     echo "  VITE_API_URL=$VITE_API_URL"
     
-    pnpm install --force || true
     pnpm --filter @acoustic/admin build || {
-        echo "⚠️  Build failed, trying again without postinstall scripts..."
+        echo "⚠️  Build failed, trying again..."
         cd apps/admin
-        SKIP_POSTINSTALL=true pnpm build || pnpm build
+        NODE_ENV=production VITE_API_URL=https://api.acoustic.uz/api pnpm build
         cd "$PROJECT_DIR"
     }
     
