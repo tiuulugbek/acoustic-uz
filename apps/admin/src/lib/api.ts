@@ -1621,8 +1621,10 @@ export interface AmoCRMTestResponse {
   };
 }
 
-export const getAmoCRMAuthUrl = () =>
-  request<AmoCRMAuthUrlResponse>('/amocrm/authorize');
+// DEPRECATED: Do not use this function. Use window.location.href instead.
+// This function is kept for backward compatibility but should not be used.
+// export const getAmoCRMAuthUrl = () =>
+//   request<AmoCRMAuthUrlResponse>('/amocrm/authorize');
 
 export const testAmoCRMConnection = () =>
   request<AmoCRMTestResponse>('/amocrm/test', {
