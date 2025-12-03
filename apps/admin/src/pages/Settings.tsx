@@ -422,36 +422,49 @@ export default function SettingsPage() {
   // Handle general settings save
   const handleGeneralSettingsSave = async () => {
     try {
-      const values = await form.validateFields(['phonePrimary', 'phoneSecondary', 'email', 'brandPrimary', 'brandAccent', 'telegramBotToken', 'telegramChatId', 'telegramButtonBotToken', 'telegramButtonBotUsername', 'telegramButtonMessage_uz', 'telegramButtonMessage_ru']);
-      console.log('[Settings] Form values:', {
+      const values = await form.validateFields(['phonePrimary', 'phoneSecondary', 'email', 'brandPrimary', 'brandAccent']);
+      const payload: UpdateSettingsPayload = {
+        phonePrimary: values.phonePrimary || undefined,
+        phoneSecondary: values.phoneSecondary || undefined,
+        email: values.email || undefined,
+        brandPrimary: values.brandPrimary || undefined,
+        brandAccent: values.brandAccent || undefined,
+      };
+      await updateMutation.mutateAsync(payload);
+    } catch (error) {
+      console.error('[Settings] Form validation error:', error);
+      message.error('Formani to\'ldirishda xatolik yuz berdi');
+    }
+  };
+
+  // Handle Telegram settings save
+  const handleTelegramSettingsSave = async () => {
+    try {
+      const values = await form.validateFields(['telegramBotToken', 'telegramChatId', 'telegramButtonBotToken', 'telegramButtonBotUsername', 'telegramButtonMessage_uz', 'telegramButtonMessage_ru']);
+      console.log('[Settings] Telegram form values:', {
         telegramButtonBotToken: values.telegramButtonBotToken ? '***' : null,
         telegramButtonBotUsername: values.telegramButtonBotUsername,
         telegramButtonMessage_uz: values.telegramButtonMessage_uz,
         telegramButtonMessage_ru: values.telegramButtonMessage_ru,
       });
       const payload: UpdateSettingsPayload = {
-        phonePrimary: values.phonePrimary || undefined,
-        phoneSecondary: values.phoneSecondary || undefined,
-        email: values.email || undefined,
         telegramBotToken: values.telegramBotToken || undefined,
         telegramChatId: values.telegramChatId || undefined,
         telegramButtonBotToken: values.telegramButtonBotToken || undefined,
         telegramButtonBotUsername: values.telegramButtonBotUsername || undefined,
         telegramButtonMessage_uz: values.telegramButtonMessage_uz || undefined,
         telegramButtonMessage_ru: values.telegramButtonMessage_ru || undefined,
-        brandPrimary: values.brandPrimary || undefined,
-        brandAccent: values.brandAccent || undefined,
       };
-      console.log('[Settings] Payload being sent:', {
+      console.log('[Settings] Telegram payload being sent:', {
         telegramButtonBotToken: payload.telegramButtonBotToken ? '***' : undefined,
         telegramButtonBotUsername: payload.telegramButtonBotUsername,
         telegramButtonMessage_uz: payload.telegramButtonMessage_uz,
         telegramButtonMessage_ru: payload.telegramButtonMessage_ru,
       });
       await updateMutation.mutateAsync(payload);
-      console.log('[Settings] Settings saved successfully');
+      console.log('[Settings] Telegram settings saved successfully');
     } catch (error) {
-      console.error('[Settings] Form validation error:', error);
+      console.error('[Settings] Telegram form validation error:', error);
       message.error('Formani to\'ldirishda xatolik yuz berdi');
     }
   };
@@ -539,69 +552,6 @@ export default function SettingsPage() {
                     <Input type="color" style={{ width: '100%', height: '40px' }} />
                   </Form.Item>
 
-                  <Divider />
-
-                  <h3 style={{ marginBottom: 16 }}>Telegram sozlamalari (Formalar uchun)</h3>
-                  <Form.Item
-                    label="Telegram Bot Token"
-                    name="telegramBotToken"
-                    extra="Saytdagi formalardan kelgan so'rovlar shu botga yuboriladi"
-                  >
-                    <Input.Password placeholder="Bot token" />
-                  </Form.Item>
-
-                  <Form.Item
-                    label="Telegram Chat ID"
-                    name="telegramChatId"
-                    extra="Formalar yuboriladigan chat ID"
-                  >
-                    <Input placeholder="Chat ID" />
-                  </Form.Item>
-
-                  <Divider />
-
-                  <h3 style={{ marginBottom: 16 }}>Telegram Button Bot (AmoCRM uchun)</h3>
-                  <Form.Item
-                    label="Telegram Button Bot Token"
-                    name="telegramButtonBotToken"
-                    extra="Saytdagi Telegram tugmasidan kelgan xabarlar AmoCRM'ga yuboriladi"
-                  >
-                    <Input.Password placeholder="Bot token" />
-                  </Form.Item>
-
-                  <Form.Item
-                    label="Telegram Button Bot Username"
-                    name="telegramButtonBotUsername"
-                    extra="Bot username (masalan: @yourbot yoki yourbot)"
-                  >
-                    <Input placeholder="@yourbot" />
-                  </Form.Item>
-
-                  <Form.Item
-                    label="Telegram Button Xabari (O'zbek)"
-                    name="telegramButtonMessage_uz"
-                    extra="Chat bubble'da ko'rsatiladigan xabar (O'zbek)"
-                  >
-                    <Input.TextArea 
-                      rows={3} 
-                      placeholder="Assalomu alaykum!&#10;Savolingiz bormi?"
-                      showCount
-                      maxLength={200}
-                    />
-                  </Form.Item>
-
-                  <Form.Item
-                    label="Telegram Button Xabari (Rus)"
-                    name="telegramButtonMessage_ru"
-                    extra="Chat bubble'da ko'rsatiladigan xabar (Rus)"
-                  >
-                    <Input.TextArea 
-                      rows={3} 
-                      placeholder="Здравствуйте!&#10;У вас есть вопрос?"
-                      showCount
-                      maxLength={200}
-                    />
-                  </Form.Item>
 
                   <div style={{ marginTop: 24, textAlign: 'right' }}>
                     <Button
@@ -744,6 +694,89 @@ export default function SettingsPage() {
                       type="primary"
                       icon={<SaveOutlined />}
                       onClick={handleImagesSave}
+                      loading={updateMutation.isPending}
+                      size="large"
+                    >
+                      Saqlash
+                    </Button>
+                  </div>
+                </Card>
+              </Form>
+            ),
+          },
+          {
+            key: 'telegram',
+            label: 'Telegram sozlamalari',
+            children: (
+              <Form form={form} layout="vertical">
+                <Card>
+                  <h3 style={{ marginBottom: 16 }}>Telegram sozlamalari (Formalar uchun)</h3>
+                  <Form.Item
+                    label="Telegram Bot Token"
+                    name="telegramBotToken"
+                    extra="Saytdagi formalardan kelgan so'rovlar shu botga yuboriladi"
+                  >
+                    <Input.Password placeholder="Bot token" />
+                  </Form.Item>
+
+                  <Form.Item
+                    label="Telegram Chat ID"
+                    name="telegramChatId"
+                    extra="Formalar yuboriladigan chat ID"
+                  >
+                    <Input placeholder="Chat ID" />
+                  </Form.Item>
+
+                  <Divider />
+
+                  <h3 style={{ marginBottom: 16 }}>Telegram Button Bot (AmoCRM uchun)</h3>
+                  <Form.Item
+                    label="Telegram Button Bot Token"
+                    name="telegramButtonBotToken"
+                    extra="Saytdagi Telegram tugmasidan kelgan xabarlar AmoCRM'ga yuboriladi"
+                  >
+                    <Input.Password placeholder="Bot token" />
+                  </Form.Item>
+
+                  <Form.Item
+                    label="Telegram Button Bot Username"
+                    name="telegramButtonBotUsername"
+                    extra="Bot username (masalan: @yourbot yoki yourbot)"
+                  >
+                    <Input placeholder="@yourbot" />
+                  </Form.Item>
+
+                  <Form.Item
+                    label="Telegram Button Xabari (O'zbek)"
+                    name="telegramButtonMessage_uz"
+                    extra="Chat bubble'da ko'rsatiladigan xabar (O'zbek)"
+                  >
+                    <Input.TextArea 
+                      rows={3} 
+                      placeholder="Assalomu alaykum!&#10;Savolingiz bormi?"
+                      showCount
+                      maxLength={200}
+                    />
+                  </Form.Item>
+
+                  <Form.Item
+                    label="Telegram Button Xabari (Rus)"
+                    name="telegramButtonMessage_ru"
+                    extra="Chat bubble'da ko'rsatiladigan xabar (Rus)"
+                  >
+                    <Input.TextArea 
+                      rows={3} 
+                      placeholder="Здравствуйте!&#10;У вас есть вопрос?"
+                      showCount
+                      maxLength={200}
+                    />
+                  </Form.Item>
+
+                  <div style={{ marginTop: 24, textAlign: 'right' }}>
+                    <Button
+                      type="primary"
+                      icon={<SaveOutlined />}
+                      onClick={handleTelegramSettingsSave}
                       loading={updateMutation.isPending}
                       size="large"
                     >
