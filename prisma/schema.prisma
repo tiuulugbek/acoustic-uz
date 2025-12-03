@@ -73,6 +73,8 @@ model Setting {
   telegramChatId     String?  // Chat ID for forms bot
   telegramButtonBotToken String?  // Bot token for Telegram button (sends to AmoCRM)
   telegramButtonBotUsername String?  // Bot username for Telegram button (e.g., @yourbot)
+  telegramButtonMessage_uz String?  // Message shown in chat bubble (Uzbek)
+  telegramButtonMessage_ru String?  // Message shown in chat bubble (Russian)
   brandPrimary       String?  @default("#F07E22")
   brandAccent        String?  @default("#3F3091")
   featureFlags       Json? // see §11

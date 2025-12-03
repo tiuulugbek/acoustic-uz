@@ -664,6 +664,8 @@ export interface SettingsResponse {
   telegramChatId?: string | null;
   telegramButtonBotToken?: string | null;
   telegramButtonBotUsername?: string | null;
+  telegramButtonMessage_uz?: string | null;
+  telegramButtonMessage_ru?: string | null;
   brandPrimary?: string | null;
   brandAccent?: string | null;
   featureFlags?: unknown;
