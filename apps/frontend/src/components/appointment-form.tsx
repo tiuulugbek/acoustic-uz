@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Phone, MapPin, CheckCircle, User } from 'lucide-react';
-import { getBranches } from '@/lib/api';
+import { getBranches, createLead } from '@/lib/api';
 import { getBilingualText } from '@/lib/locale';
 import type { BranchResponse } from '@/lib/api';
 
@@ -101,21 +101,17 @@ export default function AppointmentForm({ locale, doctorId }: AppointmentFormPro
     setIsSubmitting(true);
 
     try {
-      // TODO: Integrate with AmoCRM API
-      // For now, just simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // In production, this would be:
-      // await fetch('/api/appointments', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({
-      //     fullName,
-      //     phone: phoneDigits,
-      //     branchId: selectedBranch,
-      //     source: 'article',
-      //   }),
-      // });
+      const selectedBranchData = branches.find(b => b.id === selectedBranch);
+      const branchName = selectedBranchData 
+        ? getBilingualText(selectedBranchData.name_uz, selectedBranchData.name_ru, locale)
+        : '';
+
+      await createLead({
+        name: fullName.trim(),
+        phone: phoneDigits,
+        source: `appointment_form${doctorId ? `_doctor_${doctorId}` : ''}_branch_${selectedBranch}`,
+        message: branchName ? `${locale === 'ru' ? 'Филиал' : 'Filial'}: ${branchName}` : undefined,
+      }, locale);
 
       setIsSubmitted(true);
       setFullName('');

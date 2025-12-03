@@ -1530,6 +1530,8 @@ export interface SettingsDto {
   email?: string | null;
   telegramBotToken?: string | null;
   telegramChatId?: string | null;
+  telegramButtonBotToken?: string | null;
+  telegramButtonBotUsername?: string | null;
   brandPrimary?: string | null;
   brandAccent?: string | null;
   featureFlags?: unknown;
@@ -1574,6 +1576,8 @@ export type UpdateSettingsPayload = {
   email?: string;
   telegramBotToken?: string;
   telegramChatId?: string;
+  telegramButtonBotToken?: string;
+  telegramButtonBotUsername?: string;
   brandPrimary?: string;
   brandAccent?: string;
   featureFlags?: unknown;

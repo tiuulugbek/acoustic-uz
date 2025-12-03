@@ -47,8 +47,10 @@ export class SettingsService {
     phonePrimary?: string;
     phoneSecondary?: string;
     email?: string;
-    telegramBotToken?: string;
-    telegramChatId?: string;
+    telegramBotToken?: string; // Bot token for forms (sends to Telegram)
+    telegramChatId?: string; // Chat ID for forms bot
+    telegramButtonBotToken?: string; // Bot token for Telegram button (sends to AmoCRM)
+    telegramButtonBotUsername?: string; // Bot username for Telegram button (e.g., @yourbot)
     brandPrimary?: string;
     brandAccent?: string;
     featureFlags?: unknown;
@@ -83,6 +85,8 @@ export class SettingsService {
         email,
         telegramBotToken,
         telegramChatId,
+        telegramButtonBotToken,
+        telegramButtonBotUsername,
         brandPrimary,
         brandAccent,
         amocrmDomain,
@@ -126,6 +130,8 @@ export class SettingsService {
         ...(email !== undefined ? { email } : {}),
         ...(telegramBotToken !== undefined ? { telegramBotToken } : {}),
         ...(telegramChatId !== undefined ? { telegramChatId } : {}),
+        ...(telegramButtonBotToken !== undefined ? { telegramButtonBotToken } : {}),
+        ...(telegramButtonBotUsername !== undefined ? { telegramButtonBotUsername } : {}),
         ...(brandPrimary !== undefined ? { brandPrimary } : {}),
         ...(brandAccent !== undefined ? { brandAccent } : {}),
         ...(amocrmDomain !== undefined ? { amocrmDomain } : {}),

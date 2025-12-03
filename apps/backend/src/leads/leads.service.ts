@@ -31,14 +31,17 @@ export class LeadsService {
       data: validated,
     });
 
-    // Send to Telegram
-    try {
-      await this.telegramService.sendLead(lead);
-    } catch (error) {
-      console.error('Failed to send lead to Telegram:', error);
+    // Send to Telegram forms bot (only for non-telegram-button sources)
+    // Telegram button leads go directly to AmoCRM, not to Telegram forms bot
+    if (lead.source !== 'telegram_button') {
+      try {
+        await this.telegramService.sendLead(lead);
+      } catch (error) {
+        console.error('Failed to send lead to Telegram:', error);
+      }
     }
 
-    // Send to AmoCRM
+    // Send to AmoCRM (for all leads)
     try {
       await this.amoCrmService.sendLead(lead);
     } catch (error) {

@@ -69,8 +69,10 @@ model Setting {
   phonePrimary       String?  @default("1385")
   phoneSecondary     String?  @default("+998 71 202 14 41")
   email              String?
-  telegramBotToken   String?
-  telegramChatId     String?
+  telegramBotToken   String?  // Bot token for forms (sends to Telegram)
+  telegramChatId     String?  // Chat ID for forms bot
+  telegramButtonBotToken String?  // Bot token for Telegram button (sends to AmoCRM)
+  telegramButtonBotUsername String?  // Bot username for Telegram button (e.g., @yourbot)
   brandPrimary       String?  @default("#F07E22")
   brandAccent        String?  @default("#3F3091")
   featureFlags       Json? // see §11

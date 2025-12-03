@@ -96,6 +96,8 @@ export default function SettingsPage() {
         email: settings.email || '',
         telegramBotToken: settings.telegramBotToken || '',
         telegramChatId: settings.telegramChatId || '',
+        telegramButtonBotToken: settings.telegramButtonBotToken || '',
+        telegramButtonBotUsername: settings.telegramButtonBotUsername || '',
         brandPrimary: settings.brandPrimary || '#F07E22',
         brandAccent: settings.brandAccent || '#3F3091',
         catalogHeroImageId: settings.catalogHeroImageId || null,
@@ -313,6 +315,8 @@ export default function SettingsPage() {
         email: values.email || undefined,
         telegramBotToken: values.telegramBotToken || undefined,
         telegramChatId: values.telegramChatId || undefined,
+        telegramButtonBotToken: values.telegramButtonBotToken || undefined,
+        telegramButtonBotUsername: values.telegramButtonBotUsername || undefined,
         brandPrimary: values.brandPrimary || undefined,
         brandAccent: values.brandAccent || undefined,
         catalogHeroImageId: values.catalogHeroImageId || null,
@@ -414,13 +418,15 @@ export default function SettingsPage() {
   // Handle general settings save
   const handleGeneralSettingsSave = async () => {
     try {
-      const values = await form.validateFields(['phonePrimary', 'phoneSecondary', 'email', 'brandPrimary', 'brandAccent', 'telegramBotToken', 'telegramChatId']);
+      const values = await form.validateFields(['phonePrimary', 'phoneSecondary', 'email', 'brandPrimary', 'brandAccent', 'telegramBotToken', 'telegramChatId', 'telegramButtonBotToken', 'telegramButtonBotUsername']);
       const payload: UpdateSettingsPayload = {
         phonePrimary: values.phonePrimary || undefined,
         phoneSecondary: values.phoneSecondary || undefined,
         email: values.email || undefined,
         telegramBotToken: values.telegramBotToken || undefined,
         telegramChatId: values.telegramChatId || undefined,
+        telegramButtonBotToken: values.telegramButtonBotToken || undefined,
+        telegramButtonBotUsername: values.telegramButtonBotUsername || undefined,
         brandPrimary: values.brandPrimary || undefined,
         brandAccent: values.brandAccent || undefined,
       };
@@ -515,10 +521,11 @@ export default function SettingsPage() {
 
                   <Divider />
 
-                  <h3 style={{ marginBottom: 16 }}>Telegram sozlamalari</h3>
+                  <h3 style={{ marginBottom: 16 }}>Telegram sozlamalari (Formalar uchun)</h3>
                   <Form.Item
                     label="Telegram Bot Token"
                     name="telegramBotToken"
+                    extra="Saytdagi formalardan kelgan so'rovlar shu botga yuboriladi"
                   >
                     <Input.Password placeholder="Bot token" />
                   </Form.Item>
@@ -526,8 +533,28 @@ export default function SettingsPage() {
                   <Form.Item
                     label="Telegram Chat ID"
                     name="telegramChatId"
+                    extra="Formalar yuboriladigan chat ID"
                   >
                     <Input placeholder="Chat ID" />
+                  </Form.Item>
+
+                  <Divider />
+
+                  <h3 style={{ marginBottom: 16 }}>Telegram Button Bot (AmoCRM uchun)</h3>
+                  <Form.Item
+                    label="Telegram Button Bot Token"
+                    name="telegramButtonBotToken"
+                    extra="Saytdagi Telegram tugmasidan kelgan xabarlar AmoCRM'ga yuboriladi"
+                  >
+                    <Input.Password placeholder="Bot token" />
+                  </Form.Item>
+
+                  <Form.Item
+                    label="Telegram Button Bot Username"
+                    name="telegramButtonBotUsername"
+                    extra="Bot username (masalan: @yourbot yoki yourbot)"
+                  >
+                    <Input placeholder="@yourbot" />
                   </Form.Item>
 
                   <div style={{ marginTop: 24, textAlign: 'right' }}>

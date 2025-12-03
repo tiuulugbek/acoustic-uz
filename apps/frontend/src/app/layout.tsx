@@ -4,6 +4,7 @@ import './globals.css';
 import { Providers } from './providers';
 import SiteHeader from '@/components/site-header';
 import SiteFooter from '@/components/site-footer';
+import TelegramButton from '@/components/telegram-button';
 import { detectLocale } from '@/lib/locale-server';
 import { getSettings } from '@/lib/api-server';
 import type { SettingsResponse } from '@/lib/api';
@@ -110,6 +111,7 @@ export default async function RootLayout({
             <SiteHeader initialSettings={settings} />
             <main className="flex-1">{children}</main>
             <SiteFooter />
+            <TelegramButton />
           </div>
         </Providers>
       </body>

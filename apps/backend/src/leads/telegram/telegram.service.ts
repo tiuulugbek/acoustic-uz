@@ -5,13 +5,18 @@ import { SettingsService } from '../../settings/settings.service';
 
 @Injectable()
 export class TelegramService {
-  private bot: TelegramBot | null = null;
+  private formsBot: TelegramBot | null = null; // Bot for forms (sends to Telegram)
+  private buttonBot: TelegramBot | null = null; // Bot for button (receives messages, sends to AmoCRM)
 
   constructor(
     private configService: ConfigService,
     private settingsService: SettingsService
   ) {}
 
+  /**
+   * Send lead to Telegram (forms bot)
+   * Used for website forms - sends to Telegram chat
+   */
   async sendLead(lead: {
     name: string;
     phone: string;
@@ -27,8 +32,8 @@ export class TelegramService {
         return false;
       }
 
-      if (!this.bot) {
-        this.bot = new TelegramBot(settings.telegramBotToken);
+      if (!this.formsBot) {
+        this.formsBot = new TelegramBot(settings.telegramBotToken);
       }
 
       const message = `
@@ -41,7 +46,7 @@ ${lead.message ? `💬 *Xabar:* ${lead.message}\n` : ''}
 ${lead.productId ? `🛍️ *Mahsulot ID:* ${lead.productId}\n` : ''}
       `.trim();
 
-      await this.bot.sendMessage(settings.telegramChatId, message, {
+      await this.formsBot.sendMessage(settings.telegramChatId, message, {
         parse_mode: 'Markdown',
       });
 
@@ -50,6 +55,32 @@ ${lead.productId ? `🛍️ *Mahsulot ID:* ${lead.productId}\n` : ''}
       console.error('Telegram send error:', error);
       return false;
     }
+  }
+
+  /**
+   * Get button bot instance (for webhook)
+   * Used to receive messages from Telegram button bot
+   */
+  async getButtonBot(): Promise<TelegramBot | null> {
+    const settings = await this.settingsService.get();
+
+    if (!settings.telegramButtonBotToken) {
+      return null;
+    }
+
+    if (!this.buttonBot) {
+      this.buttonBot = new TelegramBot(settings.telegramButtonBotToken);
+    }
+
+    return this.buttonBot;
+  }
+
+  /**
+   * Get button bot username
+   */
+  async getButtonBotUsername(): Promise<string | null> {
+    const settings = await this.settingsService.get();
+    return settings.telegramButtonBotUsername || null;
   }
 }
 

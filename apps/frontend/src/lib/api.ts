@@ -662,6 +662,8 @@ export interface SettingsResponse {
   email?: string | null;
   telegramBotToken?: string | null;
   telegramChatId?: string | null;
+  telegramButtonBotToken?: string | null;
+  telegramButtonBotUsername?: string | null;
   brandPrimary?: string | null;
   brandAccent?: string | null;
   featureFlags?: unknown;
@@ -772,4 +774,44 @@ export const search = (query: string, locale?: string): Promise<SearchResponse> 
   const params = new URLSearchParams();
   params.append('q', query);
   return fetchJson<SearchResponse>(`/search?${params.toString()}`, locale);
+};
+
+export interface CreateLeadRequest {
+  name: string;
+  phone: string;
+  email?: string | null;
+  source?: string;
+  message?: string;
+  productId?: string | null;
+}
+
+export interface LeadResponse {
+  id: string;
+  name: string;
+  phone: string;
+  email?: string | null;
+  source?: string | null;
+  message?: string | null;
+  productId?: string | null;
+  status?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const createLead = async (data: CreateLeadRequest, locale?: string): Promise<LeadResponse> => {
+  const response = await fetch(`${API_BASE}/leads`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(locale ? { 'X-Locale': locale } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new ApiFetchError(response.status, errorText || 'Failed to create lead');
+  }
+
+  return response.json();
 };
