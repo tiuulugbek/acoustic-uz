@@ -25,7 +25,6 @@ import {
   updateSettings,
   getMedia,
   uploadMedia,
-  getAmoCRMAuthUrl,
   testAmoCRMConnection,
   getBrands,
   type SettingsDto,
@@ -194,20 +193,16 @@ export default function SettingsPage() {
     }
   }, [queryClient]);
 
-  const handleAmoCRMAuthorize = async () => {
-    try {
-      // Backend will redirect directly to AmoCRM OAuth page
-      // This ensures proper browser redirect as per AmoCRM documentation
-      // Cookies are automatically sent with the request
-      const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api';
-      
-      // Redirect to backend endpoint which will handle the redirect to AmoCRM
-      // This is a proper browser redirect, not a JavaScript fetch request
-      window.location.href = `${API_BASE}/amocrm/authorize`;
-    } catch (error) {
-      const apiError = error as ApiError;
-      message.error(apiError.message || 'Avtorizatsiya URL olishda xatolik');
-    }
+  const handleAmoCRMAuthorize = () => {
+    // Backend will redirect directly to AmoCRM OAuth page
+    // This ensures proper browser redirect as per AmoCRM documentation
+    // Cookies are automatically sent with the request
+    // This is NOT a JavaScript fetch request - it's a proper browser redirect
+    const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api';
+    
+    // Direct browser redirect to backend endpoint
+    // Backend will then redirect to AmoCRM OAuth page
+    window.location.href = `${API_BASE}/amocrm/authorize`;
   };
 
   const handleTestAmoCRM = async () => {
