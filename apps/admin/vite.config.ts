@@ -37,8 +37,10 @@ export default defineConfig({
   plugins: [react()],
   define: {
     // Use string replacement to ensure version is injected correctly
-    __APP_VERSION__: JSON.stringify(version),
-    __BUILD_TIME__: JSON.stringify(buildTime),
+    // Important: Use globalThis to avoid minification issues
+    'globalThis.__APP_VERSION__': JSON.stringify(version),
+    '__APP_VERSION__': JSON.stringify(version),
+    '__BUILD_TIME__': JSON.stringify(buildTime),
     // Force VITE_API_URL to production API URL during build
     'import.meta.env.VITE_API_URL': JSON.stringify(
       process.env.VITE_API_URL || 'https://api.acoustic.uz/api'

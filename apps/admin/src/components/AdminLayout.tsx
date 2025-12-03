@@ -23,8 +23,17 @@ import { useEffect, useState } from 'react';
 const { Header, Sider, Content, Footer } = Layout;
 
 // Get version and build time from Vite define
-const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.0';
+// Try multiple ways to get version (for compatibility)
+const APP_VERSION = (typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 
+                     (typeof globalThis !== 'undefined' && globalThis.__APP_VERSION__ ? globalThis.__APP_VERSION__ : 
+                      '1.0.0'));
 const BUILD_TIME = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : new Date().toISOString();
+
+// Debug: Log version to console
+if (typeof window !== 'undefined') {
+  console.log('[AdminLayout] APP_VERSION:', APP_VERSION);
+  console.log('[AdminLayout] BUILD_TIME:', BUILD_TIME);
+}
 
 const menuItems: MenuProps['items'] = [
   {
