@@ -268,8 +268,8 @@ export default function AdminLayout() {
           />
         </div>
       </Sider>
-      <Layout style={{ marginLeft: 220 }}>
-        <Header style={{ background: '#fff', padding: '0 24px', borderBottom: '1px solid #f0f0f0' }}>
+      <Layout style={{ marginLeft: 220, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <Header style={{ background: '#fff', padding: '0 24px', borderBottom: '1px solid #f0f0f0', flexShrink: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '100%' }}>
             <h1 style={{ fontSize: '18px', fontWeight: 600, color: '#F07E22', margin: 0 }}>Admin panel</h1>
             <button
@@ -291,7 +291,7 @@ export default function AdminLayout() {
             </button>
           </div>
         </Header>
-        <Content style={{ margin: '24px', padding: '24px', background: '#fff', minHeight: 'calc(100vh - 112px)' }}>
+        <Content style={{ margin: '24px', padding: '24px', background: '#fff', flex: 1, overflow: 'auto' }}>
           <Outlet />
         </Content>
         <Footer style={{ 
@@ -300,14 +300,15 @@ export default function AdminLayout() {
           borderTop: '1px solid #f0f0f0',
           padding: '12px 24px',
           fontSize: '12px',
-          color: '#8c8c8c'
+          color: '#8c8c8c',
+          flexShrink: 0
         }}>
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
             <span>Admin Panel</span>
             <span style={{ color: '#d9d9d9' }}>•</span>
-            <span>v{APP_VERSION}</span>
+            <span style={{ fontWeight: 500 }}>v{APP_VERSION}</span>
             <span style={{ color: '#d9d9d9' }}>•</span>
-            <span title={BUILD_TIME}>
+            <span title={BUILD_TIME} style={{ fontFamily: 'monospace' }}>
               {new Date(BUILD_TIME).toLocaleDateString('uz-UZ', { 
                 year: 'numeric', 
                 month: '2-digit', 
