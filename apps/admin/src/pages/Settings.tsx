@@ -202,22 +202,12 @@ export default function SettingsPage() {
 
   // Check URL params for OAuth callback results
   useEffect(() => {
+    // Handle URL parameters if needed (for future features)
     const params = new URLSearchParams(window.location.search);
     const success = params.get('success');
     const error = params.get('error');
     
-    if (success === 'amocrm_connected') {
-      message.success('AmoCRM integratsiyasi muvaffaqiyatli ulandi!');
-      queryClient.invalidateQueries({ queryKey: ['settings'] });
-      // Clean URL
-      window.history.replaceState({}, '', window.location.pathname);
-    } else if (error) {
-      const errorMessages: Record<string, string> = {
-        no_code: 'AmoCRM avtorizatsiya kodi topilmadi',
-        not_configured: 'AmoCRM sozlamalari to\'liq emas',
-        oauth_failed: 'AmoCRM avtorizatsiyasi muvaffaqiyatsiz',
-      };
-      message.error(errorMessages[error] || 'Xatolik yuz berdi');
+    if (success || error) {
       // Clean URL
       window.history.replaceState({}, '', window.location.pathname);
     }
