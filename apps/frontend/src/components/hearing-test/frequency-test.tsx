@@ -12,6 +12,7 @@ interface FrequencyTestProps {
   onBack: () => void;
   playTone: (options: { frequency: number; volume: number; duration?: number; onEnd?: () => void }) => void;
   stopTone: () => void;
+  updateVolume: (volume: number) => void;
   isPlaying: boolean;
   volume: number;
   isSubmitting?: boolean;
@@ -35,7 +36,6 @@ export default function FrequencyTest({
   const [results, setResults] = useState<Record<string, number>>({}); // Store volume levels instead of boolean
   const [currentVolume, setCurrentVolume] = useState(1.0); // Start at max volume
   const [hasPlayed, setHasPlayed] = useState(false);
-  const gainNodeRef = useRef<GainNode | null>(null);
 
   const currentFrequency = frequencies[currentIndex];
   const isLast = currentIndex === frequencies.length - 1;
@@ -89,18 +89,8 @@ export default function FrequencyTest({
     setCurrentVolume(clampedVolume);
     
     // ReSound kabi: agar ovoz ijro etilayotgan bo'lsa, volume'ni real-time o'zgartirish
-    if (isPlaying && gainNodeRef.current) {
-      const audioContext = gainNodeRef.current.context;
-      const fadeTime = 0.1; // 100ms smooth transition
-      gainNodeRef.current.gain.cancelScheduledValues(audioContext.currentTime);
-      gainNodeRef.current.gain.setValueAtTime(
-        gainNodeRef.current.gain.value,
-        audioContext.currentTime
-      );
-      gainNodeRef.current.gain.linearRampToValueAtTime(
-        clampedVolume,
-        audioContext.currentTime + fadeTime
-      );
+    if (isPlaying) {
+      updateVolume(clampedVolume);
     }
   };
 

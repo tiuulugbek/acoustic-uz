@@ -108,6 +108,29 @@ export function useAudioTest() {
     [initAudioContext, stopTone]
   );
 
+  // Update volume in real-time (ReSound kabi)
+  const updateVolume = useCallback((newVolume: number) => {
+    try {
+      if (gainNodeRef.current && isPlaying) {
+        const audioContext = gainNodeRef.current.context;
+        const fadeTime = 0.1; // 100ms smooth transition
+        const clampedVolume = Math.max(0, Math.min(1, newVolume));
+        
+        gainNodeRef.current.gain.cancelScheduledValues(audioContext.currentTime);
+        gainNodeRef.current.gain.setValueAtTime(
+          gainNodeRef.current.gain.value,
+          audioContext.currentTime
+        );
+        gainNodeRef.current.gain.linearRampToValueAtTime(
+          clampedVolume,
+          audioContext.currentTime + fadeTime
+        );
+      }
+    } catch (error) {
+      console.error('Error updating volume:', error);
+    }
+  }, [isPlaying]);
+
   // Stop current tone
   const stopTone = useCallback(() => {
     try {
@@ -139,6 +162,7 @@ export function useAudioTest() {
   return {
     playTone,
     stopTone,
+    updateVolume,
     cleanup,
     isPlaying,
     currentFrequency,
