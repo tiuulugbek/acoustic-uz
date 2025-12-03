@@ -20,7 +20,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getCurrentUser, logout, ApiError, UserDto } from '../lib/api';
 import { useEffect, useState } from 'react';
 
-const { Header, Sider, Content } = Layout;
+const { Header, Sider, Content, Footer } = Layout;
+
+// Get version and build time from Vite define
+declare const __APP_VERSION__: string;
+declare const __BUILD_TIME__: string;
+
+const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.0';
+const BUILD_TIME = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : new Date().toISOString();
 
 const menuItems: MenuProps['items'] = [
   {
@@ -287,9 +294,33 @@ export default function AdminLayout() {
             </button>
           </div>
         </Header>
-        <Content style={{ margin: '24px', padding: '24px', background: '#fff', minHeight: 'calc(100vh - 64px)' }}>
+        <Content style={{ margin: '24px', padding: '24px', background: '#fff', minHeight: 'calc(100vh - 112px)' }}>
           <Outlet />
         </Content>
+        <Footer style={{ 
+          textAlign: 'center', 
+          background: '#fff', 
+          borderTop: '1px solid #f0f0f0',
+          padding: '12px 24px',
+          fontSize: '12px',
+          color: '#8c8c8c'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+            <span>Admin Panel</span>
+            <span style={{ color: '#d9d9d9' }}>•</span>
+            <span>v{APP_VERSION}</span>
+            <span style={{ color: '#d9d9d9' }}>•</span>
+            <span title={BUILD_TIME}>
+              {new Date(BUILD_TIME).toLocaleDateString('uz-UZ', { 
+                year: 'numeric', 
+                month: '2-digit', 
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </span>
+          </div>
+        </Footer>
       </Layout>
     </Layout>
   );
