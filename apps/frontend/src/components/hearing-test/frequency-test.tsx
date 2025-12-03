@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Play, Square, Minus, Plus, Volume2 } from 'lucide-react';
+import { Minus, Plus } from 'lucide-react';
 import type { Locale } from '@/lib/locale';
 
 interface FrequencyTestProps {
@@ -34,8 +34,7 @@ export default function FrequencyTest({
   const isRu = locale === 'ru';
   const [currentIndex, setCurrentIndex] = useState(0);
   const [results, setResults] = useState<Record<string, number>>({}); // Store volume levels instead of boolean
-  const [currentVolume, setCurrentVolume] = useState(1.0); // Start at max volume
-  const [hasPlayed, setHasPlayed] = useState(false);
+  const [currentVolume, setCurrentVolume] = useState(0.0); // Start at 0% volume
 
   const currentFrequency = frequencies[currentIndex];
   const isLast = currentIndex === frequencies.length - 1;
@@ -45,52 +44,36 @@ export default function FrequencyTest({
     // Reset when component mounts or ear changes
     setCurrentIndex(0);
     setResults({});
-    setCurrentVolume(1.0);
-    setHasPlayed(false);
+    setCurrentVolume(0.0);
     stopTone();
   }, [ear, stopTone]);
 
   useEffect(() => {
     // Reset volume when frequency changes
-    setCurrentVolume(1.0);
-    setHasPlayed(false);
+    setCurrentVolume(0.0);
     stopTone();
-    
-    // ReSound kabi: yangi chastota'ga o'tganda avtomatik ovoz ijro etish
-    const timer = setTimeout(() => {
-      playTone({
-        frequency: currentFrequency,
-        volume: 1.0, // Maksimal volume bilan boshlash
-        // duration yo'q - doim ijro etadi
-      });
-      setHasPlayed(true);
-    }, 300); // 300ms kechikishdan keyin avtomatik ijro etish
-    
-    return () => clearTimeout(timer);
-  }, [currentFrequency, stopTone, playTone]);
-
-  const handlePlay = () => {
-    if (isPlaying) {
-      stopTone();
-      setHasPlayed(false);
-    } else {
-      // ReSound kabi: doim ijro etish (duration yo'q)
-      playTone({
-        frequency: currentFrequency,
-        volume: currentVolume,
-        // duration yo'q - doim ijro etadi
-      });
-      setHasPlayed(true);
-    }
-  };
+  }, [currentFrequency, stopTone]);
 
   const handleVolumeChange = (newVolume: number) => {
     const clampedVolume = Math.max(0, Math.min(1, newVolume));
     setCurrentVolume(clampedVolume);
     
-    // ReSound kabi: agar ovoz ijro etilayotgan bo'lsa, volume'ni real-time o'zgartirish
-    if (isPlaying) {
-      updateVolume(clampedVolume);
+    // ReSound kabi: slider'ni surganda real-time ovoz ijro etish
+    if (clampedVolume > 0) {
+      // Agar ovoz ijro etilayotgan bo'lsa, volume'ni yangilash
+      if (isPlaying && currentFrequency === frequencies[currentIndex]) {
+        updateVolume(clampedVolume);
+      } else {
+        // Yangi ovozni boshlash
+        playTone({
+          frequency: currentFrequency,
+          volume: clampedVolume,
+          // duration yo'q - doim ijro etadi
+        });
+      }
+    } else {
+      // Volume 0 bo'lsa, ovozni to'xtatish
+      stopTone();
     }
   };
 
@@ -101,7 +84,6 @@ export default function FrequencyTest({
       [currentFrequency.toString()]: currentVolume, // Store volume level (0-1)
     };
     setResults(newResults);
-    setHasPlayed(false);
     stopTone();
 
     if (isLast) {
@@ -113,7 +95,7 @@ export default function FrequencyTest({
       // Move to next frequency
       setTimeout(() => {
         setCurrentIndex(currentIndex + 1);
-        setCurrentVolume(1.0);
+        setCurrentVolume(0.0);
       }, 300);
     }
   };
@@ -208,24 +190,6 @@ export default function FrequencyTest({
           </button>
         </div>
 
-        {/* Play Button */}
-        <div className="flex justify-center py-6">
-          <button
-            onClick={isPlaying ? stopTone : handlePlay}
-            disabled={isSubmitting}
-            className={`w-16 h-16 rounded-full flex items-center justify-center text-white transition-all transform ${
-              isPlaying
-                ? 'bg-red-500 hover:bg-red-600 scale-105'
-                : 'bg-gray-800 hover:bg-gray-900 hover:scale-105'
-            } shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100`}
-          >
-            {isPlaying ? (
-              <Square className="w-8 h-8" />
-            ) : (
-              <Play className="w-8 h-8 ml-1" />
-            )}
-          </button>
-        </div>
       </div>
 
       {/* Navigation */}
@@ -239,7 +203,7 @@ export default function FrequencyTest({
         </button>
         <button
           onClick={handleContinue}
-          disabled={isSubmitting || !hasPlayed}
+          disabled={isSubmitting}
           className="px-10 py-3 bg-brand-primary text-white rounded-xl font-bold text-lg hover:bg-brand-primary/90 transition-all transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
         >
           {isRu 
