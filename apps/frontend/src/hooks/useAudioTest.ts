@@ -24,6 +24,25 @@ export function useAudioTest() {
     return audioContextRef.current;
   }, []);
 
+  // Stop current tone (must be defined before playTone to avoid circular dependency)
+  const stopTone = useCallback(() => {
+    try {
+      if (oscillatorRef.current) {
+        oscillatorRef.current.stop();
+        oscillatorRef.current.disconnect();
+        oscillatorRef.current = null;
+      }
+      if (gainNodeRef.current) {
+        gainNodeRef.current.disconnect();
+        gainNodeRef.current = null;
+      }
+      setIsPlaying(false);
+      setCurrentFrequency(null);
+    } catch (error) {
+      console.error('Error stopping tone:', error);
+    }
+  }, []);
+
   // Generate and play tone
   const playTone = useCallback(
     ({ frequency, volume, duration, onEnd }: AudioTestOptions) => {
@@ -130,25 +149,6 @@ export function useAudioTest() {
       console.error('Error updating volume:', error);
     }
   }, [isPlaying]);
-
-  // Stop current tone
-  const stopTone = useCallback(() => {
-    try {
-      if (oscillatorRef.current) {
-        oscillatorRef.current.stop();
-        oscillatorRef.current.disconnect();
-        oscillatorRef.current = null;
-      }
-      if (gainNodeRef.current) {
-        gainNodeRef.current.disconnect();
-        gainNodeRef.current = null;
-      }
-      setIsPlaying(false);
-      setCurrentFrequency(null);
-    } catch (error) {
-      console.error('Error stopping tone:', error);
-    }
-  }, []);
 
   // Cleanup on unmount
   const cleanup = useCallback(() => {
