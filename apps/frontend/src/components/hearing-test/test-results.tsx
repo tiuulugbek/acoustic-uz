@@ -51,12 +51,12 @@ export default function TestResults({ locale, result, onContact, onRestart }: Te
   };
 
   return (
-    <div className="space-y-8">
-      <div className="text-center">
-        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+    <div className="space-y-10 max-w-3xl mx-auto">
+      <div className="text-center space-y-3">
+        <h2 className="text-4xl md:text-5xl font-bold text-gray-900">
           {isRu ? 'Результаты теста' : 'Test natijalari'}
         </h2>
-        <p className="text-gray-600">
+        <p className="text-xl text-gray-600">
           {isRu
             ? 'Этот тест не заменяет профессиональную диагностику'
             : 'Bu test professional diagnostikani almashtirmaydi'}
@@ -64,71 +64,71 @@ export default function TestResults({ locale, result, onContact, onRestart }: Te
       </div>
 
       {/* Overall Score */}
-      <div className="max-w-md mx-auto">
-        <div className="bg-gradient-to-br from-brand-primary/10 to-brand-primary/5 rounded-xl p-6 text-center">
-          <p className="text-sm text-gray-600 mb-2">{isRu ? 'Общий результат' : 'Umumiy natija'}</p>
-          <div className="text-5xl font-bold text-brand-primary mb-2">
-            {result.overallScore ?? 'N/A'}%
+      <div className="max-w-lg mx-auto">
+        <div className="bg-gradient-to-br from-brand-primary/10 to-brand-primary/5 rounded-2xl p-8 text-center border-2 border-brand-primary/20">
+          <p className="text-lg text-gray-600 mb-3 font-medium">{isRu ? 'Общий результат' : 'Umumiy natija'}</p>
+          <div className="text-7xl font-bold text-brand-primary mb-4">
+            {result.overallScore ?? 0}%
           </div>
-          <div className={`inline-block px-4 py-2 rounded-full ${getLevelColor(result.leftEarLevel)}`}>
-            <span className="font-semibold">
+          <div className={`inline-block px-6 py-3 rounded-full text-lg font-bold ${getLevelColor(result.leftEarLevel)}`}>
+            <span>
               {result.leftEarLevel
                 ? levelNames[result.leftEarLevel]?.[locale] || result.leftEarLevel
-                : 'N/A'}
+                : 'Normal'}
             </span>
           </div>
         </div>
       </div>
 
       {/* Individual Scores */}
-      <div className="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+      <div className="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
         {/* Left Ear */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">
+        <div className="bg-white border-2 border-gray-200 rounded-2xl p-8 shadow-lg">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-bold text-gray-900">
               {isRu ? 'Левое ухо' : 'Chap quloq'}
             </h3>
             {getScoreIcon(result.leftEarScore)}
           </div>
-          <div className="space-y-2">
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">{isRu ? 'Результат' : 'Natija'}</span>
-              <span className="text-2xl font-bold text-gray-900">
-                {result.leftEarScore ?? 'N/A'}%
+              <span className="text-base text-gray-600 font-medium">{isRu ? 'Результат' : 'Natija'}</span>
+              <span className="text-4xl font-bold text-gray-900">
+                {result.leftEarScore ?? 0}%
               </span>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">{isRu ? 'Уровень' : 'Daraja'}</span>
-              <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getLevelColor(result.leftEarLevel)}`}>
+            <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+              <span className="text-base text-gray-600 font-medium">{isRu ? 'Уровень' : 'Daraja'}</span>
+              <span className={`px-4 py-2 rounded-full text-base font-bold ${getLevelColor(result.leftEarLevel)}`}>
                 {result.leftEarLevel
                   ? levelNames[result.leftEarLevel]?.[locale] || result.leftEarLevel
-                  : 'N/A'}
+                  : 'Normal'}
               </span>
             </div>
           </div>
         </div>
 
         {/* Right Ear */}
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">
+        <div className="bg-white border-2 border-gray-200 rounded-2xl p-8 shadow-lg">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-bold text-gray-900">
               {isRu ? 'Правое ухо' : 'O\'ng quloq'}
             </h3>
             {getScoreIcon(result.rightEarScore)}
           </div>
-          <div className="space-y-2">
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">{isRu ? 'Результат' : 'Natija'}</span>
-              <span className="text-2xl font-bold text-gray-900">
-                {result.rightEarScore ?? 'N/A'}%
+              <span className="text-base text-gray-600 font-medium">{isRu ? 'Результат' : 'Natija'}</span>
+              <span className="text-4xl font-bold text-gray-900">
+                {result.rightEarScore ?? 0}%
               </span>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">{isRu ? 'Уровень' : 'Daraja'}</span>
-              <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getLevelColor(result.rightEarLevel)}`}>
+            <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+              <span className="text-base text-gray-600 font-medium">{isRu ? 'Уровень' : 'Daraja'}</span>
+              <span className={`px-4 py-2 rounded-full text-base font-bold ${getLevelColor(result.rightEarLevel)}`}>
                 {result.rightEarLevel
                   ? levelNames[result.rightEarLevel]?.[locale] || result.rightEarLevel
-                  : 'N/A'}
+                  : 'Normal'}
               </span>
             </div>
           </div>
@@ -148,16 +148,16 @@ export default function TestResults({ locale, result, onContact, onRestart }: Te
       </div>
 
       {/* Actions */}
-      <div className="flex flex-col sm:flex-row justify-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
         <button
           onClick={onContact}
-          className="px-8 py-3 bg-brand-primary text-white rounded-lg font-semibold hover:bg-brand-primary/90 transition-colors shadow-lg"
+          className="px-10 py-4 bg-brand-primary text-white rounded-xl font-bold text-lg hover:bg-brand-primary/90 transition-all transform hover:scale-105 shadow-lg"
         >
-          {isRu ? 'Связаться с нами' : 'Biz bilan bog\'lanish'}
+          {isRu ? 'Связаться с нами →' : 'Biz bilan bog\'lanish →'}
         </button>
         <button
           onClick={onRestart}
-          className="px-8 py-3 border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+          className="px-10 py-4 border-2 border-gray-300 text-gray-700 rounded-xl font-bold text-lg hover:bg-gray-50 transition-all transform hover:scale-105"
         >
           {isRu ? 'Повторить тест' : 'Testni takrorlash'}
         </button>

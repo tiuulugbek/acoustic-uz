@@ -50,10 +50,50 @@ export default function HearingTest() {
     setStep('right-ear');
   };
 
+  const calculateResults = (leftResults: Record<string, boolean>, rightResults: Record<string, boolean>) => {
+    const frequencies = ['250', '500', '1000', '2000', '4000', '8000'];
+    const calculateScore = (results: Record<string, boolean>) => {
+      const heard = frequencies.filter((f) => results[f] === true).length;
+      return Math.round((heard / frequencies.length) * 100);
+    };
+    
+    const leftScore = calculateScore(leftResults);
+    const rightScore = calculateScore(rightResults);
+    const overallScore = Math.round((leftScore + rightScore) / 2);
+    
+    const getLevel = (score: number) => {
+      if (score >= 90) return 'normal';
+      if (score >= 70) return 'mild';
+      if (score >= 50) return 'moderate';
+      if (score >= 30) return 'severe';
+      return 'profound';
+    };
+    
+    return {
+      leftEarScore: leftScore,
+      rightEarScore: rightScore,
+      overallScore,
+      leftEarLevel: getLevel(leftScore),
+      rightEarLevel: getLevel(rightScore),
+    };
+  };
+
   const handleRightEarComplete = async (results: Record<string, boolean>) => {
     setRightEarResults(results);
     
-    // Submit test results
+    // Calculate results locally first
+    const calculatedResults = calculateResults(leftEarResults, results);
+    const localResult = {
+      ...calculatedResults,
+      leftEarResults,
+      rightEarResults: results,
+      deviceType: deviceType!,
+      volumeLevel,
+    };
+    setTestResult(localResult);
+    setStep('results');
+    
+    // Submit test results in background
     setIsSubmitting(true);
     try {
       const result = await submitHearingTest(
@@ -65,12 +105,11 @@ export default function HearingTest() {
         },
         locale
       );
-      setTestResult(result);
-      setStep('results');
+      // Update with server response if successful
+      setTestResult({ ...localResult, ...result });
     } catch (error) {
       console.error('Failed to submit test:', error);
-      // Still show results even if submission fails
-      setStep('results');
+      // Keep local results even if submission fails
     } finally {
       setIsSubmitting(false);
     }
@@ -223,10 +262,16 @@ export default function HearingTest() {
           />
         )}
 
-        {step === 'results' && testResult && (
+        {step === 'results' && (
           <TestResults
             locale={locale}
-            result={testResult}
+            result={testResult || {
+              leftEarScore: 0,
+              rightEarScore: 0,
+              overallScore: 0,
+              leftEarLevel: 'normal',
+              rightEarLevel: 'normal',
+            }}
             onContact={() => setStep('contact')}
             onRestart={handleRestart}
           />

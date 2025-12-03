@@ -72,25 +72,19 @@ export default function VolumeCalibration({
       </div>
 
       {/* Test Button */}
-      <div className="flex justify-center">
+      <div className="flex justify-center py-8">
         <button
           onClick={isPlaying ? stopTone : handlePlayTest}
-          className={`px-8 py-4 rounded-lg font-semibold text-lg flex items-center gap-3 transition-colors ${
+          className={`w-40 h-40 rounded-full flex items-center justify-center text-white transition-all transform ${
             isPlaying
-              ? 'bg-red-500 text-white hover:bg-red-600'
-              : 'bg-brand-primary text-white hover:bg-brand-primary/90'
-          } shadow-lg`}
+              ? 'bg-red-500 hover:bg-red-600 scale-105'
+              : 'bg-brand-primary hover:bg-brand-primary/90 hover:scale-105'
+          } shadow-2xl`}
         >
           {isPlaying ? (
-            <>
-              <Square className="w-5 h-5" />
-              {isRu ? 'Остановить' : 'To\'xtatish'}
-            </>
+            <Square className="w-16 h-16" />
           ) : (
-            <>
-              <Play className="w-5 h-5" />
-              {isRu ? 'Воспроизвести тестовый звук' : 'Test ovozini ijro etish'}
-            </>
+            <Play className="w-16 h-16 ml-2" />
           )}
         </button>
       </div>
@@ -107,19 +101,19 @@ export default function VolumeCalibration({
       )}
 
       {/* Navigation */}
-      <div className="flex justify-center gap-4">
+      <div className="flex justify-center gap-4 pt-4">
         <button
           onClick={onBack}
-          className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+          className="px-8 py-3 border-2 border-gray-300 rounded-xl text-gray-700 font-semibold hover:bg-gray-50 transition-colors"
         >
-          {isRu ? 'Назад' : 'Orqaga'}
+          {isRu ? '← Назад' : '← Orqaga'}
         </button>
         <button
           onClick={() => onContinue(volume)}
           disabled={!hasPlayed}
-          className="px-8 py-2 bg-brand-primary text-white rounded-lg font-semibold hover:bg-brand-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-10 py-3 bg-brand-primary text-white rounded-xl font-bold text-lg hover:bg-brand-primary/90 transition-all transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
         >
-          {isRu ? 'Продолжить' : 'Davom etish'}
+          {isRu ? 'Продолжить →' : 'Davom etish →'}
         </button>
       </div>
     </div>

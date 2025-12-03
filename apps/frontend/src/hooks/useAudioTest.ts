@@ -46,11 +46,13 @@ export function useAudioTest() {
         oscillator.frequency.value = frequency;
         oscillator.type = 'sine'; // Pure tone
 
-        // Configure gain (volume)
+        // Configure gain (volume) with smooth fade in/out
+        const fadeTime = 0.1; // 100ms fade
+        const playTime = duration / 1000;
         gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-        gainNode.gain.linearRampToValueAtTime(volume, audioContext.currentTime + 0.01);
-        gainNode.gain.setValueAtTime(volume, audioContext.currentTime + duration / 1000 - 0.01);
-        gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + duration / 1000);
+        gainNode.gain.linearRampToValueAtTime(volume, audioContext.currentTime + fadeTime);
+        gainNode.gain.setValueAtTime(volume, audioContext.currentTime + playTime - fadeTime);
+        gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + playTime);
 
         // Connect nodes
         oscillator.connect(gainNode);

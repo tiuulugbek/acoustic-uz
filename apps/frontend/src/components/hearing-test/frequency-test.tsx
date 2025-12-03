@@ -87,22 +87,22 @@ export default function FrequencyTest({
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10 max-w-2xl mx-auto">
       {/* Header */}
-      <div className="text-center">
-        <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+      <div className="text-center space-y-3">
+        <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
           {isRu
             ? ear === 'left' ? 'Тест левого уха' : 'Тест правого уха'
             : ear === 'left' ? 'Chap quloq testi' : 'O\'ng quloq testi'}
         </h2>
-        <p className="text-gray-600">
+        <p className="text-xl text-gray-600 font-medium">
           {isRu
-            ? `Частота ${currentFrequency} Гц`
-            : `${currentFrequency} Hz chastota`}
+            ? `${currentFrequency} Гц`
+            : `${currentFrequency} Hz`}
         </p>
-        <div className="mt-4">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full">
-            <span className="text-sm text-gray-600">
+        <div className="mt-2">
+          <div className="inline-flex items-center gap-2 px-5 py-2 bg-gray-100 rounded-full">
+            <span className="text-base font-semibold text-gray-700">
               {currentIndex + 1} / {frequencies.length}
             </span>
           </div>
@@ -110,43 +110,43 @@ export default function FrequencyTest({
       </div>
 
       {/* Test Area */}
-      <div className="max-w-md mx-auto space-y-6">
+      <div className="space-y-8">
         {/* Play Button */}
-        <div className="flex justify-center">
+        <div className="flex justify-center py-8">
           <button
             onClick={isPlaying ? stopTone : handlePlay}
             disabled={isSubmitting}
-            className={`w-32 h-32 rounded-full flex items-center justify-center text-white font-bold text-xl transition-all ${
+            className={`w-40 h-40 rounded-full flex items-center justify-center text-white transition-all transform ${
               isPlaying
-                ? 'bg-red-500 hover:bg-red-600'
-                : 'bg-brand-primary hover:bg-brand-primary/90'
-            } shadow-lg disabled:opacity-50 disabled:cursor-not-allowed`}
+                ? 'bg-red-500 hover:bg-red-600 scale-105'
+                : 'bg-brand-primary hover:bg-brand-primary/90 hover:scale-105'
+            } shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100`}
           >
             {isPlaying ? (
-              <Square className="w-12 h-12" />
+              <Square className="w-16 h-16" />
             ) : (
-              <Play className="w-12 h-12 ml-1" />
+              <Play className="w-16 h-16 ml-2" />
             )}
           </button>
         </div>
 
         {/* Answer Buttons */}
         {hasPlayed && !results[currentFrequency.toString()] && (
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-6 max-w-lg mx-auto">
             <button
               onClick={() => handleAnswer(true)}
               disabled={isSubmitting}
-              className="px-6 py-4 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-8 py-6 bg-green-500 text-white rounded-xl font-bold text-lg hover:bg-green-600 transition-all transform hover:scale-105 shadow-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
             >
-              <Check className="w-5 h-5" />
+              <Check className="w-6 h-6" />
               {isRu ? 'Слышу' : 'Eshitdim'}
             </button>
             <button
               onClick={() => handleAnswer(false)}
               disabled={isSubmitting}
-              className="px-6 py-4 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-8 py-6 bg-red-500 text-white rounded-xl font-bold text-lg hover:bg-red-600 transition-all transform hover:scale-105 shadow-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
             >
-              <X className="w-5 h-5" />
+              <X className="w-6 h-6" />
               {isRu ? 'Не слышу' : 'Eshitmadim'}
             </button>
           </div>
@@ -154,21 +154,21 @@ export default function FrequencyTest({
 
         {/* Result Display */}
         {results[currentFrequency.toString()] !== undefined && (
-          <div className="text-center">
-            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${
+          <div className="text-center py-4">
+            <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-full text-lg font-bold ${
               results[currentFrequency.toString()]
                 ? 'bg-green-100 text-green-800'
                 : 'bg-red-100 text-red-800'
             }`}>
               {results[currentFrequency.toString()] ? (
                 <>
-                  <Check className="w-5 h-5" />
-                  <span className="font-semibold">{isRu ? 'Слышу' : 'Eshitdim'}</span>
+                  <Check className="w-6 h-6" />
+                  <span>{isRu ? 'Слышу' : 'Eshitdim'}</span>
                 </>
               ) : (
                 <>
-                  <X className="w-5 h-5" />
-                  <span className="font-semibold">{isRu ? 'Не слышу' : 'Eshitmadim'}</span>
+                  <X className="w-6 h-6" />
+                  <span>{isRu ? 'Не слышу' : 'Eshitmadim'}</span>
                 </>
               )}
             </div>
@@ -177,13 +177,13 @@ export default function FrequencyTest({
 
         {/* Next Button */}
         {results[currentFrequency.toString()] !== undefined && !isLast && (
-          <div className="flex justify-center">
+          <div className="flex justify-center pt-4">
             <button
               onClick={handleNext}
               disabled={isSubmitting}
-              className="px-8 py-2 bg-brand-primary text-white rounded-lg font-semibold hover:bg-brand-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-10 py-4 bg-brand-primary text-white rounded-xl font-bold text-lg hover:bg-brand-primary/90 transition-all transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
             >
-              {isRu ? 'Следующая частота' : 'Keyingi chastota'}
+              {isRu ? 'Следующая частота →' : 'Keyingi chastota →'}
             </button>
           </div>
         )}

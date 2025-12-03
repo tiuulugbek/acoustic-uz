@@ -12,13 +12,13 @@ export default function TestIntro({ locale, onContinue }: TestIntroProps) {
   const isRu = locale === 'ru';
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10 max-w-3xl mx-auto">
       {/* Main Instruction */}
-      <div className="text-center space-y-4">
-        <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
+      <div className="text-center space-y-3">
+        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 leading-tight">
           {isRu ? 'Найдите тихое место и наденьте наушники' : 'Sokin joy toping va quloqchinlarni qo\'ying'}
         </h1>
-        <p className="text-lg text-gray-600">
+        <p className="text-xl text-gray-600">
           {isRu ? 'Рекомендуется использовать наушники для более точных результатов' : 'Aniqroq natijalar uchun quloqchinlardan foydalanish tavsiya etiladi'}
         </p>
       </div>
