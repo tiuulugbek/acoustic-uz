@@ -60,7 +60,7 @@ export default function FrequencyTest({
     
     // ReSound kabi: slider'ni surganda real-time ovoz ijro etish
     if (clampedVolume > 0) {
-      // Agar ovoz ijro etilayotgan bo'lsa, volume'ni yangilash
+      // Agar ovoz ijro etilayotgan bo'lsa va to'g'ri chastota bo'lsa, volume'ni yangilash
       if (isPlaying && currentFrequency === frequencies[currentIndex]) {
         updateVolume(clampedVolume);
       } else {
