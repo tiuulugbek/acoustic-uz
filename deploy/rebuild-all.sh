@@ -40,24 +40,24 @@ pnpm --filter @acoustic/shared build
 
 # Build frontend
 echo "🏗️  Building frontend..."
-cd apps/frontend
+cd "$PROJECT_DIR/apps/frontend"
 pnpm build
 
 # Check if standalone directory exists
-STANDALONE_DIR="apps/frontend/.next/standalone/apps/frontend"
+STANDALONE_DIR="$PROJECT_DIR/apps/frontend/.next/standalone/apps/frontend"
 if [ -d "$STANDALONE_DIR" ]; then
     echo "✅ Standalone build found"
     
     # Copy static files to standalone
     echo "📋 Copying static files..."
-    if [ -d "apps/frontend/public" ]; then
-        cp -r apps/frontend/public "$STANDALONE_DIR/" || true
+    if [ -d "$PROJECT_DIR/apps/frontend/public" ]; then
+        cp -r "$PROJECT_DIR/apps/frontend/public" "$STANDALONE_DIR/" || true
     fi
     
     # Copy .next/static to standalone
-    if [ -d "apps/frontend/.next/static" ]; then
+    if [ -d "$PROJECT_DIR/apps/frontend/.next/static" ]; then
         mkdir -p "$STANDALONE_DIR/.next/static"
-        cp -r apps/frontend/.next/static/* "$STANDALONE_DIR/.next/static/" || true
+        cp -r "$PROJECT_DIR/apps/frontend/.next/static"/* "$STANDALONE_DIR/.next/static/" || true
     fi
     
     # Set permissions
