@@ -76,10 +76,14 @@ export class AmoCRMController {
     console.log('[AmoCRM] Redirecting to:', authUrl);
     console.log('[AmoCRM] State parameter:', state);
     console.log('[AmoCRM] Redirect URI:', redirectUri);
-    console.log('[AmoCRM] Using res.redirect() for proper HTTP 302 redirect');
+    console.log('[AmoCRM] Setting explicit 302 redirect with Location header');
 
-    // Use res.redirect() which properly handles HTTP 302 redirects in Express/NestJS
-    return res.redirect(authUrl);
+    // CRITICAL: Explicitly set status and Location header, then end response
+    // Do NOT return anything - NestJS will try to serialize return values
+    res.status(302);
+    res.setHeader('Location', authUrl);
+    res.end();
+    return; // Explicit return with no value to prevent NestJS serialization
   }
 
   @Get('callback')
