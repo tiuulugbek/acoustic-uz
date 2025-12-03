@@ -26,6 +26,10 @@ const { Header, Sider, Content, Footer } = Layout;
 const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.0';
 const BUILD_TIME = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : new Date().toISOString();
 
+// Debug: Log version info
+console.log('[AdminLayout] Version:', APP_VERSION);
+console.log('[AdminLayout] Build Time:', BUILD_TIME);
+
 const menuItems: MenuProps['items'] = [
   {
     key: '/',
@@ -301,25 +305,38 @@ export default function AdminLayout() {
         }}>
           <Outlet />
         </Content>
-        <Footer style={{ 
-          textAlign: 'center', 
-          background: '#fff', 
-          borderTop: '1px solid #f0f0f0',
-          padding: '12px 24px',
-          fontSize: '12px',
-          color: '#8c8c8c',
-          flexShrink: 0,
-          position: 'relative',
-          zIndex: 10,
-          width: '100%',
-          boxShadow: '0 -2px 8px rgba(0,0,0,0.06)'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <span style={{ fontWeight: 500 }}>Admin Panel</span>
-            <span style={{ color: '#d9d9d9' }}>•</span>
-            <span style={{ fontWeight: 600, color: '#F07E22' }}>v{APP_VERSION}</span>
-            <span style={{ color: '#d9d9d9' }}>•</span>
-            <span title={BUILD_TIME} style={{ fontFamily: 'monospace', fontSize: '11px' }}>
+        <Footer 
+          style={{ 
+            textAlign: 'center', 
+            background: '#fff', 
+            borderTop: '2px solid #f0f0f0',
+            padding: '16px 24px',
+            fontSize: '13px',
+            color: '#595959',
+            flexShrink: 0,
+            position: 'relative',
+            zIndex: 10,
+            width: '100%',
+            boxShadow: '0 -2px 8px rgba(0,0,0,0.08)',
+            marginTop: 'auto'
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <span style={{ fontWeight: 500, color: '#262626' }}>Admin Panel</span>
+            <span style={{ color: '#d9d9d9', fontSize: '16px' }}>•</span>
+            <span style={{ fontWeight: 600, color: '#F07E22', fontSize: '14px' }}>v{APP_VERSION}</span>
+            <span style={{ color: '#d9d9d9', fontSize: '16px' }}>•</span>
+            <span 
+              title={`Build time: ${BUILD_TIME}`} 
+              style={{ 
+                fontFamily: 'monospace', 
+                fontSize: '12px',
+                color: '#8c8c8c',
+                backgroundColor: '#f5f5f5',
+                padding: '2px 6px',
+                borderRadius: '4px'
+              }}
+            >
               {new Date(BUILD_TIME).toLocaleDateString('uz-UZ', { 
                 year: 'numeric', 
                 month: '2-digit', 
