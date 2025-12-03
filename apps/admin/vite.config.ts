@@ -41,14 +41,31 @@ console.log(`[Vite Config] Version written to: ${versionFile}`);
 export default defineConfig({
   plugins: [
     react(),
-    // Custom plugin to inject version
+    // Custom plugin to inject version and API URL
     {
       name: 'inject-version',
       transformIndexHtml(html) {
         return html.replace(
           '<head>',
-          `<head><script>window.__APP_VERSION__='${version}';window.__BUILD_TIME__='${buildTime}';</script>`
+          `<head><script>window.__APP_VERSION__='${version}';window.__BUILD_TIME__='${buildTime}';window.__VITE_API_URL__='${process.env.VITE_API_URL || 'https://api.acoustic.uz/api'}';</script>`
         );
+      },
+      // Also replace in JS files during build
+      transform(code, id) {
+        if (id.endsWith('.ts') || id.endsWith('.tsx') || id.endsWith('.js')) {
+          // Replace import.meta.env.VITE_API_URL with production URL
+          const apiUrl = process.env.VITE_API_URL || 'https://api.acoustic.uz/api';
+          code = code.replace(
+            /import\.meta\.env\.VITE_API_URL/g,
+            `"${apiUrl}"`
+          );
+          // Replace localhost:3001 with production URL
+          code = code.replace(
+            /http:\/\/localhost:3001\/api/g,
+            apiUrl
+          );
+        }
+        return code;
       },
     },
   ],
@@ -60,6 +77,8 @@ export default defineConfig({
     'import.meta.env.VITE_API_URL': JSON.stringify(
       process.env.VITE_API_URL || 'https://api.acoustic.uz/api'
     ),
+    'import.meta.env.PROD': JSON.stringify(true),
+    'import.meta.env.DEV': JSON.stringify(false),
   },
   // Ensure VITE_ prefixed env vars are available
   envPrefix: 'VITE_',

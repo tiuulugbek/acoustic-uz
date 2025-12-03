@@ -1,7 +1,18 @@
 // Use production API URL as default (fallback to localhost only in development)
 // Check if we're in production mode
-const isProduction = import.meta.env.PROD || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && !window.location.hostname.includes('localhost'));
-const API_BASE = import.meta.env.VITE_API_URL || (isProduction ? 'https://api.acoustic.uz/api' : 'http://localhost:3001/api');
+let API_BASE = 'https://api.acoustic.uz/api'; // Default to production
+
+// Try to get from window object first (injected by plugin)
+if (typeof window !== 'undefined' && (window as any).__VITE_API_URL__) {
+  API_BASE = (window as any).__VITE_API_URL__;
+} else if (import.meta.env.VITE_API_URL) {
+  // Try to get from Vite env
+  API_BASE = import.meta.env.VITE_API_URL;
+} else {
+  // Fallback: check if we're in development
+  const isProduction = import.meta.env.PROD || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && !window.location.hostname.includes('localhost'));
+  API_BASE = isProduction ? 'https://api.acoustic.uz/api' : 'http://localhost:3001/api';
+}
 
 interface RequestOptions extends RequestInit {
   auth?: boolean;
