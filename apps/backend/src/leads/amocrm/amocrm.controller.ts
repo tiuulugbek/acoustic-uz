@@ -30,8 +30,11 @@ export class AmoCRMController {
       throw new Error('AmoCRM domain and Client ID must be configured first');
     }
 
+    // Remove https:// or http:// from domain if present
+    const cleanDomain = settings.amocrmDomain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    
     const redirectUri = `${this.configService.get('APP_URL') || 'http://localhost:3001'}/api/amocrm/callback`;
-    const authUrl = `https://${settings.amocrmDomain}/oauth2/authorize?client_id=${settings.amocrmClientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}`;
+    const authUrl = `https://${cleanDomain}/oauth2/authorize?client_id=${settings.amocrmClientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}`;
 
     return { authUrl };
   }
@@ -53,10 +56,13 @@ export class AmoCRMController {
 
       const redirectUri = `${this.configService.get('APP_URL') || 'http://localhost:3001'}/api/amocrm/callback`;
       
+      // Remove https:// or http:// from domain if present
+      const cleanDomain = settings.amocrmDomain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+      
       // Exchange authorization code for tokens
       const response = await firstValueFrom(
         this.httpService.post(
-          `https://${settings.amocrmDomain}/oauth2/access_token`,
+          `https://${cleanDomain}/oauth2/access_token`,
           {
             client_id: settings.amocrmClientId,
             client_secret: settings.amocrmClientSecret,
@@ -110,10 +116,13 @@ export class AmoCRMController {
         };
       }
 
+      // Remove https:// or http:// from domain if present
+      const cleanDomain = settings.amocrmDomain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+      
       // Test API call to AmoCRM
       const response = await firstValueFrom(
         this.httpService.get(
-          `https://${settings.amocrmDomain}/api/v4/account`,
+          `https://${cleanDomain}/api/v4/account`,
           {
             headers: {
               Authorization: `Bearer ${settings.amocrmAccessToken}`,

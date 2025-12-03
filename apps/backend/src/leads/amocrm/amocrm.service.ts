@@ -141,9 +141,12 @@ export class AmoCRMService {
    */
   private async refreshAccessToken(settings: AmoCRMSettings): Promise<void> {
     try {
+      // Remove https:// or http:// from domain if present
+      const cleanDomain = settings.amocrmDomain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+      
       const response = await firstValueFrom(
         this.httpService.post(
-          `https://${settings.amocrmDomain}/oauth2/access_token`,
+          `https://${cleanDomain}/oauth2/access_token`,
           {
             client_id: settings.amocrmClientId,
             client_secret: settings.amocrmClientSecret,
@@ -178,6 +181,9 @@ export class AmoCRMService {
    */
   private async createContact(lead: AmoCRMLead, settings: AmoCRMSettings): Promise<number | null> {
     try {
+      // Remove https:// or http:// from domain if present
+      const cleanDomain = settings.amocrmDomain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+      
       const contactData = {
         name: lead.name,
         custom_fields_values: [
@@ -208,7 +214,7 @@ export class AmoCRMService {
 
       const response = await firstValueFrom(
         this.httpService.post(
-          `https://${settings.amocrmDomain}/api/v4/contacts`,
+          `https://${cleanDomain}/api/v4/contacts`,
           [contactData],
           {
             headers: {
@@ -239,6 +245,9 @@ export class AmoCRMService {
     settings: AmoCRMSettings
   ): Promise<number | null> {
     try {
+      // Remove https:// or http:// from domain if present
+      const cleanDomain = settings.amocrmDomain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+      
       const dealName = lead.productId
         ? `So'rov: ${lead.name}`
         : `Yangi so'rov: ${lead.name}`;
@@ -285,7 +294,7 @@ export class AmoCRMService {
 
       const response = await firstValueFrom(
         this.httpService.post(
-          `https://${settings.amocrmDomain}/api/v4/leads`,
+          `https://${cleanDomain}/api/v4/leads`,
           [dealData],
           {
             headers: {
@@ -312,6 +321,9 @@ export class AmoCRMService {
    */
   private async addNote(dealId: number, message: string, settings: AmoCRMSettings): Promise<void> {
     try {
+      // Remove https:// or http:// from domain if present
+      const cleanDomain = settings.amocrmDomain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+      
       const noteData = {
         entity_id: dealId,
         note_type: 'common',
@@ -322,7 +334,7 @@ export class AmoCRMService {
 
       await firstValueFrom(
         this.httpService.post(
-          `https://${settings.amocrmDomain}/api/v4/leads/${dealId}/notes`,
+          `https://${cleanDomain}/api/v4/leads/${dealId}/notes`,
           [noteData],
           {
             headers: {
