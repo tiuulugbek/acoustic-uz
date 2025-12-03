@@ -47,11 +47,18 @@ export function useAudioTest() {
         oscillator.type = 'sine'; // Pure tone
 
         // Configure gain (volume) with smooth fade in/out
-        const fadeTime = 0.1; // 100ms fade
+        // ReSound kabi: yumshoq fade in/out va to'g'ri duration
+        const fadeTime = 0.15; // 150ms fade (ReSound kabi)
         const playTime = duration / 1000;
+        
+        // Fade in
         gainNode.gain.setValueAtTime(0, audioContext.currentTime);
         gainNode.gain.linearRampToValueAtTime(volume, audioContext.currentTime + fadeTime);
+        
+        // Hold at volume
         gainNode.gain.setValueAtTime(volume, audioContext.currentTime + playTime - fadeTime);
+        
+        // Fade out
         gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + playTime);
 
         // Connect nodes

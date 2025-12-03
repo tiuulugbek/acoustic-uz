@@ -41,7 +41,9 @@ export default function HearingTest() {
   };
 
   const handleVolumeSet = (volume: number) => {
-    setVolumeLevel(volume);
+    // Volume calibration'da foydalanuvchi qurilma ovozini sozlaydi
+    // Test ovozini doim maksimal balandlikda ijro etamiz
+    setVolumeLevel(1.0); // Maksimal volume
     setStep('left-ear');
   };
 
