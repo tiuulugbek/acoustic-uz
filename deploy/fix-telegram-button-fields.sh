@@ -37,10 +37,13 @@ echo "📊 Adding Telegram Button fields to database using Prisma..."
 cd "$PROJECT_DIR"
 if command -v npx &> /dev/null; then
     # Use Prisma db push to sync schema (safer than direct SQL)
-    npx prisma db push --skip-generate --accept-data-loss || {
+    # Remove --skip-generate flag as it's not valid in Prisma 7
+    npx prisma db push --accept-data-loss || {
         echo "⚠️  Prisma db push failed, trying direct SQL..."
         if [ -n "$DATABASE_URL" ]; then
-            psql "$DATABASE_URL" <<EOF
+            # Remove ?schema=public from DATABASE_URL for psql
+            DB_URL_FOR_PSQL=$(echo "$DATABASE_URL" | sed 's/?schema=public//g' | sed 's/?.*$//g')
+            psql "$DB_URL_FOR_PSQL" <<EOF
 -- Add columns if they don't exist
 ALTER TABLE "Setting" ADD COLUMN IF NOT EXISTS "telegramButtonBotToken" TEXT;
 ALTER TABLE "Setting" ADD COLUMN IF NOT EXISTS "telegramButtonBotUsername" TEXT;
@@ -55,7 +58,9 @@ EOF
 else
     echo "⚠️  npx not found, trying direct SQL..."
     if [ -n "$DATABASE_URL" ]; then
-        psql "$DATABASE_URL" <<EOF
+        # Remove ?schema=public from DATABASE_URL for psql
+        DB_URL_FOR_PSQL=$(echo "$DATABASE_URL" | sed 's/?schema=public//g' | sed 's/?.*$//g')
+        psql "$DB_URL_FOR_PSQL" <<EOF
 -- Add columns if they don't exist
 ALTER TABLE "Setting" ADD COLUMN IF NOT EXISTS "telegramButtonBotToken" TEXT;
 ALTER TABLE "Setting" ADD COLUMN IF NOT EXISTS "telegramButtonBotUsername" TEXT;
