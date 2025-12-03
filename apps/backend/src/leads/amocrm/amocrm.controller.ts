@@ -26,6 +26,7 @@ export class AmoCRMController {
   @ApiResponse({ status: 302, description: 'Redirect to AmoCRM OAuth page' })
   async getAuthorizationUrl(@Res({ passthrough: false }) res: Response) {
     console.log('[AmoCRM] Authorization request received');
+    console.log('[AmoCRM] Request headers:', JSON.stringify(res.req.headers, null, 2));
     
     // Disable ALL caching for this endpoint - critical for OAuth flow
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
@@ -37,6 +38,7 @@ export class AmoCRMController {
     const settings = await this.settingsService.get();
     
     if (!settings.amocrmDomain || !settings.amocrmClientId) {
+      console.log('[AmoCRM] Missing configuration, redirecting to admin');
       return res.redirect(`${this.configService.get('ADMIN_URL') || 'http://localhost:3002'}/settings?error=not_configured`);
     }
 
@@ -74,11 +76,14 @@ export class AmoCRMController {
     console.log('[AmoCRM] Redirecting to:', authUrl);
     console.log('[AmoCRM] State parameter:', state);
     console.log('[AmoCRM] Redirect URI:', redirectUri);
+    console.log('[AmoCRM] Setting status 302 and Location header');
 
-    // Redirect directly to AmoCRM OAuth page (as per AmoCRM documentation)
-    // This ensures proper browser redirect, not a JavaScript fetch request
-    // Use res.redirect() which properly sets 302 status and Location header
-    return res.redirect(authUrl);
+    // CRITICAL: Use explicit status and Location header for redirect
+    // NestJS res.redirect() sometimes doesn't work with passthrough: false
+    res.status(302);
+    res.setHeader('Location', authUrl);
+    res.end();
+    return;
   }
 
   @Get('callback')
