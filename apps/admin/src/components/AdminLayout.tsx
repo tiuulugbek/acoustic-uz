@@ -23,9 +23,6 @@ import { useEffect, useState } from 'react';
 const { Header, Sider, Content, Footer } = Layout;
 
 // Get version and build time from Vite define
-declare const __APP_VERSION__: string;
-declare const __BUILD_TIME__: string;
-
 const APP_VERSION = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.0';
 const BUILD_TIME = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : new Date().toISOString();
 
