@@ -19,6 +19,7 @@ interface AmoCRMSettings {
   amocrmClientSecret?: string;
   amocrmAccessToken?: string;
   amocrmRefreshToken?: string;
+  amocrmTokenExpiresAt?: Date | null;
   amocrmPipelineId?: string;
   amocrmStatusId?: string;
 }
@@ -47,6 +48,7 @@ export class AmoCRMService {
         amocrmClientSecret: settings.amocrmClientSecret,
         amocrmAccessToken: settings.amocrmAccessToken,
         amocrmRefreshToken: settings.amocrmRefreshToken,
+        amocrmTokenExpiresAt: settings.amocrmTokenExpiresAt,
         amocrmPipelineId: settings.amocrmPipelineId,
         amocrmStatusId: settings.amocrmStatusId,
       };
@@ -58,15 +60,7 @@ export class AmoCRMService {
       }
 
       // Ensure we have a valid access token
-      // Use access token from settings if available
-      if (amoSettings.amocrmAccessToken) {
-        this.accessToken = amoSettings.amocrmAccessToken;
-        // Token expires in 24 hours (AmoCRM default)
-        this.tokenExpiresAt = Date.now() + 24 * 60 * 60 * 1000;
-      } else {
-        // Try to refresh token if refresh token exists
-        await this.ensureAccessToken(amoSettings);
-      }
+      await this.ensureAccessToken(amoSettings);
 
       // Create contact in AmoCRM
       const contactId = await this.createContact(lead, amoSettings);
@@ -96,12 +90,29 @@ export class AmoCRMService {
   /**
    * Ensure we have a valid access token
    */
-  private async ensureAccessToken(settings: AmoCRMSettings): Promise<void> {
+  async ensureAccessToken(settings: AmoCRMSettings): Promise<void> {
     const now = Date.now();
 
     // Check if token is still valid (with 5 minute buffer)
-    if (this.accessToken && this.tokenExpiresAt > now + 5 * 60 * 1000) {
-      return;
+    if (settings.amocrmAccessToken) {
+      // Use token expiration time from database if available
+      if (settings.amocrmTokenExpiresAt) {
+        const expiresAt = new Date(settings.amocrmTokenExpiresAt).getTime();
+        const bufferTime = 5 * 60 * 1000; // 5 minutes buffer
+        
+        if (expiresAt > now + bufferTime) {
+          // Token is still valid
+          this.accessToken = settings.amocrmAccessToken;
+          this.tokenExpiresAt = expiresAt;
+          return;
+        }
+      } else {
+        // If no expiration time in database, assume token is valid for now
+        // But check if it's been more than 24 hours (default AmoCRM token lifetime)
+        this.accessToken = settings.amocrmAccessToken;
+        this.tokenExpiresAt = Date.now() + 24 * 60 * 60 * 1000;
+        return;
+      }
     }
 
     // If we have a refresh token, use it to get a new access token
@@ -166,12 +177,17 @@ export class AmoCRMService {
       );
 
       this.accessToken = response.data.access_token;
-      this.tokenExpiresAt = Date.now() + response.data.expires_in * 1000;
+      const expiresIn = response.data.expires_in || 86400; // Default 24 hours
+      this.tokenExpiresAt = Date.now() + expiresIn * 1000;
+
+      // Calculate token expiration time
+      const tokenExpiresAt = new Date(Date.now() + expiresIn * 1000);
 
       // Update settings with new tokens
       await this.settingsService.update({
         amocrmAccessToken: this.accessToken,
         amocrmRefreshToken: response.data.refresh_token || settings.amocrmRefreshToken,
+        amocrmTokenExpiresAt: tokenExpiresAt,
       });
     } catch (error) {
       this.logger.error('Failed to refresh access token:', error);

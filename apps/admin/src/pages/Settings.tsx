@@ -197,9 +197,13 @@ export default function SettingsPage() {
   const handleAmoCRMAuthorize = async () => {
     try {
       const { authUrl } = await getAmoCRMAuthUrl();
-      // Use window.location.replace to avoid CORS/preflight issues
-      // This will redirect the current window to AmoCRM OAuth page
-      window.location.replace(authUrl);
+      // Open in new window/tab to avoid 405 errors
+      // AmoCRM OAuth endpoint requires a proper browser redirect, not a fetch request
+      const newWindow = window.open(authUrl, '_blank', 'noopener,noreferrer');
+      if (!newWindow) {
+        // If popup blocked, fallback to current window
+        window.location.href = authUrl;
+      }
     } catch (error) {
       const apiError = error as ApiError;
       message.error(apiError.message || 'Avtorizatsiya URL olishda xatolik');

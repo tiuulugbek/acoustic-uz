@@ -16,17 +16,57 @@ AmoCRM integratsiyasi saytdan kelgan barcha lead'larni (so'rovlar) avtomatik rav
 
 1. **AmoCRM'ga kiring:**
    - `https://www.amocrm.ru` ga kiring
+   - Yoki `https://yourcompany.amocrm.ru` ga kiring
    - Akkauntingizga login qiling
 
 2. **Integration yarating:**
    - Settings → Integrations → Add Integration
-   - "API Integration" ni tanlang
+   - **"API Integration"** ni tanlang (⚠️ MUHIM: Boshqa turdagi Integration emas!)
    - Integration nomini kiriting (masalan, "Acoustic.uz Website")
-   - Redirect URI ni kiriting: `http://localhost:3001/api/amocrm/callback` (development) yoki `https://yourdomain.com/api/amocrm/callback` (production)
+   - Redirect URI ni kiriting: `https://api.acoustic.uz/api/amocrm/callback` (production)
 
 3. **Client ID va Client Secret ni oling:**
-   - Integration yaratilgandan keyin, Client ID va Client Secret ko'rsatiladi
-   - Bu ma'lumotlarni saqlang
+   - Integration yaratilgandan keyin, Integration ro'yxatida yangi integration ko'rinadi
+   - Integration nomiga bosing yoki "View" tugmasini bosing
+   - **"Ключи и доступы" (Keys and Access)** tab'iga o'ting
+   - **Client ID** va **Client Secret** ko'rsatiladi
+   - ⚠️ **MUHIM:** Client Secret faqat bir marta ko'rsatiladi! Uni darhol nusxalab oling
+   - Bu ma'lumotlarni xavfsiz joyda saqlang
+
+**⚠️ ESLATMA:**
+- "ID интеграции" (Integration ID) ≠ Client ID
+- "Секретный ключ" (Secret Key) ≠ Client Secret
+- Faqat "API Integration" turidagi Integration OAuth 2.0 uchun Client ID va Client Secret beradi
+
+**🔍 TEKSHIRISH QADAMLARI:**
+
+Agar Integration yaratganingizdan keyin ham 405 xatosi chiqsa, quyidagilarni tekshiring:
+
+1. **Integration turini tekshiring:**
+   - AmoCRM'da Integration'ni oching
+   - Integration turi "API Integration" bo'lishi kerak
+   - Agar boshqa tur bo'lsa (masalan, "Webhook Integration", "Widget Integration"), yangi "API Integration" yarating
+
+2. **Redirect URI'ni tekshiring:**
+   - Integration'ni oching
+   - "Settings" yoki "Настройки" tab'iga o'ting
+   - Redirect URI quyidagicha bo'lishi kerak: `https://api.acoustic.uz/api/amocrm/callback`
+   - ⚠️ **MUHIM:** 
+     - HTTPS protokoli bo'lishi kerak (`https://`)
+     - Trailing slash bo'lmasligi kerak (oxirida `/` bo'lmasligi kerak)
+     - Bo'sh joylar bo'lmasligi kerak
+     - To'liq URL bo'lishi kerak
+
+3. **Client ID va Client Secret'ni tekshiring:**
+   - "Ключи и доступы" (Keys and Access) tab'iga o'ting
+   - Client ID va Client Secret ko'rsatilishi kerak
+   - Agar ko'rsatilmasa, Integration turi noto'g'ri bo'lishi mumkin
+
+4. **Integration'ni qayta yarating:**
+   - Eski Integration'ni o'chiring
+   - Yangi "API Integration" yarating
+   - Redirect URI'ni to'g'ri kiriting
+   - Yangi Client ID va Client Secret oling
 
 ---
 
@@ -54,22 +94,34 @@ AmoCRM OAuth 2.0 protokolidan foydalanadi. Birinchi marta integratsiya qilishda 
 
 **Qanday qilish:**
 
-1. **Authorization URL'ni tayyorlang:**
+1. **Authorization URL format (AmoCRM rasmiy qo'llanmasi):**
    ```
-   https://yourcompany.amocrm.ru/oauth2/authorize?client_id=YOUR_CLIENT_ID&response_type=code&redirect_uri=http://localhost:3001/api/amocrm/callback
+   https://yourcompany.amocrm.ru/oauth2/authorize?client_id=YOUR_CLIENT_ID&response_type=code&redirect_uri=YOUR_REDIRECT_URI
    ```
+   
+   **⚠️ MUHIM (AmoCRM rasmiy qo'llanmasidan):**
+   - `client_id` - Integration'dan olingan Client ID
+   - `response_type` - har doim `code` bo'lishi kerak
+   - `redirect_uri` - Integration'da sozlangan Redirect URI bilan **TO'LIQ MOS** bo'lishi kerak
+   - Redirect URI Integration'da va URL'da bir xil bo'lishi kerak (case-sensitive)
 
 2. **Browser'da oching:**
-   - Bu URL'ni browser'da oching
-   - AmoCRM'da login qiling
-   - Ruxsat bering
+   - Bu URL'ni browser'da oching (⚠️ GET so'rovi yuboriladi, bu normal)
+   - AmoCRM'da login qiling (agar login bo'lmasa)
+   - Ruxsat bering (Allow/Accept tugmasini bosing)
 
 3. **Callback URL'dan code ni oling:**
    - Browser sizni callback URL'ga yo'naltiradi
-   - URL'dan `code` parametrini oling
-   - Bu code'ni bir marta ishlatib, access token va refresh token olasiz
+   - Backend avtomatik ravishda `code` parametrini oladi
+   - Backend `code` ni access token va refresh token'ga almashtiradi
+   - Token'lar database'ga saqlanadi
 
-**⚠️ Eslatma:** Bu qadamni avtomatiklashtirish uchun callback endpoint yaratish kerak bo'ladi.
+**⚠️ Eslatma:** 
+- Bu qadamni avtomatiklashtirish uchun callback endpoint yaratilgan (`/api/amocrm/callback`)
+- Agar ruxsat berilmasa, callback URL'ga `error=access_denied` parametri bilan yo'naltiriladi
+- Agar muammo bo'lsa, callback URL'ga `error` parametri bilan yo'naltiriladi
+
+**📚 Manba:** [AmoCRM OAuth qo'llanmasi](https://www.amocrm.ru/developers/content/oauth/step-by-step)
 
 ---
 
@@ -173,6 +225,117 @@ AmoCRM OAuth 2.0 protokolidan foydalanadi. Birinchi marta integratsiya qilishda 
 ---
 
 ## 🔍 MUAMMOLAR VA YECHIMLAR
+
+### Muammo: 405 Method Not Allowed xatosi (To'g'ridan-to'g'ri browser'da ham chiqadi)
+**Sabab:**
+- Bu xato AmoCRM Integration'da muammo borligini ko'rsatadi
+- Integration turi "API Integration" emas bo'lishi mumkin
+- Yoki Redirect URI Integration'da to'g'ri sozlanmagan
+- Yoki Integration'da boshqa muammo bor
+
+**Yechim (QADAM-BAQADAM):**
+
+#### 1-qadam: Integration turini tekshiring
+1. **AmoCRM'ga kiring:** `https://acousticcrm.amocrm.ru`
+2. **Settings → Integrations** ga o'ting
+3. **"acoustic.uz" Integration'ni oching**
+4. **Integration turini tekshiring:**
+   - Agar "API Integration" bo'lmasa → **YANGI "API Integration" YARATING**
+   - Agar "API Integration" bo'lsa → Keyingi qadamga o'ting
+
+#### 2-qadam: Yangi "API Integration" yarating (agar kerak bo'lsa)
+1. **Eski Integration'ni o'chiring** (agar mavjud bo'lsa)
+2. **"Add Integration" yoki "Добавить интеграцию" tugmasini bosing**
+3. **"API Integration" ni tanlang** (⚠️ MUHIM: Boshqa tur emas!)
+4. **Integration ma'lumotlarini kiriting:**
+   - **Nomi:** "Acoustic.uz Website" yoki "Acoustic.uz"
+   - **Redirect URI:** `https://api.acoustic.uz/api/amocrm/callback`
+     - ⚠️ **MUHIM:** 
+       - HTTPS protokoli bo'lishi kerak (`https://`)
+       - Trailing slash bo'lmasligi kerak (oxirida `/` bo'lmasligi kerak)
+       - To'liq URL bo'lishi kerak
+       - `api.acoustic.uz` domain to'g'ri bo'lishi kerak
+5. **"Save" yoki "Сохранить" tugmasini bosing**
+
+#### 3-qadam: Client ID va Client Secret ni oling
+1. **Integration yaratilgandan keyin:**
+   - Integration ro'yxatida yangi integration ko'rinadi
+   - Integration nomiga bosing
+2. **"Ключи и доступы" (Keys and Access)** tab'iga o'ting
+3. **Client ID va Client Secret ni ko'ring:**
+   - **Client ID** - bu uzun raqam (masalan: `31500922`)
+   - **Client Secret** - bu ham uzun string
+   - ⚠️ **MUHIM:** Client Secret faqat bir marta ko'rsatiladi! Uni darhol nusxalab oling
+
+#### 4-qadam: Admin panelda sozlang
+1. **Admin panelga kiring:** `https://admin.acoustic.uz`
+2. **Settings → AmoCRM integratsiyasi** bo'limiga o'ting
+3. **Ma'lumotlarni kiriting:**
+   - **AmoCRM Domain:** `acousticcrm.amocrm.ru` (faqat domain, protocolsiz, trailing slash yo'q)
+   - **Client ID:** Yangi olingan Client ID
+   - **Client Secret:** Yangi olingan Client Secret
+4. **"Saqlash" tugmasini bosing**
+
+#### 5-qadam: OAuth Authorization
+1. **"AmoCRM'ga ulanish" tugmasini bosing**
+2. **Browser yangi tab'da AmoCRM OAuth sahifasini ochishi kerak**
+3. **Agar 405 xatosi chiqsa:**
+   - Integration turini qayta tekshiring (1-qadam)
+   - Redirect URI'ni qayta tekshiring (2-qadam)
+   - Browser cache'ni tozalang (Ctrl+Shift+R yoki Cmd+Shift+R)
+
+#### 6-qadam: Agar hali ham muammo bo'lsa
+
+**AmoCRM rasmiy qo'llanmasiga ko'ra ([manba](https://www.amocrm.ru/developers/content/oauth/step-by-step)):**
+
+1. **Redirect URI mosligini tekshiring:**
+   - ⚠️ **MUHIM:** Redirect URI Integration'da va Authorization URL'da **TO'LIQ MOS** bo'lishi kerak
+   - Case-sensitive (katta/kichik harflar muhim)
+   - Trailing slash muhim (`/` bo'lishi yoki bo'lmasligi)
+   - Protocol muhim (`https://` yoki `http://`)
+   - Masalan, agar Integration'da `https://api.acoustic.uz/api/amocrm/callback` bo'lsa, URL'da ham shunday bo'lishi kerak
+
+2. **Integration turini tekshiring:**
+   - Integration turi **"API Integration"** bo'lishi kerak
+   - Boshqa turdagi Integration'lar OAuth 2.0'ni qo'llab-quvvatlamaydi
+
+3. **Client ID'ni tekshiring:**
+   - Client ID Integration'dan olingan bo'lishi kerak
+   - "ID интеграции" (Integration ID) emas, Client ID bo'lishi kerak
+
+4. **AmoCRM yordam markaziga murojaat qiling:**
+   - `https://www.amocrm.ru/support`
+   - Yoki AmoCRM'da "Support" yoki "Поддержка" bo'limiga o'ting
+   - Muammoni tasvirlab bering:
+     - "405 Method Not Allowed" xatosi
+     - OAuth authorization URL'ga GET so'rovi yuborilganda
+     - Integration turi: "API Integration"
+     - Redirect URI: `https://api.acoustic.uz/api/amocrm/callback`
+     - Client ID: `31500922`
+
+**📚 Manba:** [AmoCRM OAuth qo'llanmasi](https://www.amocrm.ru/developers/content/oauth/step-by-step)
+
+### Muammo: Client ID va Client Secret topilmayapti
+**Sabab:**
+- "ID интеграции" (Integration ID) ≠ Client ID
+- "Секретный ключ" (Secret Key) ≠ Client Secret
+- Faqat "API Integration" turidagi Integration OAuth 2.0 uchun Client ID va Client Secret beradi
+
+**Yechim:**
+1. **AmoCRM'da Integration'ni tekshiring:**
+   - Settings → Integrations ga o'ting
+   - Integration turini tekshiring
+   - Agar "API Integration" bo'lmasa, yangi "API Integration" yarating
+2. **"API Integration" yarating:**
+   - "Add Integration" → "API Integration" ni tanlang
+   - Integration nomini kiriting
+   - Redirect URI ni kiriting: `https://api.acoustic.uz/api/amocrm/callback`
+   - "Save" tugmasini bosing
+3. **Client ID va Client Secret ni oling:**
+   - Integration yaratilgandan keyin, Integration ro'yxatida integration nomiga bosing
+   - **"Ключи и доступы" (Keys and Access)** tab'iga o'ting
+   - **Client ID** va **Client Secret** ko'rsatiladi
+   - ⚠️ **MUHIM:** Client Secret faqat bir marta ko'rsatiladi!
 
 ### Muammo: Access token olinmayapti
 **Yechim:**
