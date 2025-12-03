@@ -13,6 +13,10 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(version),
     __BUILD_TIME__: JSON.stringify(buildTime),
+    // Use environment variable or default to production API URL
+    'import.meta.env.VITE_API_URL': JSON.stringify(
+      process.env.VITE_API_URL || 'https://api.acoustic.uz/api'
+    ),
   },
   resolve: {
     alias: {
