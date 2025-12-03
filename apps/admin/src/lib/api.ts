@@ -1,5 +1,7 @@
 // Use production API URL as default (fallback to localhost only in development)
-const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3001/api' : 'https://api.acoustic.uz/api');
+// Check if we're in production mode (not DEV and not localhost)
+const isProduction = import.meta.env.PROD || (!import.meta.env.DEV && window.location.hostname !== 'localhost');
+const API_BASE = import.meta.env.VITE_API_URL || (isProduction ? 'https://api.acoustic.uz/api' : 'http://localhost:3001/api');
 
 interface RequestOptions extends RequestInit {
   auth?: boolean;
