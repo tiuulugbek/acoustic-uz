@@ -402,6 +402,41 @@ model Lead {
   @@index([source])
 }
 
+model HearingTest {
+  id              String   @id @default(cuid())
+  name            String?  // Foydalanuvchi ismi (ixtiyoriy)
+  phone           String?  // Telefon raqami (ixtiyoriy)
+  email           String?  // Email (ixtiyoriy)
+  
+  // Test sozlamalari
+  deviceType      String   // "speaker" yoki "headphone"
+  volumeLevel     Float?   // Ovoz balandligi (0-1)
+  
+  // Test natijalari
+  leftEarResults  Json     // { "250": true/false, "500": true/false, ... }
+  rightEarResults Json     // { "250": true/false, "500": true/false, ... }
+  
+  // Hisoblangan natijalar
+  leftEarScore    Int?     // 0-100 (foiz)
+  rightEarScore   Int?     // 0-100 (foiz)
+  overallScore    Int?     // 0-100 (foiz)
+  
+  // Eshitish darajasi
+  leftEarLevel    String?  // "normal", "mild", "moderate", "severe", "profound"
+  rightEarLevel   String?  // "normal", "mild", "moderate", "severe", "profound"
+  
+  // Qo'shimcha ma'lumotlar
+  source          String   @default("hearing_test")
+  status          String   @default("completed") // "completed", "contacted", "converted"
+  notes           String?  @db.Text
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([source])
+}
+
 model AuditLog {
   id        String   @id @default(cuid())
   userId    String?

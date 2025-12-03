@@ -100,6 +100,31 @@ export default async function ServicesPage() {
         <div className="mx-auto max-w-6xl px-4 md:px-6">
           <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
             <div>
+              {/* Hearing Test Card */}
+              <Link
+                href="/services/hearing-test"
+                className="group flex gap-4 rounded-lg bg-gradient-to-br from-brand-primary/10 to-brand-primary/5 border-2 border-brand-primary/20 p-6 mb-6 transition hover:border-brand-primary/40 hover:shadow-lg"
+              >
+                <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-brand-primary flex items-center justify-center">
+                  <svg className="w-12 h-12 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                  </svg>
+                </div>
+                <div className="flex flex-col flex-1 min-w-0">
+                  <h3 className="mb-2 text-lg font-bold text-foreground group-hover:text-brand-primary transition-colors" suppressHydrationWarning>
+                    {locale === 'ru' ? 'Онлайн тест слуха' : 'Online eshitish testi'}
+                  </h3>
+                  <p className="text-sm leading-relaxed text-muted-foreground mb-2" suppressHydrationWarning>
+                    {locale === 'ru'
+                      ? 'Бесплатный онлайн тест слуха. Проверьте свой слух за 3 минуты. Результаты не являются медицинским диагнозом.'
+                      : 'Bepul online eshitish testi. Eshitishingizni 3 daqiqada tekshiring. Natijalar tibbiy tashxis emas.'}
+                  </p>
+                  <span className="text-brand-primary font-semibold text-sm group-hover:underline" suppressHydrationWarning>
+                    {locale === 'ru' ? 'Начать тест →' : 'Testni boshlash →'}
+                  </span>
+                </div>
+              </Link>
+
               {categories.length > 0 ? (
                 <div className="grid gap-6 sm:grid-cols-2">
               {/* Optimize images with priority for above-the-fold items */}

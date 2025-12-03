@@ -37,6 +37,7 @@ import { HomepageEmptyStatesModule } from './homepage-empty-states/homepage-empt
 import { CatalogPageConfigModule } from './catalog-page-config/catalog-page-config.module';
 import { CommonTextsModule } from './common-texts/common-texts.module';
 import { AvailabilityStatusesModule } from './availability-statuses/availability-statuses.module';
+import { HearingTestModule } from './hearing-test/hearing-test.module';
 import { LocaleCacheInterceptor } from './common/interceptors/locale-cache.interceptor';
 
 @Module({
@@ -115,6 +116,7 @@ import { LocaleCacheInterceptor } from './common/interceptors/locale-cache.inter
     CatalogPageConfigModule,
     CommonTextsModule,
     AvailabilityStatusesModule,
+    HearingTestModule,
   ],
   providers: [
     {

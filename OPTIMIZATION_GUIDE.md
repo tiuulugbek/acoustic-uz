@@ -235,3 +235,4 @@ Ushbu optimizatsiyalar bilan **$12/oy** serverda loyihani ishlatish mumkin. Leki
 
 **Tavsiya:** Agar trafik ko'payganda, **$24/oy** (2 vCPU, 4 GB RAM) variantiga o'ting.
 
+

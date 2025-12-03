@@ -817,3 +817,51 @@ export const createLead = async (data: CreateLeadRequest, locale?: string): Prom
 
   return response.json();
 };
+
+export interface HearingTestRequest {
+  name?: string;
+  phone?: string;
+  email?: string;
+  deviceType: 'speaker' | 'headphone';
+  volumeLevel?: number;
+  leftEarResults: Record<string, boolean>;
+  rightEarResults: Record<string, boolean>;
+}
+
+export interface HearingTestResponse {
+  id: string;
+  name?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  deviceType: string;
+  volumeLevel?: number | null;
+  leftEarResults: Record<string, boolean>;
+  rightEarResults: Record<string, boolean>;
+  leftEarScore?: number | null;
+  rightEarScore?: number | null;
+  overallScore?: number | null;
+  leftEarLevel?: string | null;
+  rightEarLevel?: string | null;
+  source: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const submitHearingTest = async (data: HearingTestRequest, locale?: string): Promise<HearingTestResponse> => {
+  const response = await fetch(`${API_BASE}/hearing-test`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(locale ? { 'X-Locale': locale } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new ApiFetchError(response.status, errorText || 'Failed to submit hearing test');
+  }
+
+  return response.json();
+};
