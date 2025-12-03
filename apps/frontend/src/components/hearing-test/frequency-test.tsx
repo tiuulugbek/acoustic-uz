@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Play, Square, Check, X } from 'lucide-react';
+import { Play, Square, Minus, Plus, Volume2 } from 'lucide-react';
 import type { Locale } from '@/lib/locale';
 
 interface FrequencyTestProps {
@@ -31,7 +31,8 @@ export default function FrequencyTest({
 }: FrequencyTestProps) {
   const isRu = locale === 'ru';
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [results, setResults] = useState<Record<string, boolean>>({});
+  const [results, setResults] = useState<Record<string, number>>({}); // Store volume levels instead of boolean
+  const [currentVolume, setCurrentVolume] = useState(1.0); // Start at max volume
   const [hasPlayed, setHasPlayed] = useState(false);
 
   const currentFrequency = frequencies[currentIndex];
@@ -42,64 +43,88 @@ export default function FrequencyTest({
     // Reset when component mounts or ear changes
     setCurrentIndex(0);
     setResults({});
+    setCurrentVolume(1.0);
     setHasPlayed(false);
     stopTone();
   }, [ear, stopTone]);
 
+  useEffect(() => {
+    // Reset volume when frequency changes
+    setCurrentVolume(1.0);
+    setHasPlayed(false);
+    stopTone();
+  }, [currentFrequency, stopTone]);
+
   const handlePlay = () => {
     playTone({
       frequency: currentFrequency,
-      volume: volume,
+      volume: currentVolume,
       duration: 2000,
       onEnd: () => setHasPlayed(true),
     });
   };
 
-  const handleAnswer = (heard: boolean) => {
+  const handleVolumeChange = (newVolume: number) => {
+    const clampedVolume = Math.max(0, Math.min(1, newVolume));
+    setCurrentVolume(clampedVolume);
+    if (isPlaying) {
+      stopTone();
+      setTimeout(() => {
+        playTone({
+          frequency: currentFrequency,
+          volume: clampedVolume,
+          duration: 2000,
+          onEnd: () => setHasPlayed(true),
+        });
+      }, 100);
+    }
+  };
+
+  const handleContinue = () => {
+    // Save current volume level (if > 0, means heard; if 0, means not heard)
     const newResults = {
       ...results,
-      [currentFrequency.toString()]: heard,
+      [currentFrequency.toString()]: currentVolume > 0 ? 1 : 0, // Store as 1 (heard) or 0 (not heard)
     };
     setResults(newResults);
     setHasPlayed(false);
     stopTone();
 
     if (isLast) {
-      // All frequencies tested
+      // Convert to boolean results for compatibility
+      const booleanResults: Record<string, boolean> = {};
+      Object.keys(newResults).forEach((freq) => {
+        booleanResults[freq] = newResults[freq] > 0;
+      });
       setTimeout(() => {
-        onComplete(newResults);
+        onComplete(booleanResults);
       }, 300);
     } else {
       // Move to next frequency
       setTimeout(() => {
         setCurrentIndex(currentIndex + 1);
+        setCurrentVolume(1.0);
       }, 300);
     }
   };
 
-  const handleNext = () => {
-    if (isLast) {
-      onComplete(results);
-    } else {
-      setCurrentIndex(currentIndex + 1);
-      setHasPlayed(false);
-    }
-  };
-
   return (
-    <div className="space-y-10 max-w-2xl mx-auto">
+    <div className="space-y-10 max-w-3xl mx-auto">
       {/* Header */}
-      <div className="text-center space-y-3">
+      <div className="text-center space-y-4">
         <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
           {isRu
-            ? ear === 'left' ? 'Тест левого уха' : 'Тест правого уха'
-            : ear === 'left' ? 'Chap quloq testi' : 'O\'ng quloq testi'}
+            ? ear === 'left' ? 'Левое ухо' : 'Правое ухо'
+            : ear === 'left' ? 'Chap quloq' : 'O\'ng quloq'}
         </h2>
-        <p className="text-xl text-gray-600 font-medium">
-          {isRu
-            ? `${currentFrequency} Гц`
-            : `${currentFrequency} Hz`}
-        </p>
+        <div className="flex items-center justify-center gap-2">
+          <span className="text-xl text-gray-600 font-medium">
+            {isRu ? `${currentFrequency} Гц` : `${currentFrequency} Hz`}
+          </span>
+          <button className="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50">
+            <span className="text-xs text-gray-600">?</span>
+          </button>
+        </div>
         <div className="mt-2">
           <div className="inline-flex items-center gap-2 px-5 py-2 bg-gray-100 rounded-full">
             <span className="text-base font-semibold text-gray-700">
@@ -109,98 +134,102 @@ export default function FrequencyTest({
         </div>
       </div>
 
-      {/* Test Area */}
-      <div className="space-y-8">
+      {/* Instructions */}
+      <div className="text-center space-y-2">
+        <p className="text-lg text-gray-800">
+          <span className="font-bold text-brand-primary">
+            {isRu ? 'Перетащите' : 'Surib'} {isRu ? 'или используйте' : 'yoki ishlating'}
+          </span>
+          {' '}
+          {isRu ? '+ - для регулировки громкости тона, пока вы едва его не услышите' : '+ - ovozni sozlash uchun, ovozni zo\'rg\'a eshitguncha'}
+        </p>
+        <p className="text-sm text-gray-600">
+          {isRu
+            ? 'Держите наушники и устройство на максимальной громкости'
+            : 'Quloqchinlar va qurilma ovozini maksimal darajada saqlang'}
+        </p>
+      </div>
+
+      {/* Volume Control - ReSound style */}
+      <div className="max-w-2xl mx-auto space-y-6">
+        {/* Volume Slider */}
+        <div className="flex items-center gap-4">
+          {/* Minus Button */}
+          <button
+            onClick={() => handleVolumeChange(currentVolume - 0.05)}
+            disabled={isSubmitting || currentVolume <= 0}
+            className="w-12 h-12 rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Minus className="w-5 h-5 text-gray-700" />
+          </button>
+
+          {/* Slider */}
+          <div className="flex-1 relative">
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.01"
+              value={currentVolume}
+              onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+              className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-brand-primary"
+              disabled={isSubmitting}
+            />
+            <div className="absolute top-0 left-0 right-0 flex justify-between text-xs text-gray-500 mt-1">
+              <span>{isRu ? 'Тихий' : 'Past'}</span>
+              <span>{isRu ? 'Громко' : 'Baland'}</span>
+            </div>
+          </div>
+
+          {/* Plus Button */}
+          <button
+            onClick={() => handleVolumeChange(currentVolume + 0.05)}
+            disabled={isSubmitting || currentVolume >= 1}
+            className="w-12 h-12 rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Plus className="w-5 h-5 text-gray-700" />
+          </button>
+        </div>
+
         {/* Play Button */}
-        <div className="flex justify-center py-8">
+        <div className="flex justify-center py-6">
           <button
             onClick={isPlaying ? stopTone : handlePlay}
             disabled={isSubmitting}
-            className={`w-40 h-40 rounded-full flex items-center justify-center text-white transition-all transform ${
+            className={`w-16 h-16 rounded-full flex items-center justify-center text-white transition-all transform ${
               isPlaying
                 ? 'bg-red-500 hover:bg-red-600 scale-105'
-                : 'bg-brand-primary hover:bg-brand-primary/90 hover:scale-105'
-            } shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100`}
+                : 'bg-gray-800 hover:bg-gray-900 hover:scale-105'
+            } shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100`}
           >
             {isPlaying ? (
-              <Square className="w-16 h-16" />
+              <Square className="w-8 h-8" />
             ) : (
-              <Play className="w-16 h-16 ml-2" />
+              <Play className="w-8 h-8 ml-1" />
             )}
           </button>
         </div>
-
-        {/* Answer Buttons */}
-        {hasPlayed && !results[currentFrequency.toString()] && (
-          <div className="grid grid-cols-2 gap-6 max-w-lg mx-auto">
-            <button
-              onClick={() => handleAnswer(true)}
-              disabled={isSubmitting}
-              className="px-8 py-6 bg-green-500 text-white rounded-xl font-bold text-lg hover:bg-green-600 transition-all transform hover:scale-105 shadow-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
-            >
-              <Check className="w-6 h-6" />
-              {isRu ? 'Слышу' : 'Eshitdim'}
-            </button>
-            <button
-              onClick={() => handleAnswer(false)}
-              disabled={isSubmitting}
-              className="px-8 py-6 bg-red-500 text-white rounded-xl font-bold text-lg hover:bg-red-600 transition-all transform hover:scale-105 shadow-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
-            >
-              <X className="w-6 h-6" />
-              {isRu ? 'Не слышу' : 'Eshitmadim'}
-            </button>
-          </div>
-        )}
-
-        {/* Result Display */}
-        {results[currentFrequency.toString()] !== undefined && (
-          <div className="text-center py-4">
-            <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-full text-lg font-bold ${
-              results[currentFrequency.toString()]
-                ? 'bg-green-100 text-green-800'
-                : 'bg-red-100 text-red-800'
-            }`}>
-              {results[currentFrequency.toString()] ? (
-                <>
-                  <Check className="w-6 h-6" />
-                  <span>{isRu ? 'Слышу' : 'Eshitdim'}</span>
-                </>
-              ) : (
-                <>
-                  <X className="w-6 h-6" />
-                  <span>{isRu ? 'Не слышу' : 'Eshitmadim'}</span>
-                </>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Next Button */}
-        {results[currentFrequency.toString()] !== undefined && !isLast && (
-          <div className="flex justify-center pt-4">
-            <button
-              onClick={handleNext}
-              disabled={isSubmitting}
-              className="px-10 py-4 bg-brand-primary text-white rounded-xl font-bold text-lg hover:bg-brand-primary/90 transition-all transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
-            >
-              {isRu ? 'Следующая частота →' : 'Keyingi chastota →'}
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Navigation */}
-      {!allAnswered && (
-        <div className="flex justify-center">
-          <button
-            onClick={onBack}
-            disabled={isSubmitting}
-            className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isRu ? 'Назад' : 'Orqaga'}
-          </button>
-        </div>
-      )}
+      <div className="flex justify-center gap-4 pt-6">
+        <button
+          onClick={onBack}
+          disabled={isSubmitting}
+          className="px-8 py-3 border-2 border-gray-300 rounded-xl text-gray-700 font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isRu ? '← Назад' : '← Orqaga'}
+        </button>
+        <button
+          onClick={handleContinue}
+          disabled={isSubmitting || !hasPlayed}
+          className="px-10 py-3 bg-brand-primary text-white rounded-xl font-bold text-lg hover:bg-brand-primary/90 transition-all transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
+        >
+          {isRu 
+            ? (isLast ? 'Завершить →' : 'Следующая частота →')
+            : (isLast ? 'Yakunlash →' : 'Keyingi chastota →')}
+        </button>
+      </div>
 
       {/* Loading */}
       {isSubmitting && (
