@@ -1575,14 +1575,6 @@ export interface SettingsDto {
     services?: { sections?: SidebarSection[]; brandIds?: string[] };
     posts?: { sections?: SidebarSection[]; brandIds?: string[] };
   } | null;
-  // AmoCRM settings
-  amocrmDomain?: string | null;
-  amocrmClientId?: string | null;
-  amocrmClientSecret?: string | null;
-  amocrmAccessToken?: string | null;
-  amocrmRefreshToken?: string | null;
-  amocrmPipelineId?: string | null;
-  amocrmStatusId?: string | null;
   updatedAt: string;
 }
 
@@ -1611,14 +1603,6 @@ export type UpdateSettingsPayload = {
     services?: { sections?: SidebarSection[]; brandIds?: string[] };
     posts?: { sections?: SidebarSection[]; brandIds?: string[] };
   };
-  // AmoCRM settings
-  amocrmDomain?: string;
-  amocrmClientId?: string;
-  amocrmClientSecret?: string;
-  amocrmAccessToken?: string;
-  amocrmRefreshToken?: string;
-  amocrmPipelineId?: string;
-  amocrmStatusId?: string;
 };
 
 export const getSettings = () =>
@@ -1629,26 +1613,4 @@ export const updateSettings = (payload: UpdateSettingsPayload) =>
     body: JSON.stringify(payload),
   });
 
-// AmoCRM API
-export interface AmoCRMAuthUrlResponse {
-  authUrl: string;
-}
-
-export interface AmoCRMTestResponse {
-  success: boolean;
-  message: string;
-  account?: {
-    id: number;
-    name: string;
-  };
-}
-
-// DEPRECATED: Do not use this function. Use window.location.href instead.
-// This function is kept for backward compatibility but should not be used.
-// export const getAmoCRMAuthUrl = () =>
-//   request<AmoCRMAuthUrlResponse>('/amocrm/authorize');
-
-export const testAmoCRMConnection = () =>
-  request<AmoCRMTestResponse>('/amocrm/test', {
-    method: 'POST',
-  });
+// AmoCRM API - REMOVED (no longer used)

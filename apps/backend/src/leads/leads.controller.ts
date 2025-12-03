@@ -2,7 +2,6 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@n
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { LeadsService } from './leads.service';
 import { TelegramService } from './telegram/telegram.service';
-import { AmoCRMService } from './amocrm/amocrm.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RbacGuard } from '../common/guards/rbac.guard';
 import { RequirePermissions } from '../common/decorators/permissions.decorator';
@@ -35,8 +34,7 @@ interface TelegramUpdate {
 export class LeadsController {
   constructor(
     private readonly leadsService: LeadsService,
-    private readonly telegramService: TelegramService,
-    private readonly amoCrmService: AmoCRMService
+    private readonly telegramService: TelegramService
   ) {}
 
   @Public()
@@ -118,19 +116,14 @@ export class LeadsController {
       // If we have at least a name or phone, create a lead
       if (fullName || phone) {
         // Create lead in database
-        const lead = await this.leadsService.create({
+        // Note: Telegram button leads are stored in database but not sent to Telegram forms bot
+        // (they are handled separately if needed)
+        await this.leadsService.create({
           name: fullName,
           phone: phone || 'N/A',
           source: 'telegram_button',
           message: messageText,
         });
-
-        // Send to AmoCRM (only, not to Telegram forms bot)
-        try {
-          await this.amoCrmService.sendLead(lead);
-        } catch (error) {
-          console.error('Failed to send Telegram button lead to AmoCRM:', error);
-        }
 
         // Optionally send confirmation back to user
         const buttonBot = await this.telegramService.getButtonBot();

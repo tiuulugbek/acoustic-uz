@@ -49,7 +49,7 @@ export class SettingsService {
     email?: string;
     telegramBotToken?: string; // Bot token for forms (sends to Telegram)
     telegramChatId?: string; // Chat ID for forms bot
-    telegramButtonBotToken?: string; // Bot token for Telegram button (sends to AmoCRM)
+    telegramButtonBotToken?: string; // Bot token for Telegram button
     telegramButtonBotUsername?: string; // Bot username for Telegram button (e.g., @yourbot)
     telegramButtonMessage_uz?: string; // Message shown in chat bubble (Uzbek)
     telegramButtonMessage_ru?: string; // Message shown in chat bubble (Russian)
@@ -63,15 +63,6 @@ export class SettingsService {
     sidebarSections?: unknown;
     sidebarBrandIds?: string[];
     sidebarConfigs?: unknown; // { catalog: { sections: [...], brandIds: [...] }, products: {...}, services: {...}, posts: {...} }
-    // AmoCRM settings
-    amocrmDomain?: string;
-    amocrmClientId?: string;
-    amocrmClientSecret?: string;
-    amocrmAccessToken?: string;
-    amocrmRefreshToken?: string;
-    amocrmPipelineId?: string;
-    amocrmStatusId?: string;
-    amocrmTokenExpiresAt?: Date | string | null;
   }) {
     try {
       // Extract only valid Prisma fields
@@ -94,13 +85,6 @@ export class SettingsService {
         telegramButtonMessage_ru,
         brandPrimary,
         brandAccent,
-        amocrmDomain,
-        amocrmClientId,
-        amocrmClientSecret,
-        amocrmAccessToken,
-        amocrmRefreshToken,
-        amocrmPipelineId,
-        amocrmStatusId,
       } = data;
 
       // Clean sidebarConfigs: ensure proper JSON serialization
@@ -194,34 +178,6 @@ export class SettingsService {
       // Add other fields
       if (brandPrimary !== undefined) updateData.brandPrimary = brandPrimary;
       if (brandAccent !== undefined) updateData.brandAccent = brandAccent;
-      if (amocrmDomain !== undefined) {
-        const normalized = normalizeString(amocrmDomain);
-        if (normalized !== undefined) updateData.amocrmDomain = normalized;
-      }
-      if (amocrmClientId !== undefined) {
-        const normalized = normalizeString(amocrmClientId);
-        if (normalized !== undefined) updateData.amocrmClientId = normalized;
-      }
-      if (amocrmClientSecret !== undefined) {
-        const normalized = normalizeString(amocrmClientSecret);
-        if (normalized !== undefined) updateData.amocrmClientSecret = normalized;
-      }
-      if (amocrmAccessToken !== undefined) {
-        const normalized = normalizeString(amocrmAccessToken);
-        if (normalized !== undefined) updateData.amocrmAccessToken = normalized;
-      }
-      if (amocrmRefreshToken !== undefined) {
-        const normalized = normalizeString(amocrmRefreshToken);
-        if (normalized !== undefined) updateData.amocrmRefreshToken = normalized;
-      }
-      if (amocrmPipelineId !== undefined) {
-        const normalized = normalizeString(amocrmPipelineId);
-        if (normalized !== undefined) updateData.amocrmPipelineId = normalized;
-      }
-      if (amocrmStatusId !== undefined) {
-        const normalized = normalizeString(amocrmStatusId);
-        if (normalized !== undefined) updateData.amocrmStatusId = normalized;
-      }
       
       // Add JSON fields
       Object.assign(updateData, jsonFields);
@@ -229,7 +185,6 @@ export class SettingsService {
       if (catalogHeroImageId !== undefined) updateData.catalogHeroImageId = catalogHeroImageId || null;
       if (logoId !== undefined) updateData.logoId = logoId || null;
       if (sidebarBrandIds !== undefined) updateData.sidebarBrandIds = sidebarBrandIds || [];
-      if (data.amocrmTokenExpiresAt !== undefined) updateData.amocrmTokenExpiresAt = data.amocrmTokenExpiresAt || null;
 
       console.log('🔵 [Settings] Update data keys:', Object.keys(updateData));
       console.log('🔵 [Settings] Update data values:', {

@@ -136,12 +136,6 @@ export default function SettingsPage() {
         brandAccent: settings.brandAccent || '#3F3091',
         catalogHeroImageId: settings.catalogHeroImageId || null,
         logoId: settings.logoId || null,
-        // AmoCRM settings
-        amocrmDomain: settings.amocrmDomain || '',
-        amocrmClientId: settings.amocrmClientId || '',
-        amocrmClientSecret: settings.amocrmClientSecret || '',
-        amocrmPipelineId: settings.amocrmPipelineId || '',
-        amocrmStatusId: settings.amocrmStatusId || '',
       });
       if (settings.catalogHeroImage?.url) {
         setPreviewCatalogHero(normalizeImageUrl(settings.catalogHeroImage.url));
@@ -309,12 +303,6 @@ export default function SettingsPage() {
         sidebarSections: sidebarSections.length > 0 ? sidebarSections : undefined,
         sidebarBrandIds: values.sidebarBrandIds || [],
         // Don't include sidebarConfigs here - it's saved separately
-        // AmoCRM settings
-        amocrmDomain: values.amocrmDomain?.trim() || undefined,
-        amocrmClientId: values.amocrmClientId?.trim() || undefined,
-        amocrmClientSecret: values.amocrmClientSecret?.trim() || undefined,
-        amocrmPipelineId: values.amocrmPipelineId?.trim() || undefined,
-        amocrmStatusId: values.amocrmStatusId?.trim() || undefined,
       };
       await updateMutation.mutateAsync(payload);
     } catch (error) {
