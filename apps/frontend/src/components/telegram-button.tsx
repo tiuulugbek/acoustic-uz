@@ -5,10 +5,12 @@ import { getSettings } from '@/lib/api';
 import { getLocaleFromDOM } from '@/lib/locale-client';
 import type { SettingsResponse } from '@/lib/api';
 import type { Locale } from '@/lib/locale';
+import { Phone } from 'lucide-react';
 
 export default function TelegramButton() {
   const [botUsername, setBotUsername] = useState<string | null>(null);
   const [message, setMessage] = useState<string>('');
+  const [phoneNumber, setPhoneNumber] = useState<string>('1385');
   const [isLoading, setIsLoading] = useState(true);
   const [isVisible, setIsVisible] = useState(true);
   const [locale, setLocale] = useState<Locale>('uz');
@@ -30,8 +32,14 @@ export default function TelegramButton() {
           hasMessageRu: !!settings.telegramButtonMessage_ru,
           messageUz: settings.telegramButtonMessage_uz,
           messageRu: settings.telegramButtonMessage_ru,
+          phonePrimary: settings.phonePrimary,
         });
         console.log('[TelegramButton] Full settings object:', JSON.stringify(settings, null, 2));
+        
+        // Set phone number
+        if (settings.phonePrimary) {
+          setPhoneNumber(settings.phonePrimary);
+        }
         
         if (settings.telegramButtonBotUsername) {
           // Remove @ if present
@@ -100,8 +108,8 @@ export default function TelegramButton() {
 
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
-      {/* Chat Bubble */}
-      <div className="relative max-w-xs rounded-2xl bg-white px-4 py-3 shadow-xl animate-in slide-in-from-bottom-4 fade-in">
+      {/* Chat Bubble - Desktop only */}
+      <div className="hidden md:block relative max-w-xs rounded-2xl bg-white px-4 py-3 shadow-xl animate-in slide-in-from-bottom-4 fade-in">
         {/* Close button */}
         <button
           onClick={handleClose}
@@ -133,14 +141,35 @@ export default function TelegramButton() {
         </p>
       </div>
 
-      {/* Telegram Button */}
+      {/* Mobile Appointment Button */}
+      <div className="md:hidden">
+        <a
+          href={`https://t.me/${botUsername}`}
+          onClick={(e) => {
+            e.preventDefault();
+            handleClick();
+          }}
+          className="flex items-center gap-2 rounded-full bg-[hsl(var(--brand-primary))] px-4 py-2.5 shadow-lg transition-all hover:scale-105 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-[hsl(var(--brand-primary))] focus:ring-offset-2 animate-in slide-in-from-bottom-4 fade-in"
+          aria-label={locale === 'ru' ? 'Записаться на прием' : 'Qabulga yozilish'}
+        >
+          <span className="text-sm font-semibold text-white whitespace-nowrap" suppressHydrationWarning>
+            {locale === 'ru' ? 'Онлайн-запись' : 'Qabulga yozilish'}
+          </span>
+          <div className="flex items-center gap-1.5 rounded-full bg-white/20 px-2 py-1">
+            <Phone size={14} className="text-white" />
+            <span className="text-sm font-bold text-white">{phoneNumber}</span>
+          </div>
+        </a>
+      </div>
+
+      {/* Telegram Button - Desktop only */}
       <a
         href={`https://t.me/${botUsername}`}
         onClick={(e) => {
           e.preventDefault();
           handleClick();
         }}
-        className="amo-button__link flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-lg transition-all hover:scale-110 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-[#0088cc] focus:ring-offset-2 animate-in slide-in-from-bottom-4 fade-in"
+        className="hidden md:flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-lg transition-all hover:scale-110 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-[#0088cc] focus:ring-offset-2 animate-in slide-in-from-bottom-4 fade-in"
         data-social="telegram"
         target="_blank"
         rel="noopener noreferrer"
