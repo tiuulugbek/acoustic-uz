@@ -440,32 +440,45 @@ export default function SettingsPage() {
   // Handle Telegram settings save
   const handleTelegramSettingsSave = async () => {
     try {
-      const values = await form.validateFields(['telegramBotToken', 'telegramChatId', 'telegramButtonBotToken', 'telegramButtonBotUsername', 'telegramButtonMessage_uz', 'telegramButtonMessage_ru']);
-      console.log('[Settings] Telegram form values:', {
-        telegramButtonBotToken: values.telegramButtonBotToken ? '***' : null,
-        telegramButtonBotUsername: values.telegramButtonBotUsername,
-        telegramButtonMessage_uz: values.telegramButtonMessage_uz,
-        telegramButtonMessage_ru: values.telegramButtonMessage_ru,
+      // Get all form values without validation (to allow empty values)
+      const formValues = form.getFieldsValue();
+      console.log('[Settings] Telegram form values (all):', {
+        telegramBotToken: formValues.telegramBotToken ? '***' : null,
+        telegramChatId: formValues.telegramChatId,
+        telegramButtonBotToken: formValues.telegramButtonBotToken ? '***' : null,
+        telegramButtonBotUsername: formValues.telegramButtonBotUsername,
+        telegramButtonMessage_uz: formValues.telegramButtonMessage_uz,
+        telegramButtonMessage_ru: formValues.telegramButtonMessage_ru,
       });
+      
       const payload: UpdateSettingsPayload = {
-        telegramBotToken: values.telegramBotToken || undefined,
-        telegramChatId: values.telegramChatId || undefined,
-        telegramButtonBotToken: values.telegramButtonBotToken || undefined,
-        telegramButtonBotUsername: values.telegramButtonBotUsername || undefined,
-        telegramButtonMessage_uz: values.telegramButtonMessage_uz || undefined,
-        telegramButtonMessage_ru: values.telegramButtonMessage_ru || undefined,
+        telegramBotToken: formValues.telegramBotToken || undefined,
+        telegramChatId: formValues.telegramChatId || undefined,
+        telegramButtonBotToken: formValues.telegramButtonBotToken || undefined,
+        telegramButtonBotUsername: formValues.telegramButtonBotUsername || undefined,
+        telegramButtonMessage_uz: formValues.telegramButtonMessage_uz || undefined,
+        telegramButtonMessage_ru: formValues.telegramButtonMessage_ru || undefined,
       };
+      
       console.log('[Settings] Telegram payload being sent:', {
+        telegramBotToken: payload.telegramBotToken ? '***' : undefined,
+        telegramChatId: payload.telegramChatId,
         telegramButtonBotToken: payload.telegramButtonBotToken ? '***' : undefined,
         telegramButtonBotUsername: payload.telegramButtonBotUsername,
         telegramButtonMessage_uz: payload.telegramButtonMessage_uz,
         telegramButtonMessage_ru: payload.telegramButtonMessage_ru,
       });
+      
       await updateMutation.mutateAsync(payload);
       console.log('[Settings] Telegram settings saved successfully');
-    } catch (error) {
-      console.error('[Settings] Telegram form validation error:', error);
-      message.error('Formani to\'ldirishda xatolik yuz berdi');
+    } catch (error: any) {
+      console.error('[Settings] Telegram form save error:', error);
+      console.error('[Settings] Error details:', {
+        message: error?.message,
+        response: error?.response,
+        status: error?.status,
+      });
+      message.error(error?.message || 'Sozlamalarni saqlashda xatolik yuz berdi');
     }
   };
 
