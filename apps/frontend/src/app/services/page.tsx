@@ -4,7 +4,6 @@ import type { Metadata } from 'next';
 import { detectLocale } from '@/lib/locale-server';
 import { getServiceCategories, getBranches } from '@/lib/api-server';
 import BranchesSidebar from '@/components/branches-sidebar';
-import PageHeader from '@/components/page-header';
 
 // Force dynamic rendering to ensure locale is always read from cookies
 export const dynamic = 'force-dynamic';
