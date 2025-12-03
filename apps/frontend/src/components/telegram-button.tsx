@@ -2,15 +2,21 @@
 
 import { useEffect, useState } from 'react';
 import { getSettings } from '@/lib/api';
-import { detectLocale } from '@/lib/locale';
+import { getLocaleFromDOM } from '@/lib/locale-client';
 import type { SettingsResponse } from '@/lib/api';
+import type { Locale } from '@/lib/locale';
 
 export default function TelegramButton() {
   const [botUsername, setBotUsername] = useState<string | null>(null);
   const [message, setMessage] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [isVisible, setIsVisible] = useState(true);
-  const locale = detectLocale();
+  const [locale, setLocale] = useState<Locale>('uz');
+
+  // Get locale from DOM (client-side)
+  useEffect(() => {
+    setLocale(getLocaleFromDOM());
+  }, []);
 
   useEffect(() => {
     const fetchSettings = async () => {
