@@ -67,9 +67,12 @@ export class AmoCRMController {
     const authUrl = `https://${cleanDomain}/oauth2/authorize?client_id=${settings.amocrmClientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;
     
     console.log('[AmoCRM] Redirecting to:', authUrl);
+    console.log('[AmoCRM] State parameter:', state);
+    console.log('[AmoCRM] Redirect URI:', redirectUri);
 
     // Redirect directly to AmoCRM OAuth page (as per AmoCRM documentation)
     // This ensures proper browser redirect, not a JavaScript fetch request
+    // Similar to PHP: header('Location: ' . $authUrl); exit;
     return res.redirect(authUrl);
   }
 
