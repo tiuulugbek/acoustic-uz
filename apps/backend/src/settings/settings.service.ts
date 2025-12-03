@@ -134,17 +134,61 @@ export class SettingsService {
         return trimmed === '' ? undefined : trimmed;
       };
 
+      // Debug: Log incoming values
+      console.log('🔵 [Settings] Incoming values:', {
+        telegramBotToken: telegramBotToken ? '***SET***' : 'undefined',
+        telegramChatId: telegramChatId || 'undefined',
+        telegramButtonBotToken: telegramButtonBotToken ? '***SET***' : 'undefined',
+        telegramButtonBotUsername: telegramButtonBotUsername || 'undefined',
+        telegramButtonMessage_uz: telegramButtonMessage_uz ? 'SET' : 'undefined',
+        telegramButtonMessage_ru: telegramButtonMessage_ru ? 'SET' : 'undefined',
+      });
+
       // Build update object with only valid Prisma fields
-      const updateData: Record<string, unknown> = {
-        ...(phonePrimary !== undefined ? { phonePrimary: normalizeString(phonePrimary) } : {}),
-        ...(phoneSecondary !== undefined ? { phoneSecondary: normalizeString(phoneSecondary) } : {}),
-        ...(email !== undefined ? { email: normalizeString(email) } : {}),
-        ...(telegramBotToken !== undefined ? { telegramBotToken: normalizeString(telegramBotToken) } : {}),
-        ...(telegramChatId !== undefined ? { telegramChatId: normalizeString(telegramChatId) } : {}),
-        ...(telegramButtonBotToken !== undefined ? { telegramButtonBotToken: normalizeString(telegramButtonBotToken) } : {}),
-        ...(telegramButtonBotUsername !== undefined ? { telegramButtonBotUsername: normalizeString(telegramButtonBotUsername) } : {}),
-        ...(telegramButtonMessage_uz !== undefined ? { telegramButtonMessage_uz: normalizeString(telegramButtonMessage_uz) } : {}),
-        ...(telegramButtonMessage_ru !== undefined ? { telegramButtonMessage_ru: normalizeString(telegramButtonMessage_ru) } : {}),
+      // IMPORTANT: Always include fields if they are in the request, even if normalized to undefined
+      // This allows clearing fields by sending empty strings
+      const updateData: Record<string, unknown> = {};
+      
+      if (phonePrimary !== undefined) {
+        const normalized = normalizeString(phonePrimary);
+        if (normalized !== undefined) updateData.phonePrimary = normalized;
+      }
+      if (phoneSecondary !== undefined) {
+        const normalized = normalizeString(phoneSecondary);
+        if (normalized !== undefined) updateData.phoneSecondary = normalized;
+      }
+      if (email !== undefined) {
+        const normalized = normalizeString(email);
+        if (normalized !== undefined) updateData.email = normalized;
+      }
+      if (telegramBotToken !== undefined) {
+        const normalized = normalizeString(telegramBotToken);
+        if (normalized !== undefined) updateData.telegramBotToken = normalized;
+      }
+      if (telegramChatId !== undefined) {
+        const normalized = normalizeString(telegramChatId);
+        if (normalized !== undefined) updateData.telegramChatId = normalized;
+      }
+      if (telegramButtonBotToken !== undefined) {
+        const normalized = normalizeString(telegramButtonBotToken);
+        console.log('🔵 [Settings] telegramButtonBotToken normalized:', normalized ? '***SET***' : 'undefined');
+        if (normalized !== undefined) updateData.telegramButtonBotToken = normalized;
+      }
+      if (telegramButtonBotUsername !== undefined) {
+        const normalized = normalizeString(telegramButtonBotUsername);
+        console.log('🔵 [Settings] telegramButtonBotUsername normalized:', normalized || 'undefined');
+        if (normalized !== undefined) updateData.telegramButtonBotUsername = normalized;
+      }
+      if (telegramButtonMessage_uz !== undefined) {
+        const normalized = normalizeString(telegramButtonMessage_uz);
+        console.log('🔵 [Settings] telegramButtonMessage_uz normalized:', normalized ? 'SET' : 'undefined');
+        if (normalized !== undefined) updateData.telegramButtonMessage_uz = normalized;
+      }
+      if (telegramButtonMessage_ru !== undefined) {
+        const normalized = normalizeString(telegramButtonMessage_ru);
+        console.log('🔵 [Settings] telegramButtonMessage_ru normalized:', normalized ? 'SET' : 'undefined');
+        if (normalized !== undefined) updateData.telegramButtonMessage_ru = normalized;
+      }
         ...(brandPrimary !== undefined ? { brandPrimary } : {}),
         ...(brandAccent !== undefined ? { brandAccent } : {}),
         ...(amocrmDomain !== undefined ? { amocrmDomain } : {}),
