@@ -291,7 +291,14 @@ export default function AdminLayout() {
             </button>
           </div>
         </Header>
-        <Content style={{ margin: '24px', padding: '24px', background: '#fff', flex: 1, overflow: 'auto' }}>
+        <Content style={{ 
+          margin: '24px', 
+          padding: '24px', 
+          background: '#fff', 
+          flex: 1, 
+          overflow: 'auto',
+          paddingBottom: '80px' // Space for footer
+        }}>
           <Outlet />
         </Content>
         <Footer style={{ 
@@ -301,14 +308,18 @@ export default function AdminLayout() {
           padding: '12px 24px',
           fontSize: '12px',
           color: '#8c8c8c',
-          flexShrink: 0
+          flexShrink: 0,
+          position: 'relative',
+          zIndex: 10,
+          width: '100%',
+          boxShadow: '0 -2px 8px rgba(0,0,0,0.06)'
         }}>
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <span>Admin Panel</span>
+            <span style={{ fontWeight: 500 }}>Admin Panel</span>
             <span style={{ color: '#d9d9d9' }}>•</span>
-            <span style={{ fontWeight: 500 }}>v{APP_VERSION}</span>
+            <span style={{ fontWeight: 600, color: '#F07E22' }}>v{APP_VERSION}</span>
             <span style={{ color: '#d9d9d9' }}>•</span>
-            <span title={BUILD_TIME} style={{ fontFamily: 'monospace' }}>
+            <span title={BUILD_TIME} style={{ fontFamily: 'monospace', fontSize: '11px' }}>
               {new Date(BUILD_TIME).toLocaleDateString('uz-UZ', { 
                 year: 'numeric', 
                 month: '2-digit', 
