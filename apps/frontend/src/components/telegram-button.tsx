@@ -28,7 +28,10 @@ export default function TelegramButton() {
           botUsername: settings.telegramButtonBotUsername,
           hasMessageUz: !!settings.telegramButtonMessage_uz,
           hasMessageRu: !!settings.telegramButtonMessage_ru,
+          messageUz: settings.telegramButtonMessage_uz,
+          messageRu: settings.telegramButtonMessage_ru,
         });
+        console.log('[TelegramButton] Full settings object:', JSON.stringify(settings, null, 2));
         
         if (settings.telegramButtonBotUsername) {
           // Remove @ if present
