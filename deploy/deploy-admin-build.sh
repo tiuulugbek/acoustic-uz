@@ -62,6 +62,15 @@ if [ ! -d "apps/admin/dist" ] || [ "$1" == "--rebuild" ]; then
     fi
     
     echo "✅ Admin panel build completed!"
+    
+    # Show version info
+    echo "📋 Build version info:"
+    if [ -f "apps/admin/dist/assets/index-*.js" ]; then
+        JS_FILE=$(find apps/admin/dist/assets -name "index-*.js" -type f | head -1)
+        if grep -q "__APP_VERSION__" "$JS_FILE" 2>/dev/null; then
+            echo "  Version found in build file"
+        fi
+    fi
 else
     echo "✅ Admin dist directory exists, skipping build..."
 fi
