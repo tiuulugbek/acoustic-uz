@@ -58,7 +58,7 @@ if [ ! -d "apps/admin/dist" ] || [ "$1" == "--rebuild" ]; then
     
     cd "$PROJECT_DIR"
     
-    # Verify build contains correct API URL
+    # Verify build contains correct API URL and version
     echo "🔍 Verifying build..."
     JS_FILE=$(find apps/admin/dist -name "*.js" -type f | head -1)
     if [ -n "$JS_FILE" ]; then
@@ -68,6 +68,19 @@ if [ ! -d "apps/admin/dist" ] || [ "$1" == "--rebuild" ]; then
             exit 1
         else
             echo "✅ Build verified - no localhost:3001 found"
+        fi
+        
+        # Check version in build file
+        echo "🔍 Checking version in build file..."
+        if grep -q "__APP_VERSION__" "$JS_FILE" 2>/dev/null || grep -q "1\.0\.0\." "$JS_FILE" 2>/dev/null; then
+            echo "✅ Version found in build file"
+            # Extract version if possible
+            VERSION_IN_BUILD=$(grep -oP '1\.0\.0\.\d{14}\.\w+' "$JS_FILE" | head -1 || echo "Not found")
+            if [ "$VERSION_IN_BUILD" != "Not found" ]; then
+                echo "📋 Version in build: $VERSION_IN_BUILD"
+            fi
+        else
+            echo "⚠️  Version pattern not found in build file (might be minified)"
         fi
     fi
     
