@@ -30,11 +30,11 @@ export class AmoCRMController {
       throw new Error('AmoCRM domain and Client ID must be configured first');
     }
 
-    // Remove https:// or http:// from domain if present, and trailing slashes
+    // Clean domain: remove protocol, trim, remove all slashes
     let cleanDomain = settings.amocrmDomain.trim();
     cleanDomain = cleanDomain.replace(/^https?:\/\//i, ''); // Remove http:// or https://
-    cleanDomain = cleanDomain.replace(/\/+$/, ''); // Remove trailing slashes
-    cleanDomain = cleanDomain.replace(/\/+/g, '/'); // Replace multiple slashes with single
+    cleanDomain = cleanDomain.replace(/\/+/g, ''); // Remove ALL slashes
+    cleanDomain = cleanDomain.replace(/^\/+|\/+$/g, ''); // Remove leading/trailing slashes (extra safety)
     
     const redirectUri = `${this.configService.get('APP_URL') || 'http://localhost:3001'}/api/amocrm/callback`;
     const authUrl = `https://${cleanDomain}/oauth2/authorize?client_id=${settings.amocrmClientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}`;
@@ -59,11 +59,11 @@ export class AmoCRMController {
 
       const redirectUri = `${this.configService.get('APP_URL') || 'http://localhost:3001'}/api/amocrm/callback`;
       
-      // Remove https:// or http:// from domain if present, and trailing slashes
+      // Clean domain: remove protocol, trim, remove all slashes
       let cleanDomain = settings.amocrmDomain.trim();
       cleanDomain = cleanDomain.replace(/^https?:\/\//i, ''); // Remove http:// or https://
-      cleanDomain = cleanDomain.replace(/\/+$/, ''); // Remove trailing slashes
-      cleanDomain = cleanDomain.replace(/\/+/g, '/'); // Replace multiple slashes with single
+      cleanDomain = cleanDomain.replace(/\/+/g, ''); // Remove ALL slashes
+      cleanDomain = cleanDomain.replace(/^\/+|\/+$/g, ''); // Remove leading/trailing slashes (extra safety)
       
       // Exchange authorization code for tokens
       const response = await firstValueFrom(
@@ -122,11 +122,11 @@ export class AmoCRMController {
         };
       }
 
-      // Remove https:// or http:// from domain if present, and trailing slashes
+      // Clean domain: remove protocol, trim, remove all slashes
       let cleanDomain = settings.amocrmDomain.trim();
       cleanDomain = cleanDomain.replace(/^https?:\/\//i, ''); // Remove http:// or https://
-      cleanDomain = cleanDomain.replace(/\/+$/, ''); // Remove trailing slashes
-      cleanDomain = cleanDomain.replace(/\/+/g, '/'); // Replace multiple slashes with single
+      cleanDomain = cleanDomain.replace(/\/+/g, ''); // Remove ALL slashes
+      cleanDomain = cleanDomain.replace(/^\/+|\/+$/g, ''); // Remove leading/trailing slashes (extra safety)
       
       // Test API call to AmoCRM
       const response = await firstValueFrom(

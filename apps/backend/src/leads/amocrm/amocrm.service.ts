@@ -141,11 +141,11 @@ export class AmoCRMService {
    */
   private async refreshAccessToken(settings: AmoCRMSettings): Promise<void> {
     try {
-      // Remove https:// or http:// from domain if present, and trailing slashes
+      // Clean domain: remove protocol, trim, remove all slashes
       let cleanDomain = settings.amocrmDomain.trim();
       cleanDomain = cleanDomain.replace(/^https?:\/\//i, ''); // Remove http:// or https://
-      cleanDomain = cleanDomain.replace(/\/+$/, ''); // Remove trailing slashes
-      cleanDomain = cleanDomain.replace(/\/+/g, '/'); // Replace multiple slashes with single
+      cleanDomain = cleanDomain.replace(/\/+/g, ''); // Remove ALL slashes
+      cleanDomain = cleanDomain.replace(/^\/+|\/+$/g, ''); // Remove leading/trailing slashes (extra safety)
       
       const response = await firstValueFrom(
         this.httpService.post(
@@ -184,11 +184,11 @@ export class AmoCRMService {
    */
   private async createContact(lead: AmoCRMLead, settings: AmoCRMSettings): Promise<number | null> {
     try {
-      // Remove https:// or http:// from domain if present, and trailing slashes
+      // Clean domain: remove protocol, trim, remove all slashes
       let cleanDomain = settings.amocrmDomain.trim();
       cleanDomain = cleanDomain.replace(/^https?:\/\//i, ''); // Remove http:// or https://
-      cleanDomain = cleanDomain.replace(/\/+$/, ''); // Remove trailing slashes
-      cleanDomain = cleanDomain.replace(/\/+/g, '/'); // Replace multiple slashes with single
+      cleanDomain = cleanDomain.replace(/\/+/g, ''); // Remove ALL slashes
+      cleanDomain = cleanDomain.replace(/^\/+|\/+$/g, ''); // Remove leading/trailing slashes (extra safety)
       
       const contactData = {
         name: lead.name,
@@ -251,11 +251,11 @@ export class AmoCRMService {
     settings: AmoCRMSettings
   ): Promise<number | null> {
     try {
-      // Remove https:// or http:// from domain if present, and trailing slashes
+      // Clean domain: remove protocol, trim, remove all slashes
       let cleanDomain = settings.amocrmDomain.trim();
       cleanDomain = cleanDomain.replace(/^https?:\/\//i, ''); // Remove http:// or https://
-      cleanDomain = cleanDomain.replace(/\/+$/, ''); // Remove trailing slashes
-      cleanDomain = cleanDomain.replace(/\/+/g, '/'); // Replace multiple slashes with single
+      cleanDomain = cleanDomain.replace(/\/+/g, ''); // Remove ALL slashes
+      cleanDomain = cleanDomain.replace(/^\/+|\/+$/g, ''); // Remove leading/trailing slashes (extra safety)
       
       const dealName = lead.productId
         ? `So'rov: ${lead.name}`
@@ -330,11 +330,11 @@ export class AmoCRMService {
    */
   private async addNote(dealId: number, message: string, settings: AmoCRMSettings): Promise<void> {
     try {
-      // Remove https:// or http:// from domain if present, and trailing slashes
+      // Clean domain: remove protocol, trim, remove all slashes
       let cleanDomain = settings.amocrmDomain.trim();
       cleanDomain = cleanDomain.replace(/^https?:\/\//i, ''); // Remove http:// or https://
-      cleanDomain = cleanDomain.replace(/\/+$/, ''); // Remove trailing slashes
-      cleanDomain = cleanDomain.replace(/\/+/g, '/'); // Replace multiple slashes with single
+      cleanDomain = cleanDomain.replace(/\/+/g, ''); // Remove ALL slashes
+      cleanDomain = cleanDomain.replace(/^\/+|\/+$/g, ''); // Remove leading/trailing slashes (extra safety)
       
       const noteData = {
         entity_id: dealId,
