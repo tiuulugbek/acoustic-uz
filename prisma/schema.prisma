@@ -85,13 +85,14 @@ model Setting {
   sidebarSections    Json? // Array of { id, title_uz, title_ru, link, icon, imageId, order }
   sidebarBrandIds    String[] @default([]) // Array of Brand IDs to show in sidebar
   // AmoCRM settings
-  amocrmDomain       String?  // e.g., "yourcompany.amocrm.ru"
-  amocrmClientId     String?  // OAuth Client ID
-  amocrmClientSecret String?  // OAuth Client Secret
-  amocrmAccessToken  String?  // Access token (auto-refreshed)
-  amocrmRefreshToken String?  // Refresh token (auto-refreshed)
-  amocrmPipelineId   String?  // Pipeline ID for leads
-  amocrmStatusId     String?  // Status ID for leads
+  amocrmDomain         String?   // e.g., "yourcompany.amocrm.ru"
+  amocrmClientId       String?   // OAuth Client ID
+  amocrmClientSecret   String?   // OAuth Client Secret
+  amocrmAccessToken    String?   // Access token (auto-refreshed)
+  amocrmRefreshToken   String?   // Refresh token (auto-refreshed)
+  amocrmTokenExpiresAt DateTime? // Token expiration time
+  amocrmPipelineId     String?   // Pipeline ID for leads
+  amocrmStatusId       String?   // Status ID for leads
   updatedAt          DateTime @updatedAt
 }
 
