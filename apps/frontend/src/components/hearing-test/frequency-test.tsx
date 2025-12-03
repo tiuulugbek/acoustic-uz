@@ -134,16 +134,18 @@ export default function FrequencyTest({
         </div>
       </div>
 
-      {/* Instructions */}
-      <div className="text-center space-y-2">
-        <p className="text-lg text-gray-800">
+      {/* Instructions - ReSound style */}
+      <div className="text-center space-y-3">
+        <p className="text-xl md:text-2xl text-gray-900 font-medium">
           <span className="font-bold text-brand-primary">
             {isRu ? 'Перетащите' : 'Surib'} {isRu ? 'или используйте' : 'yoki ishlating'}
           </span>
           {' '}
-          {isRu ? '+ - для регулировки громкости тона, пока вы едва его не услышите' : '+ - ovozni sozlash uchun, ovozni zo\'rg\'a eshitguncha'}
+          <span className="text-gray-900">
+            {isRu ? '+ - для регулировки громкости тона, пока вы едва его не услышите' : '+ - ovozni sozlash uchun, ovozni zo\'rg\'a eshitguncha'}
+          </span>
         </p>
-        <p className="text-sm text-gray-600">
+        <p className="text-base text-gray-600">
           {isRu
             ? 'Держите наушники и устройство на максимальной громкости'
             : 'Quloqchinlar va qurilma ovozini maksimal darajada saqlang'}
@@ -151,20 +153,20 @@ export default function FrequencyTest({
       </div>
 
       {/* Volume Control - ReSound style */}
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="max-w-3xl mx-auto space-y-8">
         {/* Volume Slider */}
-        <div className="flex items-center gap-4">
-          {/* Minus Button */}
+        <div className="flex items-center gap-6 px-4">
+          {/* Minus Button - ReSound style (larger, darker) */}
           <button
             onClick={() => handleVolumeChange(currentVolume - 0.05)}
             disabled={isSubmitting || currentVolume <= 0}
-            className="w-12 h-12 rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-16 h-16 rounded-full bg-gray-800 text-white flex items-center justify-center hover:bg-gray-900 transition-colors disabled:opacity-30 disabled:cursor-not-allowed shadow-lg"
           >
-            <Minus className="w-5 h-5 text-gray-700" />
+            <Minus className="w-6 h-6" />
           </button>
 
           {/* Slider */}
-          <div className="flex-1 relative">
+          <div className="flex-1 relative py-4">
             <input
               type="range"
               min="0"
@@ -172,22 +174,27 @@ export default function FrequencyTest({
               step="0.01"
               value={currentVolume}
               onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-              className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-brand-primary"
+              className="w-full h-4 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-brand-primary"
+              style={{
+                background: `linear-gradient(to right, #F07E22 0%, #F07E22 ${currentVolume * 100}%, #e5e7eb ${currentVolume * 100}%, #e5e7eb 100%)`
+              }}
               disabled={isSubmitting}
             />
-            <div className="absolute top-0 left-0 right-0 flex justify-between text-xs text-gray-500 mt-1">
-              <span>{isRu ? 'Тихий' : 'Past'}</span>
-              <span>{isRu ? 'Громко' : 'Baland'}</span>
+            {/* Volume value display on slider */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full mb-2">
+              <div className="bg-white border-2 border-gray-300 rounded-full px-4 py-1 shadow-lg">
+                <span className="text-lg font-bold text-gray-900">{Math.round(currentVolume * 100)}</span>
+              </div>
             </div>
           </div>
 
-          {/* Plus Button */}
+          {/* Plus Button - ReSound style (larger, darker) */}
           <button
             onClick={() => handleVolumeChange(currentVolume + 0.05)}
             disabled={isSubmitting || currentVolume >= 1}
-            className="w-12 h-12 rounded-full border-2 border-gray-300 flex items-center justify-center hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-16 h-16 rounded-full bg-gray-800 text-white flex items-center justify-center hover:bg-gray-900 transition-colors disabled:opacity-30 disabled:cursor-not-allowed shadow-lg"
           >
-            <Plus className="w-5 h-5 text-gray-700" />
+            <Plus className="w-6 h-6" />
           </button>
         </div>
 
