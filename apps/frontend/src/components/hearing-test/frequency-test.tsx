@@ -8,7 +8,7 @@ interface FrequencyTestProps {
   locale: Locale;
   ear: 'left' | 'right';
   frequencies: number[];
-  onComplete: (results: Record<string, boolean>) => void;
+  onComplete: (results: Record<string, number>) => void;
   onBack: () => void;
   playTone: (options: { frequency: number; volume: number; duration?: number; onEnd?: () => void }) => void;
   stopTone: () => void;
@@ -95,23 +95,19 @@ export default function FrequencyTest({
   };
 
   const handleContinue = () => {
-    // Save current volume level (if > 0, means heard; if 0, means not heard)
+    // Save current volume level (0-1 range)
     const newResults = {
       ...results,
-      [currentFrequency.toString()]: currentVolume > 0 ? 1 : 0, // Store as 1 (heard) or 0 (not heard)
+      [currentFrequency.toString()]: currentVolume, // Store volume level (0-1)
     };
     setResults(newResults);
     setHasPlayed(false);
     stopTone();
 
     if (isLast) {
-      // Convert to boolean results for compatibility
-      const booleanResults: Record<string, boolean> = {};
-      Object.keys(newResults).forEach((freq) => {
-        booleanResults[freq] = newResults[freq] > 0;
-      });
+      // Send volume levels directly
       setTimeout(() => {
-        onComplete(booleanResults);
+        onComplete(newResults);
       }, 300);
     } else {
       // Move to next frequency

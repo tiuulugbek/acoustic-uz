@@ -22,8 +22,8 @@ export default function HearingTest() {
   const [locale, setLocale] = useState<Locale>('uz');
   const [deviceType, setDeviceType] = useState<'speaker' | 'headphone' | null>(null);
   const [volumeLevel, setVolumeLevel] = useState<number>(1);
-  const [leftEarResults, setLeftEarResults] = useState<Record<string, boolean>>({});
-  const [rightEarResults, setRightEarResults] = useState<Record<string, boolean>>({});
+  const [leftEarResults, setLeftEarResults] = useState<Record<string, number>>({});
+  const [rightEarResults, setRightEarResults] = useState<Record<string, number>>({});
   const [testResult, setTestResult] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -48,16 +48,24 @@ export default function HearingTest() {
     setStep('ready-left');
   };
 
-  const handleLeftEarComplete = (results: Record<string, boolean>) => {
+  const handleLeftEarComplete = (results: Record<string, number>) => {
     setLeftEarResults(results);
     setStep('ready-right');
   };
 
-  const calculateResults = (leftResults: Record<string, boolean>, rightResults: Record<string, boolean>) => {
+  const calculateResults = (leftResults: Record<string, number>, rightResults: Record<string, number>) => {
     const frequencies = ['250', '500', '1000', '2000', '4000', '8000'];
-    const calculateScore = (results: Record<string, boolean>) => {
-      const heard = frequencies.filter((f) => results[f] === true).length;
-      return Math.round((heard / frequencies.length) * 100);
+    const calculateScore = (results: Record<string, number>) => {
+      if (frequencies.length === 0) return 0;
+      let totalScore = 0;
+      for (const freq of frequencies) {
+        const volume = results[freq];
+        if (volume === undefined || volume === null) continue;
+        // Lower volume needed = better hearing
+        // Score is inverse of volume needed to barely hear
+        totalScore += (1 - volume) * (100 / frequencies.length);
+      }
+      return Math.round(totalScore);
     };
     
     const leftScore = calculateScore(leftResults);
@@ -81,7 +89,7 @@ export default function HearingTest() {
     };
   };
 
-  const handleRightEarComplete = async (results: Record<string, boolean>) => {
+  const handleRightEarComplete = async (results: Record<string, number>) => {
     setRightEarResults(results);
     
     // Calculate results locally first
