@@ -14,28 +14,66 @@ export default function TestReady({ locale, ear, onContinue, onBack }: TestReady
 
   return (
     <div className="space-y-12 max-w-3xl mx-auto text-center min-h-[60vh] flex flex-col justify-center">
-      {/* Ear Icon - ReSound style */}
+      {/* Ear Icon - Professional style */}
       <div className="flex justify-center py-8">
-        <svg
-          width="200"
-          height="200"
-          viewBox="0 0 200 200"
-          className="text-brand-primary"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
-          {/* Ear outline */}
-          <path
-            d="M100 40 C80 40, 60 50, 50 70 C50 90, 60 110, 70 130 C80 150, 90 160, 100 160 C110 160, 120 150, 130 130 C140 110, 150 90, 150 70 C140 50, 120 40, 100 40 Z"
-          />
-          {/* Inner ear details */}
-          <path
-            d="M100 60 C85 60, 70 70, 65 85 C65 100, 70 115, 80 130 C85 140, 90 145, 100 145 C110 145, 115 140, 120 130 C130 115, 135 100, 135 85 C130 70, 115 60, 100 60 Z"
-            fill="currentColor"
-            fillOpacity="0.1"
-          />
-        </svg>
+        <div className="relative w-48 h-48 md:w-64 md:h-64">
+          <svg
+            width="100%"
+            height="100%"
+            viewBox="0 0 200 200"
+            className="text-brand-primary"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            {/* Outer ear helix */}
+            <path
+              d="M100 35 C75 35, 55 50, 45 75 C40 95, 45 115, 55 135 C65 155, 80 165, 100 165 C120 165, 135 155, 145 135 C155 115, 160 95, 155 75 C145 50, 125 35, 100 35 Z"
+              fill="currentColor"
+              fillOpacity="0.05"
+            />
+            {/* Inner ear concha */}
+            <path
+              d="M100 55 C88 55, 78 62, 72 75 C68 88, 70 102, 78 115 C84 125, 92 130, 100 130 C108 130, 116 125, 122 115 C130 102, 132 88, 128 75 C122 62, 112 55, 100 55 Z"
+              fill="currentColor"
+              fillOpacity="0.1"
+            />
+            {/* Ear canal */}
+            <ellipse
+              cx="100"
+              cy="100"
+              rx="8"
+              ry="12"
+              fill="currentColor"
+              fillOpacity="0.15"
+            />
+            {/* Ear details - folds */}
+            <path
+              d="M85 70 Q90 75, 95 70"
+              strokeWidth="1.5"
+            />
+            <path
+              d="M105 70 Q110 75, 115 70"
+              strokeWidth="1.5"
+            />
+            <path
+              d="M90 90 Q95 95, 100 90"
+              strokeWidth="1.5"
+            />
+            <path
+              d="M100 90 Q105 95, 110 90"
+              strokeWidth="1.5"
+            />
+          </svg>
+          {/* Ear label (L or R) */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-brand-primary font-bold text-6xl md:text-7xl opacity-20">
+              {ear === 'left' ? 'L' : 'R'}
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Navigation */}
