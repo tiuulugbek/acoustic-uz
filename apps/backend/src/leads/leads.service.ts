@@ -31,8 +31,9 @@ export class LeadsService {
       data: validated,
     });
 
-    // Send to Telegram forms bot (only for non-telegram-button sources)
-    // Telegram button leads go directly to AmoCRM, not to Telegram forms bot
+    // Send to Telegram forms bot (for all form sources)
+    // All leads from website forms go to Telegram bot
+    // AmoCRM integration is disabled - all leads go to Telegram bot instead
     if (lead.source !== 'telegram_button') {
       try {
         await this.telegramService.sendLead(lead);
@@ -41,12 +42,13 @@ export class LeadsService {
       }
     }
 
-    // Send to AmoCRM (for all leads)
-    try {
-      await this.amoCrmService.sendLead(lead);
-    } catch (error) {
-      console.error('Failed to send lead to AmoCRM:', error);
-    }
+    // Note: AmoCRM integration is disabled - all leads go to Telegram bot instead
+    // Uncomment below if you want to send to AmoCRM:
+    // try {
+    //   await this.amoCrmService.sendLead(lead);
+    // } catch (error) {
+    //   console.error('Failed to send lead to AmoCRM:', error);
+    // }
 
     return lead;
   }

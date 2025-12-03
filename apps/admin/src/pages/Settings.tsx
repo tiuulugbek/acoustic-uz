@@ -710,11 +710,35 @@ export default function SettingsPage() {
             children: (
               <Form form={form} layout="vertical">
                 <Card>
-                  <h3 style={{ marginBottom: 16 }}>Telegram sozlamalari (Formalar uchun)</h3>
+                  <Alert
+                    message="Bot ma'lumotlari"
+                    description={
+                      <div>
+                        <p><strong>1. Telegram Bot (Formalar uchun):</strong></p>
+                        <ul style={{ marginLeft: 20, marginBottom: 16 }}>
+                          <li><strong>Telegram Bot Token</strong> - Saytdagi formalardan kelgan barcha so'rovlar shu botga yuboriladi</li>
+                          <li><strong>Telegram Chat ID</strong> - Formalar yuboriladigan chat ID (masalan: @your_chat yoki chat ID raqami)</li>
+                        </ul>
+                        <p><strong>2. Telegram Button Bot:</strong></p>
+                        <ul style={{ marginLeft: 20 }}>
+                          <li><strong>Telegram Button Bot Token</strong> - Saytdagi Telegram tugmasidan kelgan xabarlar uchun bot token</li>
+                          <li><strong>Telegram Button Bot Username</strong> - Bot username (masalan: @yourbot)</li>
+                        </ul>
+                        <p style={{ marginTop: 16, color: '#666' }}>
+                          <strong>Eslatma:</strong> Hozir barcha formalar Telegram botga yuboriladi. AmoCRM integratsiyasi o'chirilgan.
+                        </p>
+                      </div>
+                    }
+                    type="info"
+                    showIcon
+                    style={{ marginBottom: 24 }}
+                  />
+
+                  <h3 style={{ marginBottom: 16 }}>Telegram Bot (Formalar uchun)</h3>
                   <Form.Item
                     label="Telegram Bot Token"
                     name="telegramBotToken"
-                    extra="Saytdagi formalardan kelgan so'rovlar shu botga yuboriladi"
+                    extra="Saytdagi formalardan kelgan barcha so'rovlar shu botga yuboriladi"
                   >
                     <Input.Password placeholder="Bot token" />
                   </Form.Item>
@@ -722,18 +746,18 @@ export default function SettingsPage() {
                   <Form.Item
                     label="Telegram Chat ID"
                     name="telegramChatId"
-                    extra="Formalar yuboriladigan chat ID"
+                    extra="Formalar yuboriladigan chat ID (masalan: @your_chat yoki chat ID raqami)"
                   >
                     <Input placeholder="Chat ID" />
                   </Form.Item>
 
                   <Divider />
 
-                  <h3 style={{ marginBottom: 16 }}>Telegram Button Bot (AmoCRM uchun)</h3>
+                  <h3 style={{ marginBottom: 16 }}>Telegram Button Bot</h3>
                   <Form.Item
                     label="Telegram Button Bot Token"
                     name="telegramButtonBotToken"
-                    extra="Saytdagi Telegram tugmasidan kelgan xabarlar AmoCRM'ga yuboriladi"
+                    extra="Saytdagi Telegram tugmasidan kelgan xabarlar uchun bot token"
                   >
                     <Input.Password placeholder="Bot token" />
                   </Form.Item>
