@@ -23,6 +23,17 @@ pm2 stop acoustic-frontend || true
 echo "🧹 Cleaning build directory..."
 rm -rf "$FRONTEND_DIR/.next"
 
+# Export environment variables for build
+echo "🔧 Setting environment variables..."
+export NODE_ENV=production
+export NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://api.acoustic.uz/api}
+export NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL:-https://news.acoustic.uz}
+
+echo "📋 Environment variables:"
+echo "  NODE_ENV=$NODE_ENV"
+echo "  NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL"
+echo "  NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL"
+
 # Build shared package first
 echo "📦 Building shared package..."
 cd "$PROJECT_DIR"
