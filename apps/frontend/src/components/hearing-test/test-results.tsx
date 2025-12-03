@@ -1,6 +1,7 @@
 'use client';
 
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import Link from 'next/link';
 import type { Locale } from '@/lib/locale';
 
 interface TestResultsProps {
@@ -149,11 +150,17 @@ export default function TestResults({ locale, result, onContact, onRestart }: Te
 
       {/* Actions */}
       <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
+        <Link
+          href="/branches"
+          className="px-10 py-4 bg-brand-primary text-white rounded-xl font-bold text-lg hover:bg-brand-primary/90 transition-all transform hover:scale-105 shadow-lg text-center"
+        >
+          {isRu ? 'Найти место для проверки →' : 'Haqiqiy tekshiruv joyini topish →'}
+        </Link>
         <button
           onClick={onContact}
-          className="px-10 py-4 bg-brand-primary text-white rounded-xl font-bold text-lg hover:bg-brand-primary/90 transition-all transform hover:scale-105 shadow-lg"
+          className="px-10 py-4 border-2 border-brand-primary text-brand-primary rounded-xl font-bold text-lg hover:bg-brand-primary/10 transition-all transform hover:scale-105"
         >
-          {isRu ? 'Связаться с нами →' : 'Biz bilan bog\'lanish →'}
+          {isRu ? 'Связаться с нами' : 'Biz bilan bog\'lanish'}
         </button>
         <button
           onClick={onRestart}
