@@ -295,7 +295,7 @@ export default async function HomePage() {
             )}
           </div>
           {hearingItems.length > 0 ? (
-            <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 grid-cols-2 md:grid-cols-2 lg:grid-cols-3">
               {hearingItems.map((item) => (
                 <Link
                   key={item.id}
