@@ -229,6 +229,14 @@ export default function AdminLayout() {
     await logoutMutation();
   };
 
+  // Debug: Log footer info when component mounts
+  useEffect(() => {
+    console.log('[AdminLayout] Component mounted');
+    console.log('[AdminLayout] Version:', APP_VERSION);
+    console.log('[AdminLayout] Build Time:', BUILD_TIME);
+    console.log('[AdminLayout] Footer should be visible');
+  }, []);
+
   if (isLoading || isLoggingOut) {
     return (
       <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center' }}>
@@ -306,10 +314,11 @@ export default function AdminLayout() {
           <Outlet />
         </Content>
         <Footer 
+          id="admin-footer"
           style={{ 
             textAlign: 'center', 
-            background: '#fff', 
-            borderTop: '2px solid #f0f0f0',
+            background: '#fafafa', 
+            borderTop: '2px solid #e8e8e8',
             padding: '16px 24px',
             fontSize: '13px',
             color: '#595959',
@@ -318,7 +327,11 @@ export default function AdminLayout() {
             zIndex: 10,
             width: '100%',
             boxShadow: '0 -2px 8px rgba(0,0,0,0.08)',
-            marginTop: 'auto'
+            marginTop: 'auto',
+            minHeight: '60px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
