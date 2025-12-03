@@ -306,37 +306,35 @@ export default function AdminLayout() {
             </button>
           </div>
         </Header>
-        <Content style={{ 
-          margin: '24px', 
-          padding: '24px', 
-          background: '#fff', 
-          flex: 1, 
-          overflow: 'auto',
-          paddingBottom: '80px' // Space for footer
-        }}>
-          <Outlet />
-        </Content>
-        <Footer 
-          id="admin-footer"
-          style={{ 
-            textAlign: 'center', 
-            background: '#fafafa', 
-            borderTop: '2px solid #e8e8e8',
-            padding: '16px 24px',
-            fontSize: '13px',
-            color: '#595959',
-            flexShrink: 0,
-            position: 'relative',
-            zIndex: 10,
-            width: '100%',
-            boxShadow: '0 -2px 8px rgba(0,0,0,0.08)',
-            marginTop: 'auto',
-            minHeight: '60px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        >
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <Content style={{ 
+            margin: '24px', 
+            padding: '24px', 
+            background: '#fff', 
+            flex: 1, 
+            overflow: 'auto',
+            paddingBottom: '24px'
+          }}>
+            <Outlet />
+          </Content>
+          <Footer 
+            id="admin-footer"
+            style={{ 
+              textAlign: 'center', 
+              background: '#fafafa', 
+              borderTop: '2px solid #e8e8e8',
+              padding: '16px 24px',
+              fontSize: '13px',
+              color: '#595959',
+              flexShrink: 0,
+              width: '100%',
+              boxShadow: '0 -2px 8px rgba(0,0,0,0.08)',
+              minHeight: '60px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
             <span style={{ fontWeight: 500, color: '#262626' }}>Admin Panel</span>
             <span style={{ color: '#d9d9d9', fontSize: '16px' }}>•</span>
