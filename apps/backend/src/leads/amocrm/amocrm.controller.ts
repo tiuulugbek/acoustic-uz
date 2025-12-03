@@ -31,13 +31,26 @@ export class AmoCRMController {
     }
 
     // Clean domain: remove protocol, trim, remove all slashes
-    let cleanDomain = settings.amocrmDomain.trim();
-    cleanDomain = cleanDomain.replace(/^https?:\/\//i, ''); // Remove http:// or https://
-    cleanDomain = cleanDomain.replace(/\/+/g, ''); // Remove ALL slashes
-    cleanDomain = cleanDomain.replace(/^\/+|\/+$/g, ''); // Remove leading/trailing slashes (extra safety)
+    let cleanDomain = String(settings.amocrmDomain).trim();
+    
+    // Remove protocol (http:// or https://) - case insensitive, multiple times if needed
+    cleanDomain = cleanDomain.replace(/^https?:\/\//gi, '');
+    cleanDomain = cleanDomain.replace(/https?:\/\//gi, ''); // Remove if appears anywhere
+    
+    // Remove all slashes
+    cleanDomain = cleanDomain.replace(/\//g, '');
+    
+    // Remove leading/trailing dots and slashes
+    cleanDomain = cleanDomain.replace(/^[.\/]+|[.\/]+$/g, '');
+    
+    // Log for debugging
+    console.log('[AmoCRM] Original domain:', settings.amocrmDomain);
+    console.log('[AmoCRM] Cleaned domain:', cleanDomain);
     
     const redirectUri = `${this.configService.get('APP_URL') || 'http://localhost:3001'}/api/amocrm/callback`;
     const authUrl = `https://${cleanDomain}/oauth2/authorize?client_id=${settings.amocrmClientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}`;
+    
+    console.log('[AmoCRM] Generated auth URL:', authUrl);
 
     return { authUrl };
   }
