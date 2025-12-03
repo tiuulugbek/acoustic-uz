@@ -77,11 +77,36 @@ export default function SettingsPage() {
 
   const updateMutation = useMutation({
     mutationFn: updateSettings,
-    onSuccess: (data, variables) => {
+    onSuccess: async (data, variables) => {
       console.log('🟢 [Settings] updateMutation.onSuccess called');
       console.log('🟢 [Settings] Response data:', data);
       console.log('🟢 [Settings] Variables sent:', variables);
-      queryClient.invalidateQueries({ queryKey: ['settings'] });
+      
+      // Invalidate and refetch settings
+      await queryClient.invalidateQueries({ queryKey: ['settings'] });
+      const updatedSettings = await queryClient.fetchQuery({ queryKey: ['settings'], queryFn: getSettings });
+      
+      // Update form with new values
+      if (updatedSettings) {
+        console.log('🟢 [Settings] Updating form with new settings:', {
+          telegramBotToken: updatedSettings.telegramBotToken ? '***SET***' : 'EMPTY',
+          telegramChatId: updatedSettings.telegramChatId || 'EMPTY',
+          telegramButtonBotToken: updatedSettings.telegramButtonBotToken ? '***SET***' : 'EMPTY',
+          telegramButtonBotUsername: updatedSettings.telegramButtonBotUsername || 'EMPTY',
+          telegramButtonMessage_uz: updatedSettings.telegramButtonMessage_uz || 'EMPTY',
+          telegramButtonMessage_ru: updatedSettings.telegramButtonMessage_ru || 'EMPTY',
+        });
+        
+        form.setFieldsValue({
+          telegramBotToken: updatedSettings.telegramBotToken || '',
+          telegramChatId: updatedSettings.telegramChatId || '',
+          telegramButtonBotToken: updatedSettings.telegramButtonBotToken || '',
+          telegramButtonBotUsername: updatedSettings.telegramButtonBotUsername || '',
+          telegramButtonMessage_uz: updatedSettings.telegramButtonMessage_uz || 'Assalomu alaykum!\nSavolingiz bormi?',
+          telegramButtonMessage_ru: updatedSettings.telegramButtonMessage_ru || 'Здравствуйте!\nУ вас есть вопрос?',
+        });
+      }
+      
       // Note: Specific success messages are shown in individual handlers
       // This is a fallback for other tabs
       message.success('Sozlamalar saqlandi', 3);
