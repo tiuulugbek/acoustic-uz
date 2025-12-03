@@ -39,11 +39,21 @@ writeFileSync(versionFile, JSON.stringify({ version, buildTime }, null, 2));
 console.log(`[Vite Config] Version written to: ${versionFile}`);
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    // Custom plugin to inject version
+    {
+      name: 'inject-version',
+      transformIndexHtml(html) {
+        return html.replace(
+          '<head>',
+          `<head><script>window.__APP_VERSION__='${version}';window.__BUILD_TIME__='${buildTime}';</script>`
+        );
+      },
+    },
+  ],
   define: {
     // Use string replacement to ensure version is injected correctly
-    // Important: Use globalThis to avoid minification issues
-    'globalThis.__APP_VERSION__': JSON.stringify(version),
     '__APP_VERSION__': JSON.stringify(version),
     '__BUILD_TIME__': JSON.stringify(buildTime),
     // Force VITE_API_URL to production API URL during build

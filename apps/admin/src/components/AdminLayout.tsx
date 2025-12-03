@@ -26,11 +26,19 @@ const { Header, Sider, Content, Footer } = Layout;
 let APP_VERSION = '1.0.0';
 let BUILD_TIME = new Date().toISOString();
 
-// Try to get from Vite define first
-if (typeof __APP_VERSION__ !== 'undefined') {
+// Try to get from window object first (injected by plugin)
+if (typeof window !== 'undefined' && (window as any).__APP_VERSION__) {
+  APP_VERSION = (window as any).__APP_VERSION__;
+}
+if (typeof window !== 'undefined' && (window as any).__BUILD_TIME__) {
+  BUILD_TIME = (window as any).__BUILD_TIME__;
+}
+
+// Try to get from Vite define (fallback)
+if (typeof __APP_VERSION__ !== 'undefined' && APP_VERSION === '1.0.0') {
   APP_VERSION = __APP_VERSION__;
 }
-if (typeof __BUILD_TIME__ !== 'undefined') {
+if (typeof __BUILD_TIME__ !== 'undefined' && BUILD_TIME === new Date().toISOString()) {
   BUILD_TIME = __BUILD_TIME__;
 }
 
@@ -38,6 +46,7 @@ if (typeof __BUILD_TIME__ !== 'undefined') {
 if (typeof window !== 'undefined') {
   console.log('[AdminLayout] APP_VERSION:', APP_VERSION);
   console.log('[AdminLayout] BUILD_TIME:', BUILD_TIME);
+  console.log('[AdminLayout] window.__APP_VERSION__:', (window as any).__APP_VERSION__);
   console.log('[AdminLayout] __APP_VERSION__:', typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'undefined');
 }
 
