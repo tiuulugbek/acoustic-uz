@@ -204,7 +204,15 @@ export class SettingsService {
         ...(sidebarBrandIds !== undefined ? { sidebarBrandIds: sidebarBrandIds || [] } : {}),
       };
 
-      console.log('Update data keys:', Object.keys(updateData));
+      console.log('🔵 [Settings] Update data keys:', Object.keys(updateData));
+      console.log('🔵 [Settings] Update data values:', {
+        telegramBotToken: updateData.telegramBotToken ? '***SET***' : 'undefined',
+        telegramChatId: updateData.telegramChatId || 'undefined',
+        telegramButtonBotToken: updateData.telegramButtonBotToken ? '***SET***' : 'undefined',
+        telegramButtonBotUsername: updateData.telegramButtonBotUsername || 'undefined',
+        telegramButtonMessage_uz: updateData.telegramButtonMessage_uz ? 'SET' : 'undefined',
+        telegramButtonMessage_ru: updateData.telegramButtonMessage_ru ? 'SET' : 'undefined',
+      });
 
       return this.prisma.setting.upsert({
         where: { id: 'singleton' },
