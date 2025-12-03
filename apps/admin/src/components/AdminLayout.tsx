@@ -34,19 +34,6 @@ if (typeof __BUILD_TIME__ !== 'undefined') {
   BUILD_TIME = __BUILD_TIME__;
 }
 
-// Fallback: Try to import from version.json file
-try {
-  const versionData = require('../version.json');
-  if (versionData.version && versionData.version !== '1.0.0') {
-    APP_VERSION = versionData.version;
-  }
-  if (versionData.buildTime) {
-    BUILD_TIME = versionData.buildTime;
-  }
-} catch (e) {
-  // version.json not available, use defaults
-}
-
 // Debug: Log version to console
 if (typeof window !== 'undefined') {
   console.log('[AdminLayout] APP_VERSION:', APP_VERSION);
