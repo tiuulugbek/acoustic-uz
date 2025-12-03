@@ -13,28 +13,62 @@ cd "$PROJECT_DIR"
 echo "📥 Pulling latest code..."
 git pull origin main
 
+# Load .env file if it exists
+if [ -f .env ]; then
+    echo "📋 Loading .env file..."
+    export $(cat .env | grep -v '^#' | grep -v '^$' | xargs)
+fi
+
 # Check database connection
 echo "🔍 Checking database connection..."
 if [ -z "$DATABASE_URL" ]; then
-    echo "❌ DATABASE_URL not set. Please set it in .env file."
-    exit 1
+    # Try to read from .env file
+    if [ -f .env ]; then
+        DATABASE_URL=$(grep "^DATABASE_URL=" .env | cut -d '=' -f2- | tr -d '"' | tr -d "'")
+    fi
+    if [ -z "$DATABASE_URL" ]; then
+        echo "❌ DATABASE_URL not set. Please set it in .env file."
+        echo "💡 Trying to use Prisma migration instead..."
+    fi
 fi
 
-# Add columns if they don't exist
-echo "📊 Adding Telegram Button fields to database..."
-psql "$DATABASE_URL" <<EOF
+# Use Prisma to add columns (it will read from .env automatically)
+echo "📊 Adding Telegram Button fields to database using Prisma..."
+cd "$PROJECT_DIR"
+if command -v npx &> /dev/null; then
+    # Use Prisma db push to sync schema (safer than direct SQL)
+    npx prisma db push --skip-generate --accept-data-loss || {
+        echo "⚠️  Prisma db push failed, trying direct SQL..."
+        if [ -n "$DATABASE_URL" ]; then
+            psql "$DATABASE_URL" <<EOF
 -- Add columns if they don't exist
 ALTER TABLE "Setting" ADD COLUMN IF NOT EXISTS "telegramButtonBotToken" TEXT;
 ALTER TABLE "Setting" ADD COLUMN IF NOT EXISTS "telegramButtonBotUsername" TEXT;
 ALTER TABLE "Setting" ADD COLUMN IF NOT EXISTS "telegramButtonMessage_uz" TEXT;
 ALTER TABLE "Setting" ADD COLUMN IF NOT EXISTS "telegramButtonMessage_ru" TEXT;
-
--- Verify columns exist
-SELECT column_name, data_type 
-FROM information_schema.columns 
-WHERE table_name = 'Setting' 
-AND column_name IN ('telegramButtonBotToken', 'telegramButtonBotUsername', 'telegramButtonMessage_uz', 'telegramButtonMessage_ru');
 EOF
+        else
+            echo "❌ Cannot proceed without DATABASE_URL"
+            exit 1
+        fi
+    }
+else
+    echo "⚠️  npx not found, trying direct SQL..."
+    if [ -n "$DATABASE_URL" ]; then
+        psql "$DATABASE_URL" <<EOF
+-- Add columns if they don't exist
+ALTER TABLE "Setting" ADD COLUMN IF NOT EXISTS "telegramButtonBotToken" TEXT;
+ALTER TABLE "Setting" ADD COLUMN IF NOT EXISTS "telegramButtonBotUsername" TEXT;
+ALTER TABLE "Setting" ADD COLUMN IF NOT EXISTS "telegramButtonMessage_uz" TEXT;
+ALTER TABLE "Setting" ADD COLUMN IF NOT EXISTS "telegramButtonMessage_ru" TEXT;
+EOF
+    else
+        echo "❌ Cannot proceed without DATABASE_URL"
+        exit 1
+    fi
+fi
+
+echo "✅ Database columns added successfully"
 
 # Restart backend
 echo "🔄 Restarting backend..."
