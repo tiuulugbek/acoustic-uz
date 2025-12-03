@@ -361,6 +361,7 @@ export default function AdminLayout() {
             </span>
           </div>
         </Footer>
+        </div>
       </Layout>
     </Layout>
   );
