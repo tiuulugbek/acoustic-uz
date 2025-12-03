@@ -21,29 +21,59 @@ export default function TelegramButton() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
+        console.log('[TelegramButton] Fetching settings...');
         const settings = await getSettings();
+        console.log('[TelegramButton] Settings received:', {
+          hasBotUsername: !!settings.telegramButtonBotUsername,
+          botUsername: settings.telegramButtonBotUsername,
+          hasMessageUz: !!settings.telegramButtonMessage_uz,
+          hasMessageRu: !!settings.telegramButtonMessage_ru,
+        });
+        
         if (settings.telegramButtonBotUsername) {
           // Remove @ if present
           const username = settings.telegramButtonBotUsername.replace('@', '');
           setBotUsername(username);
+          console.log('[TelegramButton] Bot username set:', username);
           
           // Get message based on locale
           const messageText = locale === 'ru' 
             ? (settings.telegramButtonMessage_ru || 'Здравствуйте!\nУ вас есть вопрос?')
             : (settings.telegramButtonMessage_uz || 'Assalomu alaykum!\nSavolingiz bormi?');
           setMessage(messageText);
+          console.log('[TelegramButton] Message set:', messageText);
+        } else {
+          console.warn('[TelegramButton] No bot username in settings. Component will not render.');
         }
       } catch (error) {
-        console.error('Failed to fetch Telegram bot settings:', error);
+        console.error('[TelegramButton] Failed to fetch Telegram bot settings:', error);
       } finally {
         setIsLoading(false);
+        console.log('[TelegramButton] Loading complete. isLoading:', false, 'botUsername:', botUsername);
       }
     };
 
     fetchSettings();
   }, [locale]);
 
-  if (isLoading || !botUsername) {
+  // Debug logging
+  useEffect(() => {
+    console.log('[TelegramButton] Render state:', {
+      isLoading,
+      botUsername,
+      isVisible,
+      message,
+      locale,
+    });
+  }, [isLoading, botUsername, isVisible, message, locale]);
+
+  if (isLoading) {
+    console.log('[TelegramButton] Still loading, not rendering');
+    return null;
+  }
+
+  if (!botUsername) {
+    console.warn('[TelegramButton] No bot username, not rendering');
     return null;
   }
 
