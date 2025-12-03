@@ -12,7 +12,7 @@ export default function TelegramButton() {
   const [message, setMessage] = useState<string>('');
   const [phoneNumber, setPhoneNumber] = useState<string>('1385');
   const [isLoading, setIsLoading] = useState(true);
-  const [isVisible, setIsVisible] = useState(true);
+  const [isChatBubbleVisible, setIsChatBubbleVisible] = useState(true);
   const [locale, setLocale] = useState<Locale>('uz');
 
   // Get locale from DOM (client-side)
@@ -72,11 +72,11 @@ export default function TelegramButton() {
     console.log('[TelegramButton] Render state:', {
       isLoading,
       botUsername,
-      isVisible,
+      isChatBubbleVisible,
       message,
       locale,
     });
-  }, [isLoading, botUsername, isVisible, message, locale]);
+  }, [isLoading, botUsername, isChatBubbleVisible, message, locale]);
 
   // Don't render if still loading
   if (isLoading) {
@@ -94,23 +94,20 @@ export default function TelegramButton() {
   const handleClick = () => {
     // Open Telegram bot
     window.open(`https://t.me/${botUsername}`, '_blank');
-    setIsVisible(false);
+    // Don't hide the button - it should always be visible
   };
 
   const handleClose = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsVisible(false);
+    setIsChatBubbleVisible(false);
   };
-
-  if (!isVisible) {
-    return null;
-  }
 
   return (
     <>
       {/* Desktop: Chat Bubble and Telegram Button */}
       <div className="hidden md:block fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
         {/* Chat Bubble */}
+        {isChatBubbleVisible && (
         <div className="relative max-w-xs rounded-2xl bg-white px-4 py-3 shadow-xl animate-in slide-in-from-bottom-4 fade-in">
           {/* Close button */}
           <button
@@ -142,6 +139,7 @@ export default function TelegramButton() {
             {message}
           </p>
         </div>
+        )}
 
         {/* Telegram Button */}
         <a
