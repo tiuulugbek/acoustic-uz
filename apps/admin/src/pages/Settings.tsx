@@ -423,6 +423,12 @@ export default function SettingsPage() {
   const handleGeneralSettingsSave = async () => {
     try {
       const values = await form.validateFields(['phonePrimary', 'phoneSecondary', 'email', 'brandPrimary', 'brandAccent', 'telegramBotToken', 'telegramChatId', 'telegramButtonBotToken', 'telegramButtonBotUsername', 'telegramButtonMessage_uz', 'telegramButtonMessage_ru']);
+      console.log('[Settings] Form values:', {
+        telegramButtonBotToken: values.telegramButtonBotToken ? '***' : null,
+        telegramButtonBotUsername: values.telegramButtonBotUsername,
+        telegramButtonMessage_uz: values.telegramButtonMessage_uz,
+        telegramButtonMessage_ru: values.telegramButtonMessage_ru,
+      });
       const payload: UpdateSettingsPayload = {
         phonePrimary: values.phonePrimary || undefined,
         phoneSecondary: values.phoneSecondary || undefined,
@@ -436,9 +442,17 @@ export default function SettingsPage() {
         brandPrimary: values.brandPrimary || undefined,
         brandAccent: values.brandAccent || undefined,
       };
+      console.log('[Settings] Payload being sent:', {
+        telegramButtonBotToken: payload.telegramButtonBotToken ? '***' : undefined,
+        telegramButtonBotUsername: payload.telegramButtonBotUsername,
+        telegramButtonMessage_uz: payload.telegramButtonMessage_uz,
+        telegramButtonMessage_ru: payload.telegramButtonMessage_ru,
+      });
       await updateMutation.mutateAsync(payload);
+      console.log('[Settings] Settings saved successfully');
     } catch (error) {
-      console.error('Form validation error:', error);
+      console.error('[Settings] Form validation error:', error);
+      message.error('Formani to\'ldirishda xatolik yuz berdi');
     }
   };
 
