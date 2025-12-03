@@ -34,8 +34,6 @@ export class AmoCRMController {
     res.removeHeader('ETag'); // Remove ETag to prevent 304 responses
     res.removeHeader('Last-Modified'); // Remove Last-Modified to prevent 304 responses
     
-    // IMPORTANT: Set status BEFORE redirect to ensure 302 response
-    res.status(302);
     const settings = await this.settingsService.get();
     
     if (!settings.amocrmDomain || !settings.amocrmClientId) {
@@ -79,11 +77,8 @@ export class AmoCRMController {
 
     // Redirect directly to AmoCRM OAuth page (as per AmoCRM documentation)
     // This ensures proper browser redirect, not a JavaScript fetch request
-    // Similar to PHP: header('Location: ' . $authUrl); exit;
-    // Use status 302 explicitly to ensure proper redirect
-    res.status(302);
-    res.setHeader('Location', authUrl);
-    return res.end();
+    // Use res.redirect() which properly sets 302 status and Location header
+    return res.redirect(authUrl);
   }
 
   @Get('callback')
