@@ -59,8 +59,11 @@ export class AmoCRMController {
 
       const redirectUri = `${this.configService.get('APP_URL') || 'http://localhost:3001'}/api/amocrm/callback`;
       
-      // Remove https:// or http:// from domain if present
-      const cleanDomain = settings.amocrmDomain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+      // Remove https:// or http:// from domain if present, and trailing slashes
+      let cleanDomain = settings.amocrmDomain.trim();
+      cleanDomain = cleanDomain.replace(/^https?:\/\//i, ''); // Remove http:// or https://
+      cleanDomain = cleanDomain.replace(/\/+$/, ''); // Remove trailing slashes
+      cleanDomain = cleanDomain.replace(/\/+/g, '/'); // Replace multiple slashes with single
       
       // Exchange authorization code for tokens
       const response = await firstValueFrom(
@@ -119,8 +122,11 @@ export class AmoCRMController {
         };
       }
 
-      // Remove https:// or http:// from domain if present
-      const cleanDomain = settings.amocrmDomain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+      // Remove https:// or http:// from domain if present, and trailing slashes
+      let cleanDomain = settings.amocrmDomain.trim();
+      cleanDomain = cleanDomain.replace(/^https?:\/\//i, ''); // Remove http:// or https://
+      cleanDomain = cleanDomain.replace(/\/+$/, ''); // Remove trailing slashes
+      cleanDomain = cleanDomain.replace(/\/+/g, '/'); // Replace multiple slashes with single
       
       // Test API call to AmoCRM
       const response = await firstValueFrom(
