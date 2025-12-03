@@ -22,8 +22,8 @@ export class AmoCRMController {
   @UseGuards(JwtAuthGuard)
   @Get('authorize')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get AmoCRM OAuth authorization URL' })
-  @ApiResponse({ status: 200, description: 'Authorization URL generated' })
+  @ApiOperation({ summary: 'Redirect to AmoCRM OAuth authorization' })
+  @ApiResponse({ status: 302, description: 'Redirect to AmoCRM OAuth page' })
   async getAuthorizationUrl(@Res({ passthrough: false }) res: Response) {
     // Disable caching for this endpoint
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -32,7 +32,7 @@ export class AmoCRMController {
     const settings = await this.settingsService.get();
     
     if (!settings.amocrmDomain || !settings.amocrmClientId) {
-      throw new Error('AmoCRM domain and Client ID must be configured first');
+      return res.redirect(`${this.configService.get('ADMIN_URL') || 'http://localhost:3002'}/settings?error=not_configured`);
     }
 
     // Clean domain: remove protocol, trim, remove all slashes
@@ -66,9 +66,11 @@ export class AmoCRMController {
     const redirectUri = `${this.configService.get('APP_URL') || 'http://localhost:3001'}/api/amocrm/callback`;
     const authUrl = `https://${cleanDomain}/oauth2/authorize?client_id=${settings.amocrmClientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;
     
-    console.log('[AmoCRM] Generated auth URL:', authUrl);
+    console.log('[AmoCRM] Redirecting to:', authUrl);
 
-    return res.json({ authUrl });
+    // Redirect directly to AmoCRM OAuth page (as per AmoCRM documentation)
+    // This ensures proper browser redirect, not a JavaScript fetch request
+    return res.redirect(authUrl);
   }
 
   @Get('callback')

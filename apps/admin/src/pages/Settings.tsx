@@ -196,14 +196,14 @@ export default function SettingsPage() {
 
   const handleAmoCRMAuthorize = async () => {
     try {
-      const { authUrl } = await getAmoCRMAuthUrl();
-      // Open in new window/tab to avoid 405 errors
-      // AmoCRM OAuth endpoint requires a proper browser redirect, not a fetch request
-      const newWindow = window.open(authUrl, '_blank', 'noopener,noreferrer');
-      if (!newWindow) {
-        // If popup blocked, fallback to current window
-        window.location.href = authUrl;
-      }
+      // Backend will redirect directly to AmoCRM OAuth page
+      // This ensures proper browser redirect as per AmoCRM documentation
+      // Cookies are automatically sent with the request
+      const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api';
+      
+      // Redirect to backend endpoint which will handle the redirect to AmoCRM
+      // This is a proper browser redirect, not a JavaScript fetch request
+      window.location.href = `${API_BASE}/amocrm/authorize`;
     } catch (error) {
       const apiError = error as ApiError;
       message.error(apiError.message || 'Avtorizatsiya URL olishda xatolik');
