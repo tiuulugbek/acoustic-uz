@@ -11,17 +11,25 @@ cd /var/www/news.acoustic.uz
 echo "📥 Pulling latest changes..."
 git pull origin main
 
-# Build admin
+# Check if pnpm is installed
+if ! command -v pnpm &> /dev/null; then
+    echo "❌ pnpm is not installed. Installing pnpm..."
+    npm install -g pnpm@8.15.0
+fi
+
+# Install dependencies using pnpm (for workspace support)
+echo "📦 Installing dependencies..."
+pnpm install
+
+# Build admin using pnpm
 echo "🏗️  Building admin..."
-cd apps/admin
-npm install
-npm run build
+pnpm --filter @acoustic/admin build
 
 # Check if build succeeded
-if [ -d "dist" ]; then
+if [ -d "apps/admin/dist" ]; then
     echo "✅ Admin build successful!"
     echo "📁 Build files:"
-    ls -la dist/ | head -10
+    ls -la apps/admin/dist/ | head -10
 else
     echo "❌ Admin build failed!"
     exit 1
