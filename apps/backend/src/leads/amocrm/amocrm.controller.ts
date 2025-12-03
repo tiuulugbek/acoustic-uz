@@ -30,8 +30,11 @@ export class AmoCRMController {
       throw new Error('AmoCRM domain and Client ID must be configured first');
     }
 
-    // Remove https:// or http:// from domain if present
-    const cleanDomain = settings.amocrmDomain.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    // Remove https:// or http:// from domain if present, and trailing slashes
+    let cleanDomain = settings.amocrmDomain.trim();
+    cleanDomain = cleanDomain.replace(/^https?:\/\//i, ''); // Remove http:// or https://
+    cleanDomain = cleanDomain.replace(/\/+$/, ''); // Remove trailing slashes
+    cleanDomain = cleanDomain.replace(/\/+/g, '/'); // Replace multiple slashes with single
     
     const redirectUri = `${this.configService.get('APP_URL') || 'http://localhost:3001'}/api/amocrm/callback`;
     const authUrl = `https://${cleanDomain}/oauth2/authorize?client_id=${settings.amocrmClientId}&response_type=code&redirect_uri=${encodeURIComponent(redirectUri)}`;
