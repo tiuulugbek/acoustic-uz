@@ -58,16 +58,12 @@ export default defineConfig({
         // Replace localhost:3001 in build output
         {
           name: 'replace-localhost',
-          generateBundle(options, bundle) {
+          renderChunk(code, chunk) {
             const apiUrl = process.env.VITE_API_URL || 'https://api.acoustic.uz/api';
-            Object.keys(bundle).forEach((fileName) => {
-              const file = bundle[fileName];
-              if (file.type === 'chunk' && file.code) {
-                // Replace localhost:3001 with production URL
-                file.code = file.code.replace(/http:\/\/localhost:3001\/api/g, apiUrl);
-                file.code = file.code.replace(/localhost:3001/g, 'api.acoustic.uz');
-              }
-            });
+            // Replace localhost:3001 with production URL
+            code = code.replace(/http:\/\/localhost:3001\/api/g, apiUrl);
+            code = code.replace(/localhost:3001/g, 'api.acoustic.uz');
+            return code;
           },
         },
       ],
