@@ -26,7 +26,7 @@ export function useAudioTest() {
 
   // Generate and play tone
   const playTone = useCallback(
-    ({ frequency, volume, duration = 2000, onEnd }: AudioTestOptions) => {
+    ({ frequency, volume, duration, onEnd }: AudioTestOptions) => {
       try {
         const audioContext = initAudioContext();
         
@@ -46,20 +46,47 @@ export function useAudioTest() {
         oscillator.frequency.value = frequency;
         oscillator.type = 'sine'; // Pure tone
 
-        // Configure gain (volume) with smooth fade in/out
-        // ReSound kabi: yumshoq fade in/out va to'g'ri duration
-        const fadeTime = 0.15; // 150ms fade (ReSound kabi)
-        const playTime = duration / 1000;
-        
-        // Fade in
-        gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-        gainNode.gain.linearRampToValueAtTime(volume, audioContext.currentTime + fadeTime);
-        
-        // Hold at volume
-        gainNode.gain.setValueAtTime(volume, audioContext.currentTime + playTime - fadeTime);
-        
-        // Fade out
-        gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + playTime);
+        // ReSound kabi: agar duration berilgan bo'lsa, bir marta ijro etish
+        // Agar duration yo'q bo'lsa, doim ijro etish (loop)
+        if (duration) {
+          // Configure gain (volume) with smooth fade in/out
+          const fadeTime = 0.15; // 150ms fade
+          const playTime = duration / 1000;
+          
+          // Fade in
+          gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+          gainNode.gain.linearRampToValueAtTime(volume, audioContext.currentTime + fadeTime);
+          
+          // Hold at volume
+          gainNode.gain.setValueAtTime(volume, audioContext.currentTime + playTime - fadeTime);
+          
+          // Fade out
+          gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + playTime);
+
+          // Start playing with duration
+          oscillator.start();
+          oscillator.stop(audioContext.currentTime + playTime);
+
+          // Handle end
+          oscillator.onended = () => {
+            setIsPlaying(false);
+            setCurrentFrequency(null);
+            oscillatorRef.current = null;
+            gainNodeRef.current = null;
+            onEnd?.();
+          };
+        } else {
+          // ReSound kabi: doim ijro etish (loop) - duration yo'q
+          // Smooth fade in
+          const fadeTime = 0.15;
+          gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+          gainNode.gain.linearRampToValueAtTime(volume, audioContext.currentTime + fadeTime);
+          gainNode.gain.setValueAtTime(volume, audioContext.currentTime + fadeTime);
+
+          // Start playing continuously
+          oscillator.start();
+          // Don't call stop() - let it play continuously until stopTone() is called
+        }
 
         // Connect nodes
         oscillator.connect(gainNode);
@@ -72,26 +99,13 @@ export function useAudioTest() {
         // Set state
         setIsPlaying(true);
         setCurrentFrequency(frequency);
-
-        // Start playing
-        oscillator.start();
-        oscillator.stop(audioContext.currentTime + duration / 1000);
-
-        // Handle end
-        oscillator.onended = () => {
-          setIsPlaying(false);
-          setCurrentFrequency(null);
-          oscillatorRef.current = null;
-          gainNodeRef.current = null;
-          onEnd?.();
-        };
       } catch (error) {
         console.error('Error playing tone:', error);
         setIsPlaying(false);
         setCurrentFrequency(null);
       }
     },
-    [initAudioContext]
+    [initAudioContext, stopTone]
   );
 
   // Stop current tone

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Play, Square, Minus, Plus, Volume2 } from 'lucide-react';
 import type { Locale } from '@/lib/locale';
 
@@ -25,6 +25,7 @@ export default function FrequencyTest({
   onBack,
   playTone,
   stopTone,
+  updateVolume,
   isPlaying,
   volume,
   isSubmitting = false,
@@ -34,6 +35,7 @@ export default function FrequencyTest({
   const [results, setResults] = useState<Record<string, number>>({}); // Store volume levels instead of boolean
   const [currentVolume, setCurrentVolume] = useState(1.0); // Start at max volume
   const [hasPlayed, setHasPlayed] = useState(false);
+  const gainNodeRef = useRef<GainNode | null>(null);
 
   const currentFrequency = frequencies[currentIndex];
   const isLast = currentIndex === frequencies.length - 1;
@@ -56,27 +58,37 @@ export default function FrequencyTest({
   }, [currentFrequency, stopTone]);
 
   const handlePlay = () => {
-    playTone({
-      frequency: currentFrequency,
-      volume: currentVolume,
-      duration: 2000,
-      onEnd: () => setHasPlayed(true),
-    });
+    if (isPlaying) {
+      stopTone();
+      setHasPlayed(false);
+    } else {
+      // ReSound kabi: doim ijro etish (duration yo'q)
+      playTone({
+        frequency: currentFrequency,
+        volume: currentVolume,
+        // duration yo'q - doim ijro etadi
+      });
+      setHasPlayed(true);
+    }
   };
 
   const handleVolumeChange = (newVolume: number) => {
     const clampedVolume = Math.max(0, Math.min(1, newVolume));
     setCurrentVolume(clampedVolume);
-    if (isPlaying) {
-      stopTone();
-      setTimeout(() => {
-        playTone({
-          frequency: currentFrequency,
-          volume: clampedVolume,
-          duration: 2000,
-          onEnd: () => setHasPlayed(true),
-        });
-      }, 100);
+    
+    // ReSound kabi: agar ovoz ijro etilayotgan bo'lsa, volume'ni real-time o'zgartirish
+    if (isPlaying && gainNodeRef.current) {
+      const audioContext = gainNodeRef.current.context;
+      const fadeTime = 0.1; // 100ms smooth transition
+      gainNodeRef.current.gain.cancelScheduledValues(audioContext.currentTime);
+      gainNodeRef.current.gain.setValueAtTime(
+        gainNodeRef.current.gain.value,
+        audioContext.currentTime
+      );
+      gainNodeRef.current.gain.linearRampToValueAtTime(
+        clampedVolume,
+        audioContext.currentTime + fadeTime
+      );
     }
   };
 

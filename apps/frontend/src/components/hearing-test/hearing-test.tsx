@@ -27,7 +27,7 @@ export default function HearingTest() {
   const [testResult, setTestResult] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { playTone, stopTone, cleanup, isPlaying } = useAudioTest();
+  const { playTone, stopTone, cleanup, updateVolume, isPlaying } = useAudioTest();
 
   useEffect(() => {
     setLocale(getLocaleFromDOM());
@@ -258,6 +258,7 @@ export default function HearingTest() {
             onBack={handleBack}
             playTone={playTone}
             stopTone={stopTone}
+            updateVolume={updateVolume}
             isPlaying={isPlaying}
             volume={volumeLevel}
           />
@@ -281,6 +282,7 @@ export default function HearingTest() {
             onBack={handleBack}
             playTone={playTone}
             stopTone={stopTone}
+            updateVolume={updateVolume}
             isPlaying={isPlaying}
             volume={volumeLevel}
             isSubmitting={isSubmitting}
