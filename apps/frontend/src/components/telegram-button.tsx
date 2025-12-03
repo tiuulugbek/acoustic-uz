@@ -67,13 +67,16 @@ export default function TelegramButton() {
     });
   }, [isLoading, botUsername, isVisible, message, locale]);
 
+  // Don't render if still loading
   if (isLoading) {
     console.log('[TelegramButton] Still loading, not rendering');
     return null;
   }
 
+  // If no bot username, don't render at all
   if (!botUsername) {
-    console.warn('[TelegramButton] No bot username, not rendering');
+    console.warn('[TelegramButton] No bot username in settings, component will not render.');
+    console.warn('[TelegramButton] Please configure telegramButtonBotUsername in admin panel settings.');
     return null;
   }
 
