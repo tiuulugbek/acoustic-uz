@@ -119,6 +119,7 @@ export default function SiteHeader({ initialSettings = null }: SiteHeaderProps =
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuRefreshKey, setMenuRefreshKey] = useState(0);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [mobileOpenDropdown, setMobileOpenDropdown] = useState<string | null>(null);
 
   // Track if we've successfully switched locale to prevent reverting
   const [localeChangeInProgress, setLocaleChangeInProgress] = useState(false);
@@ -517,7 +518,14 @@ export default function SiteHeader({ initialSettings = null }: SiteHeaderProps =
             <button
               type="button"
               className="inline-flex items-center rounded-full border border-border p-2 text-muted-foreground lg:hidden"
-              onClick={() => setMobileOpen((prev) => !prev)}
+              onClick={() => {
+                const newValue = !mobileOpen;
+                setMobileOpen(newValue);
+                if (!newValue) {
+                  // Close dropdown when closing mobile menu
+                  setMobileOpenDropdown(null);
+                }
+              }}
               aria-label="Toggle navigation"
             >
               <Menu size={20} />
@@ -647,35 +655,40 @@ export default function SiteHeader({ initialSettings = null }: SiteHeaderProps =
               // Use locale in key to force remount when locale changes
               return item.type === 'dropdown' ? (
                 <div key={`${item.href}-${displayLocale}`} className="space-y-2 rounded-lg border border-white/20 p-3">
-                  <Link
-                    href={item.href}
-                    onClick={() => setMobileOpen(false)}
-                    className="flex items-center justify-between gap-2 text-sm font-semibold text-white"
+                  <button
+                    type="button"
+                    onClick={() => setMobileOpenDropdown(mobileOpenDropdown === item.href ? null : item.href)}
+                    className="flex w-full items-center justify-between gap-2 text-sm font-semibold text-white"
                   >
                     <span className="flex items-center gap-2">
                       {item.icon}
                       <span suppressHydrationWarning>{item.label}</span>
                     </span>
-                    <ChevronDown className="h-3 w-3" />
-                  </Link>
-                  <div className="space-y-1 pl-6">
-                    {item.children.length > 0 ? (
-                      item.children.map((child) => (
-                        <Link
-                          key={`${child.href}-${displayLocale}`}
-                          href={child.href}
-                          onClick={() => setMobileOpen(false)}
-                          className="block rounded-md px-2 py-1 text-xs text-white/80 transition hover:bg-white/10"
-                        >
-                          <span suppressHydrationWarning>{child.label}</span>
-                        </Link>
-                      ))
-                    ) : (
-                      <span className="block text-xs text-white/60" suppressHydrationWarning>
-                        {displayLocale === 'ru' ? 'Разделы скоро будут добавлены.' : "Bo'limlar tez orada qo'shiladi."}
-                      </span>
-                    )}
-                  </div>
+                    <ChevronDown className={`h-3 w-3 transition-transform ${mobileOpenDropdown === item.href ? 'rotate-180' : ''}`} />
+                  </button>
+                  {mobileOpenDropdown === item.href && (
+                    <div className="space-y-1 pl-6">
+                      {item.children.length > 0 ? (
+                        item.children.map((child) => (
+                          <Link
+                            key={`${child.href}-${displayLocale}`}
+                            href={child.href}
+                            onClick={() => {
+                              setMobileOpen(false);
+                              setMobileOpenDropdown(null);
+                            }}
+                            className="block rounded-md px-2 py-1 text-xs text-white/80 transition hover:bg-white/10"
+                          >
+                            <span suppressHydrationWarning>{child.label}</span>
+                          </Link>
+                        ))
+                      ) : (
+                        <span className="block text-xs text-white/60" suppressHydrationWarning>
+                          {displayLocale === 'ru' ? 'Разделы скоро будут добавлены.' : "Bo'limlar tez orada qo'shiladi."}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <Link
