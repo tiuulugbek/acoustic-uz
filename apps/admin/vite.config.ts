@@ -13,11 +13,9 @@ export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(version),
     __BUILD_TIME__: JSON.stringify(buildTime),
-    // Use environment variable or default to production API URL
-    'import.meta.env.VITE_API_URL': JSON.stringify(
-      process.env.VITE_API_URL || 'https://api.acoustic.uz/api'
-    ),
   },
+  // Ensure VITE_ prefixed env vars are available
+  envPrefix: 'VITE_',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
