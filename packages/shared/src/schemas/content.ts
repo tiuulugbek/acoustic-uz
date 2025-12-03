@@ -240,8 +240,8 @@ export const hearingTestSchema = z.object({
   email: z.string().email().optional(),
   deviceType: z.enum(['speaker', 'headphone']),
   volumeLevel: z.number().min(0).max(1).optional(),
-  leftEarResults: z.record(z.string(), z.boolean()),
-  rightEarResults: z.record(z.string(), z.boolean()),
+  leftEarResults: z.record(z.string(), z.number().min(0).max(1)), // Volume levels (0-1)
+  rightEarResults: z.record(z.string(), z.number().min(0).max(1)), // Volume levels (0-1)
   leftEarScore: z.number().int().min(0).max(100).optional(),
   rightEarScore: z.number().int().min(0).max(100).optional(),
   overallScore: z.number().int().min(0).max(100).optional(),
