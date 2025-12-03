@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import { readFileSync } from 'fs';
+import { readFileSync, writeFileSync } from 'fs';
 import { execSync } from 'child_process';
 
 // Read package.json to get base version
@@ -32,6 +32,11 @@ const buildTime = new Date().toISOString();
 
 console.log(`[Vite Config] Final version for build: ${version}`);
 console.log(`[Vite Config] Build time: ${buildTime}`);
+
+// Write version to a file that can be imported at runtime
+const versionFile = path.resolve(__dirname, './src/version.json');
+writeFileSync(versionFile, JSON.stringify({ version, buildTime }, null, 2));
+console.log(`[Vite Config] Version written to: ${versionFile}`);
 
 export default defineConfig({
   plugins: [react()],

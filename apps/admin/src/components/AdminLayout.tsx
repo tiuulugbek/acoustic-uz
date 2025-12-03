@@ -22,17 +22,36 @@ import { useEffect, useState } from 'react';
 
 const { Header, Sider, Content, Footer } = Layout;
 
-// Get version and build time from Vite define
-// Try multiple ways to get version (for compatibility)
-const APP_VERSION = (typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 
-                     (typeof globalThis !== 'undefined' && globalThis.__APP_VERSION__ ? globalThis.__APP_VERSION__ : 
-                      '1.0.0'));
-const BUILD_TIME = typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : new Date().toISOString();
+// Get version and build time - try multiple sources
+let APP_VERSION = '1.0.0';
+let BUILD_TIME = new Date().toISOString();
+
+// Try to get from Vite define first
+if (typeof __APP_VERSION__ !== 'undefined') {
+  APP_VERSION = __APP_VERSION__;
+}
+if (typeof __BUILD_TIME__ !== 'undefined') {
+  BUILD_TIME = __BUILD_TIME__;
+}
+
+// Fallback: Try to import from version.json file
+try {
+  const versionData = require('../version.json');
+  if (versionData.version && versionData.version !== '1.0.0') {
+    APP_VERSION = versionData.version;
+  }
+  if (versionData.buildTime) {
+    BUILD_TIME = versionData.buildTime;
+  }
+} catch (e) {
+  // version.json not available, use defaults
+}
 
 // Debug: Log version to console
 if (typeof window !== 'undefined') {
   console.log('[AdminLayout] APP_VERSION:', APP_VERSION);
   console.log('[AdminLayout] BUILD_TIME:', BUILD_TIME);
+  console.log('[AdminLayout] __APP_VERSION__:', typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'undefined');
 }
 
 const menuItems: MenuProps['items'] = [
