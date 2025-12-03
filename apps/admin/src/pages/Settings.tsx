@@ -410,13 +410,21 @@ export default function SettingsPage() {
         telegramButtonMessage_ru: formValues.telegramButtonMessage_ru || 'EMPTY',
       });
       
+      // Helper function to convert empty strings to undefined
+      const toUndefinedIfEmpty = (value: string | undefined | null): string | undefined => {
+        if (value === null || value === undefined || value.trim() === '') {
+          return undefined;
+        }
+        return value.trim();
+      };
+      
       const payload: UpdateSettingsPayload = {
-        telegramBotToken: formValues.telegramBotToken || undefined,
-        telegramChatId: formValues.telegramChatId || undefined,
-        telegramButtonBotToken: formValues.telegramButtonBotToken || undefined,
-        telegramButtonBotUsername: formValues.telegramButtonBotUsername || undefined,
-        telegramButtonMessage_uz: formValues.telegramButtonMessage_uz || undefined,
-        telegramButtonMessage_ru: formValues.telegramButtonMessage_ru || undefined,
+        telegramBotToken: toUndefinedIfEmpty(formValues.telegramBotToken),
+        telegramChatId: toUndefinedIfEmpty(formValues.telegramChatId),
+        telegramButtonBotToken: toUndefinedIfEmpty(formValues.telegramButtonBotToken),
+        telegramButtonBotUsername: toUndefinedIfEmpty(formValues.telegramButtonBotUsername),
+        telegramButtonMessage_uz: toUndefinedIfEmpty(formValues.telegramButtonMessage_uz),
+        telegramButtonMessage_ru: toUndefinedIfEmpty(formValues.telegramButtonMessage_ru),
       };
       
       console.log('🔵 [Settings] Payload prepared:', {

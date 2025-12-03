@@ -127,17 +127,24 @@ export class SettingsService {
         sidebarConfigsType: cleanedSidebarConfigs ? typeof cleanedSidebarConfigs : 'undefined',
       });
 
+      // Helper function to normalize string values (empty strings become undefined)
+      const normalizeString = (value: string | undefined | null): string | undefined => {
+        if (value === null || value === undefined) return undefined;
+        const trimmed = value.trim();
+        return trimmed === '' ? undefined : trimmed;
+      };
+
       // Build update object with only valid Prisma fields
       const updateData: Record<string, unknown> = {
-        ...(phonePrimary !== undefined ? { phonePrimary } : {}),
-        ...(phoneSecondary !== undefined ? { phoneSecondary } : {}),
-        ...(email !== undefined ? { email } : {}),
-        ...(telegramBotToken !== undefined ? { telegramBotToken } : {}),
-        ...(telegramChatId !== undefined ? { telegramChatId } : {}),
-        ...(telegramButtonBotToken !== undefined ? { telegramButtonBotToken } : {}),
-        ...(telegramButtonBotUsername !== undefined ? { telegramButtonBotUsername } : {}),
-        ...(telegramButtonMessage_uz !== undefined ? { telegramButtonMessage_uz } : {}),
-        ...(telegramButtonMessage_ru !== undefined ? { telegramButtonMessage_ru } : {}),
+        ...(phonePrimary !== undefined ? { phonePrimary: normalizeString(phonePrimary) } : {}),
+        ...(phoneSecondary !== undefined ? { phoneSecondary: normalizeString(phoneSecondary) } : {}),
+        ...(email !== undefined ? { email: normalizeString(email) } : {}),
+        ...(telegramBotToken !== undefined ? { telegramBotToken: normalizeString(telegramBotToken) } : {}),
+        ...(telegramChatId !== undefined ? { telegramChatId: normalizeString(telegramChatId) } : {}),
+        ...(telegramButtonBotToken !== undefined ? { telegramButtonBotToken: normalizeString(telegramButtonBotToken) } : {}),
+        ...(telegramButtonBotUsername !== undefined ? { telegramButtonBotUsername: normalizeString(telegramButtonBotUsername) } : {}),
+        ...(telegramButtonMessage_uz !== undefined ? { telegramButtonMessage_uz: normalizeString(telegramButtonMessage_uz) } : {}),
+        ...(telegramButtonMessage_ru !== undefined ? { telegramButtonMessage_ru: normalizeString(telegramButtonMessage_ru) } : {}),
         ...(brandPrimary !== undefined ? { brandPrimary } : {}),
         ...(brandAccent !== undefined ? { brandAccent } : {}),
         ...(amocrmDomain !== undefined ? { amocrmDomain } : {}),
