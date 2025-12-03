@@ -77,11 +77,21 @@ export default function SettingsPage() {
 
   const updateMutation = useMutation({
     mutationFn: updateSettings,
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      console.log('🟢 [Settings] updateMutation.onSuccess called');
+      console.log('🟢 [Settings] Response data:', data);
+      console.log('🟢 [Settings] Variables sent:', variables);
       queryClient.invalidateQueries({ queryKey: ['settings'] });
-      message.success('Sozlamalar saqlandi');
+      // Note: Specific success messages are shown in individual handlers
+      // This is a fallback for other tabs
+      message.success('Sozlamalar saqlandi', 3);
     },
-    onError: (error: ApiError) => message.error(error.message || 'Xatolik yuz berdi'),
+    onError: (error: ApiError) => {
+      console.error('🔴 [Settings] updateMutation.onError called');
+      console.error('🔴 [Settings] Error:', error);
+      console.error('🔴 [Settings] Error message:', error.message);
+      message.error(error.message || 'Xatolik yuz berdi', 5);
+    },
   });
 
   // Initialize form when settings load
@@ -385,17 +395,19 @@ export default function SettingsPage() {
 
   // Handle Telegram settings save
   const handleTelegramSettingsSave = async () => {
-    console.log('[Settings] ========== Telegram Save Started ==========');
+    console.log('🔵 [Settings] ========== Telegram Save Started ==========');
+    console.log('🔵 [Settings] Button clicked, starting save process...');
+    
     try {
       // Get all form values without validation (to allow empty values)
       const formValues = form.getFieldsValue();
-      console.log('[Settings] Telegram form values (all):', {
-        telegramBotToken: formValues.telegramBotToken ? '***' : null,
-        telegramChatId: formValues.telegramChatId,
-        telegramButtonBotToken: formValues.telegramButtonBotToken ? '***' : null,
-        telegramButtonBotUsername: formValues.telegramButtonBotUsername,
-        telegramButtonMessage_uz: formValues.telegramButtonMessage_uz,
-        telegramButtonMessage_ru: formValues.telegramButtonMessage_ru,
+      console.log('🔵 [Settings] Form values retrieved:', {
+        telegramBotToken: formValues.telegramBotToken ? '***SET***' : 'EMPTY',
+        telegramChatId: formValues.telegramChatId || 'EMPTY',
+        telegramButtonBotToken: formValues.telegramButtonBotToken ? '***SET***' : 'EMPTY',
+        telegramButtonBotUsername: formValues.telegramButtonBotUsername || 'EMPTY',
+        telegramButtonMessage_uz: formValues.telegramButtonMessage_uz || 'EMPTY',
+        telegramButtonMessage_ru: formValues.telegramButtonMessage_ru || 'EMPTY',
       });
       
       const payload: UpdateSettingsPayload = {
@@ -407,29 +419,43 @@ export default function SettingsPage() {
         telegramButtonMessage_ru: formValues.telegramButtonMessage_ru || undefined,
       };
       
-      console.log('[Settings] Telegram payload being sent:', {
-        telegramBotToken: payload.telegramBotToken ? '***' : undefined,
-        telegramChatId: payload.telegramChatId,
-        telegramButtonBotToken: payload.telegramButtonBotToken ? '***' : undefined,
-        telegramButtonBotUsername: payload.telegramButtonBotUsername,
-        telegramButtonMessage_uz: payload.telegramButtonMessage_uz,
-        telegramButtonMessage_ru: payload.telegramButtonMessage_ru,
+      console.log('🔵 [Settings] Payload prepared:', {
+        telegramBotToken: payload.telegramBotToken ? '***SET***' : 'undefined',
+        telegramChatId: payload.telegramChatId || 'undefined',
+        telegramButtonBotToken: payload.telegramButtonBotToken ? '***SET***' : 'undefined',
+        telegramButtonBotUsername: payload.telegramButtonBotUsername || 'undefined',
+        telegramButtonMessage_uz: payload.telegramButtonMessage_uz || 'undefined',
+        telegramButtonMessage_ru: payload.telegramButtonMessage_ru || 'undefined',
       });
       
-      console.log('[Settings] Calling updateMutation.mutateAsync...');
-      const result = await updateMutation.mutateAsync(payload);
-      console.log('[Settings] Telegram settings saved successfully!', result);
-      console.log('[Settings] ========== Telegram Save Completed ==========');
-    } catch (error: any) {
-      console.error('[Settings] ========== Telegram Save Error ==========');
-      console.error('[Settings] Telegram form save error:', error);
-      console.error('[Settings] Error details:', {
-        message: error?.message,
-        response: error?.response,
-        status: error?.status,
-        stack: error?.stack,
+      console.log('🔵 [Settings] Calling updateMutation.mutateAsync...');
+      console.log('🔵 [Settings] updateMutation state:', {
+        isPending: updateMutation.isPending,
+        isError: updateMutation.isError,
+        isSuccess: updateMutation.isSuccess,
       });
-      message.error(error?.message || 'Sozlamalarni saqlashda xatolik yuz berdi');
+      
+      const result = await updateMutation.mutateAsync(payload);
+      
+      console.log('🟢 [Settings] ========== Telegram Save SUCCESS ==========');
+      console.log('🟢 [Settings] Response received:', result);
+      console.log('🟢 [Settings] Settings saved successfully!');
+      
+      // Show explicit success message
+      message.success('Telegram sozlamalari muvaffaqiyatli saqlandi!', 3);
+      
+    } catch (error: any) {
+      console.error('🔴 [Settings] ========== Telegram Save ERROR ==========');
+      console.error('🔴 [Settings] Error type:', typeof error);
+      console.error('🔴 [Settings] Error object:', error);
+      console.error('🔴 [Settings] Error message:', error?.message);
+      console.error('🔴 [Settings] Error response:', error?.response);
+      console.error('🔴 [Settings] Error status:', error?.status);
+      console.error('🔴 [Settings] Error stack:', error?.stack);
+      
+      const errorMessage = error?.message || error?.response?.data?.message || 'Sozlamalarni saqlashda xatolik yuz berdi';
+      console.error('🔴 [Settings] Showing error message:', errorMessage);
+      message.error(errorMessage, 5);
     }
   };
 
