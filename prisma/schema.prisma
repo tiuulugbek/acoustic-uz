@@ -71,7 +71,7 @@ model Setting {
   email              String?
   telegramBotToken   String?  // Bot token for forms (sends to Telegram)
   telegramChatId     String?  // Chat ID for forms bot
-  telegramButtonBotToken String?  // Bot token for Telegram button (sends to AmoCRM)
+  telegramButtonBotToken String?  // Bot token for Telegram button
   telegramButtonBotUsername String?  // Bot username for Telegram button (e.g., @yourbot)
   telegramButtonMessage_uz String?  // Message shown in chat bubble (Uzbek)
   telegramButtonMessage_ru String?  // Message shown in chat bubble (Russian)
@@ -88,15 +88,6 @@ model Setting {
   // Legacy sidebar settings (for backward compatibility)
   sidebarSections    Json? // Array of { id, title_uz, title_ru, link, icon, imageId, order }
   sidebarBrandIds    String[] @default([]) // Array of Brand IDs to show in sidebar
-  // AmoCRM settings
-  amocrmDomain         String?   // e.g., "yourcompany.amocrm.ru"
-  amocrmClientId       String?   // OAuth Client ID
-  amocrmClientSecret   String?   // OAuth Client Secret
-  amocrmAccessToken    String?   // Access token (auto-refreshed)
-  amocrmRefreshToken   String?   // Refresh token (auto-refreshed)
-  amocrmTokenExpiresAt DateTime? // Token expiration time
-  amocrmPipelineId     String?   // Pipeline ID for leads
-  amocrmStatusId       String?   // Status ID for leads
   updatedAt          DateTime @updatedAt
 }
 
