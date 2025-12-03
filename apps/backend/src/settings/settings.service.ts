@@ -189,19 +189,45 @@ export class SettingsService {
         console.log('🔵 [Settings] telegramButtonMessage_ru normalized:', normalized ? 'SET' : 'undefined');
         if (normalized !== undefined) updateData.telegramButtonMessage_ru = normalized;
       }
-        ...(brandPrimary !== undefined ? { brandPrimary } : {}),
-        ...(brandAccent !== undefined ? { brandAccent } : {}),
-        ...(amocrmDomain !== undefined ? { amocrmDomain } : {}),
-        ...(amocrmClientId !== undefined ? { amocrmClientId } : {}),
-        ...(amocrmClientSecret !== undefined ? { amocrmClientSecret } : {}),
-        ...(amocrmAccessToken !== undefined ? { amocrmAccessToken } : {}),
-        ...(amocrmRefreshToken !== undefined ? { amocrmRefreshToken } : {}),
-        ...(amocrmPipelineId !== undefined ? { amocrmPipelineId } : {}),
-        ...(amocrmStatusId !== undefined ? { amocrmStatusId } : {}),
-        ...jsonFields,
-        ...(catalogHeroImageId !== undefined ? { catalogHeroImageId: catalogHeroImageId || null } : {}),
-        ...(logoId !== undefined ? { logoId: logoId || null } : {}),
-        ...(sidebarBrandIds !== undefined ? { sidebarBrandIds: sidebarBrandIds || [] } : {}),
+      
+      // Add other fields
+      if (brandPrimary !== undefined) updateData.brandPrimary = brandPrimary;
+      if (brandAccent !== undefined) updateData.brandAccent = brandAccent;
+      if (amocrmDomain !== undefined) {
+        const normalized = normalizeString(amocrmDomain);
+        if (normalized !== undefined) updateData.amocrmDomain = normalized;
+      }
+      if (amocrmClientId !== undefined) {
+        const normalized = normalizeString(amocrmClientId);
+        if (normalized !== undefined) updateData.amocrmClientId = normalized;
+      }
+      if (amocrmClientSecret !== undefined) {
+        const normalized = normalizeString(amocrmClientSecret);
+        if (normalized !== undefined) updateData.amocrmClientSecret = normalized;
+      }
+      if (amocrmAccessToken !== undefined) {
+        const normalized = normalizeString(amocrmAccessToken);
+        if (normalized !== undefined) updateData.amocrmAccessToken = normalized;
+      }
+      if (amocrmRefreshToken !== undefined) {
+        const normalized = normalizeString(amocrmRefreshToken);
+        if (normalized !== undefined) updateData.amocrmRefreshToken = normalized;
+      }
+      if (amocrmPipelineId !== undefined) {
+        const normalized = normalizeString(amocrmPipelineId);
+        if (normalized !== undefined) updateData.amocrmPipelineId = normalized;
+      }
+      if (amocrmStatusId !== undefined) {
+        const normalized = normalizeString(amocrmStatusId);
+        if (normalized !== undefined) updateData.amocrmStatusId = normalized;
+      }
+      
+      // Add JSON fields
+      Object.assign(updateData, jsonFields);
+      
+      if (catalogHeroImageId !== undefined) updateData.catalogHeroImageId = catalogHeroImageId || null;
+      if (logoId !== undefined) updateData.logoId = logoId || null;
+      if (sidebarBrandIds !== undefined) updateData.sidebarBrandIds = sidebarBrandIds || [];
       };
 
       console.log('🔵 [Settings] Update data keys:', Object.keys(updateData));
