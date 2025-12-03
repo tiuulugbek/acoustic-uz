@@ -79,10 +79,17 @@ echo "🏗️  Rebuilding admin panel..."
 if ! command -v pnpm &> /dev/null; then
     npm install -g pnpm@8.15.0
 fi
-# Use --yes flag to skip confirmation prompts
-pnpm install --yes || pnpm install --force || true
-# Skip postinstall scripts that might fail (like patch-package)
-pnpm --filter @acoustic/admin build --ignore-scripts || pnpm --filter @acoustic/admin build
+# Set environment variable to skip confirmation prompts
+export PNPM_FORCE=true
+# Install dependencies (will skip if already installed)
+pnpm install --force || pnpm install || true
+# Build admin (ignore postinstall script errors)
+pnpm --filter @acoustic/admin build || {
+    echo "⚠️  Admin build failed, trying without postinstall scripts..."
+    cd apps/admin
+    SKIP_POSTINSTALL=true pnpm build || pnpm build
+    cd "$PROJECT_DIR"
+}
 
 # Rebuild frontend
 echo "🏗️  Rebuilding frontend..."
