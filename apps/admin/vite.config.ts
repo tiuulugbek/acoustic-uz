@@ -50,25 +50,29 @@ export default defineConfig({
           `<head><script>window.__APP_VERSION__='${version}';window.__BUILD_TIME__='${buildTime}';window.__VITE_API_URL__='${process.env.VITE_API_URL || 'https://api.acoustic.uz/api'}';</script>`
         );
       },
-      // Also replace in JS files during build
-      transform(code, id) {
-        if (id.endsWith('.ts') || id.endsWith('.tsx') || id.endsWith('.js')) {
-          // Replace import.meta.env.VITE_API_URL with production URL
-          const apiUrl = process.env.VITE_API_URL || 'https://api.acoustic.uz/api';
-          code = code.replace(
-            /import\.meta\.env\.VITE_API_URL/g,
-            `"${apiUrl}"`
-          );
-          // Replace localhost:3001 with production URL
-          code = code.replace(
-            /http:\/\/localhost:3001\/api/g,
-            apiUrl
-          );
-        }
-        return code;
-      },
     },
   ],
+  build: {
+    rollupOptions: {
+      plugins: [
+        // Replace localhost:3001 in build output
+        {
+          name: 'replace-localhost',
+          generateBundle(options, bundle) {
+            const apiUrl = process.env.VITE_API_URL || 'https://api.acoustic.uz/api';
+            Object.keys(bundle).forEach((fileName) => {
+              const file = bundle[fileName];
+              if (file.type === 'chunk' && file.code) {
+                // Replace localhost:3001 with production URL
+                file.code = file.code.replace(/http:\/\/localhost:3001\/api/g, apiUrl);
+                file.code = file.code.replace(/localhost:3001/g, 'api.acoustic.uz');
+              }
+            });
+          },
+        },
+      ],
+    },
+  },
   define: {
     // Use string replacement to ensure version is injected correctly
     '__APP_VERSION__': JSON.stringify(version),
