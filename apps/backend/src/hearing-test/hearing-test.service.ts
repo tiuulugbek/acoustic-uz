@@ -24,13 +24,23 @@ export class HearingTestService {
   }
 
   /**
-   * Calculate hearing score based on test results
+   * Calculate hearing score based on test results (volume levels)
+   * Lower volume needed = better hearing
    */
-  calculateScore(results: Record<string, boolean>): number {
+  calculateScore(results: Record<string, number>): number {
     const frequencies = ['250', '500', '1000', '2000', '4000', '8000'];
-    const totalFrequencies = frequencies.length;
-    const heardFrequencies = frequencies.filter((f) => results[f] === true).length;
-    return Math.round((heardFrequencies / totalFrequencies) * 100);
+    if (frequencies.length === 0) return 0;
+    
+    let totalScore = 0;
+    for (const freq of frequencies) {
+      const volume = results[freq];
+      if (volume === undefined || volume === null) continue;
+      // Assuming 1.0 is perfect hearing (no volume needed), 0.0 is no hearing
+      // Score is inverse of volume needed to barely hear
+      // Lower volume = higher score
+      totalScore += (1 - volume) * (100 / frequencies.length);
+    }
+    return Math.round(totalScore);
   }
 
   /**
