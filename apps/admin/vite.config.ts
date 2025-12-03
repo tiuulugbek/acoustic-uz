@@ -11,15 +11,17 @@ const baseVersion = packageJson.version || '1.0.0';
 // Generate version with git commit hash and build timestamp
 let version = baseVersion;
 try {
-  // Get git commit hash (short)
-  const gitHash = execSync('git rev-parse --short HEAD', { cwd: __dirname, encoding: 'utf-8' }).trim();
+  // Get git commit hash (short) - use parent directory for git repo
+  const gitHash = execSync('git rev-parse --short HEAD', { cwd: path.resolve(__dirname, '../..'), encoding: 'utf-8' }).trim();
   // Get build timestamp (YYYYMMDDHHmmss)
   const buildTimestamp = new Date().toISOString().replace(/[-:T]/g, '').split('.')[0].slice(0, 14);
   version = `${baseVersion}.${buildTimestamp}.${gitHash}`;
+  console.log(`[Vite] Generated version: ${version}`);
 } catch (error) {
   // Fallback if git is not available
   const buildTimestamp = new Date().toISOString().replace(/[-:T]/g, '').split('.')[0].slice(0, 14);
   version = `${baseVersion}.${buildTimestamp}`;
+  console.log(`[Vite] Generated version (no git): ${version}`);
 }
 
 const buildTime = new Date().toISOString();

@@ -41,10 +41,20 @@ if [ ! -d "apps/admin/dist" ] || [ "$1" == "--rebuild" ]; then
         exit 1
     fi
     
-    pnpm build || {
+    # Show git info for version generation
+    echo "📋 Git info for version:"
+    git rev-parse --short HEAD 2>/dev/null && echo "  Git hash: $(git rev-parse --short HEAD)" || echo "  Git hash: N/A"
+    
+    pnpm build 2>&1 | tee /tmp/admin-build.log || {
         echo "⚠️  Build failed, trying again with explicit env..."
         NODE_ENV=production VITE_API_URL=https://api.acoustic.uz/api pnpm build
     }
+    
+    # Show version from build log
+    if grep -q "Generated version" /tmp/admin-build.log 2>/dev/null; then
+        echo "📋 Version generated:"
+        grep "Generated version" /tmp/admin-build.log | tail -1
+    fi
     
     cd "$PROJECT_DIR"
     
