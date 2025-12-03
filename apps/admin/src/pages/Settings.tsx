@@ -17,7 +17,7 @@ import {
   InputNumber,
   Tabs,
 } from 'antd';
-import { UploadOutlined, DeleteOutlined, SaveOutlined, FolderOutlined, CheckCircleOutlined, CloseCircleOutlined, LinkOutlined, ThunderboltOutlined } from '@ant-design/icons';
+import { UploadOutlined, DeleteOutlined, SaveOutlined, FolderOutlined } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -25,7 +25,6 @@ import {
   updateSettings,
   getMedia,
   uploadMedia,
-  testAmoCRMConnection,
   getBrands,
   type SettingsDto,
   type UpdateSettingsPayload,
@@ -48,8 +47,6 @@ export default function SettingsPage() {
   const [previewLogo, setPreviewLogo] = useState<string | null>(null);
   const [catalogHeroModalOpen, setCatalogHeroModalOpen] = useState(false);
   const [logoModalOpen, setLogoModalOpen] = useState(false);
-  const [testingAmoCRM, setTestingAmoCRM] = useState(false);
-  const [amocrmTestResult, setAmocrmTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [sidebarSections, setSidebarSections] = useState<SidebarSection[]>([]);
   const [sidebarSectionImageModals, setSidebarSectionImageModals] = useState<Record<string, boolean>>({});
   
@@ -224,31 +221,6 @@ export default function SettingsPage() {
     return false;
   };
 
-  const handleTestAmoCRM = async () => {
-    setTestingAmoCRM(true);
-    setAmocrmTestResult(null);
-    try {
-      const result = await testAmoCRMConnection();
-      setAmocrmTestResult({
-        success: result.success,
-        message: result.message,
-      });
-      if (result.success) {
-        message.success('AmoCRM ulanishi muvaffaqiyatli!');
-      } else {
-        message.warning(result.message);
-      }
-    } catch (error) {
-      const apiError = error as ApiError;
-      setAmocrmTestResult({
-        success: false,
-        message: apiError.message || 'Test muvaffaqiyatsiz',
-      });
-      message.error(apiError.message || 'Test muvaffaqiyatsiz');
-    } finally {
-      setTestingAmoCRM(false);
-    }
-  };
 
   const handleCatalogHeroUpload: UploadProps['customRequest'] = async (options) => {
     const { file, onSuccess, onError } = options;
@@ -439,6 +411,7 @@ export default function SettingsPage() {
 
   // Handle Telegram settings save
   const handleTelegramSettingsSave = async () => {
+    console.log('[Settings] ========== Telegram Save Started ==========');
     try {
       // Get all form values without validation (to allow empty values)
       const formValues = form.getFieldsValue();
@@ -469,14 +442,18 @@ export default function SettingsPage() {
         telegramButtonMessage_ru: payload.telegramButtonMessage_ru,
       });
       
-      await updateMutation.mutateAsync(payload);
-      console.log('[Settings] Telegram settings saved successfully');
+      console.log('[Settings] Calling updateMutation.mutateAsync...');
+      const result = await updateMutation.mutateAsync(payload);
+      console.log('[Settings] Telegram settings saved successfully!', result);
+      console.log('[Settings] ========== Telegram Save Completed ==========');
     } catch (error: any) {
+      console.error('[Settings] ========== Telegram Save Error ==========');
       console.error('[Settings] Telegram form save error:', error);
       console.error('[Settings] Error details:', {
         message: error?.message,
         response: error?.response,
         status: error?.status,
+        stack: error?.stack,
       });
       message.error(error?.message || 'Sozlamalarni saqlashda xatolik yuz berdi');
     }
@@ -496,22 +473,6 @@ export default function SettingsPage() {
     }
   };
 
-  // Handle AmoCRM save
-  const handleAmoCRMSave = async () => {
-    try {
-      const values = await form.validateFields(['amocrmDomain', 'amocrmClientId', 'amocrmClientSecret', 'amocrmPipelineId', 'amocrmStatusId']);
-      const payload: UpdateSettingsPayload = {
-        amocrmDomain: values.amocrmDomain?.trim() || undefined,
-        amocrmClientId: values.amocrmClientId?.trim() || undefined,
-        amocrmClientSecret: values.amocrmClientSecret?.trim() || undefined,
-        amocrmPipelineId: values.amocrmPipelineId?.trim() || undefined,
-        amocrmStatusId: values.amocrmStatusId?.trim() || undefined,
-      };
-      await updateMutation.mutateAsync(payload);
-    } catch (error) {
-      console.error('Form validation error:', error);
-    }
-  };
 
   return (
     <div>
@@ -891,164 +852,6 @@ export default function SettingsPage() {
                   ]}
                 />
               </Card>
-            ),
-          },
-          {
-            key: 'amocrm',
-            label: (
-              <Space>
-                <span>AmoCRM integratsiyasi</span>
-                {settings?.amocrmAccessToken ? (
-                  <Tag color="green" icon={<CheckCircleOutlined />}>
-                    Ulangan
-                  </Tag>
-                ) : (
-                  <Tag color="default" icon={<CloseCircleOutlined />}>
-                    Ulanmagan
-                  </Tag>
-                )}
-              </Space>
-            ),
-            children: (
-              <Form form={form} layout="vertical">
-                <Card>
-                  {amocrmTestResult && (
-                    <Alert
-                      type={amocrmTestResult.success ? 'success' : 'warning'}
-                      message={amocrmTestResult.message}
-                      style={{ marginBottom: 16 }}
-                      closable
-                      onClose={() => setAmocrmTestResult(null)}
-                    />
-                  )}
-
-                  <Form.Item
-                    label="AmoCRM Domain"
-                    name="amocrmDomain"
-                    extra="Masalan: yourcompany.amocrm.ru"
-                    rules={[{ required: true, message: 'Domain kiritilishi kerak' }]}
-                  >
-                    <Input placeholder="yourcompany.amocrm.ru" />
-                  </Form.Item>
-
-                  <Form.Item
-                    label="Client ID"
-                    name="amocrmClientId"
-                    extra="AmoCRM Integration'dan olingan Client ID"
-                    rules={[{ required: true, message: 'Client ID kiritilishi kerak' }]}
-                  >
-                    <Input placeholder="Client ID" />
-                  </Form.Item>
-
-                  <Form.Item
-                    label="Client Secret"
-                    name="amocrmClientSecret"
-                    extra="AmoCRM Integration'dan olingan Client Secret"
-                    rules={[{ required: true, message: 'Client Secret kiritilishi kerak' }]}
-                  >
-                    <Input.Password placeholder="Client Secret" />
-                  </Form.Item>
-
-                  <Divider />
-
-                  <Form.Item
-                    label="Pipeline ID"
-                    name="amocrmPipelineId"
-                    extra="Lead yaratiladigan Pipeline ID (ixtiyoriy)"
-                  >
-                    <Input placeholder="Pipeline ID" />
-                  </Form.Item>
-
-                  <Form.Item
-                    label="Status ID"
-                    name="amocrmStatusId"
-                    extra="Lead yaratiladigan Status ID (ixtiyoriy)"
-                  >
-                    <Input placeholder="Status ID" />
-                  </Form.Item>
-
-                  <Divider />
-
-                  <Space direction="vertical" style={{ width: '100%' }} size="middle">
-                    {settings?.amocrmAccessToken ? (
-                      <>
-                        <Button
-                          type="primary"
-                          icon={<ThunderboltOutlined />}
-                          onClick={handleTestAmoCRM}
-                          loading={testingAmoCRM}
-                          block
-                        >
-                          Ulanishni tekshirish
-                        </Button>
-                        <a
-                          href={`${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:3001/api' : 'https://api.acoustic.uz/api')}/amocrm/authorize`}
-                          style={{ display: 'block', width: '100%' }}
-                          onClick={(e) => {
-                            console.log('[AmoCRM] Using anchor tag redirect to backend for re-authorization');
-                            // Allow default anchor behavior - browser will navigate directly
-                          }}
-                        >
-                          <Button
-                            icon={<LinkOutlined />}
-                            block
-                            style={{ width: '100%' }}
-                          >
-                            Qayta avtorizatsiya qilish
-                          </Button>
-                        </a>
-                      </>
-                    ) : (
-                      <a
-                        href={`${import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api'}/amocrm/authorize`}
-                        style={{ display: 'block', width: '100%' }}
-                        onClick={(e) => {
-                          const domain = form.getFieldValue('amocrmDomain');
-                          const clientId = form.getFieldValue('amocrmClientId');
-                          if (!domain || !clientId) {
-                            e.preventDefault();
-                            message.error('Iltimos, Domain va Client ID ni kiriting');
-                            return false;
-                          }
-                          // Allow default anchor behavior - browser will navigate directly
-                          console.log('[AmoCRM] Using anchor tag redirect to backend');
-                        }}
-                      >
-                        <Button
-                          type="primary"
-                          icon={<LinkOutlined />}
-                          block
-                          disabled={!form.getFieldValue('amocrmDomain') || !form.getFieldValue('amocrmClientId')}
-                          style={{ width: '100%' }}
-                        >
-                          AmoCRM'ga ulanish
-                        </Button>
-                      </a>
-                    )}
-                  </Space>
-
-                  <div style={{ marginTop: 16, padding: 12, background: '#f0f0f0', borderRadius: 4 }}>
-                    <div style={{ fontSize: 12, color: '#666' }}>
-                      <strong>Qo'llanma:</strong> AmoCRM integratsiyasini sozlash uchun{' '}
-                      <a href="/AMOCRM_INTEGRATSIYA_QOLLANMASI.md" target="_blank" rel="noopener noreferrer">
-                        qo'llanmani ko'ring
-                      </a>
-                    </div>
-                  </div>
-
-                  <div style={{ marginTop: 24, textAlign: 'right' }}>
-                    <Button
-                      type="primary"
-                      icon={<SaveOutlined />}
-                      onClick={handleAmoCRMSave}
-                      loading={updateMutation.isPending}
-                      size="large"
-                    >
-                      Saqlash
-                    </Button>
-                  </div>
-                </Card>
-              </Form>
             ),
           },
           {
