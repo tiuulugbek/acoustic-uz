@@ -74,17 +74,27 @@ export default async function ServicesPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <PageHeader
-        locale={locale}
-        breadcrumbs={[
-          { label: locale === 'ru' ? 'Главная' : 'Bosh sahifa', href: '/' },
-          { label: locale === 'ru' ? 'Услуги' : 'Xizmatlar' },
-        ]}
-        title={locale === 'ru' ? 'Услуги' : 'Xizmatlar'}
-        description={locale === 'ru'
-          ? 'Все услуги сурдолога в одном месте. Профессиональная помощь людям с тугоухостью. Диагностика, лечение и коррекция нарушений слуха у взрослых и детей с самого рождения.'
-          : "Barcha surdolog xizmatlari bir joyda. Eshitish qobiliyati buzilgan odamlarga professional yordam. Kattalar va bolalarda eshitishning diagnostikasi, davolanishi va korreksiyasi."}
-      />
+      {/* Simple Header - Breadcrumbs and Title only */}
+      <section className="bg-[hsl(var(--secondary))]">
+        <div className="mx-auto max-w-6xl px-4 py-3 text-xs font-semibold uppercase tracking-wide text-white sm:px-6">
+          <div className="flex flex-wrap items-center gap-x-2">
+            <Link href="/" className="hover:text-white/80 text-white/70" suppressHydrationWarning>
+              {locale === 'ru' ? 'Главная' : 'Bosh sahifa'}
+            </Link>
+            <span className="mx-1 sm:mx-2">›</span>
+            <span className="text-white" suppressHydrationWarning>
+              {locale === 'ru' ? 'Услуги' : 'Xizmatlar'}
+            </span>
+          </div>
+        </div>
+      </section>
+      <section className="bg-[hsl(var(--secondary))] border-t border-white/10">
+        <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white break-words" suppressHydrationWarning>
+            {locale === 'ru' ? 'Услуги' : 'Xizmatlar'}
+          </h1>
+        </div>
+      </section>
 
       {/* Service Categories Grid Section */}
       <section className="bg-white py-8">
