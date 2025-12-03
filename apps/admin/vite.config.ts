@@ -2,10 +2,26 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import { readFileSync } from 'fs';
+import { execSync } from 'child_process';
 
-// Read package.json to get version
+// Read package.json to get base version
 const packageJson = JSON.parse(readFileSync(path.resolve(__dirname, './package.json'), 'utf-8'));
-const version = packageJson.version || '1.0.0';
+const baseVersion = packageJson.version || '1.0.0';
+
+// Generate version with git commit hash and build timestamp
+let version = baseVersion;
+try {
+  // Get git commit hash (short)
+  const gitHash = execSync('git rev-parse --short HEAD', { cwd: __dirname, encoding: 'utf-8' }).trim();
+  // Get build timestamp (YYYYMMDDHHmmss)
+  const buildTimestamp = new Date().toISOString().replace(/[-:T]/g, '').split('.')[0].slice(0, 14);
+  version = `${baseVersion}.${buildTimestamp}.${gitHash}`;
+} catch (error) {
+  // Fallback if git is not available
+  const buildTimestamp = new Date().toISOString().replace(/[-:T]/g, '').split('.')[0].slice(0, 14);
+  version = `${baseVersion}.${buildTimestamp}`;
+}
+
 const buildTime = new Date().toISOString();
 
 export default defineConfig({
