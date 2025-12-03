@@ -12,23 +12,31 @@ const baseVersion = packageJson.version || '1.0.0';
 let version = baseVersion;
 try {
   // Get git commit hash (short) - use parent directory for git repo
-  const gitHash = execSync('git rev-parse --short HEAD', { cwd: path.resolve(__dirname, '../..'), encoding: 'utf-8' }).trim();
+  const repoRoot = path.resolve(__dirname, '../..');
+  const gitHash = execSync('git rev-parse --short HEAD', { cwd: repoRoot, encoding: 'utf-8' }).trim();
   // Get build timestamp (YYYYMMDDHHmmss)
   const buildTimestamp = new Date().toISOString().replace(/[-:T]/g, '').split('.')[0].slice(0, 14);
   version = `${baseVersion}.${buildTimestamp}.${gitHash}`;
-  console.log(`[Vite] Generated version: ${version}`);
+  console.log(`[Vite Config] Generated version: ${version}`);
+  console.log(`[Vite Config] Git hash: ${gitHash}`);
+  console.log(`[Vite Config] Build timestamp: ${buildTimestamp}`);
 } catch (error) {
   // Fallback if git is not available
   const buildTimestamp = new Date().toISOString().replace(/[-:T]/g, '').split('.')[0].slice(0, 14);
   version = `${baseVersion}.${buildTimestamp}`;
-  console.log(`[Vite] Generated version (no git): ${version}`);
+  console.log(`[Vite Config] Generated version (no git): ${version}`);
+  console.log(`[Vite Config] Error: ${error.message}`);
 }
 
 const buildTime = new Date().toISOString();
 
+console.log(`[Vite Config] Final version for build: ${version}`);
+console.log(`[Vite Config] Build time: ${buildTime}`);
+
 export default defineConfig({
   plugins: [react()],
   define: {
+    // Use string replacement to ensure version is injected correctly
     __APP_VERSION__: JSON.stringify(version),
     __BUILD_TIME__: JSON.stringify(buildTime),
     // Force VITE_API_URL to production API URL during build
