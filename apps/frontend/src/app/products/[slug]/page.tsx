@@ -566,11 +566,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
             </div>
 
             {/* Product Tabs - Includes Description, Tech, and Fitting Range */}
-            {productTabs.some((tab) => tab.primary || tab.secondary) && (
-              <div className="lg:col-span-2 xl:col-span-2">
-                <ProductTabs tabs={productTabs} />
-              </div>
-            )}
+            <div className="lg:col-span-2 xl:col-span-2">
+              <ProductTabs tabs={productTabs} />
+            </div>
           </div>
 
           {/* Sidebar - Mobile (after product info and tabs) */}

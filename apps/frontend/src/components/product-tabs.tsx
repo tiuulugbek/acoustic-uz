@@ -79,10 +79,17 @@ export default function ProductTabs({ tabs }: ProductTabsProps) {
     [tabs],
   );
 
-  const [activeTab, setActiveTab] = useState<string>(availableTabs[0]?.key ?? '');
+  const [activeTab, setActiveTab] = useState<string>(availableTabs[0]?.key ?? tabs[0]?.key ?? '');
 
+  // If no tabs have content, show placeholder message
   if (!availableTabs.length) {
-    return null;
+    return (
+      <div className="rounded-3xl border border-border/60 bg-white shadow-sm">
+        <div className="p-6 text-center text-sm text-muted-foreground">
+          <p>Ma'lumot qo'shilmagan</p>
+        </div>
+      </div>
+    );
   }
 
   const current = availableTabs.find((tab) => tab.key === activeTab) ?? availableTabs[0];
