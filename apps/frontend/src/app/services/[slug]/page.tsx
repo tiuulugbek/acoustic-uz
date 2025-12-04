@@ -11,8 +11,8 @@ import PageHeader from '@/components/page-header';
 import AppointmentForm from '@/components/appointment-form';
 import Sidebar from '@/components/sidebar';
 
-// ISR: Revalidate every hour
-export const revalidate = 3600;
+// ISR: Revalidate every 5 minutes to ensure category and description updates are reflected quickly
+export const revalidate = 300;
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
