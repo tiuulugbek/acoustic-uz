@@ -77,6 +77,9 @@ pm2 start acoustic-frontend
 # Build admin
 echo "🏗️  Building admin..."
 cd "$PROJECT_DIR"
+export VITE_API_URL=${VITE_API_URL:-https://api.acoustic.uz/api}
+echo "📋 Admin environment variables:"
+echo "  VITE_API_URL=$VITE_API_URL"
 pnpm --filter @acoustic/admin build
 
 # Check if admin build succeeded
