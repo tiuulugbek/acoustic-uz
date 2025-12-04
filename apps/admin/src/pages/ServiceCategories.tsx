@@ -12,7 +12,13 @@ import {
   Popconfirm,
   message,
   Tabs,
+  Upload,
+  Image,
+  Row,
+  Col,
 } from 'antd';
+import { UploadOutlined, DeleteOutlined } from '@ant-design/icons';
+import type { UploadProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
   useQuery,
@@ -28,9 +34,13 @@ import {
   CreateServiceCategoryPayload,
   UpdateServiceCategoryPayload,
   ApiError,
+  getMedia,
+  uploadMedia,
+  type MediaDto,
 } from '../lib/api';
 import { createSlug } from '../utils/slug';
 import { normalizeImageUrl } from '../utils/image';
+import { compressImage } from '../utils/image-compression';
 
 const statusOptions = [
   { label: 'Nashr etilgan', value: 'published' },
@@ -50,6 +60,14 @@ export default function ServiceCategoriesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<ServiceCategoryDto | null>(null);
   const [form] = Form.useForm();
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  // Get media list for image selection
+  const { data: mediaList } = useQuery<MediaDto[], ApiError>({
+    queryKey: ['media'],
+    queryFn: getMedia,
+  });
 
   const { mutateAsync: createMutation, isPending: isCreating } = useMutation<
     ServiceCategoryDto,
@@ -88,6 +106,7 @@ export default function ServiceCategoriesPage() {
 
   const openCreateModal = () => {
     setEditingCategory(null);
+    setPreviewImage(null);
     form.resetFields();
     form.setFieldsValue({
       status: 'published',
@@ -98,6 +117,7 @@ export default function ServiceCategoriesPage() {
 
   const openEditModal = (category: ServiceCategoryDto) => {
     setEditingCategory(category);
+    setPreviewImage(category.image?.url ? normalizeImageUrl(category.image.url) : null);
     form.setFieldsValue({
       name_uz: category.name_uz,
       name_ru: category.name_ru,
@@ -111,6 +131,40 @@ export default function ServiceCategoriesPage() {
     });
     setIsModalOpen(true);
   };
+
+  const handleUpload: UploadProps['customRequest'] = async (options) => {
+    const { file, onSuccess, onError } = options;
+    setUploading(true);
+    try {
+      // Rasmni yuklashdan oldin siqish
+      const compressedFile = await compressImage(file as File);
+      const media = await uploadMedia(compressedFile);
+      form.setFieldsValue({ imageId: media.id });
+      setPreviewImage(normalizeImageUrl(media.url));
+      message.success('Rasm yuklandi');
+      queryClient.invalidateQueries({ queryKey: ['media'] });
+      onSuccess?.(media);
+    } catch (error) {
+      const apiError = error as ApiError;
+      message.error(apiError.message || 'Rasm yuklashda xatolik');
+      onError?.(error as Error);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    form.setFieldsValue({ imageId: undefined });
+    setPreviewImage(null);
+  };
+
+  const handleSelectExistingMedia = (mediaId: string, mediaUrl: string) => {
+    form.setFieldsValue({ imageId: mediaId });
+    setPreviewImage(normalizeImageUrl(mediaUrl));
+  };
+
+  const currentImageId = Form.useWatch('imageId', form);
+  const currentMedia = mediaList?.find((m) => m.id === currentImageId);
 
   const handleDelete = async (category: ServiceCategoryDto) => {
     await deleteMutation(category.id);
@@ -139,6 +193,7 @@ export default function ServiceCategoriesPage() {
 
       setIsModalOpen(false);
       form.resetFields();
+      setPreviewImage(null);
     } catch (error) {
       // validation handled by antd
     }
@@ -252,10 +307,13 @@ export default function ServiceCategoriesPage() {
       <Modal
         title={editingCategory ? 'Kategoriyani tahrirlash' : 'Yangi kategoriya'}
         open={isModalOpen}
-        onCancel={() => setIsModalOpen(false)}
+        onCancel={() => {
+          setIsModalOpen(false);
+          setPreviewImage(null);
+        }}
         onOk={handleSubmit}
         confirmLoading={isCreating || isUpdating}
-        width={720}
+        width={800}
         okText="Saqlash"
         cancelText="Bekor qilish"
       >
@@ -310,8 +368,81 @@ export default function ServiceCategoriesPage() {
           <Form.Item label="Holat" name="status" initialValue="published">
             <Select options={statusOptions} />
           </Form.Item>
-          <Form.Item label="Rasm ID" name="imageId" extra="Media ID (ixtiyoriy)">
-            <Input placeholder="Media ID" />
+          <Form.Item 
+            label="Rasm" 
+            name="imageId" 
+            extra="Kategoriya rasmi (ixtiyoriy)"
+          >
+            <div>
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Upload
+                    customRequest={handleUpload}
+                    showUploadList={false}
+                    accept="image/*"
+                    maxCount={1}
+                  >
+                    <Button icon={<UploadOutlined />} loading={uploading} block>
+                      Yangi rasm yuklash
+                    </Button>
+                  </Upload>
+                </Col>
+                <Col span={12}>
+                  {previewImage && (
+                    <Button
+                      danger
+                      icon={<DeleteOutlined />}
+                      onClick={handleRemoveImage}
+                      block
+                    >
+                      Rasmi o'chirish
+                    </Button>
+                  )}
+                </Col>
+              </Row>
+              
+              {(previewImage || currentMedia?.url) && (
+                <div style={{ marginTop: 16, textAlign: 'center' }}>
+                  <div style={{ marginBottom: 8, fontSize: 12, color: '#666' }}>Tanlangan rasm:</div>
+                  <Image
+                    src={normalizeImageUrl(previewImage || currentMedia?.url || '')}
+                    alt="Preview"
+                    style={{ maxWidth: '100%', maxHeight: 200, objectFit: 'contain', borderRadius: 4 }}
+                    preview={true}
+                  />
+                </div>
+              )}
+
+              {mediaList && mediaList.length > 0 && (
+                <div style={{ marginTop: 16 }}>
+                  <div style={{ marginBottom: 8, fontWeight: 500 }}>Mavjud rasmlar (tanlash uchun bosing):</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, maxHeight: 200, overflowY: 'auto' }}>
+                    {mediaList.slice(0, 20).map((media) => (
+                      <div
+                        key={media.id}
+                        onClick={() => handleSelectExistingMedia(media.id, media.url)}
+                        style={{
+                          width: 80,
+                          height: 80,
+                          border: currentImageId === media.id ? '2px solid #F07E22' : '1px solid #d9d9d9',
+                          borderRadius: 4,
+                          cursor: 'pointer',
+                          overflow: 'hidden',
+                          position: 'relative',
+                          backgroundColor: currentImageId === media.id ? '#fff7ed' : '#fff',
+                        }}
+                      >
+                        <img
+                          src={normalizeImageUrl(media.url)}
+                          alt={media.alt_uz || media.filename}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </Form.Item>
         </Form>
       </Modal>

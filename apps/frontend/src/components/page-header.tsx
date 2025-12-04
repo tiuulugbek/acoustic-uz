@@ -32,32 +32,6 @@ export default function PageHeader({ locale, breadcrumbs, title, description, ic
         </div>
       </section>
       
-      {/* Title and Description */}
-      {(title || description) && (
-        <section className="bg-[hsl(var(--secondary))] border-t border-white/10">
-          <div className="mx-auto max-w-6xl px-4 py-4 sm:py-6 sm:px-6">
-            <div className="flex items-start gap-3 sm:gap-4">
-              {icon && (
-                <div className="flex-shrink-0 mt-1">
-                  {icon}
-                </div>
-              )}
-              <div className="flex-1 min-w-0">
-                {title && (
-                  <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-2 break-words" suppressHydrationWarning>
-                    {title}
-                  </h1>
-                )}
-                {description && (
-                  <p className="text-sm sm:text-base text-white/90 leading-relaxed break-words" suppressHydrationWarning>
-                    {description}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
     </>
   );
 }
