@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import type { Locale } from '@/lib/locale';
 
 interface TestReadyProps {
@@ -12,11 +13,19 @@ interface TestReadyProps {
 export default function TestReady({ locale, ear, onContinue, onBack }: TestReadyProps) {
   const isRu = locale === 'ru';
 
+  // Avtomatik o'tish - 2 sekunddan keyin
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onContinue();
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [onContinue]);
+
   return (
-    <div className="space-y-12 max-w-3xl mx-auto text-center min-h-[60vh] flex flex-col justify-center">
+    <div className="space-y-8 max-w-3xl mx-auto text-center min-h-[60vh] flex flex-col justify-center px-4">
       {/* Ear Icon - Professional style */}
-      <div className="flex justify-center py-8">
-        <div className="relative w-48 h-48 md:w-64 md:h-64">
+      <div className="flex justify-center py-6">
+        <div className="relative w-40 h-40 md:w-56 md:h-56">
           <svg
             width="100%"
             height="100%"
@@ -69,28 +78,19 @@ export default function TestReady({ locale, ear, onContinue, onBack }: TestReady
           </svg>
           {/* Ear label (L or R) */}
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-brand-primary font-bold text-6xl md:text-7xl opacity-20">
+            <span className="text-brand-primary font-bold text-5xl md:text-6xl opacity-20">
               {ear === 'left' ? 'L' : 'R'}
             </span>
           </div>
         </div>
       </div>
 
-      {/* Navigation */}
-      <div className="flex justify-center gap-4">
-        <button
-          onClick={onBack}
-          className="px-8 py-3 border-2 border-gray-300 rounded-xl text-gray-700 font-semibold hover:bg-gray-50 transition-colors"
-        >
-          {isRu ? 'Назад' : 'Orqaga'}
-        </button>
-        <button
-          onClick={onContinue}
-          className="px-10 py-3 bg-brand-primary text-white rounded-xl font-bold text-lg hover:bg-brand-primary/90 transition-all transform hover:scale-105 shadow-lg"
-        >
-          {isRu ? 'Продолжить' : 'Davom etish'}
-        </button>
-      </div>
+      {/* Simple text */}
+      <p className="text-lg md:text-xl text-gray-600">
+        {isRu 
+          ? `Начинаем тест ${ear === 'left' ? 'левого' : 'правого'} уха...`
+          : `${ear === 'left' ? 'Chap' : 'O\'ng'} quloq testi boshlanmoqda...`}
+      </p>
     </div>
   );
 }

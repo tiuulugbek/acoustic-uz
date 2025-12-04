@@ -35,6 +35,7 @@ export default function FrequencyTest({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [results, setResults] = useState<Record<string, number>>({}); // Store volume levels instead of boolean
   const [currentVolume, setCurrentVolume] = useState(0.0); // Start at 0% volume
+  const autoContinueTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentFrequency = frequencies[currentIndex];
   const isLast = currentIndex === frequencies.length - 1;
@@ -52,11 +53,22 @@ export default function FrequencyTest({
     // Reset volume when frequency changes
     setCurrentVolume(0.0);
     stopTone();
+    // Clear auto-continue timer
+    if (autoContinueTimerRef.current) {
+      clearTimeout(autoContinueTimerRef.current);
+      autoContinueTimerRef.current = null;
+    }
   }, [currentFrequency, stopTone]);
 
   const handleVolumeChange = (newVolume: number) => {
     const clampedVolume = Math.max(0, Math.min(1, newVolume));
     setCurrentVolume(clampedVolume);
+    
+    // Clear existing auto-continue timer
+    if (autoContinueTimerRef.current) {
+      clearTimeout(autoContinueTimerRef.current);
+      autoContinueTimerRef.current = null;
+    }
     
     // ReSound kabi: slider'ni surganda real-time ovoz ijro etish
     if (clampedVolume > 0) {
@@ -71,6 +83,11 @@ export default function FrequencyTest({
           // duration yo'q - doim ijro etadi
         });
       }
+      
+      // Agar volume > 0 bo'lsa, 2 sekunddan keyin avtomatik keyingi chastota'ga o'tish
+      autoContinueTimerRef.current = setTimeout(() => {
+        handleContinue();
+      }, 2000);
     } else {
       // Volume 0 bo'lsa, ovozni to'xtatish
       stopTone();
@@ -102,63 +119,38 @@ export default function FrequencyTest({
 
   return (
     <div className="space-y-10 max-w-3xl mx-auto">
-      {/* Header */}
-      <div className="text-center space-y-4">
-        <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
-          {isRu
-            ? ear === 'left' ? 'Левое ухо' : 'Правое ухо'
-            : ear === 'left' ? 'Chap quloq' : 'O\'ng quloq'}
-        </h2>
-        <div className="flex items-center justify-center gap-2">
-          <span className="text-xl text-gray-600 font-medium">
+      {/* Header - Mobile optimized */}
+      <div className="text-center space-y-3 px-4">
+        <div className="flex items-center justify-center gap-2 flex-wrap">
+          <span className="text-2xl md:text-3xl font-bold text-gray-900">
             {isRu ? `${currentFrequency} Гц` : `${currentFrequency} Hz`}
           </span>
-          <button className="w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-50">
-            <span className="text-xs text-gray-600">?</span>
-          </button>
-        </div>
-        <div className="mt-2">
-          <div className="inline-flex items-center gap-2 px-5 py-2 bg-gray-100 rounded-full">
-            <span className="text-base font-semibold text-gray-700">
-              {currentIndex + 1} / {frequencies.length}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Instructions - ReSound style */}
-      <div className="text-center space-y-3">
-        <p className="text-xl md:text-2xl text-gray-900 font-medium">
-          <span className="font-bold text-brand-primary">
-            {isRu ? 'Перетащите' : 'Surib'} {isRu ? 'или используйте' : 'yoki ishlating'}
+          <span className="text-sm md:text-base text-gray-500">
+            ({currentIndex + 1}/{frequencies.length})
           </span>
-          {' '}
-          <span className="text-gray-900">
-            {isRu ? '+ - для регулировки громкости тона, пока вы едва его не услышите' : '+ - ovozni sozlash uchun, ovozni zo\'rg\'a eshitguncha'}
-          </span>
-        </p>
-        <p className="text-base text-gray-600">
+        </div>
+        <p className="text-sm md:text-base text-gray-600 max-w-md mx-auto">
           {isRu
-            ? 'Держите наушники и устройство на максимальной громкости'
-            : 'Quloqchinlar va qurilma ovozini maksimal darajada saqlang'}
+            ? 'Переместите ползунок, пока не услышите звук'
+            : 'Ovozni zo\'rg\'a eshitguncha slider\'ni suring'}
         </p>
       </div>
 
-      {/* Volume Control - ReSound style */}
-      <div className="max-w-3xl mx-auto space-y-8">
-        {/* Volume Slider */}
-        <div className="flex items-center gap-6 px-4">
-          {/* Minus Button - ReSound style (larger, darker) */}
+      {/* Volume Control - Mobile optimized */}
+      <div className="max-w-2xl mx-auto px-4 space-y-6">
+        {/* Volume Slider - Mobile friendly */}
+        <div className="flex items-center gap-3 md:gap-6">
+          {/* Minus Button - Mobile optimized */}
           <button
             onClick={() => handleVolumeChange(currentVolume - 0.05)}
             disabled={isSubmitting || currentVolume <= 0}
-            className="w-16 h-16 rounded-full bg-gray-800 text-white flex items-center justify-center hover:bg-gray-900 transition-colors disabled:opacity-30 disabled:cursor-not-allowed shadow-lg"
+            className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-gray-800 text-white flex items-center justify-center hover:bg-gray-900 active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-lg touch-manipulation"
           >
-            <Minus className="w-6 h-6" />
+            <Minus className="w-5 h-5 md:w-6 md:h-6" />
           </button>
 
-          {/* Slider */}
-          <div className="flex-1 relative py-4">
+          {/* Slider - Mobile optimized */}
+          <div className="flex-1 relative py-6 md:py-8">
             <input
               type="range"
               min="0"
@@ -166,49 +158,39 @@ export default function FrequencyTest({
               step="0.01"
               value={currentVolume}
               onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-              className="w-full h-4 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-brand-primary"
+              className="w-full h-3 md:h-4 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-brand-primary touch-manipulation"
               style={{
                 background: `linear-gradient(to right, #F07E22 0%, #F07E22 ${currentVolume * 100}%, #e5e7eb ${currentVolume * 100}%, #e5e7eb 100%)`
               }}
               disabled={isSubmitting}
             />
-            {/* Volume value display on slider */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full mb-2">
-              <div className="bg-white border-2 border-gray-300 rounded-full px-4 py-1 shadow-lg">
-                <span className="text-lg font-bold text-gray-900">{Math.round(currentVolume * 100)}</span>
+            {/* Volume value display */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full mb-1">
+              <div className="bg-white border-2 border-gray-300 rounded-full px-3 md:px-4 py-1 shadow-lg">
+                <span className="text-base md:text-lg font-bold text-gray-900">{Math.round(currentVolume * 100)}%</span>
               </div>
             </div>
           </div>
 
-          {/* Plus Button - ReSound style (larger, darker) */}
+          {/* Plus Button - Mobile optimized */}
           <button
             onClick={() => handleVolumeChange(currentVolume + 0.05)}
             disabled={isSubmitting || currentVolume >= 1}
-            className="w-16 h-16 rounded-full bg-gray-800 text-white flex items-center justify-center hover:bg-gray-900 transition-colors disabled:opacity-30 disabled:cursor-not-allowed shadow-lg"
+            className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-gray-800 text-white flex items-center justify-center hover:bg-gray-900 active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-lg touch-manipulation"
           >
-            <Plus className="w-6 h-6" />
+            <Plus className="w-5 h-5 md:w-6 md:h-6" />
           </button>
         </div>
-
       </div>
 
-      {/* Navigation */}
-      <div className="flex justify-center gap-4 pt-6">
+      {/* Back button only - Mobile optimized */}
+      <div className="flex justify-center pt-4 px-4">
         <button
           onClick={onBack}
           disabled={isSubmitting}
-          className="px-8 py-3 border-2 border-gray-300 rounded-xl text-gray-700 font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-6 md:px-8 py-2.5 md:py-3 border-2 border-gray-300 rounded-xl text-gray-700 font-semibold hover:bg-gray-50 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation text-sm md:text-base"
         >
           {isRu ? '← Назад' : '← Orqaga'}
-        </button>
-        <button
-          onClick={handleContinue}
-          disabled={isSubmitting}
-          className="px-10 py-3 bg-brand-primary text-white rounded-xl font-bold text-lg hover:bg-brand-primary/90 transition-all transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
-        >
-          {isRu 
-            ? (isLast ? 'Завершить →' : 'Следующая частота →')
-            : (isLast ? 'Yakunlash →' : 'Keyingi chastota →')}
         </button>
       </div>
 
