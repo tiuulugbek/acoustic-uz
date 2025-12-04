@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { execSync } from 'child_process';
 
 // Read package.json to get base version
@@ -35,8 +35,16 @@ console.log(`[Vite Config] Build time: ${buildTime}`);
 
 // Write version to a file that can be imported at runtime (both src and public for build)
 const versionFileSrc = path.resolve(__dirname, './src/version.json');
-const versionFilePublic = path.resolve(__dirname, './public/version.json');
+const publicDir = path.resolve(__dirname, './public');
+const versionFilePublic = path.resolve(publicDir, './version.json');
 const versionData = JSON.stringify({ version, buildTime }, null, 2);
+
+// Ensure public directory exists
+if (!existsSync(publicDir)) {
+  mkdirSync(publicDir, { recursive: true });
+  console.log(`[Vite Config] Created public directory: ${publicDir}`);
+}
+
 writeFileSync(versionFileSrc, versionData);
 writeFileSync(versionFilePublic, versionData);
 console.log(`[Vite Config] Version written to: ${versionFileSrc}`);
