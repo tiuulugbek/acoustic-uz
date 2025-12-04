@@ -4,10 +4,17 @@ import { useEffect, useRef } from 'react';
 
 interface TooltipRef {
   tooltipElement: HTMLDivElement | null;
-  scrollHandler: (() => void) | null;
-  resizeHandler: (() => void) | null;
   hideTimeout: NodeJS.Timeout | null;
+  updatePosition: (() => void) | null;
+  trigger: HTMLElement | null;
 }
+
+// Global scroll/resize handlers - shared across all tooltips
+let globalScrollHandler: (() => void) | null = null;
+let globalResizeHandler: (() => void) | null = null;
+let activeTooltips: Set<TooltipRef> = new Set();
+let scrollTimeout: NodeJS.Timeout | null = null;
+let resizeTimeout: NodeJS.Timeout | null = null;
 
 /**
  * Optimized tooltip manager using event delegation
@@ -31,14 +38,21 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
         if (ref.tooltipElement) {
           ref.tooltipElement.remove();
         }
-        if (ref.scrollHandler) {
-          window.removeEventListener('scroll', ref.scrollHandler, true);
-        }
-        if (ref.resizeHandler) {
-          window.removeEventListener('resize', ref.resizeHandler);
-        }
+        activeTooltips.delete(ref);
       });
       tooltipRefs.clear();
+      
+      // Remove global handlers if no active tooltips
+      if (activeTooltips.size === 0) {
+        if (globalScrollHandler) {
+          window.removeEventListener('scroll', globalScrollHandler, true);
+          globalScrollHandler = null;
+        }
+        if (globalResizeHandler) {
+          window.removeEventListener('resize', globalResizeHandler);
+          globalResizeHandler = null;
+        }
+      }
     };
 
     // Handle mouse enter with event delegation
@@ -58,9 +72,9 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
       if (!ref) {
         ref = {
           tooltipElement: null,
-          scrollHandler: null,
-          resizeHandler: null,
           hideTimeout: null,
+          updatePosition: null,
+          trigger: trigger,
         };
         tooltipRefs.set(trigger, ref);
       }
@@ -129,7 +143,6 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
         const tooltipRect = ref.tooltipElement.getBoundingClientRect();
         const spaceBelow = window.innerHeight - rect.bottom;
         const spaceAbove = rect.top;
-        const spaceRight = window.innerWidth - rect.left;
 
         let top = rect.bottom + 8;
         let left = rect.left;
@@ -153,26 +166,37 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
         ref.tooltipElement.style.left = `${left}px`;
       };
 
-      // Setup position updaters with debouncing for better performance
-      let scrollTimeout: NodeJS.Timeout | null = null;
-      let resizeTimeout: NodeJS.Timeout | null = null;
-      
-      ref.scrollHandler = () => {
-        if (scrollTimeout) clearTimeout(scrollTimeout);
-        scrollTimeout = setTimeout(() => {
-          updatePosition();
-        }, 10);
-      };
-      
-      ref.resizeHandler = () => {
-        if (resizeTimeout) clearTimeout(resizeTimeout);
-        resizeTimeout = setTimeout(() => {
-          updatePosition();
-        }, 100);
-      };
+      ref.updatePosition = updatePosition;
+      activeTooltips.add(ref);
 
-      window.addEventListener('scroll', ref.scrollHandler, true);
-      window.addEventListener('resize', ref.resizeHandler);
+      // Setup global scroll/resize handlers if not already set
+      if (!globalScrollHandler) {
+        globalScrollHandler = () => {
+          if (scrollTimeout) clearTimeout(scrollTimeout);
+          scrollTimeout = setTimeout(() => {
+            activeTooltips.forEach((tooltipRef) => {
+              if (tooltipRef.updatePosition) {
+                tooltipRef.updatePosition();
+              }
+            });
+          }, 16); // ~60fps
+        };
+        window.addEventListener('scroll', globalScrollHandler, true);
+      }
+
+      if (!globalResizeHandler) {
+        globalResizeHandler = () => {
+          if (resizeTimeout) clearTimeout(resizeTimeout);
+          resizeTimeout = setTimeout(() => {
+            activeTooltips.forEach((tooltipRef) => {
+              if (tooltipRef.updatePosition) {
+                tooltipRef.updatePosition();
+              }
+            });
+          }, 150);
+        };
+        window.addEventListener('resize', globalResizeHandler);
+      }
 
       // Initial position
       updatePosition();
@@ -190,13 +214,19 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
           ref.tooltipElement.remove();
           ref.tooltipElement = null;
         }
-        if (ref.scrollHandler) {
-          window.removeEventListener('scroll', ref.scrollHandler, true);
-          ref.scrollHandler = null;
-        }
-        if (ref.resizeHandler) {
-          window.removeEventListener('resize', ref.resizeHandler);
-          ref.resizeHandler = null;
+        activeTooltips.delete(ref);
+        ref.updatePosition = null;
+        
+        // Remove global handlers if no active tooltips
+        if (activeTooltips.size === 0) {
+          if (globalScrollHandler) {
+            window.removeEventListener('scroll', globalScrollHandler, true);
+            globalScrollHandler = null;
+          }
+          if (globalResizeHandler) {
+            window.removeEventListener('resize', globalResizeHandler);
+            globalResizeHandler = null;
+          }
         }
       });
     };
@@ -222,13 +252,19 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
             ref.tooltipElement.remove();
             ref.tooltipElement = null;
           }
-          if (ref.scrollHandler) {
-            window.removeEventListener('scroll', ref.scrollHandler, true);
-            ref.scrollHandler = null;
-          }
-          if (ref.resizeHandler) {
-            window.removeEventListener('resize', ref.resizeHandler);
-            ref.resizeHandler = null;
+          activeTooltips.delete(ref);
+          ref.updatePosition = null;
+          
+          // Remove global handlers if no active tooltips
+          if (activeTooltips.size === 0) {
+            if (globalScrollHandler) {
+              window.removeEventListener('scroll', globalScrollHandler, true);
+              globalScrollHandler = null;
+            }
+            if (globalResizeHandler) {
+              window.removeEventListener('resize', globalResizeHandler);
+              globalResizeHandler = null;
+            }
           }
 
           // Ensure trigger classes are preserved
@@ -246,37 +282,42 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
       }, 150);
     };
 
-    // Use event delegation on container
-    container.addEventListener('mouseenter', handleMouseEnter, true);
-    container.addEventListener('mouseleave', handleMouseLeave, true);
+    // Use event delegation on container - use bubble phase instead of capture for better performance
+    container.addEventListener('mouseenter', handleMouseEnter, false);
+    container.addEventListener('mouseleave', handleMouseLeave, false);
 
     // Ensure all existing triggers have correct classes
     const ensureClasses = () => {
       const triggers = Array.from(container.querySelectorAll('.tooltip-trigger')) as HTMLElement[];
       triggers.forEach((trigger) => {
-        trigger.classList.add(
-          'tooltip-trigger',
-          'cursor-help',
-          'border-b',
-          'border-dashed',
-          'border-brand-primary',
-          'text-brand-primary'
-        );
+        if (!trigger.classList.contains('tooltip-trigger')) {
+          trigger.classList.add(
+            'tooltip-trigger',
+            'cursor-help',
+            'border-b',
+            'border-dashed',
+            'border-brand-primary',
+            'text-brand-primary'
+          );
+        }
       });
     };
 
     ensureClasses();
 
-    // Use MutationObserver to watch for new tooltip triggers and ensure classes
+    // Use MutationObserver with throttling to watch for new tooltip triggers
+    let mutationTimeout: NodeJS.Timeout | null = null;
     const observer = new MutationObserver(() => {
-      ensureClasses();
+      if (mutationTimeout) clearTimeout(mutationTimeout);
+      mutationTimeout = setTimeout(() => {
+        ensureClasses();
+      }, 100); // Throttle mutations
     });
 
     observer.observe(container, {
       childList: true,
       subtree: true,
-      attributes: true,
-      attributeFilter: ['class'],
+      attributes: false, // Don't watch attributes - too expensive
     });
 
     return () => {
