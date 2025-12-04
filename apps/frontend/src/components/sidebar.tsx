@@ -42,10 +42,8 @@ export default async function Sidebar({ locale, settingsData, brandsData, pageTy
       })
     : [];
 
-  // Don't render sidebar if there's no content
-  if (otherSections.length === 0 && sortedBrands.length === 0) {
-    return null;
-  }
+  // Show sidebar even if empty - use fallback content for services page
+  const hasContent = otherSections.length > 0 || sortedBrands.length > 0;
 
   return (
     <aside className="lg:col-span-1 space-y-8">
@@ -119,6 +117,41 @@ export default async function Sidebar({ locale, settingsData, brandsData, pageTy
                 </Link>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Fallback content for services page when no config */}
+      {!hasContent && pageType === 'services' && (
+        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+          <h3 className="text-lg font-semibold text-foreground mb-4" suppressHydrationWarning>
+            {locale === 'ru' ? 'Контакты' : 'Kontaktlar'}
+          </h3>
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm text-muted-foreground mb-2" suppressHydrationWarning>
+                {locale === 'ru' ? 'Телефон' : 'Telefon'}
+              </p>
+              <a href="tel:1385" className="text-base font-semibold text-brand-primary hover:underline">
+                1385
+              </a>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground mb-2" suppressHydrationWarning>
+                {locale === 'ru' ? 'Адрес' : 'Manzil'}
+              </p>
+              <p className="text-sm text-foreground">
+                {locale === 'ru' 
+                  ? 'Ташкент, ул. Амира Темура, 1'
+                  : 'Toshkent, Amir Temur ko\'chasi, 1'}
+              </p>
+            </div>
+            <Link
+              href="/branches"
+              className="inline-flex items-center gap-2 text-sm font-medium text-brand-primary hover:underline"
+            >
+              {locale === 'ru' ? 'Все филиалы →' : 'Barcha filiallar →'}
+            </Link>
           </div>
         </div>
       )}
