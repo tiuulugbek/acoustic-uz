@@ -74,11 +74,23 @@ fi
 echo "▶️  Starting frontend..."
 pm2 start acoustic-frontend
 
+# Build admin
+echo "🏗️  Building admin..."
+cd "$PROJECT_DIR"
+pnpm --filter @acoustic/admin build
+
+# Check if admin build succeeded
+if [ -d "apps/admin/dist" ]; then
+    echo "✅ Admin build successful!"
+else
+    echo "⚠️  Admin build directory not found, but continuing..."
+fi
+
 # Reload nginx
 echo "🔄 Reloading nginx..."
 sudo systemctl reload nginx
 
-echo "✅ Frontend rebuild complete!"
+echo "✅ Frontend and Admin rebuild complete!"
 echo ""
 echo "📋 PM2 status:"
 pm2 list | grep acoustic-frontend
