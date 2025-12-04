@@ -99,7 +99,7 @@ async function fetchJson<T>(
       // Client-side: Use no-store to prevent stale data
       const isServer = typeof window === 'undefined';
       const cacheOptions = isServer 
-        ? { next: { revalidate: 1800 } } // 30 minutes revalidation for ISR
+        ? { next: { revalidate: 300 } } // 5 minutes revalidation for ISR to ensure updates are reflected quickly
         : { cache: 'no-store' as RequestCache }; // No cache for client-side
       
       const response = await fetch(finalUrl, {
