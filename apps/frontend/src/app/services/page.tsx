@@ -5,6 +5,7 @@ import { detectLocale } from '@/lib/locale-server';
 import { getServiceCategories, getBranches, getBrands, getSettings } from '@/lib/api-server';
 import BranchesSidebar from '@/components/branches-sidebar';
 import Sidebar from '@/components/sidebar';
+import { normalizeImageUrl } from '@/lib/image-utils';
 
 // Force dynamic rendering to ensure locale is always read from cookies
 export const dynamic = 'force-dynamic';
@@ -58,12 +59,8 @@ export default async function ServicesPage() {
     const name = locale === 'ru' ? (category.name_ru || '') : (category.name_uz || '');
     const description = locale === 'ru' ? (category.description_ru || '') : (category.description_uz || '');
     
-    // Build image URL
-    let image = category.image?.url || '';
-    if (image && image.startsWith('/') && !image.startsWith('//')) {
-      const baseUrl = API_BASE_URL.replace('/api', '');
-      image = `${baseUrl}${image}`;
-    }
+    // Build image URL using normalizeImageUrl utility
+    const image = category.image?.url ? normalizeImageUrl(category.image.url) : '';
 
     // Count services in this category
     const serviceCount = category.services?.filter((s) => s.status === 'published').length || 0;
