@@ -233,6 +233,7 @@ function ServicesManager() {
       setIsModalOpen(false);
       form.resetFields();
       setPreviewImage(null);
+      setEditingService(null);
     } catch (error) {
       // validation handled by antd
     }
@@ -334,7 +335,9 @@ function ServicesManager() {
         open={isModalOpen}
         onCancel={() => {
           setIsModalOpen(false);
+          form.resetFields();
           setPreviewImage(null);
+          setEditingService(null);
         }}
         onOk={handleSubmit}
         confirmLoading={isCreating || isUpdating}
