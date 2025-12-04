@@ -567,7 +567,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
           </div>
 
           {/* Sidebar - Mobile (after product info and tabs) */}
-          <div className="mt-6 xl:hidden">
+          <div className="mt-6 lg:hidden">
             <Sidebar locale={locale} settingsData={settings} brandsData={brands} pageType="products" />
           </div>
 
