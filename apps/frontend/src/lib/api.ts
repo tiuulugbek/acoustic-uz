@@ -12,7 +12,9 @@ export class ApiFetchError extends Error {
 /**
  * Fetch JSON from API with locale support
  * Adds locale to query params and sets X-Locale header for backend
- * Always uses cache: 'no-store' to prevent caching of locale-dependent content
+ * Uses appropriate cache strategy based on environment:
+ * - Server-side: Uses revalidate for ISR (Incremental Static Regeneration)
+ * - Client-side: Uses no-store to prevent stale data
  * 
  * Gracefully handles errors: if the backend is unavailable, returns empty data
  * instead of throwing errors, so the UI can display fallback content.
@@ -92,10 +94,18 @@ async function fetchJson<T>(
         finalUrl = `${finalUrl}${separator}_t=${Date.now()}`;
       }
       
+      // Determine cache strategy based on environment
+      // Server-side: Use revalidate for ISR (works with static generation)
+      // Client-side: Use no-store to prevent stale data
+      const isServer = typeof window === 'undefined';
+      const cacheOptions = isServer 
+        ? { next: { revalidate: 1800 } } // 30 minutes revalidation for ISR
+        : { cache: 'no-store' as RequestCache }; // No cache for client-side
+      
       const response = await fetch(finalUrl, {
         ...init,
         headers,
-        cache: 'no-store', // Always disable caching for locale-dependent content
+        ...cacheOptions,
         signal: controller.signal,
       });
 
