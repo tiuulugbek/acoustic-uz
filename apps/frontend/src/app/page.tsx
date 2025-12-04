@@ -214,52 +214,47 @@ export default async function HomePage() {
         phoneLink={settingsData?.phoneSecondary?.replace(/\s/g, '') || '+998712021441'}
       />
 
-      {/* 2. Services Section */}
-      <section className="bg-white py-12">
+      {/* 2. Services Section - Compact design like reference image */}
+      <section className="bg-[#F5F5F0] py-8 md:py-12">
         <div className="mx-auto max-w-6xl px-4 md:px-6">
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold text-foreground md:text-4xl" suppressHydrationWarning>
+          <div className="mb-6">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground" suppressHydrationWarning>
               {locale === 'ru' ? 'Наши услуги' : 'Bizning xizmatlar'}
             </h2>
           </div>
           {services.length > 0 ? (
-            <div className="grid gap-6 grid-cols-2 md:grid-cols-4">
+            <div className="grid gap-4 md:gap-5 grid-cols-2 md:grid-cols-4">
               {services.map((service) => (
                 <Link
                   key={service.id}
                   href={service.link || `/services/${service.slug}`}
-                  className="group flex flex-col overflow-hidden rounded-lg bg-white shadow-sm transition hover:shadow-md"
+                  className="group flex flex-col overflow-hidden rounded-lg bg-white shadow-sm transition-all hover:shadow-lg hover:-translate-y-1"
                 >
-                  <div className="relative aspect-[4/3] w-full overflow-hidden bg-brand-primary rounded-lg">
+                  <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted/20">
                     {service.image ? (
                       <Image
                         src={service.image}
                         alt={service.title}
                         fill
-                        className="object-cover object-center transition-transform duration-300 group-hover:scale-110"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                        style={{ minWidth: '100%', minHeight: '100%' }}
+                        className="object-cover object-center transition-transform duration-300 group-hover:scale-105"
+                        sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 25vw"
                         suppressHydrationWarning
                       />
                     ) : (
-                      <div className="flex h-full items-center justify-center bg-brand-primary">
-                        <span className="text-white text-lg font-bold">Acoustic</span>
+                      <div className="flex h-full items-center justify-center bg-brand-primary/10">
+                        <span className="text-brand-primary text-sm font-bold">Acoustic</span>
                       </div>
                     )}
                   </div>
-                  <div className="flex flex-1 flex-col p-5">
-                    <h3 className="mb-2 text-lg font-semibold text-foreground group-hover:text-brand-primary" suppressHydrationWarning>
+                  <div className="flex flex-1 flex-col p-4 md:p-5">
+                    <h3 className="mb-2 text-sm md:text-base font-semibold text-foreground group-hover:text-brand-primary line-clamp-2 leading-tight" suppressHydrationWarning>
                       {service.title}
                     </h3>
                     {service.description && (
-                      <p className="mb-4 flex-1 text-sm leading-relaxed text-muted-foreground" suppressHydrationWarning>
+                      <p className="text-xs md:text-sm leading-relaxed text-muted-foreground line-clamp-3" suppressHydrationWarning>
                         {service.description}
                       </p>
                     )}
-                    <span className="inline-flex items-center gap-1 text-sm font-medium text-brand-primary group-hover:gap-2" suppressHydrationWarning>
-                      {locale === 'ru' ? 'Подробнее' : 'Batafsil'}
-                      <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
-                    </span>
                   </div>
                 </Link>
               ))}
