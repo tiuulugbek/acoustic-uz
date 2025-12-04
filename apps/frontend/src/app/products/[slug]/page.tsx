@@ -566,7 +566,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             </div>
 
             {/* Product Tabs - Includes Description, Tech, and Fitting Range */}
-            <div className="lg:col-span-2 xl:col-span-2">
+            <div className="lg:col-span-2 xl:col-span-2 mt-6">
               <ProductTabs tabs={productTabs} />
             </div>
           </div>

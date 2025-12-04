@@ -65,7 +65,10 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
       const keyword = trigger.getAttribute('data-tooltip-keyword') || '';
       const tooltipContent = trigger.getAttribute('data-tooltip-content') || '';
 
-      if (!keyword || !tooltipContent) return;
+      if (!keyword || !tooltipContent) {
+        console.warn('[Tooltip] Missing keyword or content:', { keyword, tooltipContent, trigger });
+        return;
+      }
 
       // Get or create ref for this trigger
       let ref = tooltipRefs.get(trigger);
@@ -124,15 +127,15 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
         <div class="text-gray-200 leading-relaxed">${decodedContent}</div>
       `;
       
-      // Animate in
+      document.body.appendChild(ref.tooltipElement);
+
+      // Animate in after DOM insertion
       requestAnimationFrame(() => {
         if (ref.tooltipElement) {
           ref.tooltipElement.style.opacity = '1';
           ref.tooltipElement.style.transform = 'translateY(0)';
         }
       });
-
-      document.body.appendChild(ref.tooltipElement);
 
       const updatePosition = () => {
         if (!ref.tooltipElement || !trigger.isConnected) {

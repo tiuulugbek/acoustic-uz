@@ -524,17 +524,23 @@ export default async function BranchPage({ params }: BranchPageProps) {
                       <h3 className="mb-2 text-xs sm:text-sm font-semibold text-foreground uppercase" suppressHydrationWarning>
                         {locale === 'ru' ? 'Время работы' : 'Ish vaqti'}
                       </h3>
-                      <div className="space-y-1 text-xs sm:text-sm text-muted-foreground">
+                      <div className="space-y-1.5 text-xs sm:text-sm">
                         {lines.map((line, idx) => {
                           const isCurrentDay = idx === currentDayLine;
                           return (
                             <div 
                               key={idx} 
-                              className={`flex items-start gap-2 ${isCurrentDay ? 'bg-brand-primary/10 rounded px-2 py-1 -mx-2' : ''}`}
+                              className={`flex items-start gap-2 rounded-md px-2 py-1.5 transition-colors ${
+                                isCurrentDay 
+                                  ? 'bg-brand-primary text-white shadow-sm' 
+                                  : 'text-muted-foreground hover:bg-gray-50'
+                              }`}
                             >
-                              <Clock className={`h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0 mt-0.5 ${isCurrentDay ? 'text-brand-primary' : 'text-brand-primary'}`} />
+                              <Clock className={`h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0 mt-0.5 ${
+                                isCurrentDay ? 'text-white' : 'text-brand-primary'
+                              }`} />
                               <span 
-                                className={`break-words ${isCurrentDay ? 'font-semibold text-brand-primary' : ''}`} 
+                                className={`break-words ${isCurrentDay ? 'font-semibold text-white' : ''}`} 
                                 suppressHydrationWarning
                               >
                                 {line.trim()}

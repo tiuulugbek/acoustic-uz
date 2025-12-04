@@ -365,7 +365,7 @@ export default async function HomePage() {
               {/* To'liq katalog link - Desktop only, header qismida */}
               <div className="hidden md:block">
                 <Link 
-                  href="/catalog" 
+                  href="/catalog?productType=interacoustics" 
                   className="inline-flex items-center gap-1 text-base font-medium text-muted-foreground hover:text-brand-primary transition-colors whitespace-nowrap"
                   suppressHydrationWarning
                 >
