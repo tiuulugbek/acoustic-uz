@@ -2,8 +2,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { detectLocale } from '@/lib/locale-server';
-import { getServiceCategories, getBranches } from '@/lib/api-server';
+import { getServiceCategories, getBranches, getBrands, getSettings } from '@/lib/api-server';
 import BranchesSidebar from '@/components/branches-sidebar';
+import Sidebar from '@/components/sidebar';
 
 // Force dynamic rendering to ensure locale is always read from cookies
 export const dynamic = 'force-dynamic';
@@ -40,6 +41,12 @@ export default async function ServicesPage() {
   
   // Fetch branches for sidebar map
   const branches = await getBranches(locale);
+  
+  // Fetch settings and brands for sidebar
+  const [settings, brands] = await Promise.all([
+    getSettings(locale),
+    getBrands(locale),
+  ]);
 
   // Filter top-level categories (no parent) and published only
   const topLevelCategories = (categoriesData || []).filter(
@@ -180,6 +187,7 @@ export default async function ServicesPage() {
 
             {/* Sidebar */}
             <aside className="space-y-6">
+              <Sidebar locale={locale} settingsData={settings} brandsData={brands} pageType="services" />
               <BranchesSidebar locale={locale} branches={branches || []} />
             </aside>
           </div>
