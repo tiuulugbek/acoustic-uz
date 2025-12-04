@@ -137,6 +137,7 @@ function ServicesManager() {
     form.setFieldsValue({
       status: 'published',
       order: 0,
+      categoryId: undefined, // Explicitly reset categoryId
     });
     setIsModalOpen(true);
   };
