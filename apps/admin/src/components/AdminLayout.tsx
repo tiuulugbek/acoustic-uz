@@ -140,17 +140,31 @@ export default function AdminLayout() {
     ? [location.pathname]
     : ['/'];
 
-  // Load version from version.json file (with cache busting) on mount
+  // Load version on mount - prioritize window.__APP_VERSION__ (injected in HTML)
   useEffect(() => {
     // Log initial version
-    console.log('[AdminLayout] Initial version from window:', (window as any).__APP_VERSION__);
+    const windowVersion = (window as any).__APP_VERSION__;
+    const windowBuildTime = (window as any).__BUILD_TIME__;
+    
+    console.log('[AdminLayout] Initial window.__APP_VERSION__:', windowVersion);
+    console.log('[AdminLayout] Initial window.__BUILD_TIME__:', windowBuildTime);
     console.log('[AdminLayout] Initial versionInfo state:', versionInfo);
     
-    // Try to fetch version.json with cache busting
+    // Update version from window object (injected in HTML during build)
+    if (windowVersion && windowBuildTime) {
+      const newVersionInfo = {
+        version: windowVersion,
+        buildTime: windowBuildTime,
+      };
+      setVersionInfo(newVersionInfo);
+      console.log('[AdminLayout] ✅ Version updated from window:', windowVersion);
+    }
+    
+    // Also try to fetch version.json as fallback (with cache busting)
     const fetchVersion = async () => {
       try {
         const response = await fetch(`/version.json?t=${Date.now()}`, {
-          cache: 'no-store', // Disable cache completely
+          cache: 'no-store',
           headers: {
             'Cache-Control': 'no-cache, no-store, must-revalidate',
             'Pragma': 'no-cache',
@@ -164,27 +178,29 @@ export default function AdminLayout() {
         const data = await response.json();
         console.log('[AdminLayout] Fetched version.json:', data);
         
+        // Only update if version.json has newer version or window version is missing
         if (data.version && data.buildTime) {
-          const newVersionInfo = {
-            version: data.version,
-            buildTime: data.buildTime,
-          };
-          setVersionInfo(newVersionInfo);
-          // Update window object for other components
-          (window as any).__APP_VERSION__ = data.version;
-          (window as any).__BUILD_TIME__ = data.buildTime;
-          console.log('[AdminLayout] ✅ Version updated to:', data.version);
-        } else {
-          console.warn('[AdminLayout] ⚠️ version.json missing version or buildTime:', data);
+          if (!windowVersion || data.version !== windowVersion) {
+            const newVersionInfo = {
+              version: data.version,
+              buildTime: data.buildTime,
+            };
+            setVersionInfo(newVersionInfo);
+            (window as any).__APP_VERSION__ = data.version;
+            (window as any).__BUILD_TIME__ = data.buildTime;
+            console.log('[AdminLayout] ✅ Version updated from version.json:', data.version);
+          }
         }
       } catch (error) {
-        console.error('[AdminLayout] ❌ Failed to load version.json:', error);
-        console.log('[AdminLayout] Using initial version from window:', (window as any).__APP_VERSION__);
-        // Keep initial version from window object
+        console.log('[AdminLayout] ⚠️ version.json not available (using window version):', error);
+        // Keep version from window object
       }
     };
     
-    fetchVersion();
+    // Only fetch version.json if window version is missing
+    if (!windowVersion) {
+      fetchVersion();
+    }
   }, []);
 
   // Use useState to manage user - initialize from localStorage immediately
