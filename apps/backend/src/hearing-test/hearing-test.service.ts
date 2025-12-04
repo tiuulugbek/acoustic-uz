@@ -58,8 +58,10 @@ export class HearingTestService {
     const validated = hearingTestSchema.parse(data);
     
     // Calculate scores if not provided
-    const leftEarScore = validated.leftEarScore ?? this.calculateScore(validated.leftEarResults);
-    const rightEarScore = validated.rightEarScore ?? this.calculateScore(validated.rightEarResults);
+    // Type assertion: Zod schema ensures these are Record<string, number>
+    // Convert via unknown to satisfy TypeScript strict type checking
+    const leftEarScore = validated.leftEarScore ?? this.calculateScore(validated.leftEarResults as unknown as Record<string, number>);
+    const rightEarScore = validated.rightEarScore ?? this.calculateScore(validated.rightEarResults as unknown as Record<string, number>);
     const overallScore = validated.overallScore ?? Math.round((leftEarScore + rightEarScore) / 2);
     
     // Determine hearing levels
