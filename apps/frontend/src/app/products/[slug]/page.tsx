@@ -407,8 +407,15 @@ export default async function ProductPage({ params }: ProductPageProps) {
   
   const techTables = techTablesParts.length > 0 ? techTablesParts.join('\n\n') : null;
 
-  // Tabs - only tech and fitting range (description shown separately above)
+  // Tabs - description, tech, and fitting range
   const productTabs = [
+    // Description tab (first, if available)
+    ...(hasDescription ? [{
+      key: 'description',
+      title: tabTitles.description,
+      primary: descriptionPrimary,
+      secondary: descriptionSecondary,
+    }] : []),
     // Technologies tab
     {
       key: 'tech',
@@ -558,30 +565,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
               <Sidebar locale={locale} settingsData={settings} brandsData={brands} pageType="products" />
             </div>
 
-            {/* Description Section - Below Image and Info */}
-            {hasDescription && (
-              <div className="lg:col-span-2 xl:col-span-2 space-y-3">
-                <h2 className="text-lg font-semibold text-brand-accent" suppressHydrationWarning>
-                  {isRu ? 'Описание' : 'Tavsif'}
-                </h2>
-                <div className="prose prose-sm max-w-none text-muted-foreground">
-                  {descriptionPrimary && (
-                    <div 
-                      className="rich-content text-sm leading-relaxed"
-                      dangerouslySetInnerHTML={{ __html: descriptionPrimary }}
-                    />
-                  )}
-                  {descriptionSecondary && (
-                    <div 
-                      className="rich-content rich-content--secondary mt-3 text-sm leading-relaxed"
-                      dangerouslySetInnerHTML={{ __html: descriptionSecondary }}
-                    />
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Product Tabs - Below Description */}
+            {/* Product Tabs - Includes Description, Tech, and Fitting Range */}
             {productTabs.some((tab) => tab.primary || tab.secondary) && (
               <div className="lg:col-span-2 xl:col-span-2">
                 <ProductTabs tabs={productTabs} />
