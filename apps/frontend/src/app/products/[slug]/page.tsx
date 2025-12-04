@@ -484,8 +484,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
       {/* Main Content - Compact layout */}
       <section className="bg-white py-6">
         <div className="mx-auto max-w-6xl px-4 md:px-6">
-          {/* Grid Layout: 3 columns - Image | Product Info | Sidebar */}
-          <div className="grid gap-6 lg:grid-cols-[280px_1fr_280px]">
+          {/* First Row: Image | Product Info | Sidebar */}
+          <div className="grid gap-6 lg:grid-cols-[280px_1fr_280px] mb-6">
             {/* Column 1: Image (Left) */}
             <div className="space-y-3">
               {/* Main Image */}
@@ -520,50 +520,58 @@ export default async function ProductPage({ params }: ProductPageProps) {
               )}
             </div>
 
-            {/* Column 2: Product Info + Tabs (Center) */}
-            <div className="space-y-6">
-              {/* Product Details */}
-              <div className="space-y-2">
-                {product.brand && (
-                  <p className="text-sm text-muted-foreground">
-                    <span className="font-bold">{isRu ? 'Производитель' : 'Ishlab chiqaruvchi'}:</span> {product.brand.name}
-                  </p>
-                )}
-                {availability && (
-                  <p className="text-sm text-muted-foreground">
-                    <span className="font-bold">{isRu ? 'Наличие' : 'Mavjudlik'}:</span>{' '}
-                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${availability.color}`}>
-                      {isRu ? availability.ru : availability.uz}
-                    </span>
-                  </p>
-                )}
-                {priceFormatted && (
-                  <p className="text-base font-semibold text-foreground">
-                    <span className="font-bold">{isRu ? 'Цена' : 'Narx'}:</span> {priceFormatted}
-                  </p>
-                )}
+            {/* Column 2: Product Info (Center) */}
+            <div className="space-y-2">
+              {product.brand && (
                 <p className="text-sm text-muted-foreground">
-                  <span className="font-bold">{isRu ? 'Способ оплаты' : 'To\'lov turi'}:</span>{' '}
-                  {isRu ? 'Наличными, картой Visa/MasterCard' : 'Naqd pul, Visa/MasterCard kartasi'}
+                  <span className="font-bold">{isRu ? 'Производитель' : 'Ishlab chiqaruvchi'}:</span> {product.brand.name}
                 </p>
-                <Link
-                  href="/contact"
-                  className="inline-flex items-center gap-2 rounded-lg bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-accent"
-                >
-                  <Phone className="h-4 w-4" />
-                  {isRu ? 'Записаться на подбор' : 'Tanlash uchun yozilish'}
-                </Link>
-              </div>
-
-              {/* Product Tabs - Below Product Info */}
-              <div>
-                <ProductTabs tabs={productTabs} />
-              </div>
+              )}
+              {availability && (
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-bold">{isRu ? 'Наличие' : 'Mavjudlik'}:</span>{' '}
+                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${availability.color}`}>
+                    {isRu ? availability.ru : availability.uz}
+                  </span>
+                </p>
+              )}
+              {priceFormatted && (
+                <p className="text-base font-semibold text-foreground">
+                  <span className="font-bold">{isRu ? 'Цена' : 'Narx'}:</span> {priceFormatted}
+                </p>
+              )}
+              <p className="text-sm text-muted-foreground">
+                <span className="font-bold">{isRu ? 'Способ оплаты' : 'To\'lov turi'}:</span>{' '}
+                {isRu ? 'Наличными, картой Visa/MasterCard' : 'Naqd pul, Visa/MasterCard kartasi'}
+              </p>
+              <Link
+                href="/contact"
+                className="inline-flex items-center gap-2 rounded-lg bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-accent"
+              >
+                <Phone className="h-4 w-4" />
+                {isRu ? 'Записаться на подбор' : 'Tanlash uchun yozilish'}
+              </Link>
             </div>
 
             {/* Column 3: Sidebar (Right) */}
             <div className="hidden lg:block">
               <Sidebar locale={locale} settingsData={settings} brandsData={brands} pageType="products" />
+            </div>
+          </div>
+
+          {/* Second Row: Empty | Tabs | Sidebar */}
+          <div className="grid gap-6 lg:grid-cols-[280px_1fr_280px]">
+            {/* Empty space (aligns with image column) */}
+            <div className="hidden lg:block"></div>
+
+            {/* Tabs (aligns with product info column) */}
+            <div>
+              <ProductTabs tabs={productTabs} />
+            </div>
+
+            {/* Sidebar (same position as first row) */}
+            <div className="hidden lg:block">
+              {/* Sidebar already shown above, this is just for alignment */}
             </div>
           </div>
 
