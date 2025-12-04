@@ -7,7 +7,7 @@ import Underline from '@tiptap/extension-underline';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import { useState, useEffect } from 'react';
-import { Button, Space, message } from 'antd';
+import { Button, Space, message, Modal } from 'antd';
 import {
   BoldOutlined,
   ItalicOutlined,
@@ -39,6 +39,9 @@ interface RichTextEditorProps {
 
 export default function RichTextEditor({ value, onChange, placeholder }: RichTextEditorProps) {
   const [mediaModalOpen, setMediaModalOpen] = useState(false);
+  const [imageLayoutModalOpen, setImageLayoutModalOpen] = useState(false);
+  const [selectedImages, setSelectedImages] = useState<MediaDto[]>([]);
+  const [isMultipleSelectionMode, setIsMultipleSelectionMode] = useState(false);
 
   const editor = useEditor({
     extensions: [
@@ -111,9 +114,38 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
   };
 
   const handleSelectMediaFromLibrary = (media: MediaDto) => {
-    insertImage(media.url);
-    setMediaModalOpen(false);
-    message.success('Rasm qo\'shildi');
+    if (isMultipleSelectionMode) {
+      // Multiple selection mode - add to selected images
+      setSelectedImages(prev => {
+        const exists = prev.find(img => img.id === media.id);
+        if (exists) {
+          // Remove if already selected
+          return prev.filter(img => img.id !== media.id);
+        } else {
+          // Add if not selected
+          return [...prev, media];
+        }
+      });
+    } else {
+      // Single image selection - insert directly
+      insertImage(media.url);
+      setMediaModalOpen(false);
+      message.success('Rasm qo\'shildi');
+    }
+  };
+
+  const insertImageLayout = (layout: string, images: MediaDto[]) => {
+    if (!editor || images.length === 0) return;
+    
+    const imagesHtml = images.map(img => 
+      `<img src="${normalizeImageUrl(img.url)}" alt="${img.alt_uz || img.filename || 'Rasm'}" />`
+    ).join('\n');
+    
+    const shortcode = `[images layout="${layout}"]${imagesHtml}[/images]`;
+    editor.chain().focus().insertContent(shortcode).run();
+    setImageLayoutModalOpen(false);
+    setSelectedImages([]);
+    message.success(`${images.length} ta rasm qo'shildi (${layout})`);
   };
 
   const addLink = () => {
@@ -174,30 +206,26 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
   const addImageLayout = () => {
     if (!editor) return;
     
-    const layout = window.prompt(
-      'Rasm layout\'ini tanlang:\n1 - grid-2 (2 ta bir qatorga)\n2 - grid-3 (3 ta bir qatorga)\n3 - left-right (chap-o\'ng)\n4 - right-left (o\'ng-chap)',
-      '1'
-    );
+    // Open media library in multiple selection mode
+    setSelectedImages([]);
+    setIsMultipleSelectionMode(true);
+    setMediaModalOpen(true);
+  };
 
-    if (layout === null) return;
+  const handleConfirmMultipleSelection = () => {
+    if (selectedImages.length === 0) {
+      message.warning('Kamida bitta rasm tanlang');
+      return;
+    }
+    setMediaModalOpen(false);
+    setIsMultipleSelectionMode(false);
+    setImageLayoutModalOpen(true);
+  };
 
-    const layouts: Record<string, string> = {
-      '1': 'grid-2',
-      '2': 'grid-3',
-      '3': 'left-right',
-      '4': 'right-left',
-    };
-
-    const selectedLayout = layouts[layout] || 'grid-2';
-    const placeholderHtml = `
-      <img src="https://via.placeholder.com/400x300" alt="Rasm 1" />
-      <img src="https://via.placeholder.com/400x300" alt="Rasm 2" />
-    `;
-    
-    const shortcode = `[images layout="${selectedLayout}"]${placeholderHtml}[/images]`;
-    
-    editor.chain().focus().insertContent(shortcode).run();
-    message.success(`Rasm layout qo'shildi (${selectedLayout}). Rasmlarni o'zgartiring.`);
+  const handleCancelMultipleSelection = () => {
+    setMediaModalOpen(false);
+    setIsMultipleSelectionMode(false);
+    setSelectedImages([]);
   };
 
 
@@ -310,8 +338,9 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
           />
           <Button
             icon={<PictureOutlined />}
-            onClick={imageHandler}
+            onClick={() => setMediaModalOpen(true)}
             size="small"
+            title="Media library'dan rasm tanlash"
           />
 
           <div className="editor-divider" />
@@ -364,10 +393,77 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
 
       <MediaLibraryModal
         open={mediaModalOpen}
-        onCancel={() => setMediaModalOpen(false)}
+        onCancel={isMultipleSelectionMode ? handleCancelMultipleSelection : () => setMediaModalOpen(false)}
         onSelect={handleSelectMediaFromLibrary}
         fileType="image"
+        multiple={isMultipleSelectionMode}
+        selectedMediaIds={selectedImages.map(img => img.id)}
+        onConfirm={(selectedIds) => {
+          // Filter selected images based on selectedIds
+          const confirmedImages = selectedImages.filter(img => selectedIds.includes(img.id));
+          if (confirmedImages.length === 0) {
+            message.warning('Kamida bitta rasm tanlang');
+            return;
+          }
+          setMediaModalOpen(false);
+          setIsMultipleSelectionMode(false);
+          setSelectedImages(confirmedImages);
+          setImageLayoutModalOpen(true);
+        }}
       />
+
+      {/* Image Layout Selection Modal */}
+      <Modal
+        title="Rasm layout'ini tanlang"
+        open={imageLayoutModalOpen}
+        onCancel={() => {
+          setImageLayoutModalOpen(false);
+          setSelectedImages([]);
+        }}
+        footer={null}
+        width={500}
+      >
+        <div style={{ padding: '20px 0' }}>
+          <p style={{ marginBottom: 16 }}>
+            {selectedImages.length} ta rasm tanlandi. Layout'ni tanlang:
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <Button
+              block
+              onClick={() => insertImageLayout('grid-2', selectedImages)}
+              disabled={selectedImages.length < 2}
+            >
+              Grid 2 (2 ta bir qatorga)
+            </Button>
+            <Button
+              block
+              onClick={() => insertImageLayout('grid-3', selectedImages)}
+              disabled={selectedImages.length < 3}
+            >
+              Grid 3 (3 ta bir qatorga)
+            </Button>
+            <Button
+              block
+              onClick={() => insertImageLayout('left-right', selectedImages)}
+              disabled={selectedImages.length < 2}
+            >
+              Chap-O'ng
+            </Button>
+            <Button
+              block
+              onClick={() => insertImageLayout('right-left', selectedImages)}
+              disabled={selectedImages.length < 2}
+            >
+              O'ng-Chap
+            </Button>
+          </div>
+          <div style={{ marginTop: 16, padding: 12, background: '#f5f5f5', borderRadius: 4 }}>
+            <p style={{ margin: 0, fontSize: 12, color: '#666' }}>
+              Tanlangan rasmlar: {selectedImages.map(img => img.filename || img.alt_uz || 'Rasm').join(', ')}
+            </p>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

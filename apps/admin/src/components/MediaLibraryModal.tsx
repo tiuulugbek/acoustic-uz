@@ -36,6 +36,7 @@ interface MediaLibraryModalProps {
   multiple?: boolean;
   fileType?: FileType;
   selectedMediaIds?: string[];
+  onConfirm?: (selectedMediaIds: string[]) => void;
 }
 
 export default function MediaLibraryModal({
@@ -45,6 +46,7 @@ export default function MediaLibraryModal({
   multiple = false,
   fileType = 'all',
   selectedMediaIds = [],
+  onConfirm,
 }: MediaLibraryModalProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [fileTypeFilter, setFileTypeFilter] = useState<FileType>(fileType);
@@ -90,9 +92,20 @@ export default function MediaLibraryModal({
     <Modal
       open={open}
       onCancel={onCancel}
-      title="Media kutubxonasi"
+      title={multiple ? `Media kutubxonasi (${selectedMediaIds.length} ta tanlandi)` : 'Media kutubxonasi'}
       width={900}
-      footer={null}
+      footer={multiple ? (
+        <Space>
+          <Button onClick={onCancel}>Bekor qilish</Button>
+          <Button 
+            type="primary" 
+            onClick={() => onConfirm?.(selectedMediaIds)}
+            disabled={selectedMediaIds.length === 0}
+          >
+            Tanlash ({selectedMediaIds.length})
+          </Button>
+        </Space>
+      ) : null}
       style={{ top: 20 }}
     >
       {/* Filters */}
