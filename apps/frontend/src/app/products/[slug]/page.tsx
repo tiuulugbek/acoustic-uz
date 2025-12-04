@@ -478,11 +478,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
           <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-2 break-words" suppressHydrationWarning>
             {getBilingualText(product.name_uz, product.name_ru, locale)}
           </h1>
-          {product.intro_uz || product.intro_ru ? (
-            <p className="text-sm sm:text-base text-white/90 leading-relaxed break-words" suppressHydrationWarning>
-              {getBilingualText(product.intro_uz, product.intro_ru, locale)}
-            </p>
-          ) : null}
         </div>
       </section>
 
@@ -530,12 +525,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
               <div className="space-y-2">
                 {product.brand && (
                   <p className="text-sm text-muted-foreground">
-                    <span className="font-medium">{isRu ? 'Производитель' : 'Ishlab chiqaruvchi'}:</span> {product.brand.name}
+                    <span className="font-bold">{isRu ? 'Производитель' : 'Ishlab chiqaruvchi'}:</span> {product.brand.name}
                   </p>
                 )}
                 {availability && (
                   <p className="text-sm text-muted-foreground">
-                    <span className="font-medium">{isRu ? 'Наличие' : 'Mavjudlik'}:</span>{' '}
+                    <span className="font-bold">{isRu ? 'Наличие' : 'Mavjudlik'}:</span>{' '}
                     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${availability.color}`}>
                       {isRu ? availability.ru : availability.uz}
                     </span>
@@ -543,11 +538,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 )}
                 {priceFormatted && (
                   <p className="text-base font-semibold text-foreground">
-                    <span className="font-medium">{isRu ? 'Цена' : 'Narx'}:</span> {priceFormatted}
+                    <span className="font-bold">{isRu ? 'Цена' : 'Narx'}:</span> {priceFormatted}
                   </p>
                 )}
                 <p className="text-sm text-muted-foreground">
-                  <span className="font-medium">{isRu ? 'Способ оплаты' : 'To\'lov turi'}:</span>{' '}
+                  <span className="font-bold">{isRu ? 'Способ оплаты' : 'To\'lov turi'}:</span>{' '}
                   {isRu ? 'Наличными, картой Visa/MasterCard' : 'Naqd pul, Visa/MasterCard kartasi'}
                 </p>
                 <Link
