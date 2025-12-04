@@ -33,10 +33,14 @@ const buildTime = new Date().toISOString();
 console.log(`[Vite Config] Final version for build: ${version}`);
 console.log(`[Vite Config] Build time: ${buildTime}`);
 
-// Write version to a file that can be imported at runtime
-const versionFile = path.resolve(__dirname, './src/version.json');
-writeFileSync(versionFile, JSON.stringify({ version, buildTime }, null, 2));
-console.log(`[Vite Config] Version written to: ${versionFile}`);
+// Write version to a file that can be imported at runtime (both src and public for build)
+const versionFileSrc = path.resolve(__dirname, './src/version.json');
+const versionFilePublic = path.resolve(__dirname, './public/version.json');
+const versionData = JSON.stringify({ version, buildTime }, null, 2);
+writeFileSync(versionFileSrc, versionData);
+writeFileSync(versionFilePublic, versionData);
+console.log(`[Vite Config] Version written to: ${versionFileSrc}`);
+console.log(`[Vite Config] Version written to: ${versionFilePublic}`);
 
 export default defineConfig({
   plugins: [

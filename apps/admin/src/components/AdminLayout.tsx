@@ -22,33 +22,23 @@ import { useEffect, useState } from 'react';
 
 const { Header, Sider, Content, Footer } = Layout;
 
-// Get version and build time - try multiple sources
-let APP_VERSION = '1.0.0';
-let BUILD_TIME = new Date().toISOString();
-
-// Try to get from window object first (injected by plugin)
-if (typeof window !== 'undefined' && (window as any).__APP_VERSION__) {
-  APP_VERSION = (window as any).__APP_VERSION__;
-}
-if (typeof window !== 'undefined' && (window as any).__BUILD_TIME__) {
-  BUILD_TIME = (window as any).__BUILD_TIME__;
-}
-
-// Try to get from Vite define (fallback)
-if (typeof __APP_VERSION__ !== 'undefined' && APP_VERSION === '1.0.0') {
-  APP_VERSION = __APP_VERSION__;
-}
-if (typeof __BUILD_TIME__ !== 'undefined' && BUILD_TIME === new Date().toISOString()) {
-  BUILD_TIME = __BUILD_TIME__;
-}
-
-// Debug: Log version to console
-if (typeof window !== 'undefined') {
-  console.log('[AdminLayout] APP_VERSION:', APP_VERSION);
-  console.log('[AdminLayout] BUILD_TIME:', BUILD_TIME);
-  console.log('[AdminLayout] window.__APP_VERSION__:', (window as any).__APP_VERSION__);
-  console.log('[AdminLayout] __APP_VERSION__:', typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'undefined');
-}
+// Version state - will be loaded dynamically to avoid cache issues
+const getInitialVersion = (): { version: string; buildTime: string } => {
+  // Try to get from window object first (injected by plugin)
+  if (typeof window !== 'undefined') {
+    if ((window as any).__APP_VERSION__ && (window as any).__BUILD_TIME__) {
+      return {
+        version: (window as any).__APP_VERSION__,
+        buildTime: (window as any).__BUILD_TIME__,
+      };
+    }
+  }
+  // Fallback
+  return {
+    version: '1.0.0',
+    buildTime: new Date().toISOString(),
+  };
+};
 
 const menuItems: MenuProps['items'] = [
   {
@@ -144,10 +134,37 @@ export default function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [versionInfo, setVersionInfo] = useState<{ version: string; buildTime: string }>(getInitialVersion);
 
   const selectedKey = menuItems?.find((item) => item?.key === location.pathname)
     ? [location.pathname]
     : ['/'];
+
+  // Load version from version.json file (with cache busting) on mount
+  useEffect(() => {
+    // Try to fetch version.json with cache busting
+    fetch(`/version.json?t=${Date.now()}`)
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to fetch version.json');
+        return res.json();
+      })
+      .then((data) => {
+        if (data.version && data.buildTime) {
+          setVersionInfo({
+            version: data.version,
+            buildTime: data.buildTime,
+          });
+          // Update window object for other components
+          (window as any).__APP_VERSION__ = data.version;
+          (window as any).__BUILD_TIME__ = data.buildTime;
+          console.log('[AdminLayout] Version loaded from version.json:', data.version);
+        }
+      })
+      .catch((error) => {
+        console.log('[AdminLayout] Failed to load version.json, using initial version:', error);
+        // Keep initial version from window object
+      });
+  }, []);
 
   // Use useState to manage user - initialize from localStorage immediately
   const [userState, setUserState] = useState<UserDto | null>(() => {
@@ -311,7 +328,7 @@ export default function AdminLayout() {
                   fontFamily: 'monospace',
                   border: '1px solid #ffcc80'
                 }}>
-                  v{APP_VERSION}
+                  v{versionInfo.version}
                 </span>
               </h1>
             </div>
@@ -366,10 +383,10 @@ export default function AdminLayout() {
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
             <span style={{ fontWeight: 500, color: '#262626' }}>Admin Panel</span>
             <span style={{ color: '#d9d9d9', fontSize: '16px' }}>•</span>
-            <span style={{ fontWeight: 600, color: '#F07E22', fontSize: '14px' }}>v{APP_VERSION}</span>
+            <span style={{ fontWeight: 600, color: '#F07E22', fontSize: '14px' }}>v{versionInfo.version}</span>
             <span style={{ color: '#d9d9d9', fontSize: '16px' }}>•</span>
             <span 
-              title={`Build time: ${BUILD_TIME}`} 
+              title={`Build time: ${versionInfo.buildTime}`} 
               style={{ 
                 fontFamily: 'monospace', 
                 fontSize: '12px',
@@ -379,7 +396,7 @@ export default function AdminLayout() {
                 borderRadius: '4px'
               }}
             >
-              {new Date(BUILD_TIME).toLocaleDateString('uz-UZ', { 
+              {new Date(versionInfo.buildTime).toLocaleDateString('uz-UZ', { 
                 year: 'numeric', 
                 month: '2-digit', 
                 day: '2-digit',
