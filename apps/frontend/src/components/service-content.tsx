@@ -29,8 +29,8 @@ export default function ServiceContent({ content, locale }: ServiceContentProps)
       let processedContent = content;
       let headingIndex = 0;
       
-      // Process tooltips: [tooltips keyword="..." content="..."]
-      const tooltipRegex = /\[tooltips\s+keyword=["']([^"']+)["']\s+content=["']([^"']+)["']\]/gi;
+      // Process tooltips: [tooltips keyword="..." content="..."] or [tooltips keyword = "..." content = "..."]
+      const tooltipRegex = /\[tooltips\s+keyword\s*=\s*["']([^"']+)["']\s+content\s*=\s*["']([^"']+)["']\]/gi;
       processedContent = processedContent.replace(tooltipRegex, (match, keyword, tooltipContent) => {
         // Escape HTML in content
         const escapedContent = tooltipContent
@@ -307,7 +307,7 @@ export default function ServiceContent({ content, locale }: ServiceContentProps)
     return elements;
   }, [content]);
 
-  if (!renderedContent || renderedContent.length === 0) {
+  if (!renderedContent || (Array.isArray(renderedContent) && renderedContent.length === 0)) {
     return (
       <p className="text-muted-foreground" suppressHydrationWarning>
         {locale === 'ru'

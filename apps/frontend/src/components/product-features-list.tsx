@@ -17,9 +17,10 @@ interface Feature {
 
 /**
  * Processes tooltip shortcodes and converts them to HTML spans
+ * Supports both formats: [tooltips keyword="..." content="..."] and [tooltips keyword = "..." content = "..."]
  */
 function processTooltips(text: string): string {
-  const tooltipRegex = /\[tooltips\s+keyword=["']([^"']+)["']\s+content=["']([^"']+)["']\]/gi;
+  const tooltipRegex = /\[tooltips\s+keyword\s*=\s*["']([^"']+)["']\s+content\s*=\s*["']([^"']+)["']\]/gi;
   
   return text.replace(tooltipRegex, (match, keyword, content) => {
     const escapedContent = content
@@ -58,7 +59,7 @@ export default function ProductFeaturesList({ description, locale }: ProductFeat
       
       // Extract plain text for filtering
       let name = nameHtml
-        .replace(/\[tooltips\s+keyword=["']([^"']+)["']\s+content=["'][^"']+["']\]/gi, '$1')
+        .replace(/\[tooltips\s+keyword\s*=\s*["']([^"']+)["']\s+content\s*=\s*["'][^"']+["']\]/gi, '$1')
         .replace(/<[^>]+>/g, '')
         .replace(/&nbsp;/g, ' ')
         .replace(/&amp;/g, '&')

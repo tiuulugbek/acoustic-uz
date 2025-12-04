@@ -17,10 +17,11 @@ const htmlRegex = /<\/?[a-z][\s\S]*>/i;
 
 /**
  * Processes HTML content to convert [tooltips] shortcodes into HTML with tooltip support
+ * Supports both formats: [tooltips keyword="..." content="..."] and [tooltips keyword = "..." content = "..."]
  */
 function processTooltips(content: string): string {
-  // Match [tooltips keyword="..." content="..."]
-  const tooltipRegex = /\[tooltips\s+keyword=["']([^"']+)["']\s+content=["']([^"']+)["']\]/gi;
+  // Match [tooltips keyword="..." content="..."] or [tooltips keyword = "..." content = "..."]
+  const tooltipRegex = /\[tooltips\s+keyword\s*=\s*["']([^"']+)["']\s+content\s*=\s*["']([^"']+)["']\]/gi;
   
   return content.replace(tooltipRegex, (match, keyword, tooltipContent) => {
     // Escape HTML in content
