@@ -551,6 +551,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 <Phone className="h-4 w-4" />
                 {isRu ? 'Записаться на подбор' : 'Tanlash uchun yozilish'}
               </Link>
+              
+              {/* Tabs - directly below product info */}
+              <div className="mt-6">
+                <ProductTabs tabs={productTabs} />
+              </div>
             </div>
 
             {/* Column 3: Sidebar (Right) - Sticky */}
@@ -559,20 +564,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 <Sidebar locale={locale} settingsData={settings} brandsData={brands} pageType="products" />
               </div>
             </div>
-          </div>
-
-          {/* Second Row: Empty | Tabs | Empty (Sidebar is sticky from first row, so it stays visible) */}
-          <div className="grid gap-6 lg:grid-cols-[280px_1fr_280px]">
-            {/* Column 1: Empty space (aligns with image column) */}
-            <div className="hidden lg:block"></div>
-
-            {/* Column 2: Tabs (aligns with product info column) */}
-            <div>
-              <ProductTabs tabs={productTabs} />
-            </div>
-
-            {/* Column 3: Empty space (sidebar is sticky from first row, so it stays visible here) */}
-            <div className="hidden lg:block"></div>
           </div>
 
           {/* Sidebar - Mobile (after product info and tabs) */}
