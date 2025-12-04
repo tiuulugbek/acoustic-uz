@@ -72,7 +72,7 @@ export default function ServicesPage() {
 
 function ServicesManager() {
   const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery<ServiceDto[], ApiError>({
+  const { data, isLoading, refetch } = useQuery<ServiceDto[], ApiError>({
     queryKey: ['services'],
     queryFn: getServices,
     retry: false,
@@ -116,6 +116,7 @@ function ServicesManager() {
     mutationFn: ({ id, payload }) => updateService(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['services'] });
+      queryClient.invalidateQueries({ queryKey: ['service-categories-admin'] }); // Also invalidate categories to refresh category info
       message.success('Xizmat yangilandi');
     },
     onError: (error) => message.error(error.message || 'Yangilashda xatolik'),

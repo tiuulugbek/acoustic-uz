@@ -78,6 +78,7 @@ export default function ServiceCategoriesPage() {
     mutationFn: createServiceCategory,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['service-categories-admin'] });
+      queryClient.invalidateQueries({ queryKey: ['services'] }); // Also invalidate services to refresh category info
       message.success('Kategoriya saqlandi');
     },
     onError: (error) => message.error(error.message || 'Saqlashda xatolik'),
@@ -91,6 +92,7 @@ export default function ServiceCategoriesPage() {
     mutationFn: ({ id, payload }) => updateServiceCategory(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['service-categories-admin'] });
+      queryClient.invalidateQueries({ queryKey: ['services'] }); // Also invalidate services to refresh category info
       message.success('Kategoriya yangilandi');
     },
     onError: (error) => message.error(error.message || 'Yangilashda xatolik'),
@@ -100,7 +102,8 @@ export default function ServiceCategoriesPage() {
     mutationFn: deleteServiceCategory,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['service-categories-admin'] });
-      message.success('Kategoriya o‘chirildi');
+      queryClient.invalidateQueries({ queryKey: ['services'] }); // Also invalidate services to refresh category info
+      message.success('Kategoriya o\'chirildi');
     },
     onError: (error) => message.error(error.message || "O'chirishda xatolik"),
   });
