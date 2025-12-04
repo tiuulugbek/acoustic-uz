@@ -271,3 +271,51 @@
   }
 }
 
+/* Hearing Test Slider Styles - ReSound style professional audio control */
+.hearing-test-slider {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+.hearing-test-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #F07E22;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: transform 0.1s ease;
+  border: 2px solid white;
+}
+
+.hearing-test-slider::-webkit-slider-thumb:active {
+  transform: scale(1.2);
+}
+
+.hearing-test-slider::-moz-range-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #F07E22;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.hearing-test-slider::-moz-range-thumb:active {
+  transform: scale(1.2);
+}
+
+.hearing-test-slider::-ms-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #F07E22;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+

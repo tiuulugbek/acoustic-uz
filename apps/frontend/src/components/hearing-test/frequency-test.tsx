@@ -70,13 +70,14 @@ export default function FrequencyTest({
       autoContinueTimerRef.current = null;
     }
     
-    // ReSound kabi: slider'ni surganda real-time ovoz ijro etish
+    // ReSound kabi: slider'ni surganda real-time ovoz ijro etish (instant response)
     if (clampedVolume > 0) {
       // Agar ovoz ijro etilayotgan bo'lsa va to'g'ri chastota bo'lsa, volume'ni yangilash
       if (isPlaying && currentFrequency === frequencies[currentIndex]) {
+        // Real-time volume update (ReSound style - instant)
         updateVolume(clampedVolume);
       } else {
-        // Yangi ovozni boshlash
+        // Yangi ovozni boshlash (ReSound kabi - darhol)
         playTone({
           frequency: currentFrequency,
           volume: clampedVolume,
@@ -84,12 +85,13 @@ export default function FrequencyTest({
         });
       }
       
-      // Agar volume > 0 bo'lsa, 2 sekunddan keyin avtomatik keyingi chastota'ga o'tish
+      // ReSound kabi: agar volume > 0 bo'lsa, 2 sekunddan keyin avtomatik keyingi chastota'ga o'tish
+      // Bu foydalanuvchiga ovozni eshitish va tasdiqlash uchun vaqt beradi
       autoContinueTimerRef.current = setTimeout(() => {
         handleContinue();
       }, 2000);
     } else {
-      // Volume 0 bo'lsa, ovozni to'xtatish
+      // Volume 0 bo'lsa, ovozni to'xtatish (ReSound kabi - darhol)
       stopTone();
     }
   };
@@ -149,18 +151,19 @@ export default function FrequencyTest({
             <Minus className="w-5 h-5 md:w-6 md:h-6" />
           </button>
 
-          {/* Slider - Mobile optimized */}
+          {/* Slider - Mobile optimized (ReSound style) */}
           <div className="flex-1 relative py-6 md:py-8">
             <input
               type="range"
               min="0"
               max="1"
-              step="0.01"
+              step="0.005"
               value={currentVolume}
               onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-              className="w-full h-3 md:h-4 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-brand-primary touch-manipulation"
+              onInput={(e) => handleVolumeChange(parseFloat((e.target as HTMLInputElement).value))}
+              className="hearing-test-slider w-full h-3 md:h-4 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-brand-primary touch-manipulation"
               style={{
-                background: `linear-gradient(to right, #F07E22 0%, #F07E22 ${currentVolume * 100}%, #e5e7eb ${currentVolume * 100}%, #e5e7eb 100%)`
+                background: `linear-gradient(to right, #F07E22 0%, #F07E22 ${currentVolume * 100}%, #e5e7eb ${currentVolume * 100}%, #e5e7eb 100%)`,
               }}
               disabled={isSubmitting}
             />
