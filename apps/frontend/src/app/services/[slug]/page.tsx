@@ -178,21 +178,10 @@ export default async function ServiceSlugPage({ params }: ServicePageProps) {
                           {serviceTitle}
                         </h3>
                         {serviceExcerpt && (
-                          <p className="mb-4 flex-1 text-sm leading-relaxed text-muted-foreground line-clamp-3" suppressHydrationWarning>
+                          <p className="flex-1 text-sm leading-relaxed text-muted-foreground line-clamp-3" suppressHydrationWarning>
                             {serviceExcerpt}
                           </p>
                         )}
-                        <span className="inline-flex items-center gap-1 text-sm font-medium text-brand-primary group-hover:gap-2 transition-all" suppressHydrationWarning>
-                          {locale === 'ru' ? 'Подробнее' : 'Batafsil'}
-                          <svg
-                            className="h-4 w-4 transition-transform group-hover:translate-x-1"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </span>
                       </div>
                     </Link>
                   );
