@@ -24,12 +24,31 @@ const { Header, Sider, Content, Footer } = Layout;
 
 // Version state - will be loaded dynamically to avoid cache issues
 const getInitialVersion = (): { version: string; buildTime: string } => {
-  // Try to get from window object first (injected by plugin)
+  // Try to get from window object first (injected by plugin in HTML)
   if (typeof window !== 'undefined') {
-    if ((window as any).__APP_VERSION__ && (window as any).__BUILD_TIME__) {
+    const windowVersion = (window as any).__APP_VERSION__;
+    const windowBuildTime = (window as any).__BUILD_TIME__;
+    
+    // Also try to get from meta tag (fallback)
+    if (!windowVersion) {
+      const metaVersion = document.querySelector('meta[name="app-version"]')?.getAttribute('content');
+      const metaBuildTime = document.querySelector('meta[name="build-time"]')?.getAttribute('content');
+      
+      if (metaVersion && metaBuildTime) {
+        // Set window object for consistency
+        (window as any).__APP_VERSION__ = metaVersion;
+        (window as any).__BUILD_TIME__ = metaBuildTime;
+        return {
+          version: metaVersion,
+          buildTime: metaBuildTime,
+        };
+      }
+    }
+    
+    if (windowVersion && windowBuildTime) {
       return {
-        version: (window as any).__APP_VERSION__,
-        buildTime: (window as any).__BUILD_TIME__,
+        version: windowVersion,
+        buildTime: windowBuildTime,
       };
     }
   }
