@@ -8,6 +8,20 @@ import { getBilingualText } from '@/lib/locale';
 import PageHeader from '@/components/page-header';
 import ServiceContent from '@/components/service-content';
 import { notFound } from 'next/navigation';
+import { 
+  Stethoscope, 
+  Headphones, 
+  Settings, 
+  Heart, 
+  CheckCircle2, 
+  Target, 
+  Award,
+  Users,
+  MapPin,
+  Shield,
+  Phone,
+  Mail
+} from 'lucide-react';
 
 // Force dynamic rendering to always fetch fresh data from admin
 export const dynamic = 'force-dynamic';
@@ -116,39 +130,45 @@ export default async function AboutPage() {
         title={title}
       />
 
+      {/* Hero Section */}
+      <section className="bg-gradient-to-br from-brand-primary/10 via-brand-accent/5 to-background py-12 md:py-16">
+        <div className="mx-auto max-w-6xl px-4 md:px-6">
+          <div className="grid gap-8 md:grid-cols-2 items-center">
+            <div className="space-y-4">
+              <h2 className="text-2xl md:text-3xl font-bold text-foreground" suppressHydrationWarning>
+                {locale === 'ru' 
+                  ? 'Acoustic — это сеть современных центров слуха, специализирующихся на улучшении слухового здоровья в Узбекистане.'
+                  : 'Acoustic — bu O\'zbekistonda eshitish salomatligini yaxshilashga ixtisoslashgan zamonaviy eshitish markazlari tarmog\'i.'}
+              </h2>
+              <p className="text-lg text-muted-foreground leading-relaxed" suppressHydrationWarning>
+                {locale === 'ru'
+                  ? 'Мы помогаем улучшить качество жизни детей и взрослых через глубокую диагностику слуховых способностей, правильный выбор решений и постоянную поддержку.'
+                  : 'Biz bolalar va kattalarning eshitish qobiliyatini chuqur diagnostika qilish, to\'g\'ri yechim tanlash va doimiy qo\'llab-quvvatlash orqali hayot sifatini oshirishga xizmat qilamiz.'}
+              </p>
+            </div>
+            {galleryImages.length > 0 && (
+              <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-muted/40 shadow-lg">
+                <Image
+                  src={buildMediaUrl(galleryImages[0].url)}
+                  alt={title}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  priority
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
       <div className="mx-auto max-w-6xl px-4 py-12 md:px-6">
         <div className="grid gap-8 lg:grid-cols-3">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Image Gallery */}
-            {galleryImages.length > 0 && (
-              <section className="bg-white rounded-lg p-6">
-                <div className="grid grid-cols-3 gap-4">
-                  {galleryImages.slice(0, 6).map((media) => {
-                    const mediaUrl = buildMediaUrl(media.url);
-                    const altText = getBilingualText(media.alt_uz, media.alt_ru, locale) || `Gallery image`;
-                    return (
-                      <div
-                        key={media.id}
-                        className="relative aspect-square overflow-hidden rounded-lg bg-muted/40"
-                      >
-                        <Image
-                          src={mediaUrl}
-                          alt={altText}
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 768px) 33vw, 200px"
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
-
             {/* Video Section */}
             {videoId && (
-              <section className="bg-white rounded-lg p-6">
+              <section className="bg-white rounded-xl p-6 shadow-sm border border-border/50">
                 <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black">
                   <iframe
                     src={`https://www.youtube.com/embed/${videoId}`}
@@ -161,9 +181,94 @@ export default async function AboutPage() {
               </section>
             )}
 
+            {/* Image Gallery */}
+            {galleryImages.length > 1 && (
+              <section className="bg-white rounded-xl p-6 shadow-sm border border-border/50">
+                <h3 className="mb-4 text-xl font-semibold text-foreground" suppressHydrationWarning>
+                  {locale === 'ru' ? 'Галерея' : 'Galereya'}
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {galleryImages.slice(1, 7).map((media) => {
+                    const mediaUrl = buildMediaUrl(media.url);
+                    const altText = getBilingualText(media.alt_uz, media.alt_ru, locale) || `Gallery image`;
+                    return (
+                      <div
+                        key={media.id}
+                        className="relative aspect-square overflow-hidden rounded-lg bg-muted/40 group cursor-pointer"
+                      >
+                        <Image
+                          src={mediaUrl}
+                          alt={altText}
+                          fill
+                          className="object-cover transition-transform duration-300 group-hover:scale-110"
+                          sizes="(max-width: 768px) 50vw, 33vw"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
             {/* Content Section */}
-            <section className="bg-white rounded-lg p-6">
+            <section className="bg-white rounded-xl p-6 md:p-8 shadow-sm border border-border/50">
               <ServiceContent content={body} locale={locale} />
+            </section>
+
+            {/* Why Choose Us Section */}
+            <section className="bg-gradient-to-br from-brand-primary/5 to-brand-accent/5 rounded-xl p-6 md:p-8 border border-brand-primary/20">
+              <div className="flex items-center gap-3 mb-6">
+                <Award className="h-6 w-6 text-brand-primary" />
+                <h3 className="text-2xl font-bold text-foreground" suppressHydrationWarning>
+                  {locale === 'ru' ? 'Почему именно Acoustic?' : 'Nega aynan Acoustic?'}
+                </h3>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-brand-primary flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-foreground" suppressHydrationWarning>
+                      {locale === 'ru' ? '10+ лет опыта' : '10+ yillik tajriba'}
+                    </p>
+                    <p className="text-sm text-muted-foreground" suppressHydrationWarning>
+                      {locale === 'ru' ? 'Многолетний опыт работы в области слухопротезирования' : 'Eshitish protezlash sohasida ko\'p yillik tajriba'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <MapPin className="h-5 w-5 text-brand-primary flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-foreground" suppressHydrationWarning>
+                      {locale === 'ru' ? 'Множество филиалов' : 'Ko\'plab filiallar'}
+                    </p>
+                    <p className="text-sm text-muted-foreground" suppressHydrationWarning>
+                      {locale === 'ru' ? 'Удобное расположение по всему Узбекистану' : 'O\'zbekiston bo\'ylab qulay joylashuv'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Users className="h-5 w-5 text-brand-primary flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-foreground" suppressHydrationWarning>
+                      {locale === 'ru' ? 'Тысячи пациентов' : 'Minglab bemorlar'}
+                    </p>
+                    <p className="text-sm text-muted-foreground" suppressHydrationWarning>
+                      {locale === 'ru' ? 'Доверие тысяч довольных пациентов' : 'Minglab mamnun bemorlarning ishonchi'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Shield className="h-5 w-5 text-brand-primary flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-foreground" suppressHydrationWarning>
+                      {locale === 'ru' ? 'Оригинальное оборудование' : 'Asl jihozlar'}
+                    </p>
+                    <p className="text-sm text-muted-foreground" suppressHydrationWarning>
+                      {locale === 'ru' ? 'Сертифицированное оригинальное оборудование' : 'Sertifikatlangan asl jihozlar'}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </section>
           </div>
 
