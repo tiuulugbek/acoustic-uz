@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { processContentShortcodes, ProcessedContent } from './content-processor';
 
 interface ServiceContentProps {
   content: string;
@@ -29,20 +30,8 @@ export default function ServiceContent({ content, locale }: ServiceContentProps)
       let processedContent = content;
       let headingIndex = 0;
       
-      // Process tooltips: [tooltips keyword="..." content="..."] or [tooltips keyword = "..." content = "..."]
-      const tooltipRegex = /\[tooltips\s+keyword\s*=\s*["']([^"']+)["']\s+content\s*=\s*["']([^"']+)["']\]/gi;
-      processedContent = processedContent.replace(tooltipRegex, (match, keyword, tooltipContent) => {
-        // Escape HTML in content
-        const escapedContent = tooltipContent
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#39;');
-        
-        // Replace with a span that has data attributes for tooltip
-        return `<span class="tooltip-trigger cursor-help border-b border-dashed border-brand-primary/40 text-brand-primary hover:border-brand-primary" data-tooltip-keyword="${keyword.replace(/"/g, '&quot;')}" data-tooltip-content="${escapedContent}">${keyword}</span>`;
-      });
+      // Process all shortcodes (tooltips, tables, images)
+      processedContent = processContentShortcodes(processedContent);
       
       // Process all headings in order (H2 and H3 together)
       processedContent = processedContent.replace(/<(h[23])([^>]*)>(.*?)<\/h[23]>/gi, (match, tag, attrs, text) => {
@@ -83,101 +72,8 @@ export default function ServiceContent({ content, locale }: ServiceContentProps)
         return `<img${newAttrs} />`;
       });
       
-      // Render HTML content directly with tooltip support
-      return (
-        <div 
-          className="prose prose-lg max-w-none"
-          dangerouslySetInnerHTML={{ __html: processedContent }}
-          ref={(el) => {
-            if (el) {
-              // Add tooltip functionality after render
-              const tooltipTriggers = el.querySelectorAll('.tooltip-trigger');
-              tooltipTriggers.forEach((trigger) => {
-                const keyword = trigger.getAttribute('data-tooltip-keyword') || '';
-                const tooltipContent = trigger.getAttribute('data-tooltip-content') || '';
-                
-                if (keyword && tooltipContent) {
-                  // Decode HTML entities
-                  const decodedContent = tooltipContent
-                    .replace(/&amp;/g, '&')
-                    .replace(/&lt;/g, '<')
-                    .replace(/&gt;/g, '>')
-                    .replace(/&quot;/g, '"')
-                    .replace(/&#39;/g, "'");
-                  
-                  // Add hover event
-                  let tooltipElement: HTMLDivElement | null = null;
-                  
-                  const showTooltip = () => {
-                    if (tooltipElement) return;
-                    
-                    tooltipElement = document.createElement('div');
-                    tooltipElement.className = 'absolute z-50 w-64 rounded-lg bg-gray-900 px-3 py-2 text-xs text-white shadow-lg transition-opacity';
-                    tooltipElement.innerHTML = `
-                      <div class="font-semibold text-white mb-1">${keyword}</div>
-                      <div class="text-gray-300 leading-relaxed">${decodedContent}</div>
-                      <div class="absolute left-4 top-full h-0 w-0 border-4 border-t-gray-900 border-r-transparent border-b-transparent border-l-transparent"></div>
-                    `;
-                    
-                    const wrapper = document.createElement('span');
-                    wrapper.style.position = 'relative';
-                    wrapper.style.display = 'inline-block';
-                    wrapper.innerHTML = trigger.innerHTML;
-                    wrapper.appendChild(tooltipElement);
-                    
-                    // Position tooltip
-                    const updatePosition = () => {
-                      if (!tooltipElement) return;
-                      const rect = wrapper.getBoundingClientRect();
-                      const tooltipRect = tooltipElement.getBoundingClientRect();
-                      const spaceBelow = window.innerHeight - rect.bottom;
-                      
-                      const arrow = tooltipElement.querySelector('div');
-                      if (spaceBelow < tooltipRect.height + 10) {
-                        tooltipElement.style.bottom = '100%';
-                        tooltipElement.style.marginBottom = '8px';
-                        tooltipElement.style.marginTop = '0';
-                        if (arrow) {
-                          arrow.className = 'absolute left-4 bottom-full h-0 w-0 border-4 border-b-gray-900 border-r-transparent border-t-transparent border-l-transparent';
-                        }
-                      } else {
-                        tooltipElement.style.top = '100%';
-                        tooltipElement.style.marginTop = '8px';
-                        tooltipElement.style.marginBottom = '0';
-                        if (arrow) {
-                          arrow.className = 'absolute left-4 top-full h-0 w-0 border-4 border-t-gray-900 border-r-transparent border-b-transparent border-l-transparent';
-                        }
-                      }
-                    };
-                    
-                    updatePosition();
-                    window.addEventListener('scroll', updatePosition, true);
-                    window.addEventListener('resize', updatePosition);
-                    
-                    const hideTooltip = () => {
-                      if (tooltipElement) {
-                        tooltipElement.remove();
-                        tooltipElement = null;
-                        window.removeEventListener('scroll', updatePosition, true);
-                        window.removeEventListener('resize', updatePosition);
-                      }
-                    };
-                    
-                    wrapper.addEventListener('mouseleave', hideTooltip);
-                    wrapper.addEventListener('blur', hideTooltip);
-                    
-                    trigger.replaceWith(wrapper);
-                    setTimeout(updatePosition, 0);
-                  };
-                  
-                  trigger.addEventListener('mouseenter', showTooltip);
-                  trigger.addEventListener('focus', showTooltip);
-                }
-              });
-            }
-          }}
-        />
-      );
+      // Render HTML content with processed shortcodes and tooltip support
+      return <ProcessedContent html={processedContent} />;
     }
 
     // Otherwise, process as markdown
