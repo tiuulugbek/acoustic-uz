@@ -561,19 +561,18 @@ export default async function ProductPage({ params }: ProductPageProps) {
             </div>
           </div>
 
-          {/* Second Row: Tabs (spans 2 columns) | Sidebar */}
-          <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
-            {/* Column 1: Tabs (spans below both image and product info) */}
-            <div className="lg:col-span-1">
+          {/* Second Row: Empty | Tabs | Empty (Sidebar is sticky from first row, stays visible) */}
+          <div className="grid gap-6 lg:grid-cols-[280px_1fr_280px]">
+            {/* Column 1: Empty space (aligns with image column) */}
+            <div className="hidden lg:block"></div>
+
+            {/* Column 2: Tabs (aligns with product info column, in the red box area) */}
+            <div>
               <ProductTabs tabs={productTabs} />
             </div>
 
-            {/* Column 2: Sidebar (280px, sticky - affects both rows) */}
-            <div className="hidden lg:block">
-              <div className="sticky top-6">
-                <Sidebar locale={locale} settingsData={settings} brandsData={brands} pageType="products" />
-              </div>
-            </div>
+            {/* Column 3: Empty space (sidebar is sticky from first row, so it stays visible here) */}
+            <div className="hidden lg:block"></div>
           </div>
 
           {/* Sidebar - Mobile (after product info and tabs) */}
