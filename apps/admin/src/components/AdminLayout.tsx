@@ -404,7 +404,12 @@ export default function AdminLayout() {
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
             <span style={{ fontWeight: 500, color: '#262626' }}>Admin Panel</span>
             <span style={{ color: '#d9d9d9', fontSize: '16px' }}>•</span>
-            <span style={{ fontWeight: 600, color: '#F07E22', fontSize: '14px' }}>v{versionInfo.version}</span>
+            <span 
+              style={{ fontWeight: 600, color: '#F07E22', fontSize: '14px' }}
+              title={`Version: ${versionInfo.version}\nBuild time: ${versionInfo.buildTime}\nWindow version: ${(window as any).__APP_VERSION__ || 'N/A'}`}
+            >
+              v{versionInfo.version}
+            </span>
             <span style={{ color: '#d9d9d9', fontSize: '16px' }}>•</span>
             <span 
               title={`Build time: ${versionInfo.buildTime}`} 
