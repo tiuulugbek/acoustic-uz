@@ -102,6 +102,16 @@ if [ -d "apps/admin/dist" ]; then
         echo "📋 Admin version info:"
         cat apps/admin/src/version.json
     fi
+    
+    # Copy admin build to Nginx root directory if needed
+    ADMIN_NGINX_ROOT="/var/www/admins.acoustic.uz/dist"
+    if [ -d "$ADMIN_NGINX_ROOT" ] && [ "$ADMIN_NGINX_ROOT" != "$PROJECT_DIR/apps/admin/dist" ]; then
+        echo "📋 Copying admin build to Nginx root..."
+        rm -rf "$ADMIN_NGINX_ROOT"/*
+        cp -r apps/admin/dist/* "$ADMIN_NGINX_ROOT/"
+        chown -R deploy:deploy "$ADMIN_NGINX_ROOT" || true
+        echo "✅ Admin build copied to Nginx root"
+    fi
 else
     echo "⚠️  Admin build directory not found, but continuing..."
 fi
