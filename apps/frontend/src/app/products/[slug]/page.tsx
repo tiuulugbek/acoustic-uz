@@ -553,13 +553,15 @@ export default async function ProductPage({ params }: ProductPageProps) {
               </Link>
             </div>
 
-            {/* Column 3: Sidebar (Right) */}
+            {/* Column 3: Sidebar (Right) - Sticky */}
             <div className="hidden lg:block">
-              <Sidebar locale={locale} settingsData={settings} brandsData={brands} pageType="products" />
+              <div className="sticky top-6">
+                <Sidebar locale={locale} settingsData={settings} brandsData={brands} pageType="products" />
+              </div>
             </div>
           </div>
 
-          {/* Second Row: Empty | Tabs | Sidebar */}
+          {/* Second Row: Empty | Tabs | Empty (Sidebar is sticky, so it stays visible) */}
           <div className="grid gap-6 lg:grid-cols-[280px_1fr_280px]">
             {/* Empty space (aligns with image column) */}
             <div className="hidden lg:block"></div>
@@ -569,10 +571,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
               <ProductTabs tabs={productTabs} />
             </div>
 
-            {/* Sidebar (same position as first row) */}
-            <div className="hidden lg:block">
-              {/* Sidebar already shown above, this is just for alignment */}
-            </div>
+            {/* Empty space (aligns with sidebar column - sidebar is sticky above) */}
+            <div className="hidden lg:block"></div>
           </div>
 
           {/* Sidebar - Mobile (after product info and tabs) */}
