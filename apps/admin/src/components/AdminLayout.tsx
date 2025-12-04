@@ -142,28 +142,49 @@ export default function AdminLayout() {
 
   // Load version from version.json file (with cache busting) on mount
   useEffect(() => {
+    // Log initial version
+    console.log('[AdminLayout] Initial version from window:', (window as any).__APP_VERSION__);
+    console.log('[AdminLayout] Initial versionInfo state:', versionInfo);
+    
     // Try to fetch version.json with cache busting
-    fetch(`/version.json?t=${Date.now()}`)
-      .then((res) => {
-        if (!res.ok) throw new Error('Failed to fetch version.json');
-        return res.json();
-      })
-      .then((data) => {
+    const fetchVersion = async () => {
+      try {
+        const response = await fetch(`/version.json?t=${Date.now()}`, {
+          cache: 'no-store', // Disable cache completely
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+          },
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch version.json: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('[AdminLayout] Fetched version.json:', data);
+        
         if (data.version && data.buildTime) {
-          setVersionInfo({
+          const newVersionInfo = {
             version: data.version,
             buildTime: data.buildTime,
-          });
+          };
+          setVersionInfo(newVersionInfo);
           // Update window object for other components
           (window as any).__APP_VERSION__ = data.version;
           (window as any).__BUILD_TIME__ = data.buildTime;
-          console.log('[AdminLayout] Version loaded from version.json:', data.version);
+          console.log('[AdminLayout] ✅ Version updated to:', data.version);
+        } else {
+          console.warn('[AdminLayout] ⚠️ version.json missing version or buildTime:', data);
         }
-      })
-      .catch((error) => {
-        console.log('[AdminLayout] Failed to load version.json, using initial version:', error);
+      } catch (error) {
+        console.error('[AdminLayout] ❌ Failed to load version.json:', error);
+        console.log('[AdminLayout] Using initial version from window:', (window as any).__APP_VERSION__);
         // Keep initial version from window object
-      });
+      }
+    };
+    
+    fetchVersion();
   }, []);
 
   // Use useState to manage user - initialize from localStorage immediately
