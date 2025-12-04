@@ -144,6 +144,8 @@ function ServicesManager() {
   const openEditModal = (service: ServiceDto) => {
     setEditingService(service);
     setPreviewImage(service.cover?.url ? normalizeImageUrl(service.cover.url) : null);
+    // Handle categoryId - convert to array for multiple select
+    const categoryId = service.categoryId || service.category?.id;
     form.setFieldsValue({
       title_uz: service.title_uz,
       title_ru: service.title_ru,
@@ -155,7 +157,7 @@ function ServicesManager() {
       status: service.status,
       order: service.order,
       coverId: service.cover?.id,
-      categoryId: service.categoryId || service.category?.id,
+      categoryId: categoryId ? [categoryId] : undefined, // Convert to array for multiple select
     });
     setIsModalOpen(true);
   };
@@ -200,6 +202,11 @@ function ServicesManager() {
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
+      // Handle multiple category selection - take first one if array, or use single value
+      const categoryId = Array.isArray(values.categoryId) 
+        ? (values.categoryId.length > 0 ? values.categoryId[0] : undefined)
+        : values.categoryId;
+      
       const payload: CreateServicePayload = {
         title_uz: values.title_uz,
         title_ru: values.title_ru,
@@ -211,7 +218,7 @@ function ServicesManager() {
         order: typeof values.order === 'number' ? values.order : Number(values.order ?? 0),
         status: values.status,
         coverId: values.coverId || undefined,
-        categoryId: values.categoryId || undefined,
+        categoryId: categoryId || undefined,
       };
 
       if (editingService) {
@@ -470,12 +477,13 @@ function ServicesManager() {
           <Form.Item label="Holat" name="status" initialValue="published">
             <Select options={statusOptions} />
           </Form.Item>
-          <Form.Item label="Kategoriya" name="categoryId" extra="Xizmat kategoriyasini tanlang (ixtiyoriy)">
+          <Form.Item label="Kategoriyalar" name="categoryId" extra="Xizmat kategoriyalarini tanlang (bir nechta tanlash mumkin, ixtiyoriy)">
             <Select
-              placeholder="Kategoriyani tanlang"
+              mode="multiple"
+              placeholder="Kategoriyalarni tanlang"
               allowClear
               loading={isLoadingCategories}
-              options={categoriesData?.map((cat) => ({
+              options={categoriesData?.map((cat: ServiceCategoryDto) => ({
                 label: `${cat.name_uz}${cat.name_ru ? ` / ${cat.name_ru}` : ''}`,
                 value: cat.id,
               }))}

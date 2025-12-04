@@ -67,6 +67,7 @@ export default function ServiceCategoriesPage() {
   const { data: mediaList } = useQuery<MediaDto[], ApiError>({
     queryKey: ['media'],
     queryFn: getMedia,
+    retry: false,
   });
 
   const { mutateAsync: createMutation, isPending: isCreating } = useMutation<
