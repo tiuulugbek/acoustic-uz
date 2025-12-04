@@ -484,86 +484,93 @@ export default async function ProductPage({ params }: ProductPageProps) {
       {/* Main Content - Compact layout */}
       <section className="bg-white py-6">
         <div className="mx-auto max-w-6xl px-4 md:px-6">
-          <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
-            {/* Main Content Column */}
-            <div className="space-y-6">
-              {/* Image Section */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                {/* Main Image */}
-                <div className="relative aspect-square w-full sm:w-64 overflow-hidden rounded-lg bg-white border border-border/40 flex-shrink-0">
-                  <Image
-                    src={mainImage}
-                    alt={getBilingualText(product.name_uz, product.name_ru, locale)}
-                    fill
-                    sizes="(max-width: 640px) 100vw, 256px"
-                    className="object-contain p-4"
-                    priority
-                    unoptimized
-                  />
+          {/* First Row: Image | Product Info | Sidebar */}
+          <div className="grid gap-6 lg:grid-cols-[280px_1fr_280px] mb-6">
+            {/* Left Column - Image */}
+            <div className="space-y-3">
+              {/* Main Image */}
+              <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-white border border-border/40">
+                <Image
+                  src={mainImage}
+                  alt={getBilingualText(product.name_uz, product.name_ru, locale)}
+                  fill
+                  sizes="280px"
+                  className="object-contain p-4"
+                  priority
+                  unoptimized
+                />
+              </div>
+
+              {/* Gallery - Compact */}
+              {gallery.length > 1 && (
+                <div className="grid grid-cols-4 gap-1.5">
+                  {gallery.slice(1, 5).map((image, index) => (
+                    <div key={index} className="relative aspect-square w-full overflow-hidden rounded bg-white border border-border/40">
+                      <Image
+                        src={image}
+                        alt={`${getBilingualText(product.name_uz, product.name_ru, locale)} ${index + 2}`}
+                        fill
+                        sizes="(max-width: 1024px) 25vw, 60px"
+                        className="object-contain p-1"
+                        unoptimized
+                      />
+                    </div>
+                  ))}
                 </div>
+              )}
+            </div>
 
-                {/* Gallery - Compact */}
-                {gallery.length > 1 && (
-                  <div className="grid grid-cols-4 sm:grid-cols-2 gap-1.5 flex-1">
-                    {gallery.slice(1, 5).map((image, index) => (
-                      <div key={index} className="relative aspect-square w-full overflow-hidden rounded bg-white border border-border/40">
-                        <Image
-                          src={image}
-                          alt={`${getBilingualText(product.name_uz, product.name_ru, locale)} ${index + 2}`}
-                          fill
-                          sizes="(max-width: 640px) 25vw, 60px"
-                          className="object-contain p-1"
-                          unoptimized
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Product Details - Below image */}
-              <div className="space-y-2">
-                {product.brand && (
-                  <p className="text-sm text-muted-foreground">
-                    <span className="font-bold">{isRu ? 'Производитель' : 'Ishlab chiqaruvchi'}:</span> {product.brand.name}
-                  </p>
-                )}
-                {availability && (
-                  <p className="text-sm text-muted-foreground">
-                    <span className="font-bold">{isRu ? 'Наличие' : 'Mavjudlik'}:</span>{' '}
-                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${availability.color}`}>
-                      {isRu ? availability.ru : availability.uz}
-                    </span>
-                  </p>
-                )}
-                {priceFormatted && (
-                  <p className="text-base font-semibold text-foreground">
-                    <span className="font-bold">{isRu ? 'Цена' : 'Narx'}:</span> {priceFormatted}
-                  </p>
-                )}
+            {/* Center Column - Product Info */}
+            <div className="space-y-2">
+              {product.brand && (
                 <p className="text-sm text-muted-foreground">
-                  <span className="font-bold">{isRu ? 'Способ оплаты' : 'To\'lov turi'}:</span>{' '}
-                  {isRu ? 'Наличными, картой Visa/MasterCard' : 'Naqd pul, Visa/MasterCard kartasi'}
+                  <span className="font-bold">{isRu ? 'Производитель' : 'Ishlab chiqaruvchi'}:</span> {product.brand.name}
                 </p>
-                <Link
-                  href="/contact"
-                  className="inline-flex items-center gap-2 rounded-lg bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-accent"
-                >
-                  <Phone className="h-4 w-4" />
-                  {isRu ? 'Записаться на подбор' : 'Tanlash uchun yozilish'}
-                </Link>
-              </div>
-
-              {/* Product Tabs - Includes Description, Tech, and Fitting Range */}
-              <div className="mt-6">
-                <ProductTabs tabs={productTabs} />
-              </div>
+              )}
+              {availability && (
+                <p className="text-sm text-muted-foreground">
+                  <span className="font-bold">{isRu ? 'Наличие' : 'Mavjudlik'}:</span>{' '}
+                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${availability.color}`}>
+                    {isRu ? availability.ru : availability.uz}
+                  </span>
+                </p>
+              )}
+              {priceFormatted && (
+                <p className="text-base font-semibold text-foreground">
+                  <span className="font-bold">{isRu ? 'Цена' : 'Narx'}:</span> {priceFormatted}
+                </p>
+              )}
+              <p className="text-sm text-muted-foreground">
+                <span className="font-bold">{isRu ? 'Способ оплаты' : 'To\'lov turi'}:</span>{' '}
+                {isRu ? 'Наличными, картой Visa/MasterCard' : 'Naqd pul, Visa/MasterCard kartasi'}
+              </p>
+              <Link
+                href="/contact"
+                className="inline-flex items-center gap-2 rounded-lg bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-accent"
+              >
+                <Phone className="h-4 w-4" />
+                {isRu ? 'Записаться на подбор' : 'Tanlash uchun yozilish'}
+              </Link>
             </div>
 
             {/* Right Column - Sidebar */}
             <div className="hidden lg:block">
               <Sidebar locale={locale} settingsData={settings} brandsData={brands} pageType="products" />
             </div>
+          </div>
+
+          {/* Second Row: Tabs | Sidebar */}
+          <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
+            {/* Product Tabs - Includes Description, Tech, and Fitting Range */}
+            <div>
+              <ProductTabs tabs={productTabs} />
+            </div>
+
+            {/* Sidebar - Mobile only, hidden on desktop (already shown above) */}
+            <div className="hidden lg:block">
+              {/* Empty space to align with sidebar above */}
+            </div>
+          </div>
           </div>
 
           {/* Sidebar - Mobile (after product info and tabs) */}
