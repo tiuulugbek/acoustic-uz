@@ -553,16 +553,16 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   {isRu ? 'Записаться на подбор' : 'Tanlash uchun yozilish'}
                 </Link>
               </div>
+
+              {/* Product Tabs - Includes Description, Tech, and Fitting Range - Moved here */}
+              <div className="mt-6">
+                <ProductTabs tabs={productTabs} />
+              </div>
             </div>
 
             {/* Right Column - Sidebar */}
             <div className="hidden xl:block">
               <Sidebar locale={locale} settingsData={settings} brandsData={brands} pageType="products" />
-            </div>
-
-            {/* Product Tabs - Includes Description, Tech, and Fitting Range */}
-            <div className="lg:col-span-2 xl:col-span-2 mt-6">
-              <ProductTabs tabs={productTabs} />
             </div>
           </div>
 
