@@ -145,6 +145,8 @@ function ServicesManager() {
   const openEditModal = (service: ServiceDto) => {
     setEditingService(service);
     setPreviewImage(service.cover?.url ? normalizeImageUrl(service.cover.url) : null);
+    // Reset form first to clear any previous values
+    form.resetFields();
     // Handle categoryId - convert to array for multiple select
     const categoryId = service.categoryId || service.category?.id;
     form.setFieldsValue({
@@ -158,7 +160,7 @@ function ServicesManager() {
       status: service.status,
       order: service.order,
       coverId: service.cover?.id,
-      categoryId: categoryId ? [categoryId] : undefined, // Convert to array for multiple select
+      categoryId: categoryId ? [categoryId] : [], // Convert to array for multiple select, use empty array instead of undefined
     });
     setIsModalOpen(true);
   };
