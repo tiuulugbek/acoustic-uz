@@ -57,9 +57,12 @@ export default defineConfig({
     {
       name: 'inject-version',
       transformIndexHtml(html) {
+        // Inject version as both script and meta tag for better cache handling
+        const scriptTag = `<script>window.__APP_VERSION__='${version}';window.__BUILD_TIME__='${buildTime}';window.__VITE_API_URL__='${process.env.VITE_API_URL || 'https://api.acoustic.uz/api'}';</script>`;
+        const metaTag = `<meta name="app-version" content="${version}" /><meta name="build-time" content="${buildTime}" />`;
         return html.replace(
           '<head>',
-          `<head><script>window.__APP_VERSION__='${version}';window.__BUILD_TIME__='${buildTime}';window.__VITE_API_URL__='${process.env.VITE_API_URL || 'https://api.acoustic.uz/api'}';</script>`
+          `<head>${metaTag}${scriptTag}`
         );
       },
     },
