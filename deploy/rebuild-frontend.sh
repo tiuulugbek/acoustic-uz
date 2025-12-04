@@ -77,14 +77,31 @@ pm2 start acoustic-frontend
 # Build admin
 echo "🏗️  Building admin..."
 cd "$PROJECT_DIR"
+
+# Clean admin build directory to ensure fresh build
+echo "🧹 Cleaning admin build directory..."
+rm -rf apps/admin/dist
+rm -rf apps/admin/.vite
+rm -rf apps/admin/node_modules/.vite
+
+# Export environment variables for admin build
 export VITE_API_URL=${VITE_API_URL:-https://api.acoustic.uz/api}
+export NODE_ENV=production
 echo "📋 Admin environment variables:"
 echo "  VITE_API_URL=$VITE_API_URL"
+echo "  NODE_ENV=$NODE_ENV"
+
+# Build admin (this will generate new version with current timestamp)
 pnpm --filter @acoustic/admin build
 
 # Check if admin build succeeded
 if [ -d "apps/admin/dist" ]; then
     echo "✅ Admin build successful!"
+    # Show version file if it exists
+    if [ -f "apps/admin/src/version.json" ]; then
+        echo "📋 Admin version info:"
+        cat apps/admin/src/version.json
+    fi
 else
     echo "⚠️  Admin build directory not found, but continuing..."
 fi
