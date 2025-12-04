@@ -112,6 +112,7 @@ export default function ServiceCategoriesPage() {
     form.setFieldsValue({
       status: 'published',
       order: 0,
+      imageId: undefined,
     });
     setIsModalOpen(true);
   };
@@ -135,17 +136,23 @@ export default function ServiceCategoriesPage() {
 
   const handleUpload: UploadProps['customRequest'] = async (options) => {
     const { file, onSuccess, onError } = options;
+    if (!file) {
+      onError?.(new Error('Fayl tanlanmadi'));
+      return;
+    }
     setUploading(true);
     try {
       // Rasmni yuklashdan oldin siqish
       const compressedFile = await compressImage(file as File);
       const media = await uploadMedia(compressedFile);
+      const imageUrl = normalizeImageUrl(media.url);
       form.setFieldsValue({ imageId: media.id });
-      setPreviewImage(normalizeImageUrl(media.url));
+      setPreviewImage(imageUrl);
       message.success('Rasm yuklandi');
       queryClient.invalidateQueries({ queryKey: ['media'] });
       onSuccess?.(media);
     } catch (error) {
+      console.error('Rasm yuklashda xatolik:', error);
       const apiError = error as ApiError;
       message.error(apiError.message || 'Rasm yuklashda xatolik');
       onError?.(error as Error);
@@ -160,8 +167,10 @@ export default function ServiceCategoriesPage() {
   };
 
   const handleSelectExistingMedia = (mediaId: string, mediaUrl: string) => {
+    const imageUrl = normalizeImageUrl(mediaUrl);
     form.setFieldsValue({ imageId: mediaId });
-    setPreviewImage(normalizeImageUrl(mediaUrl));
+    setPreviewImage(imageUrl);
+    message.success('Rasm tanlandi');
   };
 
   const currentImageId = Form.useWatch('imageId', form);
@@ -402,11 +411,11 @@ export default function ServiceCategoriesPage() {
                 </Col>
               </Row>
               
-              {(previewImage || currentMedia?.url) && (
+              {(previewImage || (currentImageId && currentMedia?.url)) && (
                 <div style={{ marginTop: 16, textAlign: 'center' }}>
                   <div style={{ marginBottom: 8, fontSize: 12, color: '#666' }}>Tanlangan rasm:</div>
                   <Image
-                    src={normalizeImageUrl(previewImage || currentMedia?.url || '')}
+                    src={previewImage || normalizeImageUrl(currentMedia?.url || '')}
                     alt="Preview"
                     style={{ maxWidth: '100%', maxHeight: 200, objectFit: 'contain', borderRadius: 4 }}
                     preview={true}
