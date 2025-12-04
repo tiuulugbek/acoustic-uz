@@ -23,6 +23,8 @@ import {
   UndoOutlined,
   RedoOutlined,
   FolderOutlined,
+  TableOutlined,
+  AppstoreOutlined,
 } from '@ant-design/icons';
 import { uploadMedia, type MediaDto } from '../lib/api';
 import MediaLibraryModal from './MediaLibraryModal';
@@ -130,6 +132,72 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
     }
 
     editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+  };
+
+  const addTable = () => {
+    if (!editor) return;
+    
+    const position = window.prompt(
+      'Jadval pozitsiyasini tanlang:\n1 - left (chap)\n2 - center (markaz)\n3 - right (o\'ng)\n4 - full (to\'liq)',
+      '2'
+    );
+
+    if (position === null) return;
+
+    const positions: Record<string, string> = {
+      '1': 'left',
+      '2': 'center',
+      '3': 'right',
+      '4': 'full',
+    };
+
+    const selectedPosition = positions[position] || 'center';
+    const tableHtml = `
+      <table border="1" style="border-collapse: collapse; width: 100%;">
+        <tr>
+          <th style="padding: 8px;">Ustun 1</th>
+          <th style="padding: 8px;">Ustun 2</th>
+        </tr>
+        <tr>
+          <td style="padding: 8px;">Ma\'lumot 1</td>
+          <td style="padding: 8px;">Ma\'lumot 2</td>
+        </tr>
+      </table>
+    `;
+    
+    const shortcode = `[table position="${selectedPosition}"]${tableHtml}[/table]`;
+    
+    editor.chain().focus().insertContent(shortcode).run();
+    message.success(`Jadval qo'shildi (pozitsiya: ${selectedPosition})`);
+  };
+
+  const addImageLayout = () => {
+    if (!editor) return;
+    
+    const layout = window.prompt(
+      'Rasm layout\'ini tanlang:\n1 - grid-2 (2 ta bir qatorga)\n2 - grid-3 (3 ta bir qatorga)\n3 - left-right (chap-o\'ng)\n4 - right-left (o\'ng-chap)',
+      '1'
+    );
+
+    if (layout === null) return;
+
+    const layouts: Record<string, string> = {
+      '1': 'grid-2',
+      '2': 'grid-3',
+      '3': 'left-right',
+      '4': 'right-left',
+    };
+
+    const selectedLayout = layouts[layout] || 'grid-2';
+    const placeholderHtml = `
+      <img src="https://via.placeholder.com/400x300" alt="Rasm 1" />
+      <img src="https://via.placeholder.com/400x300" alt="Rasm 2" />
+    `;
+    
+    const shortcode = `[images layout="${selectedLayout}"]${placeholderHtml}[/images]`;
+    
+    editor.chain().focus().insertContent(shortcode).run();
+    message.success(`Rasm layout qo'shildi (${selectedLayout}). Rasmlarni o'zgartiring.`);
   };
 
 
@@ -244,6 +312,22 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
             icon={<PictureOutlined />}
             onClick={imageHandler}
             size="small"
+          />
+
+          <div className="editor-divider" />
+
+          {/* Table & Image Layout */}
+          <Button
+            icon={<TableOutlined />}
+            onClick={addTable}
+            size="small"
+            title="Jadval qo'shish (pozitsiya bilan)"
+          />
+          <Button
+            icon={<AppstoreOutlined />}
+            onClick={addImageLayout}
+            size="small"
+            title="Rasm layout qo'shish"
           />
 
           <div className="editor-divider" />
