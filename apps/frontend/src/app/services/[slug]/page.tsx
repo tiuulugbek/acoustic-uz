@@ -4,6 +4,7 @@ import type { Metadata } from 'next';
 import { getServiceBySlug, getServiceCategoryBySlug, getBrands, getSettings } from '@/lib/api-server';
 import { detectLocale } from '@/lib/locale-server';
 import { getBilingualText } from '@/lib/locale';
+import { normalizeImageUrl } from '@/lib/image-utils';
 import ServiceContent from '@/components/service-content';
 import ServiceTableOfContents from '@/components/service-table-of-contents';
 import PageHeader from '@/components/page-header';
@@ -50,9 +51,7 @@ export async function generateMetadata({ params }: ServicePageProps): Promise<Me
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
   const serviceUrl = `${baseUrl}/services/${params.slug}`;
   const imageUrl = service.cover?.url 
-    ? (service.cover.url.startsWith('http') 
-        ? service.cover.url 
-        : `${baseUrl}${service.cover.url}`)
+    ? normalizeImageUrl(service.cover.url)
     : `${baseUrl}/logo.png`;
 
   return {
@@ -107,12 +106,8 @@ export default async function ServiceSlugPage({ params }: ServicePageProps) {
       service.status === 'published'
     );
     
-    // Build category image URL
-    let categoryImage = category.image?.url || '';
-    if (categoryImage && categoryImage.startsWith('/') && !categoryImage.startsWith('//')) {
-      const baseUrl = API_BASE_URL.replace('/api', '');
-      categoryImage = `${baseUrl}${categoryImage}`;
-    }
+    // Build category image URL (normalize it)
+    const categoryImage = normalizeImageUrl(category.image?.url || '');
     
     return (
       <main className="min-h-screen bg-background">
@@ -153,12 +148,8 @@ export default async function ServiceSlugPage({ params }: ServicePageProps) {
                   const serviceTitle = getBilingualText(service.title_uz, service.title_ru, locale);
                   const serviceExcerpt = getBilingualText(service.excerpt_uz, service.excerpt_ru, locale);
                   
-                  // Build service image URL
-                  let serviceImage = service.cover?.url || '';
-                  if (serviceImage && serviceImage.startsWith('/') && !serviceImage.startsWith('//')) {
-                    const baseUrl = API_BASE_URL.replace('/api', '');
-                    serviceImage = `${baseUrl}${serviceImage}`;
-                  }
+                  // Build service image URL (normalize it)
+                  const serviceImage = normalizeImageUrl(service.cover?.url || '');
                   
                   return (
                     <Link
@@ -340,12 +331,8 @@ export default async function ServiceSlugPage({ params }: ServicePageProps) {
     }
   }
 
-  // Build cover image URL
-  let coverImageUrl = service.cover?.url || '';
-  if (coverImageUrl && coverImageUrl.startsWith('/') && !coverImageUrl.startsWith('//')) {
-    const baseUrl = API_BASE_URL.replace('/api', '');
-    coverImageUrl = `${baseUrl}${coverImageUrl}`;
-  }
+  // Build cover image URL (normalize it)
+  const coverImageUrl = normalizeImageUrl(service.cover?.url || '');
 
   return (
     <main className="min-h-screen bg-background">
@@ -421,11 +408,7 @@ export default async function ServiceSlugPage({ params }: ServicePageProps) {
                 <ul className="space-y-4">
                   {relatedServices.map((relatedService) => {
                     const relatedTitle = getBilingualText(relatedService.title_uz, relatedService.title_ru, locale);
-                    let relatedImageUrl = relatedService.cover?.url || '';
-                    if (relatedImageUrl && relatedImageUrl.startsWith('/') && !relatedImageUrl.startsWith('//')) {
-                      const baseUrl = API_BASE_URL.replace('/api', '');
-                      relatedImageUrl = `${baseUrl}${relatedImageUrl}`;
-                    }
+                    const relatedImageUrl = normalizeImageUrl(relatedService.cover?.url || '');
                     return (
                       <li key={relatedService.id}>
                         <Link
