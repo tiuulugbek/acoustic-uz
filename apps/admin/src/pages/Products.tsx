@@ -49,6 +49,7 @@ import {
 } from '@ant-design/icons';
 import TooltipHelper from '../components/TooltipHelper';
 import ImageSizeHint from '../components/ImageSizeHint';
+import RichTextEditor from '../components/RichTextEditor';
 import { createSlug } from '../utils/slug';
 
 const statusOptions = [
@@ -290,13 +291,6 @@ export default function ProductsPage() {
       smartphoneCompatibility: [],
       paymentOptions: [],
       tinnitusSupport: false,
-      features_uz: [],
-      features_ru: [],
-      benefits_uz: [],
-      benefits_ru: [],
-      galleryUrls: [],
-      relatedProductIds: [],
-      usefulArticleSlugs: [],
       catalogIds: [],
     });
     setIsModalOpen(true);
@@ -327,21 +321,10 @@ export default function ProductsPage() {
       tinnitusSupport: product.tinnitusSupport ?? false,
       paymentOptions: product.paymentOptions ?? [],
       availabilityStatus: product.availabilityStatus ?? undefined,
-      intro_uz: product.intro_uz ?? undefined,
-      intro_ru: product.intro_ru ?? undefined,
-      features_uz: product.features_uz ?? [],
-      features_ru: product.features_ru ?? [],
-      benefits_uz: product.benefits_uz ?? [],
-      benefits_ru: product.benefits_ru ?? [],
       tech_uz: product.tech_uz ?? undefined,
       tech_ru: product.tech_ru ?? undefined,
       fittingRange_uz: product.fittingRange_uz ?? undefined,
       fittingRange_ru: product.fittingRange_ru ?? undefined,
-      regulatoryNote_uz: product.regulatoryNote_uz ?? undefined,
-      regulatoryNote_ru: product.regulatoryNote_ru ?? undefined,
-      galleryUrls: product.galleryUrls ?? [],
-      relatedProductIds: product.relatedProductIds ?? [],
-      usefulArticleSlugs: product.usefulArticleSlugs ?? [],
       catalogIds: product.catalogs?.map(c => c.id) ?? [],
     });
     setIsModalOpen(true);
@@ -396,20 +379,12 @@ export default function ProductsPage() {
           typeof values.tinnitusSupport === 'boolean' ? values.tinnitusSupport : undefined,
         paymentOptions: values.paymentOptions || [],
         availabilityStatus: values.availabilityStatus || undefined,
-        intro_uz: values.intro_uz || undefined,
-        intro_ru: values.intro_ru || undefined,
-        features_uz: values.features_uz || [],
-        features_ru: values.features_ru || [],
-        benefits_uz: values.benefits_uz || [],
-        benefits_ru: values.benefits_ru || [],
+        description_uz: values.description_uz || undefined,
+        description_ru: values.description_ru || undefined,
         tech_uz: values.tech_uz || undefined,
         tech_ru: values.tech_ru || undefined,
         fittingRange_uz: values.fittingRange_uz || undefined,
         fittingRange_ru: values.fittingRange_ru || undefined,
-        regulatoryNote_uz: values.regulatoryNote_uz || undefined,
-        regulatoryNote_ru: values.regulatoryNote_ru || undefined,
-        relatedProductIds: values.relatedProductIds || [],
-        usefulArticleSlugs: values.usefulArticleSlugs || [],
       };
 
       if (editingProduct) {
@@ -587,8 +562,8 @@ export default function ProductsPage() {
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="Soni" name="stock">
-                <InputNumber style={{ width: '100%' }} min={0} />
+              <Form.Item label="Ombordagi soni" name="stock">
+                <InputNumber style={{ width: '100%' }} min={0} placeholder="Mahsulot soni" />
               </Form.Item>
             </Col>
           </Row>
@@ -708,135 +683,46 @@ export default function ProductsPage() {
             <Select allowClear options={availabilityOptions} placeholder="Holatni tanlang" />
           </Form.Item>
 
-          <Divider orientation="left">Mahsulot matni</Divider>
+          <Divider orientation="left">Mahsulot tavsifi (Tabs)</Divider>
 
           <Row gutter={16}>
             <Col span={12}>
-              <Form.Item label="Qisqa kirish (uz)" name="intro_uz">
-                <Input.TextArea rows={3} placeholder="Mahsulot haqida kirish matni" />
+              <Form.Item label="Tavsif (uz)" name="description_uz">
+                <RichTextEditor
+                  value={form.getFieldValue('description_uz') || ''}
+                  onChange={(value) => form.setFieldsValue({ description_uz: value })}
+                  placeholder="Mahsulot tavsifi..."
+                />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="Qisqa kirish (ru)" name="intro_ru">
-                <Input.TextArea rows={3} placeholder="Вступительный текст о товаре" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item label="Mahsulot tavsifi (uz)" name="description_uz">
-                <div>
-                  <TooltipHelper
-                    value={form.getFieldValue('description_uz') || ''}
-                    onChange={(newValue) => form.setFieldsValue({ description_uz: newValue })}
-                    fieldName="description_uz"
-                  />
-                  <Input.TextArea 
-                    rows={4} 
-                    placeholder="Uzbekcha tavsif"
-                    style={{ marginTop: 8 }}
-                  />
-                </div>
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="Mahsulot tavsifi (ru)" name="description_ru">
-                <div>
-                  <TooltipHelper
-                    value={form.getFieldValue('description_ru') || ''}
-                    onChange={(newValue) => form.setFieldsValue({ description_ru: newValue })}
-                    fieldName="description_ru"
-                  />
-                  <Input.TextArea 
-                    rows={4} 
-                    placeholder="Описание на русском"
-                    style={{ marginTop: 8 }}
-                  />
-                </div>
+              <Form.Item label="Tavsif (ru)" name="description_ru">
+                <RichTextEditor
+                  value={form.getFieldValue('description_ru') || ''}
+                  onChange={(value) => form.setFieldsValue({ description_ru: value })}
+                  placeholder="Описание товара..."
+                />
               </Form.Item>
             </Col>
           </Row>
 
           <Row gutter={16}>
             <Col span={12}>
-              <Form.List name="features_uz">
-                {(fields, { add, remove, move }) => (
-                  <Form.Item label="Afzalliklar (uz)">
-                    <ArrayField
-                      fields={fields}
-                      add={add}
-                      remove={remove}
-                      move={move}
-                      label="Afzallik"
-                      placeholder="Afzallik tavsifi"
-                    />
-                  </Form.Item>
-                )}
-              </Form.List>
-            </Col>
-            <Col span={12}>
-              <Form.List name="features_ru">
-                {(fields, { add, remove, move }) => (
-                  <Form.Item label="Afzalliklar (ru)">
-                    <ArrayField
-                      fields={fields}
-                      add={add}
-                      remove={remove}
-                      move={move}
-                      label="Преимущество"
-                      placeholder="Описание преимущества"
-                    />
-                  </Form.Item>
-                )}
-              </Form.List>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.List name="benefits_uz">
-                {(fields, { add, remove, move }) => (
-                  <Form.Item label="Acoustic afzalliklari (uz)">
-                    <ArrayField
-                      fields={fields}
-                      add={add}
-                      remove={remove}
-                      move={move}
-                      label="Afzallik"
-                      placeholder="Acoustic markazidagi afzallik"
-                    />
-                  </Form.Item>
-                )}
-              </Form.List>
-            </Col>
-            <Col span={12}>
-              <Form.List name="benefits_ru">
-                {(fields, { add, remove, move }) => (
-                  <Form.Item label="Преимущества Acoustic (ru)">
-                    <ArrayField
-                      fields={fields}
-                      add={add}
-                      remove={remove}
-                      move={move}
-                      label="Преимущество"
-                      placeholder="Преимущество центра"
-                    />
-                  </Form.Item>
-                )}
-              </Form.List>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item label="Texnologiyalar (uz)" name="tech_uz">
-                <Input.TextArea rows={4} placeholder="Mahsulot texnologiyalari" />
+              <Form.Item label="Texnologiya (uz)" name="tech_uz">
+                <RichTextEditor
+                  value={form.getFieldValue('tech_uz') || ''}
+                  onChange={(value) => form.setFieldsValue({ tech_uz: value })}
+                  placeholder="Texnologiyalar..."
+                />
               </Form.Item>
             </Col>
             <Col span={12}>
-              <Form.Item label="Texnologiyalar (ru)" name="tech_ru">
-                <Input.TextArea rows={4} placeholder="Технологии устройства" />
+              <Form.Item label="Texnologiya (ru)" name="tech_ru">
+                <RichTextEditor
+                  value={form.getFieldValue('tech_ru') || ''}
+                  onChange={(value) => form.setFieldsValue({ tech_ru: value })}
+                  placeholder="Технологии..."
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -844,83 +730,24 @@ export default function ProductsPage() {
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item label="Sozlash diapazoni (uz)" name="fittingRange_uz">
-                <Input.TextArea rows={3} placeholder="Sozlash va moslash haqida" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="Диапазон настройки (ru)" name="fittingRange_ru">
-                <Input.TextArea rows={3} placeholder="Диапазон настройки" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item label="Regulyator maʼlumoti (uz)" name="regulatoryNote_uz">
-                <Input.TextArea rows={2} placeholder="Masalan, tibbiy ro'yxatdan o'tganligi" />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item label="Регуляторная пометка (ru)" name="regulatoryNote_ru">
-                <Input.TextArea rows={2} placeholder="Регуляторная информация" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <Form.Item 
-            label="Asosiy xususiyatlar (Specs Table)" 
-            name="specsText"
-            extra="HTML table formatida. Frontend'da 'Asosiy xususiyatlar' bo'limida ko'rsatiladi. Masalan: <table><tr><td>Xususiyat</td><td>Qiymat</td></tr></table>"
-          >
-            <Input.TextArea 
-              rows={8} 
-              placeholder='<table><tr><td>Chastota diapazoni</td><td>125-8000 Hz</td></tr><tr><td>Signal ishlov berish</td><td>Raqamli</td></tr></table>' 
-            />
-          </Form.Item>
-
-          <Divider orientation="left">Media va bog'liqlik</Divider>
-
-          <ImageSizeHint type="product-gallery" />
-          <Form.List name="galleryUrls">
-            {(fields, { add, remove, move }) => (
-              <Form.Item label="Galereya URL manzillari">
-                <ArrayField
-                  fields={fields}
-                  add={add}
-                  remove={remove}
-                  move={move}
-                  label="URL"
-                  placeholder="https://..."
+                <RichTextEditor
+                  value={form.getFieldValue('fittingRange_uz') || ''}
+                  onChange={(value) => form.setFieldsValue({ fittingRange_uz: value })}
+                  placeholder="Sozlash diapazoni..."
                 />
               </Form.Item>
-            )}
-          </Form.List>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="Sozlash diapazoni (ru)" name="fittingRange_ru">
+                <RichTextEditor
+                  value={form.getFieldValue('fittingRange_ru') || ''}
+                  onChange={(value) => form.setFieldsValue({ fittingRange_ru: value })}
+                  placeholder="Диапазон настройки..."
+                />
+              </Form.Item>
+            </Col>
+          </Row>
 
-          <Form.Item
-            label="Bog‘liq mahsulotlar"
-            name="relatedProductIds"
-            extra="Mahsulot sahifasida tavsiya qilinadigan boshqa mahsulotlar"
-          >
-            <Select
-              mode="multiple"
-              placeholder="Mahsulotlarni tanlang"
-              options={productOptions.filter((option) => option.value !== editingProduct?.id)}
-              optionFilterProp="label"
-            />
-          </Form.Item>
-
-          <Form.Item
-            label="Foydali maqolalar"
-            name="usefulArticleSlugs"
-            extra="Mahsulot sahifasida ko‘rsatiladigan blog maqolalari"
-          >
-            <Select
-              mode="multiple"
-              placeholder="Maqolalarni tanlang"
-              options={postOptions}
-              optionFilterProp="label"
-            />
-          </Form.Item>
         </Form>
       </Modal>
     </div>

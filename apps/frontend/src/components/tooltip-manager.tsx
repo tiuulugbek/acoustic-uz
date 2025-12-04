@@ -96,17 +96,27 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
         );
       }
 
-      // Create tooltip element
+      // Create tooltip element with improved styling
       ref.tooltipElement = document.createElement('div');
       ref.tooltipElement.className =
-        'tooltip-popup-element fixed z-50 max-w-xs rounded-lg bg-gray-900 px-3 py-2 text-xs text-white shadow-lg transition-opacity';
+        'tooltip-popup-element fixed z-[9999] max-w-sm rounded-lg bg-gray-900 px-4 py-3 text-sm text-white shadow-2xl transition-all duration-200 ease-out';
       ref.tooltipElement.style.pointerEvents = 'auto';
+      ref.tooltipElement.style.opacity = '0';
+      ref.tooltipElement.style.transform = 'translateY(-4px)';
       ref.tooltipElement.setAttribute('role', 'tooltip');
       ref.tooltipElement.setAttribute('aria-live', 'polite');
       ref.tooltipElement.innerHTML = `
-        <div class="font-semibold text-white mb-1">${keyword}</div>
-        <div class="text-gray-300 leading-relaxed">${decodedContent}</div>
+        <div class="font-semibold text-white mb-2 text-base border-b border-gray-700 pb-1">${keyword}</div>
+        <div class="text-gray-200 leading-relaxed">${decodedContent}</div>
       `;
+      
+      // Animate in
+      requestAnimationFrame(() => {
+        if (ref.tooltipElement) {
+          ref.tooltipElement.style.opacity = '1';
+          ref.tooltipElement.style.transform = 'translateY(0)';
+        }
+      });
 
       document.body.appendChild(ref.tooltipElement);
 
@@ -143,9 +153,23 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
         ref.tooltipElement.style.left = `${left}px`;
       };
 
-      // Setup position updaters
-      ref.scrollHandler = () => updatePosition();
-      ref.resizeHandler = () => updatePosition();
+      // Setup position updaters with debouncing for better performance
+      let scrollTimeout: NodeJS.Timeout | null = null;
+      let resizeTimeout: NodeJS.Timeout | null = null;
+      
+      ref.scrollHandler = () => {
+        if (scrollTimeout) clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(() => {
+          updatePosition();
+        }, 10);
+      };
+      
+      ref.resizeHandler = () => {
+        if (resizeTimeout) clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+          updatePosition();
+        }, 100);
+      };
 
       window.addEventListener('scroll', ref.scrollHandler, true);
       window.addEventListener('resize', ref.resizeHandler);
