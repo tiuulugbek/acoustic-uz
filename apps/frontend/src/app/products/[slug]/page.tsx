@@ -472,22 +472,18 @@ export default async function ProductPage({ params }: ProductPageProps) {
         </div>
       </section>
 
-      {/* Header - Compact like services page */}
-      <section className="bg-[hsl(var(--secondary))] border-t border-white/10">
-        <div className="mx-auto max-w-6xl px-4 py-4 sm:py-6 sm:px-6">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-2 break-words" suppressHydrationWarning>
-            {getBilingualText(product.name_uz, product.name_ru, locale)}
-          </h1>
-        </div>
-      </section>
-
       {/* Main Content - Compact layout */}
       <section className="bg-white py-6">
         <div className="mx-auto max-w-6xl px-4 md:px-6">
           {/* 2-Column Layout: Main Content | Sidebar */}
           <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
-            {/* Left Column: Main Content (Image + Info + Tabs) */}
+            {/* Left Column: Main Content (Title + Image + Info + Tabs) */}
             <div className="space-y-6">
+              {/* Product Title */}
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground break-words" suppressHydrationWarning>
+                {getBilingualText(product.name_uz, product.name_ru, locale)}
+              </h1>
+
               {/* Product Header: Image + Product Info */}
               <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
                 {/* Column 1: Image */}
