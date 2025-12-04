@@ -143,26 +143,36 @@ function ServicesManager() {
   };
 
   const openEditModal = (service: ServiceDto) => {
-    setEditingService(service);
-    setPreviewImage(service.cover?.url ? normalizeImageUrl(service.cover.url) : null);
-    // Reset form first to clear any previous values
+    // Reset everything first
     form.resetFields();
-    // Handle categoryId - convert to array for multiple select
-    const categoryId = service.categoryId || service.category?.id;
-    form.setFieldsValue({
-      title_uz: service.title_uz,
-      title_ru: service.title_ru,
-      excerpt_uz: service.excerpt_uz,
-      excerpt_ru: service.excerpt_ru,
-      body_uz: service.body_uz,
-      body_ru: service.body_ru,
-      slug: service.slug,
-      status: service.status,
-      order: service.order,
-      coverId: service.cover?.id,
-      categoryId: categoryId ? [categoryId] : [], // Convert to array for multiple select, use empty array instead of undefined
-    });
-    setIsModalOpen(true);
+    setPreviewImage(null);
+    setEditingService(null);
+    
+    // Use setTimeout to ensure form reset completes before setting new values
+    setTimeout(() => {
+      setEditingService(service);
+      setPreviewImage(service.cover?.url ? normalizeImageUrl(service.cover.url) : null);
+      
+      // Handle categoryId - convert to array for multiple select
+      // Explicitly check if categoryId exists and is not null/undefined
+      const categoryId = service.categoryId || service.category?.id || null;
+      
+      form.setFieldsValue({
+        title_uz: service.title_uz || '',
+        title_ru: service.title_ru || '',
+        excerpt_uz: service.excerpt_uz || '',
+        excerpt_ru: service.excerpt_ru || '',
+        body_uz: service.body_uz || '',
+        body_ru: service.body_ru || '',
+        slug: service.slug || '',
+        status: service.status || 'published',
+        order: service.order ?? 0,
+        coverId: service.cover?.id || undefined,
+        categoryId: categoryId ? [categoryId] : [], // Always use array, empty if no category
+      });
+      
+      setIsModalOpen(true);
+    }, 0);
   };
 
   const handleUpload: UploadProps['customRequest'] = async (options) => {
