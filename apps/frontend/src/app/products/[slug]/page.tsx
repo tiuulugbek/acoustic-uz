@@ -484,44 +484,44 @@ export default async function ProductPage({ params }: ProductPageProps) {
       {/* Main Content - Compact layout */}
       <section className="bg-white py-6">
         <div className="mx-auto max-w-6xl px-4 md:px-6">
-          <div className="grid gap-6 lg:grid-cols-[280px_1fr] xl:grid-cols-[280px_1fr_280px]">
-            {/* Left Column - Image (smaller) */}
-            <div className="space-y-3">
-              {/* Main Image */}
-              <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-white border border-border/40">
-                <Image
-                  src={mainImage}
-                  alt={getBilingualText(product.name_uz, product.name_ru, locale)}
-                  fill
-                  sizes="280px"
-                  className="object-contain p-4"
-                  priority
-                  unoptimized
-                />
+          <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
+            {/* Main Content Column */}
+            <div className="space-y-6">
+              {/* Image Section */}
+              <div className="flex flex-col sm:flex-row gap-4">
+                {/* Main Image */}
+                <div className="relative aspect-square w-full sm:w-64 overflow-hidden rounded-lg bg-white border border-border/40 flex-shrink-0">
+                  <Image
+                    src={mainImage}
+                    alt={getBilingualText(product.name_uz, product.name_ru, locale)}
+                    fill
+                    sizes="(max-width: 640px) 100vw, 256px"
+                    className="object-contain p-4"
+                    priority
+                    unoptimized
+                  />
+                </div>
+
+                {/* Gallery - Compact */}
+                {gallery.length > 1 && (
+                  <div className="grid grid-cols-4 sm:grid-cols-2 gap-1.5 flex-1">
+                    {gallery.slice(1, 5).map((image, index) => (
+                      <div key={index} className="relative aspect-square w-full overflow-hidden rounded bg-white border border-border/40">
+                        <Image
+                          src={image}
+                          alt={`${getBilingualText(product.name_uz, product.name_ru, locale)} ${index + 2}`}
+                          fill
+                          sizes="(max-width: 640px) 25vw, 60px"
+                          className="object-contain p-1"
+                          unoptimized
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {/* Gallery - Compact */}
-              {gallery.length > 1 && (
-                <div className="grid grid-cols-4 gap-1.5">
-                  {gallery.slice(1, 5).map((image, index) => (
-                    <div key={index} className="relative aspect-square w-full overflow-hidden rounded bg-white border border-border/40">
-                      <Image
-                        src={image}
-                        alt={`${getBilingualText(product.name_uz, product.name_ru, locale)} ${index + 2}`}
-                        fill
-                        sizes="(max-width: 1024px) 25vw, 60px"
-                        className="object-contain p-1"
-                        unoptimized
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Center Column - Product Info (compact) */}
-            <div className="space-y-3">
-              {/* Product Details - Compact vertical list */}
+              {/* Product Details - Below image */}
               <div className="space-y-2">
                 {product.brand && (
                   <p className="text-sm text-muted-foreground">
@@ -554,14 +554,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 </Link>
               </div>
 
-              {/* Product Tabs - Includes Description, Tech, and Fitting Range - Moved here */}
+              {/* Product Tabs - Includes Description, Tech, and Fitting Range */}
               <div className="mt-6">
                 <ProductTabs tabs={productTabs} />
               </div>
             </div>
 
             {/* Right Column - Sidebar */}
-            <div className="hidden xl:block">
+            <div className="hidden lg:block">
               <Sidebar locale={locale} settingsData={settings} brandsData={brands} pageType="products" />
             </div>
           </div>
