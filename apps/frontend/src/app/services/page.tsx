@@ -11,8 +11,6 @@ import { normalizeImageUrl } from '@/lib/image-utils';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-
 export async function generateMetadata(): Promise<Metadata> {
   const locale = detectLocale();
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
