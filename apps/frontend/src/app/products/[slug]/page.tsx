@@ -30,7 +30,7 @@ const availabilityMap: Record<string, { uz: string; ru: string; schema: string; 
     uz: 'Sotuvda',
     ru: 'В наличии',
     schema: 'https://schema.org/InStock',
-    color: 'text-emerald-600 bg-emerald-50',
+    color: 'text-green-600 bg-green-50 border border-green-200',
   },
   preorder: {
     uz: 'Buyurtmaga',
