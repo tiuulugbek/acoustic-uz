@@ -118,6 +118,11 @@ export default function ProductTabs({ tabs }: ProductTabsProps) {
       <div className="space-y-4 p-6 text-sm leading-relaxed text-muted-foreground">
         {renderContent(current?.primary, 'primary')}
         {renderContent(current?.secondary, 'secondary')}
+        {!current?.primary && !current?.secondary && (
+          <p className="text-center text-muted-foreground italic">
+            Ma'lumot qo'shilmagan
+          </p>
+        )}
       </div>
     </div>
   );
