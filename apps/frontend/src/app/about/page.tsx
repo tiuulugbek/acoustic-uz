@@ -274,9 +274,32 @@ export default async function AboutPage() {
 
           {/* Sidebar */}
           <aside className="space-y-6">
+            {/* Contact Card */}
+            <div className="bg-gradient-to-br from-brand-primary to-brand-accent rounded-xl p-6 text-white shadow-lg">
+              <h3 className="mb-4 text-lg font-semibold" suppressHydrationWarning>
+                {locale === 'ru' ? 'Свяжитесь с нами' : 'Biz bilan bog\'laning'}
+              </h3>
+              <div className="space-y-3">
+                <a 
+                  href="tel:+998712021441" 
+                  className="flex items-center gap-3 hover:opacity-80 transition"
+                >
+                  <Phone className="h-5 w-5" />
+                  <span className="text-sm">+998 71 202 14 41</span>
+                </a>
+                <a 
+                  href="mailto:info@acoustic.uz" 
+                  className="flex items-center gap-3 hover:opacity-80 transition"
+                >
+                  <Mail className="h-5 w-5" />
+                  <span className="text-sm">info@acoustic.uz</span>
+                </a>
+              </div>
+            </div>
+
             {/* Table of Contents */}
             {headings.length > 0 && (
-              <div className="bg-white rounded-lg p-6">
+              <div className="bg-white rounded-xl p-6 shadow-sm border border-border/50">
                 <h3 className="mb-4 text-lg font-semibold text-brand-accent" suppressHydrationWarning>
                   {locale === 'ru' ? 'В этой статье' : 'Ushbu maqolada'}
                 </h3>
@@ -297,7 +320,7 @@ export default async function AboutPage() {
 
             {/* Useful Articles */}
             {usefulArticles.length > 0 && (
-              <div className="bg-white rounded-lg p-6">
+              <div className="bg-white rounded-xl p-6 shadow-sm border border-border/50">
                 <h3 className="mb-4 text-lg font-semibold text-brand-accent" suppressHydrationWarning>
                   {locale === 'ru' ? 'Полезные статьи' : 'Foydali maqolalar'}
                 </h3>
@@ -316,12 +339,12 @@ export default async function AboutPage() {
                         className="group flex gap-3 transition hover:opacity-80"
                       >
                         {coverUrl && (
-                          <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded bg-muted/40">
+                          <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg bg-muted/40">
                             <Image
                               src={coverUrl}
                               alt={articleTitle}
                               fill
-                              className="object-cover"
+                              className="object-cover transition-transform duration-300 group-hover:scale-110"
                               sizes="64px"
                             />
                           </div>
