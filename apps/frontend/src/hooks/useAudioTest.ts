@@ -114,7 +114,7 @@ export function useAudioTest() {
         const compensatedVolume = volume * frequencyGain;
         
         // Clamp to prevent clipping
-        const finalVolume = Math.min(compensedVolume, 0.95);
+        const finalVolume = Math.min(compensatedVolume, 0.95);
 
         // ReSound kabi: agar duration berilgan bo'lsa, bir marta ijro etish
         // Agar duration yo'q bo'lsa, doim ijro etish (loop)
@@ -204,7 +204,7 @@ export function useAudioTest() {
           // Apply equal loudness compensation
           const frequencyGain = getFrequencyGain(currentFrequency);
           const compensatedVolume = clampedVolume * frequencyGain;
-          const finalVolume = Math.min(compensedVolume, 0.95);
+          const finalVolume = Math.min(compensatedVolume, 0.95);
 
           // Ultra-smooth volume transition (ReSound style)
           const fadeTime = 0.05; // 50ms for instant feel but smooth transition
