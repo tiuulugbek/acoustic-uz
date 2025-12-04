@@ -79,7 +79,9 @@ export default function ProductTabs({ tabs }: ProductTabsProps) {
     [tabs],
   );
 
-  const [activeTab, setActiveTab] = useState<string>(availableTabs[0]?.key ?? tabs[0]?.key ?? '');
+  // Default active tab: "description" (Tavsif) if available, otherwise first tab
+  const defaultTab = availableTabs.find((tab) => tab.key === 'description')?.key ?? availableTabs[0]?.key ?? tabs[0]?.key ?? '';
+  const [activeTab, setActiveTab] = useState<string>(defaultTab);
 
   // If no tabs have content, show placeholder message
   if (!availableTabs.length) {
