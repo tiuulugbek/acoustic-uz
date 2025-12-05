@@ -121,20 +121,20 @@ export default function BranchesList({ branches, selectedRegion, locale, onClear
                 href={`/branches/${branch.slug || branch.id}`}
                 className="group flex flex-col items-center justify-center rounded-lg border border-border bg-white p-3 md:p-4 shadow-sm transition hover:shadow-md md:flex-row md:items-start md:justify-start"
               >
-                {/* Image - Mobile: Top, Desktop: Left */}
+                {/* Image - Mobile: Top, Desktop: Left - 16:9 aspect ratio */}
                 {imageUrl ? (
-                  <div className="relative w-16 h-16 md:w-24 md:h-24 flex-shrink-0 overflow-hidden rounded-lg bg-muted/20 mb-2 md:mb-0 md:mr-4">
+                  <div className="relative w-full aspect-video md:w-48 md:aspect-video flex-shrink-0 overflow-hidden rounded-lg bg-muted/20 mb-3 md:mb-0 md:mr-4">
                     <Image
                       src={imageUrl}
                       alt={name}
                       fill
                       className="object-cover transition-transform duration-300 group-hover:scale-105"
-                      sizes="(max-width: 768px) 64px, 96px"
+                      sizes="(max-width: 768px) 100vw, 192px"
                     />
                   </div>
                 ) : (
-                  <div className="w-16 h-16 md:w-24 md:h-24 flex-shrink-0 rounded-lg bg-gradient-to-br from-brand-primary to-brand-accent flex items-center justify-center mb-2 md:mb-0 md:mr-4">
-                    <MapPin className="h-6 w-6 md:h-8 md:w-8 text-white opacity-80" />
+                  <div className="w-full aspect-video md:w-48 md:aspect-video flex-shrink-0 rounded-lg bg-gradient-to-br from-brand-primary to-brand-accent flex items-center justify-center mb-3 md:mb-0 md:mr-4">
+                    <MapPin className="h-8 w-8 md:h-10 md:w-10 text-white opacity-80" />
                   </div>
                 )}
                 
