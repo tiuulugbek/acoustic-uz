@@ -14,9 +14,19 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
+# Pull latest code first
+echo "📥 Pulling latest code..."
+cd /var/www/acoustic.uz
+git pull origin main || echo "⚠️  Git pull failed, continuing..."
+
 # Copy Nginx config
 echo "📋 Copying Nginx config..."
-cp /var/www/acoustic.uz/deploy/nginx-acoustic-uz-new-server.conf /etc/nginx/sites-available/acoustic-uz.conf
+if [ -f "/var/www/acoustic.uz/deploy/nginx-acoustic-uz-new-server.conf" ]; then
+    cp /var/www/acoustic.uz/deploy/nginx-acoustic-uz-new-server.conf /etc/nginx/sites-available/acoustic-uz.conf
+else
+    echo "❌ Config file not found. Please check git pull."
+    exit 1
+fi
 
 # Enable config
 if [ ! -L "/etc/nginx/sites-enabled/acoustic-uz.conf" ]; then
