@@ -86,15 +86,28 @@ if [ -d "$PROJECT_DIR" ] && [ -d "$PROJECT_DIR/.git" ]; then
     # Verify remote URL
     CURRENT_REMOTE=$(git remote get-url origin)
     echo -e "${BLUE}  Current remote: $CURRENT_REMOTE${NC}"
+    # Fetch latest changes first
+    echo -e "${YELLOW}  Fetching latest changes...${NC}"
+    git fetch origin main
     # Configure pull strategy (merge)
     git config pull.rebase false
-    # Pull latest changes (force merge if divergent)
-    echo -e "${YELLOW}  Pulling latest changes...${NC}"
-    git pull origin main --no-edit || {
-        echo -e "${YELLOW}  ⚠️  Merge conflict detected, resetting to remote...${NC}"
-        git fetch origin main
+    # Check if branches are divergent
+    LOCAL=$(git rev-parse HEAD)
+    REMOTE=$(git rev-parse origin/main)
+    BASE=$(git merge-base HEAD origin/main)
+    
+    if [ "$LOCAL" = "$REMOTE" ]; then
+        echo -e "${GREEN}  ✅ Already up to date${NC}"
+    elif [ "$LOCAL" = "$BASE" ]; then
+        echo -e "${YELLOW}  Fast-forward merge possible...${NC}"
+        git merge origin/main --ff-only
+    elif [ "$REMOTE" = "$BASE" ]; then
+        echo -e "${YELLOW}  Local branch is ahead, resetting to remote...${NC}"
         git reset --hard origin/main
-    }
+    else
+        echo -e "${YELLOW}  Divergent branches detected, resetting to remote...${NC}"
+        git reset --hard origin/main
+    fi
 else
     echo -e "${YELLOW}  Cloning repository...${NC}"
     if [ -d "$PROJECT_DIR" ]; then
