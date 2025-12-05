@@ -8,6 +8,7 @@ import TelegramButton from '@/components/telegram-button';
 import { detectLocale } from '@/lib/locale-server';
 import { getSettings } from '@/lib/api-server';
 import type { SettingsResponse } from '@/lib/api';
+import { normalizeImageUrl } from '@/lib/image-utils';
 
 // Force dynamic rendering to ensure locale is always read from cookies
 // This prevents Next.js from caching the layout with a stale locale
@@ -23,12 +24,11 @@ export async function generateMetadata(): Promise<Metadata> {
   try {
     const settings = await getSettings(locale);
     if (settings?.favicon?.url) {
-      faviconUrl = settings.favicon.url.startsWith('http') 
-        ? settings.favicon.url 
-        : `${baseUrl}${settings.favicon.url}`;
+      faviconUrl = normalizeImageUrl(settings.favicon.url) || '/favicon.ico';
     }
   } catch (error) {
     // Use default favicon if settings fetch fails
+    console.error('[Layout] Failed to fetch favicon:', error);
   }
 
   return {
@@ -117,9 +117,6 @@ export default async function RootLayout({
   return (
     <html lang={locale} suppressHydrationWarning data-locale={locale}>
       <head>
-        <link rel="icon" href={faviconUrl} />
-        <link rel="shortcut icon" href={faviconUrl} />
-        <link rel="apple-touch-icon" href={faviconUrl} />
         <Script
           id="organization-jsonld"
           type="application/ld+json"
