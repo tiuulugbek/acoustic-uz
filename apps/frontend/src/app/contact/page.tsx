@@ -4,7 +4,7 @@ import { getSettings, getBranches } from '@/lib/api-server';
 import { detectLocale } from '@/lib/locale-server';
 import { getBilingualText } from '@/lib/locale';
 import PageHeader from '@/components/page-header';
-import { Phone, Mail, MapPin, Clock, MessageSquare, Send, CheckCircle2 } from 'lucide-react';
+import { Phone, Mail, MapPin, MessageSquare, Send, CheckCircle2 } from 'lucide-react';
 import ContactForm from '@/components/contact-form';
 
 // Force dynamic rendering
@@ -37,8 +37,6 @@ export default async function ContactPage() {
     ? settings.phoneSecondary 
     : null;
   const email = settings?.email || '';
-  const address = getBilingualText(settings?.address_uz, settings?.address_ru, locale) || '';
-  const workingHours = getBilingualText(settings?.workingHours_uz, settings?.workingHours_ru, locale) || '';
 
   return (
     <main className="min-h-screen bg-background">
@@ -195,36 +193,23 @@ export default async function ContactPage() {
                   </div>
                 )}
 
-                {/* Address */}
-                {address && (
+                {/* Branches Link */}
+                {branches && branches.length > 0 && (
                   <div className="flex items-start gap-4">
                     <div className="p-2 rounded-lg bg-brand-primary/10 flex-shrink-0">
                       <MapPin className="h-5 w-5 text-brand-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-muted-foreground mb-1" suppressHydrationWarning>
-                        {isRu ? 'Адрес' : 'Manzil'}
+                        {isRu ? 'Адреса филиалов' : 'Filial manzillari'}
                       </p>
-                      <p className="text-base text-foreground leading-relaxed" suppressHydrationWarning>
-                        {address}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Working Hours */}
-                {workingHours && (
-                  <div className="flex items-start gap-4">
-                    <div className="p-2 rounded-lg bg-brand-primary/10 flex-shrink-0">
-                      <Clock className="h-5 w-5 text-brand-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-muted-foreground mb-1" suppressHydrationWarning>
-                        {isRu ? 'Время работы' : 'Ish vaqti'}
-                      </p>
-                      <p className="text-base text-foreground whitespace-pre-line leading-relaxed" suppressHydrationWarning>
-                        {workingHours}
-                      </p>
+                      <Link 
+                        href="/branches" 
+                        className="text-base text-brand-primary hover:text-brand-accent transition-colors inline-flex items-center gap-1"
+                        suppressHydrationWarning
+                      >
+                        {isRu ? 'Посмотреть все филиалы' : 'Barcha filiallarni ko\'rish'} →
+                      </Link>
                     </div>
                   </div>
                 )}
