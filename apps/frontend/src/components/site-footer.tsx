@@ -5,7 +5,7 @@ import React from 'react';
 import { Mail, Phone } from 'lucide-react';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getMenu, type MenuItemResponse, type MenuResponse } from '@/lib/api';
+import { getMenu, getSettings, type MenuItemResponse, type MenuResponse, type SettingsResponse } from '@/lib/api';
 import { getLocaleFromDOM, getLocaleFromCookie, type Locale } from '@/lib/locale-client';
 import { getBilingualText, DEFAULT_LOCALE } from '@/lib/locale';
 
@@ -176,6 +176,18 @@ export default function SiteFooter() {
     placeholderData: (previousData) => previousData,
   });
 
+  // Fetch settings for social media links
+  const { data: settings } = useQuery<SettingsResponse>({
+    queryKey: ['settings'],
+    queryFn: getSettings,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    gcTime: 10 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    retry: false,
+    throwOnError: false,
+  });
+
   // Optimized: Only refetch when locale actually changes
   // Since locale is in queryKey, React Query will automatically use different cache entries
   const refetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -254,7 +266,42 @@ export default function SiteFooter() {
   }, [footerMenuItems, displayLocale]);
 
   const socialRowLinksList = useMemo(() => {
-    // Social links: items with external URLs or specific social media links
+    // First, try to get social links from Settings
+    const socialLinksFromSettings = settings?.socialLinks as Record<string, string> | undefined;
+    
+    if (socialLinksFromSettings && typeof socialLinksFromSettings === 'object') {
+      const links: Array<{ href: string; label: string }> = [];
+      
+      // Add "Biz bilan bog'laning" first
+      links.push({
+        href: '/contact',
+        label: displayLocale === 'ru' ? 'Связаться с нами' : "Biz bilan bog'laning"
+      });
+      
+      // Add social media links from settings in order
+      if (socialLinksFromSettings.tiktok) {
+        links.push({ href: socialLinksFromSettings.tiktok, label: 'TikTok' });
+      }
+      if (socialLinksFromSettings.instagram) {
+        links.push({ href: socialLinksFromSettings.instagram, label: 'Instagram' });
+      }
+      if (socialLinksFromSettings.facebook) {
+        links.push({ href: socialLinksFromSettings.facebook, label: 'Facebook' });
+      }
+      if (socialLinksFromSettings.youtube) {
+        links.push({ href: socialLinksFromSettings.youtube, label: 'YouTube' });
+      }
+      if (socialLinksFromSettings.telegram) {
+        links.push({ href: socialLinksFromSettings.telegram, label: 'Telegram' });
+      }
+      
+      // Only return if we have at least one social link
+      if (links.length > 1) {
+        return links;
+      }
+    }
+    
+    // Fallback: try to get from footer menu
     const socialItems = footerMenuItems.filter(item => 
       item.href.startsWith('http') || 
       item.href.includes('tiktok') || 
@@ -264,23 +311,26 @@ export default function SiteFooter() {
       item.href.includes('telegram')
     );
     
-    // If no social items in menu, use default
-    if (socialItems.length === 0) {
+    if (socialItems.length > 0) {
       return [
-        { href: '/contacts', label: displayLocale === 'ru' ? 'Связаться с нами' : "Biz bilan bog'laning" },
-        { href: 'https://tiktok.com/@acoustic', label: 'TikTok' },
-        { href: 'https://instagram.com/acoustic', label: 'Instagram' },
-        { href: 'https://facebook.com/acoustic', label: 'Facebook' },
-        { href: 'https://youtube.com/acoustic', label: 'YouTube' },
-        { href: 'https://t.me/acoustic', label: 'Telegram' },
+        { href: '/contact', label: displayLocale === 'ru' ? 'Связаться с нами' : "Biz bilan bog'laning" },
+        ...socialItems.map(item => ({
+          href: item.href,
+          label: getBilingualText(item.title_uz, item.title_ru, displayLocale),
+        }))
       ];
     }
     
-    return socialItems.map(item => ({
-      href: item.href,
-      label: getBilingualText(item.title_uz, item.title_ru, displayLocale),
-    }));
-  }, [footerMenuItems, displayLocale]);
+    // Final fallback: use default links
+    return [
+      { href: '/contact', label: displayLocale === 'ru' ? 'Связаться с нами' : "Biz bilan bog'laning" },
+      { href: 'https://tiktok.com/@acoustic', label: 'TikTok' },
+      { href: 'https://instagram.com/acoustic', label: 'Instagram' },
+      { href: 'https://facebook.com/acoustic', label: 'Facebook' },
+      { href: 'https://youtube.com/acoustic', label: 'YouTube' },
+      { href: 'https://t.me/acoustic', label: 'Telegram' },
+    ];
+  }, [footerMenuItems, displayLocale, settings]);
 
   return (
     <footer className="border-t bg-white" key={`footer-${displayLocale}-${menuRefreshKey}`}>
