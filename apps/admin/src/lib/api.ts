@@ -1566,6 +1566,13 @@ export interface SettingsDto {
     alt_uz?: string | null;
     alt_ru?: string | null;
   } | null;
+  faviconId?: string | null;
+  favicon?: {
+    id: string;
+    url: string;
+    alt_uz?: string | null;
+    alt_ru?: string | null;
+  } | null;
   // Sidebar settings
   sidebarSections?: SidebarSection[] | null;
   sidebarBrandIds?: string[];
@@ -1594,6 +1601,7 @@ export type UpdateSettingsPayload = {
   socialLinks?: unknown;
   catalogHeroImageId?: string | null;
   logoId?: string | null;
+  faviconId?: string | null;
   // Sidebar settings
   sidebarSections?: SidebarSection[];
   sidebarBrandIds?: string[];

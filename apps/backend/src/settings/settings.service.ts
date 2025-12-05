@@ -30,13 +30,13 @@ export class SettingsService {
   async get() {
     let settings = await this.prisma.setting.findUnique({
       where: { id: 'singleton' },
-      include: { catalogHeroImage: true, logo: true },
+      include: { catalogHeroImage: true, logo: true, favicon: true },
     });
 
     if (!settings) {
       settings = await this.prisma.setting.create({
         data: { id: 'singleton' },
-        include: { catalogHeroImage: true, logo: true },
+        include: { catalogHeroImage: true, logo: true, favicon: true },
       });
     }
 
@@ -59,6 +59,7 @@ export class SettingsService {
     socialLinks?: unknown;
     catalogHeroImageId?: string | null;
     logoId?: string | null;
+    faviconId?: string | null;
     // Sidebar settings
     sidebarSections?: unknown;
     sidebarBrandIds?: string[];
@@ -73,6 +74,7 @@ export class SettingsService {
         sidebarConfigs,
         catalogHeroImageId,
         logoId,
+        faviconId,
         sidebarBrandIds,
         phonePrimary,
         phoneSecondary,
@@ -184,6 +186,7 @@ export class SettingsService {
       
       if (catalogHeroImageId !== undefined) updateData.catalogHeroImageId = catalogHeroImageId || null;
       if (logoId !== undefined) updateData.logoId = logoId || null;
+      if (faviconId !== undefined) updateData.faviconId = faviconId || null;
       if (sidebarBrandIds !== undefined) updateData.sidebarBrandIds = sidebarBrandIds || [];
 
       console.log('🔵 [Settings] Update data keys:', Object.keys(updateData));
@@ -203,7 +206,7 @@ export class SettingsService {
           id: 'singleton',
           ...updateData,
         },
-        include: { catalogHeroImage: true, logo: true },
+        include: { catalogHeroImage: true, logo: true, favicon: true },
       });
     } catch (error) {
       console.error('Settings update error:', error);

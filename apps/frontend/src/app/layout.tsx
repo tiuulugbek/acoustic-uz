@@ -61,6 +61,11 @@ export default async function RootLayout({
         ? settings.logo.url 
         : `${baseUrl}${settings.logo.url}`)
     : `${baseUrl}/logo.png`;
+  const faviconUrl = settings?.favicon?.url 
+    ? (settings.favicon.url.startsWith('http') 
+        ? settings.favicon.url 
+        : `${baseUrl}${settings.favicon.url}`)
+    : `${baseUrl}/favicon.ico`;
 
   // Organization structured data
   const organizationSchema = {
@@ -89,6 +94,9 @@ export default async function RootLayout({
   return (
     <html lang={locale} suppressHydrationWarning data-locale={locale}>
       <head>
+        <link rel="icon" href={faviconUrl} />
+        <link rel="shortcut icon" href={faviconUrl} />
+        <link rel="apple-touch-icon" href={faviconUrl} />
         <Script
           id="organization-jsonld"
           type="application/ld+json"

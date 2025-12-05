@@ -45,8 +45,11 @@ export default function SettingsPage() {
   const [previewCatalogHero, setPreviewCatalogHero] = useState<string | null>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [previewLogo, setPreviewLogo] = useState<string | null>(null);
+  const [uploadingFavicon, setUploadingFavicon] = useState(false);
+  const [previewFavicon, setPreviewFavicon] = useState<string | null>(null);
   const [catalogHeroModalOpen, setCatalogHeroModalOpen] = useState(false);
   const [logoModalOpen, setLogoModalOpen] = useState(false);
+  const [faviconModalOpen, setFaviconModalOpen] = useState(false);
   const [sidebarSections, setSidebarSections] = useState<SidebarSection[]>([]);
   const [sidebarSectionImageModals, setSidebarSectionImageModals] = useState<Record<string, boolean>>({});
   
@@ -136,12 +139,16 @@ export default function SettingsPage() {
         brandAccent: settings.brandAccent || '#3F3091',
         catalogHeroImageId: settings.catalogHeroImageId || null,
         logoId: settings.logoId || null,
+        faviconId: settings.faviconId || null,
       });
       if (settings.catalogHeroImage?.url) {
         setPreviewCatalogHero(normalizeImageUrl(settings.catalogHeroImage.url));
       }
       if (settings.logo?.url) {
         setPreviewLogo(normalizeImageUrl(settings.logo.url));
+      }
+      if (settings.favicon?.url) {
+        setPreviewFavicon(normalizeImageUrl(settings.favicon.url));
       }
       // Initialize sidebar sections (legacy - only if sidebarConfigs doesn't exist)
       // Don't set default sections - use sidebarConfigs instead
@@ -271,6 +278,36 @@ export default function SettingsPage() {
   const handleSelectExistingLogo = (mediaId: string, mediaUrl: string) => {
     form.setFieldsValue({ logoId: mediaId });
     setPreviewLogo(normalizeImageUrl(mediaUrl));
+  };
+
+  const handleFaviconUpload: UploadProps['customRequest'] = async (options) => {
+    const { file, onSuccess, onError } = options;
+    setUploadingFavicon(true);
+    try {
+      const media = await uploadMedia(file as File);
+      form.setFieldsValue({ faviconId: media.id });
+      setPreviewFavicon(normalizeImageUrl(media.url));
+      message.success('Favicon yuklandi');
+      queryClient.invalidateQueries({ queryKey: ['media'] });
+      onSuccess?.(media);
+    } catch (error) {
+      const apiError = error as ApiError;
+      message.error(apiError.message || 'Favicon yuklashda xatolik');
+      onError?.(error as Error);
+    } finally {
+      setUploadingFavicon(false);
+    }
+  };
+
+  const handleRemoveFavicon = () => {
+    form.setFieldsValue({ faviconId: null });
+    setPreviewFavicon(null);
+  };
+
+  const handleSelectExistingFavicon = (mediaId: string, mediaUrl: string) => {
+    form.setFieldsValue({ faviconId: mediaId });
+    setPreviewFavicon(normalizeImageUrl(mediaUrl));
+    setFaviconModalOpen(false);
   };
 
   const handleSubmit = async () => {
@@ -473,10 +510,11 @@ export default function SettingsPage() {
   // Handle images save
   const handleImagesSave = async () => {
     try {
-      const values = await form.validateFields(['catalogHeroImageId', 'logoId']);
+      const values = await form.validateFields(['catalogHeroImageId', 'logoId', 'faviconId']);
       const payload: UpdateSettingsPayload = {
         catalogHeroImageId: values.catalogHeroImageId || null,
         logoId: values.logoId || null,
+        faviconId: values.faviconId || null,
       };
       await updateMutation.mutateAsync(payload);
     } catch (error) {
@@ -667,6 +705,63 @@ export default function SettingsPage() {
                           {form.getFieldValue('logoId') && (
                             <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
                               Tanlangan: {mediaList?.find(m => m.id === form.getFieldValue('logoId'))?.filename || 'Noma\'lum'}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </Form.Item>
+                  </div>
+
+                  {/* Favicon */}
+                  <div style={{ marginBottom: 24 }}>
+                    <Form.Item
+                      label="Favicon"
+                      name="faviconId"
+                      tooltip="Brauzer tab'idagi kichik ikonka (16x16 yoki 32x32 px tavsiya etiladi)"
+                    >
+                      <div>
+                        {previewFavicon ? (
+                          <div style={{ marginBottom: 16 }}>
+                            <Image
+                              src={normalizeImageUrl(previewFavicon)}
+                              alt="Favicon"
+                              style={{ maxWidth: '32px', maxHeight: '32px', objectFit: 'contain' }}
+                              preview={false}
+                            />
+                            <Button
+                              type="link"
+                              danger
+                              icon={<DeleteOutlined />}
+                              onClick={handleRemoveFavicon}
+                              style={{ marginTop: 8 }}
+                            >
+                              O'chirish
+                            </Button>
+                          </div>
+                        ) : null}
+                        
+                        <Upload
+                          customRequest={handleFaviconUpload}
+                          showUploadList={false}
+                          accept="image/*"
+                        >
+                          <Button icon={<UploadOutlined />} loading={uploadingFavicon} block>
+                            {previewFavicon ? 'Faviconni almashtirish' : 'Favicon yuklash'}
+                          </Button>
+                        </Upload>
+
+                        <div style={{ marginTop: 16 }}>
+                          <Button
+                            icon={<FolderOutlined />}
+                            onClick={() => setFaviconModalOpen(true)}
+                            block
+                            style={{ marginBottom: 8 }}
+                          >
+                            Mavjud rasmdan tanlash
+                          </Button>
+                          {form.getFieldValue('faviconId') && (
+                            <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
+                              Tanlangan: {mediaList?.find(m => m.id === form.getFieldValue('faviconId'))?.filename || 'Noma\'lum'}
                             </div>
                           )}
                         </div>
@@ -894,6 +989,15 @@ export default function SettingsPage() {
         }}
         fileType="image"
         selectedMediaIds={form.getFieldValue('logoId') ? [form.getFieldValue('logoId')] : []}
+      />
+
+      {/* Favicon Media Library Modal */}
+      <MediaLibraryModal
+        open={faviconModalOpen}
+        onCancel={() => setFaviconModalOpen(false)}
+        onSelect={(media) => handleSelectExistingFavicon(media.id, media.url)}
+        fileType="image"
+        selectedMediaIds={form.getFieldValue('faviconId') ? [form.getFieldValue('faviconId')] : []}
       />
 
       {/* Sidebar Section Image Modals */}

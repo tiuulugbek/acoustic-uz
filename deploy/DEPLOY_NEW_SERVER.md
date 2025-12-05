@@ -289,14 +289,27 @@ pm2 startup
 
 ## 🌐 Qadam 8: Nginx Sozlash
 
+### ⚠️ MUHIM: Mavjud Nginx Konfiguratsiyalariga Tegmaslik
+
+**Yangi server block yaratiladi, lekin mavjud konfiguratsiyalar o'zgartirilmaydi!**
+
 ### 8.1. Nginx config faylini yaratish
 
 ```bash
-# Nginx config ni ko'chirish
-cp /var/www/news.acoustic.uz/deploy/nginx-acoustic-uz.conf /etc/nginx/sites-available/acoustic-uz.conf
+# Domen nomlarini aniqlash
+NEWS_DOMAIN="news.acoustic.uz"  # O'zgartiring!
+API_DOMAIN="api.acoustic.uz"    # O'zgartiring!
+ADMIN_DOMAIN="admins.acoustic.uz" # O'zgartiring!
 
-# Symlink yaratish
-ln -s /etc/nginx/sites-available/acoustic-uz.conf /etc/nginx/sites-enabled/acoustic-uz.conf
+# Nginx config yaratish (mavjud fayllarga tegmaslik)
+nano /etc/nginx/sites-available/acoustic-uz.conf
+```
+
+**Yoki avtomatik script ishlatish:**
+
+```bash
+# Script domen nomlarini so'raydi va config yaratadi
+# Mavjud Nginx konfiguratsiyalariga tegmaydi
 ```
 
 ### 8.2. Nginx config ni tahrirlash
@@ -306,9 +319,14 @@ nano /etc/nginx/sites-available/acoustic-uz.conf
 ```
 
 **Quyidagilarni o'zgartiring:**
-- `server_name` - domen nomlarini
+- `server_name` - domen nomlarini (yangi domenlar)
 - `root` - frontend va admin papkalarini
 - `proxy_pass` - backend va frontend portlarini
+
+**⚠️ Eslatma:**
+- Default nginx config o'chirilmaydi
+- Mavjud server block'lar o'zgartirilmaydi
+- Faqat yangi server block qo'shiladi
 
 ### 8.3. Nginx ni tekshirish va reload qilish
 

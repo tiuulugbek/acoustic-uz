@@ -59,6 +59,7 @@ model Media {
   doctors             Doctor[]
   settingsCatalogHero Setting? @relation("SettingCatalogHero")
   settingsLogo        Setting? @relation("SettingLogo")
+  settingsFavicon     Setting? @relation("SettingFavicon")
   homepagePlaceholders HomepagePlaceholder[]
 
   @@index([url])
@@ -83,6 +84,8 @@ model Setting {
   catalogHeroImage   Media?   @relation("SettingCatalogHero", fields: [catalogHeroImageId], references: [id], onDelete: SetNull)
   logoId             String?  @unique
   logo               Media?   @relation("SettingLogo", fields: [logoId], references: [id], onDelete: SetNull)
+  faviconId          String?  @unique
+  favicon            Media?   @relation("SettingFavicon", fields: [faviconId], references: [id], onDelete: SetNull)
   // Sidebar settings - per page type
   sidebarConfigs     Json? // { catalog: { sections: [...], brandIds: [...] }, products: {...}, services: {...}, posts: {...} }
   // Legacy sidebar settings (for backward compatibility)
