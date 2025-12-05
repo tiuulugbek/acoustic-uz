@@ -164,21 +164,21 @@ export default async function ServiceSlugPage({ params }: ServicePageProps) {
                             alt={serviceTitle}
                             fill
                             className="object-cover transition-transform duration-300 group-hover:scale-105"
-                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                             suppressHydrationWarning
                           />
                         ) : (
                           <div className="flex h-full items-center justify-center bg-brand-primary">
-                            <span className="text-white text-lg font-bold">Acoustic</span>
+                            <span className="text-white text-sm sm:text-lg font-bold">Acoustic</span>
                           </div>
                         )}
                       </div>
-                      <div className="flex flex-1 flex-col p-5">
-                        <h3 className="mb-2 text-lg font-semibold text-foreground group-hover:text-brand-primary transition-colors" suppressHydrationWarning>
+                      <div className="flex flex-1 flex-col p-3 sm:p-5">
+                        <h3 className="mb-1 sm:mb-2 text-sm sm:text-lg font-semibold text-foreground group-hover:text-brand-primary transition-colors line-clamp-2" suppressHydrationWarning>
                           {serviceTitle}
                         </h3>
                         {serviceExcerpt && (
-                          <p className="flex-1 text-sm leading-relaxed text-muted-foreground line-clamp-3" suppressHydrationWarning>
+                          <p className="flex-1 text-xs sm:text-sm leading-relaxed text-muted-foreground line-clamp-2 sm:line-clamp-3" suppressHydrationWarning>
                             {serviceExcerpt}
                           </p>
                         )}
