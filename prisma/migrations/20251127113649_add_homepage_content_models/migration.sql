@@ -1,5 +1,5 @@
--- CreateTable
-CREATE TABLE "HomepageSection" (
+-- CreateTable - Create if not exists
+CREATE TABLE IF NOT EXISTS "HomepageSection" (
     "id" TEXT NOT NULL,
     "key" TEXT NOT NULL,
     "title_uz" TEXT,
@@ -19,8 +19,8 @@ CREATE TABLE "HomepageSection" (
     CONSTRAINT "HomepageSection_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "HomepageLink" (
+-- CreateTable - Create if not exists
+CREATE TABLE IF NOT EXISTS "HomepageLink" (
     "id" TEXT NOT NULL,
     "sectionKey" TEXT NOT NULL,
     "text_uz" TEXT NOT NULL,
@@ -36,8 +36,8 @@ CREATE TABLE "HomepageLink" (
     CONSTRAINT "HomepageLink_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "HomepagePlaceholder" (
+-- CreateTable - Create if not exists
+CREATE TABLE IF NOT EXISTS "HomepagePlaceholder" (
     "id" TEXT NOT NULL,
     "sectionKey" TEXT NOT NULL,
     "text_uz" TEXT,
@@ -53,8 +53,8 @@ CREATE TABLE "HomepagePlaceholder" (
     CONSTRAINT "HomepagePlaceholder_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "HomepageEmptyState" (
+-- CreateTable - Create if not exists
+CREATE TABLE IF NOT EXISTS "HomepageEmptyState" (
     "id" TEXT NOT NULL,
     "sectionKey" TEXT NOT NULL,
     "message_uz" TEXT NOT NULL,
@@ -66,8 +66,8 @@ CREATE TABLE "HomepageEmptyState" (
     CONSTRAINT "HomepageEmptyState_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "CatalogPageConfig" (
+-- CreateTable - Create if not exists
+CREATE TABLE IF NOT EXISTS "CatalogPageConfig" (
     "id" TEXT NOT NULL DEFAULT 'singleton',
     "hearingAidsTitle_uz" TEXT,
     "hearingAidsTitle_ru" TEXT,
@@ -80,8 +80,8 @@ CREATE TABLE "CatalogPageConfig" (
     CONSTRAINT "CatalogPageConfig_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "CommonText" (
+-- CreateTable - Create if not exists
+CREATE TABLE IF NOT EXISTS "CommonText" (
     "id" TEXT NOT NULL,
     "key" TEXT NOT NULL,
     "text_uz" TEXT NOT NULL,
@@ -93,8 +93,8 @@ CREATE TABLE "CommonText" (
     CONSTRAINT "CommonText_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "AvailabilityStatus" (
+-- CreateTable - Create if not exists
+CREATE TABLE IF NOT EXISTS "AvailabilityStatus" (
     "id" TEXT NOT NULL,
     "key" TEXT NOT NULL,
     "label_uz" TEXT NOT NULL,
@@ -108,55 +108,62 @@ CREATE TABLE "AvailabilityStatus" (
     CONSTRAINT "AvailabilityStatus_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
-CREATE UNIQUE INDEX "HomepageSection_key_key" ON "HomepageSection"("key");
+-- CreateIndex - Create indexes if not exists
+CREATE UNIQUE INDEX IF NOT EXISTS "HomepageSection_key_key" ON "HomepageSection"("key");
 
 -- CreateIndex
-CREATE INDEX "HomepageSection_key_idx" ON "HomepageSection"("key");
+CREATE INDEX IF NOT EXISTS "HomepageSection_key_idx" ON "HomepageSection"("key");
 
 -- CreateIndex
-CREATE INDEX "HomepageSection_status_order_idx" ON "HomepageSection"("status", "order");
+CREATE INDEX IF NOT EXISTS "HomepageSection_status_order_idx" ON "HomepageSection"("status", "order");
 
 -- CreateIndex
-CREATE INDEX "HomepageLink_sectionKey_idx" ON "HomepageLink"("sectionKey");
+CREATE INDEX IF NOT EXISTS "HomepageLink_sectionKey_idx" ON "HomepageLink"("sectionKey");
 
 -- CreateIndex
-CREATE INDEX "HomepageLink_position_order_idx" ON "HomepageLink"("position", "order");
+CREATE INDEX IF NOT EXISTS "HomepageLink_position_order_idx" ON "HomepageLink"("position", "order");
 
 -- CreateIndex
-CREATE INDEX "HomepageLink_status_idx" ON "HomepageLink"("status");
+CREATE INDEX IF NOT EXISTS "HomepageLink_status_idx" ON "HomepageLink"("status");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "HomepagePlaceholder_sectionKey_key" ON "HomepagePlaceholder"("sectionKey");
+CREATE UNIQUE INDEX IF NOT EXISTS "HomepagePlaceholder_sectionKey_key" ON "HomepagePlaceholder"("sectionKey");
 
 -- CreateIndex
-CREATE INDEX "HomepagePlaceholder_sectionKey_idx" ON "HomepagePlaceholder"("sectionKey");
+CREATE INDEX IF NOT EXISTS "HomepagePlaceholder_sectionKey_idx" ON "HomepagePlaceholder"("sectionKey");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "HomepageEmptyState_sectionKey_key" ON "HomepageEmptyState"("sectionKey");
+CREATE UNIQUE INDEX IF NOT EXISTS "HomepageEmptyState_sectionKey_key" ON "HomepageEmptyState"("sectionKey");
 
 -- CreateIndex
-CREATE INDEX "HomepageEmptyState_sectionKey_idx" ON "HomepageEmptyState"("sectionKey");
+CREATE INDEX IF NOT EXISTS "HomepageEmptyState_sectionKey_idx" ON "HomepageEmptyState"("sectionKey");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "CommonText_key_key" ON "CommonText"("key");
+CREATE UNIQUE INDEX IF NOT EXISTS "CommonText_key_key" ON "CommonText"("key");
 
 -- CreateIndex
-CREATE INDEX "CommonText_key_idx" ON "CommonText"("key");
+CREATE INDEX IF NOT EXISTS "CommonText_key_idx" ON "CommonText"("key");
 
 -- CreateIndex
-CREATE INDEX "CommonText_category_idx" ON "CommonText"("category");
+CREATE INDEX IF NOT EXISTS "CommonText_category_idx" ON "CommonText"("category");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "AvailabilityStatus_key_key" ON "AvailabilityStatus"("key");
+CREATE UNIQUE INDEX IF NOT EXISTS "AvailabilityStatus_key_key" ON "AvailabilityStatus"("key");
 
 -- CreateIndex
-CREATE INDEX "AvailabilityStatus_key_idx" ON "AvailabilityStatus"("key");
+CREATE INDEX IF NOT EXISTS "AvailabilityStatus_key_idx" ON "AvailabilityStatus"("key");
 
 -- CreateIndex
-CREATE INDEX "AvailabilityStatus_order_idx" ON "AvailabilityStatus"("order");
+CREATE INDEX IF NOT EXISTS "AvailabilityStatus_order_idx" ON "AvailabilityStatus"("order");
 
--- AddForeignKey
-ALTER TABLE "HomepagePlaceholder" ADD CONSTRAINT "HomepagePlaceholder_imageId_fkey" FOREIGN KEY ("imageId") REFERENCES "Media"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+-- AddForeignKey - Add foreign key if not exists
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'HomepagePlaceholder_imageId_fkey'
+    ) THEN
+        ALTER TABLE "HomepagePlaceholder" ADD CONSTRAINT "HomepagePlaceholder_imageId_fkey" FOREIGN KEY ("imageId") REFERENCES "Media"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+END $$;
 
 
