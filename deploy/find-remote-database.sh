@@ -39,13 +39,36 @@ echo ""
 echo "📋 Step 3: Checking .env file on remote server..."
 ssh "$REMOTE_USER@$REMOTE_HOST" << 'EOF'
 if [ -f "/var/www/news.acoustic.uz/.env" ]; then
-    echo "  Found .env file:"
-    grep DATABASE_URL /var/www/news.acoustic.uz/.env | sed 's/.*:\/\/[^:]*:[^@]*@[^\/]*\/\([^?]*\).*/    Database: \1/'
+    echo "  Found .env file at /var/www/news.acoustic.uz/.env:"
+    DB_URL=$(grep DATABASE_URL /var/www/news.acoustic.uz/.env | head -1)
+    if [ -n "$DB_URL" ]; then
+        # Extract database name from DATABASE_URL
+        DB_NAME=$(echo "$DB_URL" | sed -n 's/.*:\/\/[^:]*:[^@]*@[^\/]*\/\([^?]*\).*/\1/p')
+        DB_USER=$(echo "$DB_URL" | sed -n 's/.*:\/\/\([^:]*\):.*/\1/p')
+        DB_HOST=$(echo "$DB_URL" | sed -n 's/.*@\([^:]*\):.*/\1/p')
+        DB_PORT=$(echo "$DB_URL" | sed -n 's/.*@[^:]*:\([^\/]*\)\/.*/\1/p')
+        echo "    Database Name: $DB_NAME"
+        echo "    Database User: $DB_USER"
+        echo "    Database Host: $DB_HOST"
+        echo "    Database Port: $DB_PORT"
+    fi
 elif [ -f "/var/www/acoustic.uz/.env" ]; then
-    echo "  Found .env file:"
-    grep DATABASE_URL /var/www/acoustic.uz/.env | sed 's/.*:\/\/[^:]*:[^@]*@[^\/]*\/\([^?]*\).*/    Database: \1/'
+    echo "  Found .env file at /var/www/acoustic.uz/.env:"
+    DB_URL=$(grep DATABASE_URL /var/www/acoustic.uz/.env | head -1)
+    if [ -n "$DB_URL" ]; then
+        DB_NAME=$(echo "$DB_URL" | sed -n 's/.*:\/\/[^:]*:[^@]*@[^\/]*\/\([^?]*\).*/\1/p')
+        DB_USER=$(echo "$DB_URL" | sed -n 's/.*:\/\/\([^:]*\):.*/\1/p')
+        DB_HOST=$(echo "$DB_URL" | sed -n 's/.*@\([^:]*\):.*/\1/p')
+        DB_PORT=$(echo "$DB_URL" | sed -n 's/.*@[^:]*:\([^\/]*\)\/.*/\1/p')
+        echo "    Database Name: $DB_NAME"
+        echo "    Database User: $DB_USER"
+        echo "    Database Host: $DB_HOST"
+        echo "    Database Port: $DB_PORT"
+    fi
 else
-    echo "  ⚠️  .env file not found"
+    echo "  ⚠️  .env file not found in common locations"
+    echo "  Searching for .env files..."
+    find /var/www -name ".env" -type f 2>/dev/null | head -5
 fi
 EOF
 
