@@ -25,6 +25,24 @@ fi
 PROJECT_DIR="/var/www/news.acoustic.uz"
 GIT_REPO="https://github.com/tiuulugbek/acoustic-uz.git"
 
+# GitHub token (from environment or prompt)
+if [ -z "$GIT_TOKEN" ]; then
+    read -sp "  Enter GitHub Personal Access Token (or press Enter to skip): " GIT_TOKEN
+    echo ""
+fi
+
+# Use authenticated URL if token provided
+if [ -n "$GIT_TOKEN" ]; then
+    GIT_REPO_AUTH="https://${GIT_TOKEN}@github.com/tiuulugbek/acoustic-uz.git"
+else
+    GIT_REPO_AUTH="$GIT_REPO"
+fi
+
+# Domain configuration (CHANGE THESE!)
+NEWS_DOMAIN="news.acoustic.uz"
+API_DOMAIN="api.acoustic.uz"
+ADMIN_DOMAIN="admins.acoustic.uz"
+
 # Step 1: Install dependencies
 echo -e "${YELLOW}📦 Step 1: Installing dependencies...${NC}"
 apt-get update
@@ -100,7 +118,7 @@ else
     echo -e "${YELLOW}  Cloning repository...${NC}"
     mkdir -p /var/www
     cd /var/www
-    git clone "$GIT_REPO" news.acoustic.uz
+    git clone "$GIT_REPO_AUTH" news.acoustic.uz
     cd "$PROJECT_DIR"
 fi
 
@@ -174,15 +192,15 @@ pnpm --filter @acoustic/backend build
 # Frontend
 echo -e "${YELLOW}  Building frontend...${NC}"
 export NODE_ENV=production
-export NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://api.acoustic.uz/api}
-export NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL:-https://news.acoustic.uz}
+export NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://$API_DOMAIN/api}
+export NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL:-https://$NEWS_DOMAIN}
 cd apps/frontend
 pnpm build
 cd "$PROJECT_DIR"
 
 # Admin
 echo -e "${YELLOW}  Building admin...${NC}"
-export VITE_API_URL=${VITE_API_URL:-https://api.acoustic.uz/api}
+export VITE_API_URL=${VITE_API_URL:-https://$API_DOMAIN/api}
 cd apps/admin
 pnpm build
 cd "$PROJECT_DIR"
@@ -213,19 +231,193 @@ echo ""
 
 # Step 10: Nginx setup
 echo -e "${YELLOW}🌐 Step 10: Setting up Nginx...${NC}"
-if [ ! -f "/etc/nginx/sites-available/acoustic-uz.conf" ]; then
-    cp "$PROJECT_DIR/deploy/nginx-acoustic-uz.conf" /etc/nginx/sites-available/acoustic-uz.conf
-    ln -s /etc/nginx/sites-available/acoustic-uz.conf /etc/nginx/sites-enabled/acoustic-uz.conf
+echo -e "${BLUE}  ⚠️  IMPORTANT: This will NOT modify existing Nginx configurations${NC}"
+echo -e "${BLUE}  ⚠️  Only adding new server blocks for: $NEWS_DOMAIN, $API_DOMAIN, $ADMIN_DOMAIN${NC}"
+echo ""
+
+read -p "  Enter NEWS domain (default: $NEWS_DOMAIN): " INPUT_NEWS_DOMAIN
+NEWS_DOMAIN=${INPUT_NEWS_DOMAIN:-$NEWS_DOMAIN}
+
+read -p "  Enter API domain (default: $API_DOMAIN): " INPUT_API_DOMAIN
+API_DOMAIN=${INPUT_API_DOMAIN:-$API_DOMAIN}
+
+read -p "  Enter ADMIN domain (default: $ADMIN_DOMAIN): " INPUT_ADMIN_DOMAIN
+ADMIN_DOMAIN=${INPUT_ADMIN_DOMAIN:-$ADMIN_DOMAIN}
+
+NGINX_CONFIG="/etc/nginx/sites-available/acoustic-uz.conf"
+
+if [ ! -f "$NGINX_CONFIG" ]; then
+    echo -e "${YELLOW}  Creating Nginx configuration...${NC}"
     
-    # Remove default nginx config
-    rm -f /etc/nginx/sites-enabled/default
+    # Create config file with domain variables
+    cat > "$NGINX_CONFIG" <<EOF
+# Acoustic.uz Nginx Configuration
+# This config does NOT interfere with existing server blocks
+
+# News domain (Frontend)
+server {
+    listen 80;
+    listen [::]:80;
+    server_name $NEWS_DOMAIN;
     
-    nginx -t
-    systemctl reload nginx
+    root /var/www/news.acoustic.uz/apps/frontend/.next/standalone/apps/frontend;
+    index index.html;
     
-    echo -e "${GREEN}✅ Nginx configured!${NC}"
+    # Gzip compression
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/json application/javascript;
+    
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    
+    # Static files caching
+    location /_next/static {
+        alias /var/www/news.acoustic.uz/apps/frontend/.next/static;
+        expires 365d;
+        add_header Cache-Control "public, immutable";
+    }
+    
+    # Next.js API routes
+    location /api {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_cache_bypass \$http_upgrade;
+    }
+    
+    # Main application
+    location / {
+        try_files \$uri \$uri.html \$uri/index.html @nextjs;
+    }
+    
+    location @nextjs {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_cache_bypass \$http_upgrade;
+    }
+}
+
+# API domain (Backend)
+server {
+    listen 80;
+    listen [::]:80;
+    server_name $API_DOMAIN;
+    
+    client_max_body_size 50M;
+    
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    
+    # Uploads
+    location /uploads {
+        alias /var/www/news.acoustic.uz/apps/backend/uploads;
+        expires 30d;
+        add_header Cache-Control "public";
+        access_log off;
+    }
+    
+    # API
+    location /api {
+        proxy_pass http://localhost:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_cache_bypass \$http_upgrade;
+    }
+    
+    # Root redirect to /api
+    location = / {
+        return 301 /api;
+    }
+}
+
+# Admin domain (Admin Panel)
+server {
+    listen 80;
+    listen [::]:80;
+    server_name $ADMIN_DOMAIN;
+    
+    root /var/www/news.acoustic.uz/apps/admin/dist;
+    index index.html;
+    
+    # Gzip compression
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/json application/javascript;
+    
+    # Security headers
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    
+    # Cache busting for index.html and version.json
+    location = /index.html {
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        add_header Pragma "no-cache";
+        add_header Expires "0";
+    }
+    
+    location = /version.json {
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        add_header Pragma "no-cache";
+        add_header Expires "0";
+    }
+    
+    # Static assets caching
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 365d;
+        add_header Cache-Control "public, immutable";
+    }
+    
+    # Main application
+    location / {
+        try_files \$uri \$uri/ /index.html;
+    }
+}
+EOF
+    
+    # Enable site (only if not already enabled)
+    if [ ! -L "/etc/nginx/sites-enabled/acoustic-uz.conf" ]; then
+        ln -s "$NGINX_CONFIG" /etc/nginx/sites-enabled/acoustic-uz.conf
+        echo -e "${GREEN}  ✅ Nginx config enabled${NC}"
+    else
+        echo -e "${YELLOW}  ⚠️  Nginx config already enabled${NC}"
+    fi
+    
+    # Test Nginx config
+    echo -e "${YELLOW}  Testing Nginx configuration...${NC}"
+    if nginx -t; then
+        systemctl reload nginx
+        echo -e "${GREEN}✅ Nginx configured and reloaded!${NC}"
+    else
+        echo -e "${RED}❌ Nginx configuration test failed!${NC}"
+        echo -e "${YELLOW}  Please check the configuration manually${NC}"
+    fi
 else
-    echo -e "${YELLOW}  Nginx config already exists, skipping...${NC}"
+    echo -e "${YELLOW}  Nginx config already exists at $NGINX_CONFIG${NC}"
+    echo -e "${YELLOW}  Skipping Nginx setup...${NC}"
 fi
 
 echo ""
@@ -242,10 +434,17 @@ echo "  - Nginx: Configured"
 echo ""
 echo -e "${YELLOW}⚠️  Next steps:${NC}"
 echo "  1. Edit .env file: nano $PROJECT_DIR/.env"
-echo "  2. Update domain names in Nginx config: nano /etc/nginx/sites-available/acoustic-uz.conf"
-echo "  3. Setup SSL: certbot --nginx -d news.acoustic.uz -d api.acoustic.uz -d admins.acoustic.uz"
+echo "     - Update CORS_ORIGIN with your domains"
+echo "     - Update NEXT_PUBLIC_API_URL, NEXT_PUBLIC_SITE_URL, VITE_API_URL"
+echo "  2. Update domain names in Nginx config (if needed): nano /etc/nginx/sites-available/acoustic-uz.conf"
+echo "  3. Setup SSL: certbot --nginx -d $NEWS_DOMAIN -d $API_DOMAIN -d $ADMIN_DOMAIN"
 echo "  4. Check PM2 status: pm2 list"
 echo "  5. Check logs: pm2 logs"
+echo ""
+echo -e "${BLUE}📋 Configured domains:${NC}"
+echo "  - News (Frontend): $NEWS_DOMAIN"
+echo "  - API (Backend): $API_DOMAIN"
+echo "  - Admin: $ADMIN_DOMAIN"
 echo ""
 echo -e "${GREEN}🎉 Happy deploying!${NC}"
 
