@@ -3,7 +3,7 @@ module.exports = {
     {
       name: 'acoustic-backend',
       script: 'apps/backend/dist/main.js',
-      cwd: '/var/www/news.acoustic.uz',
+      cwd: '/var/www/acoustic.uz',
       instances: 1,
       exec_mode: 'fork',
       env: {
@@ -21,7 +21,7 @@ module.exports = {
     {
       name: 'acoustic-frontend',
       script: 'apps/frontend/.next/standalone/apps/frontend/server.js',
-      cwd: '/var/www/news.acoustic.uz',
+      cwd: '/var/www/acoustic.uz',
       instances: 1,
       exec_mode: 'fork',
       env: {
