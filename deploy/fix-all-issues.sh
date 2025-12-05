@@ -24,6 +24,22 @@ if [ -L "/etc/nginx/sites-enabled/admins.acoustic.uz.conf" ]; then
     echo "  Disabling admins.acoustic.uz.conf..."
     rm -f /etc/nginx/sites-enabled/admins.acoustic.uz.conf
 fi
+if [ -L "/etc/nginx/sites-enabled/acoustic.uz" ]; then
+    echo "  Disabling old acoustic.uz config..."
+    rm -f /etc/nginx/sites-enabled/acoustic.uz
+fi
+if [ -L "/etc/nginx/sites-enabled/admin.acoustic.uz" ]; then
+    echo "  Disabling old admin.acoustic.uz config..."
+    rm -f /etc/nginx/sites-enabled/admin.acoustic.uz
+fi
+if [ -L "/etc/nginx/sites-enabled/backend.acoustic.uz" ]; then
+    echo "  Disabling old backend.acoustic.uz config..."
+    rm -f /etc/nginx/sites-enabled/backend.acoustic.uz
+fi
+if [ -L "/etc/nginx/sites-enabled/main.acoustic.uz" ]; then
+    echo "  Disabling old main.acoustic.uz config..."
+    rm -f /etc/nginx/sites-enabled/main.acoustic.uz
+fi
 
 # Ensure acoustic-uz.conf is enabled
 if [ ! -L "/etc/nginx/sites-enabled/acoustic-uz.conf" ]; then
@@ -52,7 +68,20 @@ export NODE_ENV=production
 export NEXT_PUBLIC_API_URL="https://a.acoustic.uz/api"
 export NEXT_PUBLIC_SITE_URL="https://acoustic.uz"
 cd apps/frontend
+
+# Clean previous build
+rm -rf .next
+
+# Build frontend
 pnpm build
+
+# Verify standalone build exists
+if [ ! -f ".next/standalone/apps/frontend/server.js" ]; then
+    echo "  ❌ Standalone build failed! Checking .next directory..."
+    ls -la .next/ 2>/dev/null || echo "    .next directory not found"
+    exit 1
+fi
+echo "  ✅ Frontend standalone build exists"
 
 # 4. Restart PM2
 echo "📋 Step 4: Restarting PM2..."
