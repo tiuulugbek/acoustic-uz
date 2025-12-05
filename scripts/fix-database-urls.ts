@@ -72,6 +72,17 @@ function normalizeUrl(url: string): string {
         urlObj.protocol = 'https:';
       }
 
+      // Fix old.acoustic.uz domain
+      if (urlObj.hostname === 'old.acoustic.uz' || urlObj.hostname === 'www.old.acoustic.uz') {
+        urlObj.hostname = 'api.acoustic.uz';
+        urlObj.protocol = 'https:';
+      }
+
+      // Fix wp-content/uploads/ -> uploads/ (WordPress to new structure)
+      if (urlObj.pathname.includes('/wp-content/uploads/')) {
+        urlObj.pathname = urlObj.pathname.replace('/wp-content/uploads/', '/uploads/');
+      }
+
       // Remove /api from pathname if present (uploads should be directly under domain)
       if (urlObj.pathname.startsWith('/api/uploads/')) {
         urlObj.pathname = urlObj.pathname.replace('/api/uploads/', '/uploads/');
@@ -106,6 +117,13 @@ function normalizeUrl(url: string): string {
       // Fix old domains
       fixedUrl = fixedUrl.replace(/https?:\/\/news\.acoustic\.uz\//g, 'https://api.acoustic.uz/');
       fixedUrl = fixedUrl.replace(/https?:\/\/api\.news\.acoustic\.uz\//g, 'https://api.acoustic.uz/');
+      
+      // Fix old.acoustic.uz domain
+      fixedUrl = fixedUrl.replace(/https?:\/\/old\.acoustic\.uz\//g, 'https://api.acoustic.uz/');
+      fixedUrl = fixedUrl.replace(/https?:\/\/www\.old\.acoustic\.uz\//g, 'https://api.acoustic.uz/');
+      
+      // Fix wp-content/uploads/ -> uploads/
+      fixedUrl = fixedUrl.replace(/\/wp-content\/uploads\//g, '/uploads/');
 
       return fixedUrl;
     }
@@ -171,6 +189,7 @@ async function main() {
         { url: { contains: 'localhost' } },
         { url: { contains: '.acoustic.uz' } },
         { url: { contains: 'news.acoustic.uz' } },
+        { url: { contains: 'old.acoustic.uz' } },
         { url: { startsWith: 'http://' } },
       ],
     },
@@ -192,13 +211,25 @@ async function main() {
 
   // 2. Fix Product galleryUrls
   console.log('\n🖼️  Fixing Product galleryUrls...');
-  const products = await prisma.product.findMany({
+  // Get all products with galleryUrls, then filter in memory to find ones with bad URLs
+  const allProducts = await prisma.product.findMany({
     where: {
       galleryUrls: {
         isEmpty: false,
       },
     },
   });
+  
+  // Filter products that have bad URLs
+  const products = allProducts.filter(product => 
+    product.galleryUrls.some(url => 
+      url.includes('localhost') ||
+      url.includes('.acoustic.uz') ||
+      url.includes('news.acoustic.uz') ||
+      url.includes('old.acoustic.uz') ||
+      url.startsWith('http://')
+    )
+  );
 
   console.log(`   Found ${products.length} products to check`);
 
@@ -223,8 +254,10 @@ async function main() {
       OR: [
         { body_uz: { contains: 'localhost' } },
         { body_uz: { contains: 'acoustic.uz' } },
+        { body_uz: { contains: 'old.acoustic.uz' } },
         { body_ru: { contains: 'localhost' } },
         { body_ru: { contains: 'acoustic.uz' } },
+        { body_ru: { contains: 'old.acoustic.uz' } },
       ],
     },
   });
@@ -256,16 +289,22 @@ async function main() {
       OR: [
         { description_uz: { contains: 'localhost' } },
         { description_uz: { contains: 'acoustic.uz' } },
+        { description_uz: { contains: 'old.acoustic.uz' } },
         { description_ru: { contains: 'localhost' } },
         { description_ru: { contains: 'acoustic.uz' } },
+        { description_ru: { contains: 'old.acoustic.uz' } },
         { tech_uz: { contains: 'localhost' } },
         { tech_uz: { contains: 'acoustic.uz' } },
+        { tech_uz: { contains: 'old.acoustic.uz' } },
         { tech_ru: { contains: 'localhost' } },
         { tech_ru: { contains: 'acoustic.uz' } },
+        { tech_ru: { contains: 'old.acoustic.uz' } },
         { fittingRange_uz: { contains: 'localhost' } },
         { fittingRange_uz: { contains: 'acoustic.uz' } },
+        { fittingRange_uz: { contains: 'old.acoustic.uz' } },
         { fittingRange_ru: { contains: 'localhost' } },
         { fittingRange_ru: { contains: 'acoustic.uz' } },
+        { fittingRange_ru: { contains: 'old.acoustic.uz' } },
       ],
     },
   });
@@ -312,8 +351,10 @@ async function main() {
       OR: [
         { body_uz: { contains: 'localhost' } },
         { body_uz: { contains: 'acoustic.uz' } },
+        { body_uz: { contains: 'old.acoustic.uz' } },
         { body_ru: { contains: 'localhost' } },
         { body_ru: { contains: 'acoustic.uz' } },
+        { body_ru: { contains: 'old.acoustic.uz' } },
       ],
     },
   });
@@ -345,8 +386,10 @@ async function main() {
       OR: [
         { body_uz: { contains: 'localhost' } },
         { body_uz: { contains: 'acoustic.uz' } },
+        { body_uz: { contains: 'old.acoustic.uz' } },
         { body_ru: { contains: 'localhost' } },
         { body_ru: { contains: 'acoustic.uz' } },
+        { body_ru: { contains: 'old.acoustic.uz' } },
       ],
     },
   });
