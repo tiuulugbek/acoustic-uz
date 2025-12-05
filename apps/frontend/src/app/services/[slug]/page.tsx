@@ -337,7 +337,7 @@ export default async function ServiceSlugPage({ params }: ServicePageProps) {
 
       {/* Main Content with Sidebar */}
       <div className="mx-auto max-w-6xl px-4 pt-8 pb-10 md:px-6">
-        <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
+        <div className="grid gap-4 sm:gap-6 md:gap-8 grid-cols-1 sm:grid-cols-[1fr_280px] lg:grid-cols-[1fr_320px]">
           {/* Main Content */}
           <article className="min-w-0">
             <div className="mb-6 space-y-4">
@@ -381,7 +381,7 @@ export default async function ServiceSlugPage({ params }: ServicePageProps) {
           </article>
 
           {/* Sidebar */}
-          <aside className="sticky top-6 h-fit space-y-6">
+          <aside className="sticky top-6 h-fit space-y-4 sm:space-y-6">
             {/* Sidebar Component */}
             <Sidebar locale={locale} settingsData={settings} brandsData={brands} pageType="services" />
             
