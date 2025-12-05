@@ -243,11 +243,11 @@ export default async function BranchPage({ params }: BranchPageProps) {
       />
 
       {/* Main Content */}
-      <section className="bg-white py-4 sm:py-8">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+      <section className="bg-white py-4 sm:py-8 overflow-x-hidden">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 w-full">
           <div className="grid gap-4 sm:gap-6 lg:gap-8 lg:grid-cols-[2fr_1fr]">
             {/* Left Column - Main Content */}
-            <div className="space-y-6 sm:space-y-8">
+            <div className="space-y-6 sm:space-y-8 min-w-0 w-full">
               {/* Title and Description */}
               <div>
                 <h1 className="mb-3 text-2xl sm:text-3xl font-bold text-foreground" suppressHydrationWarning>
@@ -348,24 +348,24 @@ export default async function BranchPage({ params }: BranchPageProps) {
 
               {/* 3D Tour Section */}
               {(branch.tour3d_config || branch.tour3d_iframe) && (
-                <section id="tour3d" className="scroll-mt-20">
+                <section id="tour3d" className="scroll-mt-20 w-full overflow-x-hidden">
                   <h2 className="mb-3 text-xl sm:text-2xl font-bold text-foreground" suppressHydrationWarning>
                     {locale === 'ru' ? '3D Тур' : '3D Tour'}
                   </h2>
-                  <div className="rounded-lg overflow-hidden border border-border bg-muted/20">
+                  <div className="rounded-lg overflow-hidden border border-border bg-muted/20 w-full max-w-full">
                     {branch.tour3d_config ? (
-                      <div className="w-full" style={{ aspectRatio: '16 / 9', minHeight: '250px', maxHeight: '500px' }}>
+                      <div className="w-full max-w-full" style={{ aspectRatio: '16 / 9', minHeight: '250px', maxHeight: '500px' }}>
                         <PanoramaViewer config={branch.tour3d_config as TourConfig} locale={locale} />
                       </div>
                     ) : (
                       <div
-                        className="w-full"
+                        className="w-full max-w-full"
                         style={{ aspectRatio: '16 / 9', minHeight: '250px', maxHeight: '500px', position: 'relative', overflow: 'hidden' }}
                         dangerouslySetInnerHTML={{
                           __html: branch.tour3d_iframe
                             ?.replace(/width="[^"]*"/gi, 'width="100%"')
                             .replace(/height="[^"]*"/gi, 'height="100%"')
-                            .replace(/style="[^"]*"/gi, 'style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;"') || '',
+                            .replace(/style="[^"]*"/gi, 'style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; max-width: 100%;"') || '',
                         }}
                       />
                     )}
@@ -374,15 +374,15 @@ export default async function BranchPage({ params }: BranchPageProps) {
               )}
 
               {/* Location Section */}
-              <section id="location" className="scroll-mt-20">
+              <section id="location" className="scroll-mt-20 w-full overflow-x-hidden">
                 <h2 className="mb-3 text-xl sm:text-2xl font-bold text-foreground" suppressHydrationWarning>
                   {locale === 'ru' ? 'Как добраться' : 'Qanday yetib borish'}
                 </h2>
                 {branch.map_iframe ? (
                   // Use custom iframe if available (highest priority)
-                  <div className="mb-4 rounded-lg overflow-hidden border border-border bg-gray-100">
+                  <div className="mb-4 rounded-lg overflow-hidden border border-border bg-gray-100 w-full max-w-full">
                     <div
-                      className="w-full"
+                      className="w-full max-w-full"
                       style={{ 
                         position: 'relative',
                         paddingBottom: '56.25%', // 16:9 aspect ratio
@@ -395,7 +395,7 @@ export default async function BranchPage({ params }: BranchPageProps) {
                         __html: branch.map_iframe
                           .replace(/width="[^"]*"/gi, 'width="100%"')
                           .replace(/height="[^"]*"/gi, 'height="100%"')
-                          .replace(/style="[^"]*"/gi, 'style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;"')
+                          .replace(/style="[^"]*"/gi, 'style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; max-width: 100%;"')
                           .replace(/<iframe/gi, '<iframe loading="lazy" allowfullscreen')
                           .replace(/sandbox="[^"]*"/gi, '') // Remove sandbox if present
                           .replace(/maps\.google\.com\/maps\?q=([^&"']+)/gi, (match, coords) => {
@@ -407,13 +407,13 @@ export default async function BranchPage({ params }: BranchPageProps) {
                   </div>
                 ) : branch.latitude && branch.longitude ? (
                   // If coordinates are available, use Yandex Maps embed (more reliable than Google Maps)
-                  <div className="mb-4 rounded-lg overflow-hidden border border-border bg-gray-100 relative" style={{ paddingBottom: '56.25%', height: 0, minHeight: '250px', maxHeight: '500px' }}>
+                  <div className="mb-4 rounded-lg overflow-hidden border border-border bg-gray-100 relative w-full max-w-full" style={{ paddingBottom: '56.25%', height: 0, minHeight: '250px', maxHeight: '500px' }}>
                     <iframe
                       src={`https://yandex.com/map-widget/v1/?ll=${branch.longitude},${branch.latitude}&z=16&pt=${branch.longitude},${branch.latitude}&lang=${locale === 'ru' ? 'ru_RU' : 'uz_UZ'}`}
                       width="100%"
                       height="100%"
-                      className="absolute top-0 left-0 w-full h-full"
-                      style={{ border: 0 }}
+                      className="absolute top-0 left-0 w-full h-full max-w-full"
+                      style={{ border: 0, maxWidth: '100%' }}
                       allowFullScreen
                       loading="lazy"
                       referrerPolicy="no-referrer-when-downgrade"
