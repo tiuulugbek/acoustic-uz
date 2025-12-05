@@ -44,45 +44,55 @@ echo "   ✅ Frontend build complete!"
 # 4. Copy standalone build files
 echo "📦 Copying standalone build files..."
 if [ -d ".next/standalone" ]; then
-    echo "   Found standalone build, copying..."
-    # Copy standalone files
-    cp -r .next/standalone/* "$PROJECT_DIR/" || true
+    echo "   Found standalone build..."
     
-    # Copy static files (CRITICAL for chunks)
+    # Standalone build structure:
+    # .next/standalone/apps/frontend/server.js
+    # .next/standalone/apps/frontend/.next/static (CRITICAL!)
+    # .next/standalone/apps/frontend/public
+    
+    STANDALONE_TARGET="$PROJECT_DIR/apps/frontend/.next/standalone"
+    
+    # Copy standalone directory structure
+    echo "   Copying standalone directory..."
+    mkdir -p "$STANDALONE_TARGET"
+    cp -r .next/standalone/* "$STANDALONE_TARGET/" || true
+    
+    # CRITICAL: Copy static files to standalone location
     if [ -d ".next/static" ]; then
-        echo "   Copying static files..."
-        mkdir -p "$PROJECT_DIR/.next/static"
-        cp -r .next/static/* "$PROJECT_DIR/.next/static/" || true
-        echo "   ✅ Static files copied"
+        echo "   Copying static files to standalone location..."
+        STATIC_TARGET="$STANDALONE_TARGET/apps/frontend/.next/static"
+        mkdir -p "$STATIC_TARGET"
+        cp -r .next/static/* "$STATIC_TARGET/" || true
+        echo "   ✅ Static files copied to $STATIC_TARGET"
+        
+        # Verify
+        STATIC_COUNT=$(find "$STATIC_TARGET" -type f | wc -l)
+        echo "   ✅ Found $STATIC_COUNT static files"
+    else
+        echo "   ⚠️  WARNING: .next/static not found in build!"
     fi
     
-    # Copy public files
+    # Copy public files to standalone
     if [ -d "public" ]; then
-        mkdir -p "$PROJECT_DIR/public"
-        cp -r public/* "$PROJECT_DIR/public/" 2>/dev/null || true
-    fi
-else
-    echo "⚠️  Standalone build not found, copying regular build..."
-    # Copy .next directory (CRITICAL for chunks)
-    if [ -d ".next" ]; then
-        echo "   Copying .next directory..."
-        cp -r .next "$PROJECT_DIR/" || true
-        echo "   ✅ .next directory copied"
+        PUBLIC_TARGET="$STANDALONE_TARGET/apps/frontend/public"
+        mkdir -p "$PUBLIC_TARGET"
+        cp -r public/* "$PUBLIC_TARGET/" 2>/dev/null || true
+        echo "   ✅ Public files copied"
     fi
     
-    # Copy public files
-    if [ -d "public" ]; then
-        mkdir -p "$PROJECT_DIR/public"
-        cp -r public/* "$PROJECT_DIR/public/" 2>/dev/null || true
+    # Verify server.js exists
+    SERVER_JS="$STANDALONE_TARGET/apps/frontend/server.js"
+    if [ -f "$SERVER_JS" ]; then
+        echo "   ✅ Server.js found at $SERVER_JS"
+    else
+        echo "   ❌ ERROR: server.js not found at $SERVER_JS"
     fi
-fi
-
-# Verify static files were copied
-if [ -d "$PROJECT_DIR/.next/static" ]; then
-    STATIC_COUNT=$(find "$PROJECT_DIR/.next/static" -type f | wc -l)
-    echo "   ✅ Found $STATIC_COUNT static files in .next/static"
 else
-    echo "   ⚠️  WARNING: .next/static directory not found!"
+    echo "   ❌ ERROR: Standalone build not found!"
+    echo "   Checking .next directory structure..."
+    ls -la .next/ 2>/dev/null || echo "    .next directory not found"
+    exit 1
 fi
 
 cd "$PROJECT_DIR"
