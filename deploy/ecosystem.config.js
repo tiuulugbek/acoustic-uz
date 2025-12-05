@@ -20,8 +20,8 @@ module.exports = {
     },
     {
       name: 'acoustic-frontend',
-      script: 'apps/frontend/.next/standalone/apps/frontend/server.js',
-      cwd: '/var/www/acoustic.uz',
+      script: 'server.js',
+      cwd: '/var/www/acoustic.uz/apps/frontend/.next/standalone/apps/frontend',
       instances: 1,
       exec_mode: 'fork',
       env: {
