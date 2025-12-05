@@ -104,7 +104,7 @@ export default function BranchesList({ branches, selectedRegion, locale, onClear
           </button>
         )}
       </div>
-      <div className="space-y-4">
+      <div className="grid gap-3 grid-cols-2 md:gap-4 md:grid-cols-1">
         {filteredBranches.length > 0 ? (
           filteredBranches.map((branch) => {
             const name = getBilingualText(branch.name_uz, branch.name_ru, locale);
@@ -119,45 +119,44 @@ export default function BranchesList({ branches, selectedRegion, locale, onClear
               <Link
                 key={branch.id}
                 href={`/branches/${branch.slug || branch.id}`}
-                className="group block rounded-lg border border-border bg-white p-4 shadow-sm transition hover:shadow-md"
+                className="group flex flex-col items-center justify-center rounded-lg border border-border bg-white p-3 md:p-4 shadow-sm transition hover:shadow-md md:flex-row md:items-start md:justify-start"
               >
-                <div className="flex gap-4">
-                  {/* Image - Left */}
-                  {imageUrl ? (
-                    <div className="relative w-24 h-24 flex-shrink-0 overflow-hidden rounded-lg bg-muted/20">
-                      <Image
-                        src={imageUrl}
-                        alt={name}
-                        fill
-                        className="object-cover transition-transform duration-300 group-hover:scale-105"
-                        sizes="96px"
-                      />
+                {/* Image - Mobile: Top, Desktop: Left */}
+                {imageUrl ? (
+                  <div className="relative w-16 h-16 md:w-24 md:h-24 flex-shrink-0 overflow-hidden rounded-lg bg-muted/20 mb-2 md:mb-0 md:mr-4">
+                    <Image
+                      src={imageUrl}
+                      alt={name}
+                      fill
+                      className="object-cover transition-transform duration-300 group-hover:scale-105"
+                      sizes="(max-width: 768px) 64px, 96px"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-16 h-16 md:w-24 md:h-24 flex-shrink-0 rounded-lg bg-gradient-to-br from-brand-primary to-brand-accent flex items-center justify-center mb-2 md:mb-0 md:mr-4">
+                    <MapPin className="h-6 w-6 md:h-8 md:w-8 text-white opacity-80" />
+                  </div>
+                )}
+                
+                {/* Content - Mobile: Center, Desktop: Right */}
+                <div className="flex-1 min-w-0 text-center md:text-left">
+                  <h3 className="text-sm md:text-lg font-semibold text-foreground group-hover:text-brand-primary transition-colors" suppressHydrationWarning>
+                    {name}
+                  </h3>
+                  {/* Address and phone - hidden on mobile, shown on desktop */}
+                  <div className="hidden md:block space-y-2 mt-2">
+                    <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                      <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0 text-brand-primary" />
+                      <span className="leading-relaxed" suppressHydrationWarning>{address}</span>
                     </div>
-                  ) : (
-                    <div className="w-24 h-24 flex-shrink-0 rounded-lg bg-gradient-to-br from-brand-primary to-brand-accent flex items-center justify-center">
-                      <MapPin className="h-8 w-8 text-white opacity-80" />
-                    </div>
-                  )}
-                  
-                  {/* Content - Right */}
-                  <div className="flex-1 min-w-0">
-                    <h3 className="mb-2 text-lg font-semibold text-foreground group-hover:text-brand-primary transition-colors" suppressHydrationWarning>
-                      {name}
-                    </h3>
-                    <div className="space-y-2">
-                      <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                        <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0 text-brand-primary" />
-                        <span className="leading-relaxed" suppressHydrationWarning>{address}</span>
-                      </div>
-                      <BranchPhoneLink phone={branch.phone} phones={branch.phones} />
-                    </div>
+                    <BranchPhoneLink phone={branch.phone} phones={branch.phones} />
                   </div>
                 </div>
               </Link>
             );
           })
         ) : (
-          <div className="text-center py-12 text-muted-foreground" suppressHydrationWarning>
+          <div className="col-span-2 md:col-span-1 text-center py-12 text-muted-foreground" suppressHydrationWarning>
             {locale === 'ru' 
               ? 'В выбранном регионе филиалы не найдены.'
               : 'Tanlangan viloyatda filiallar topilmadi.'}
