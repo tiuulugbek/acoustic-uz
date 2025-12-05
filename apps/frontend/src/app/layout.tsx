@@ -14,17 +14,40 @@ import type { SettingsResponse } from '@/lib/api';
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export const metadata: Metadata = {
-  title: 'Acoustic.uz - Eshitish markazi',
-  description: 'Eshitish qobiliyatini tiklash va yaxshilash markazi',
-  alternates: {
-    languages: {
-      uz: 'uz',
-      ru: 'ru',
-      'x-default': 'uz',
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = detectLocale();
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
+  
+  // Get favicon from settings
+  let faviconUrl = '/favicon.ico';
+  try {
+    const settings = await getSettings(locale);
+    if (settings?.favicon?.url) {
+      faviconUrl = settings.favicon.url.startsWith('http') 
+        ? settings.favicon.url 
+        : `${baseUrl}${settings.favicon.url}`;
+    }
+  } catch (error) {
+    // Use default favicon if settings fetch fails
+  }
+
+  return {
+    title: 'Acoustic.uz - Eshitish markazi',
+    description: 'Eshitish qobiliyatini tiklash va yaxshilash markazi',
+    alternates: {
+      languages: {
+        uz: 'uz',
+        ru: 'ru',
+        'x-default': 'uz',
+      },
     },
-  },
-};
+    icons: {
+      icon: faviconUrl,
+      shortcut: faviconUrl,
+      apple: faviconUrl,
+    },
+  };
+}
 
 export default async function RootLayout({
   children,

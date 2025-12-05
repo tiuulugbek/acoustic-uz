@@ -684,6 +684,8 @@ export interface SettingsResponse {
   catalogHeroImage?: MediaResponse | null;
   logoId?: string | null;
   logo?: MediaResponse | null;
+  faviconId?: string | null;
+  favicon?: MediaResponse | null;
   sidebarSections?: SidebarSection[] | null;
   sidebarBrandIds?: string[];
   sidebarConfigs?: {
