@@ -46,31 +46,43 @@ echo "📦 Copying standalone build files..."
 if [ -d ".next/standalone" ]; then
     echo "   Found standalone build..."
     
-    # Standalone build structure:
+    # Standalone build structure (according to Dockerfile):
     # .next/standalone/apps/frontend/server.js
     # .next/standalone/apps/frontend/.next/static (CRITICAL!)
     # .next/standalone/apps/frontend/public
     
+    STANDALONE_SOURCE=".next/standalone"
     STANDALONE_TARGET="$PROJECT_DIR/apps/frontend/.next/standalone"
     
     # Copy standalone directory structure
     echo "   Copying standalone directory..."
     mkdir -p "$STANDALONE_TARGET"
-    cp -r .next/standalone/* "$STANDALONE_TARGET/" || true
+    cp -r "$STANDALONE_SOURCE"/* "$STANDALONE_TARGET/" || true
     
     # CRITICAL: Copy static files to standalone location
+    # According to Dockerfile: ./apps/frontend/.next/static (from standalone root)
     if [ -d ".next/static" ]; then
         echo "   Copying static files to standalone location..."
         STATIC_TARGET="$STANDALONE_TARGET/apps/frontend/.next/static"
         mkdir -p "$STATIC_TARGET"
+        rm -rf "$STATIC_TARGET"/* 2>/dev/null || true
         cp -r .next/static/* "$STATIC_TARGET/" || true
         echo "   ✅ Static files copied to $STATIC_TARGET"
         
         # Verify
-        STATIC_COUNT=$(find "$STATIC_TARGET" -type f | wc -l)
+        STATIC_COUNT=$(find "$STATIC_TARGET" -type f 2>/dev/null | wc -l)
         echo "   ✅ Found $STATIC_COUNT static files"
+        
+        # Show sample files
+        echo "   Sample static files:"
+        find "$STATIC_TARGET" -type f | head -5 | while read file; do
+            echo "     - $(basename "$file")"
+        done
     else
-        echo "   ⚠️  WARNING: .next/static not found in build!"
+        echo "   ❌ ERROR: .next/static not found in build!"
+        echo "   Checking .next directory..."
+        ls -la .next/ 2>/dev/null || echo "    .next directory not found"
+        exit 1
     fi
     
     # Copy public files to standalone
@@ -87,7 +99,16 @@ if [ -d ".next/standalone" ]; then
         echo "   ✅ Server.js found at $SERVER_JS"
     else
         echo "   ❌ ERROR: server.js not found at $SERVER_JS"
+        echo "   Checking standalone structure..."
+        ls -la "$STANDALONE_TARGET/" 2>/dev/null || echo "    Standalone target not found"
+        exit 1
     fi
+    
+    # Set permissions
+    echo "   Setting permissions..."
+    chmod -R 755 "$STANDALONE_TARGET" 2>/dev/null || true
+    find "$STANDALONE_TARGET" -type f -exec chmod 644 {} \; 2>/dev/null || true
+    find "$STANDALONE_TARGET" -type d -exec chmod 755 {} \; 2>/dev/null || true
 else
     echo "   ❌ ERROR: Standalone build not found!"
     echo "   Checking .next directory structure..."
