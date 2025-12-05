@@ -30,6 +30,7 @@
     "generate:branch-slugs": "pnpm --filter @acoustic/backend exec ts-node --transpile-only --project tsconfig.json ../../scripts/generate_branch_slugs.ts",
     "convert:images:webp": "pnpm --filter @acoustic/backend exec ts-node --transpile-only --project tsconfig.json ../../scripts/convert-images-to-webp.ts",
     "reset:password": "pnpm --filter @acoustic/backend exec ts-node --transpile-only --project tsconfig.json ../../scripts/reset-password.ts",
+    "fix:database-urls": "pnpm --filter @acoustic/backend exec ts-node --transpile-only --project tsconfig.json ../../scripts/fix-database-urls.ts",
     "dev:reset": "pnpm exec prisma migrate reset --schema=prisma/schema.prisma",
     "dev:stack": "pnpm run dev:db && pnpm run dev:migrate && pnpm --filter @acoustic/backend build && pnpm --filter @acoustic/backend dev",
     "restart:backend": "pkill -f 'nest start' 2>/dev/null; pkill -f '@acoustic/backend' 2>/dev/null; sleep 2; pnpm --filter @acoustic/backend dev"
