@@ -76,6 +76,10 @@ echo -e "${YELLOW}📦 Step 2: Cloning/updating repository...${NC}"
 if [ -d "$PROJECT_DIR" ] && [ -d "$PROJECT_DIR/.git" ]; then
     echo -e "${YELLOW}  Updating existing repository...${NC}"
     cd "$PROJECT_DIR"
+    # Update remote URL to use authenticated URL if token provided
+    if [ -n "$GIT_TOKEN" ]; then
+        git remote set-url origin "$GIT_REPO_AUTH"
+    fi
     git pull origin main
 else
     echo -e "${YELLOW}  Cloning repository...${NC}"
