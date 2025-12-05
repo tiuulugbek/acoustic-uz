@@ -1,6 +1,6 @@
 #!/bin/bash
-# Fix /uploads location for a.acoustic.uz in Nginx config only
-# This script ONLY modifies the a.acoustic.uz server block
+# Fix /uploads location for a.acoustic.uz ONLY
+# This script only modifies the a.acoustic.uz server block in Nginx config
 
 set -e
 
@@ -16,18 +16,13 @@ cp "$CONFIG_FILE" "$BACKUP_FILE"
 echo "   ✅ Backup: $BACKUP_FILE"
 
 # 2. Check current config
-echo "📋 Step 2: Checking current /uploads location..."
-UPLOADS_BLOCK=$(grep -A 20 "server_name a.acoustic.uz" "$CONFIG_FILE" | grep -A 15 "location /uploads" | head -20)
-if [ -n "$UPLOADS_BLOCK" ]; then
-    echo "   Current /uploads block:"
-    echo "$UPLOADS_BLOCK" | sed 's/^/     /'
-else
-    echo "   ⚠️  /uploads location not found in a.acoustic.uz block"
+echo "📋 Step 2: Checking current config..."
+if ! grep -q "server_name a.acoustic.uz" "$CONFIG_FILE"; then
+    echo "   ❌ ERROR: a.acoustic.uz server block not found"
+    exit 1
 fi
 
-# 3. Use Python to fix the config
-echo ""
-echo "📋 Step 3: Fixing /uploads location..."
+# 3. Use Python to fix the config (more reliable)
 python3 << 'PYTHON_SCRIPT'
 import re
 import sys
@@ -38,82 +33,140 @@ try:
     with open(config_file, 'r') as f:
         lines = f.readlines()
     
-    new_lines = []
-    in_a_acoustic = False
-    in_uploads_location = False
-    uploads_location_start = -1
+    # Find a.acoustic.uz server block
+    in_block = False
+    block_start = -1
+    block_end = -1
     brace_count = 0
     
-    i = 0
-    while i < len(lines):
-        line = lines[i]
-        
-        # Detect a.acoustic.uz server block
+    for i, line in enumerate(lines):
         if 'server_name a.acoustic.uz' in line:
-            in_a_acoustic = True
+            in_block = True
+            block_start = i
             brace_count = 0
         
-        if in_a_acoustic:
-            # Count braces
+        if in_block:
             brace_count += line.count('{') - line.count('}')
-            
-            # Find /uploads location
-            if re.search(r'location\s+/uploads', line):
-                in_uploads_location = True
-                uploads_location_start = i
-                
-                # Replace with correct location block
-                new_lines.append('    # Uploads static files - MUST be before location / to avoid 404\n')
-                new_lines.append('    location /uploads/ {\n')
-                new_lines.append('        alias /var/www/acoustic.uz/apps/backend/uploads/;\n')
-                new_lines.append('        expires 30d;\n')
-                new_lines.append('        add_header Cache-Control "public, immutable";\n')
-                new_lines.append('        \n')
-                new_lines.append('        # CORS headers\n')
-                new_lines.append('        add_header Access-Control-Allow-Origin * always;\n')
-                new_lines.append('        add_header Access-Control-Allow-Methods "GET, HEAD, OPTIONS" always;\n')
-                new_lines.append('        add_header Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization" always;\n')
-                new_lines.append('        add_header Access-Control-Max-Age 3600 always;\n')
-                new_lines.append('        \n')
-                new_lines.append('        # Handle OPTIONS requests\n')
-                new_lines.append('        if ($request_method = \'OPTIONS\') {\n')
-                new_lines.append('            add_header Access-Control-Allow-Origin * always;\n')
-                new_lines.append('            add_header Access-Control-Allow-Methods "GET, HEAD, OPTIONS" always;\n')
-                new_lines.append('            add_header Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization" always;\n')
-                new_lines.append('            add_header Access-Control-Max-Age 3600 always;\n')
-                new_lines.append('            add_header Content-Length 0;\n')
-                new_lines.append('            add_header Content-Type text/plain;\n')
-                new_lines.append('            return 204;\n')
-                new_lines.append('        }\n')
-                new_lines.append('        \n')
-                new_lines.append('        # Try to serve file, return 404 if not found\n')
-                new_lines.append('        try_files $uri =404;\n')
-                new_lines.append('    }\n')
-                
-                # Skip old location block until closing brace
-                i += 1
-                loc_brace_count = 0
-                while i < len(lines):
-                    loc_brace_count += lines[i].count('{') - lines[i].count('}')
-                    if loc_brace_count <= 0 and '}' in lines[i]:
-                        i += 1
-                        break
-                    i += 1
-                continue
-            
-            # Check if we've left the server block
-            if brace_count == 0 and in_a_acoustic and i > 0:
-                in_a_acoustic = False
-        
-        new_lines.append(line)
-        i += 1
+            if brace_count == 0 and i > block_start:
+                block_end = i
+                break
     
-    # Write new config
+    if block_start == -1:
+        print("❌ Could not find a.acoustic.uz server block")
+        sys.exit(1)
+    
+    if block_end == -1:
+        block_end = len(lines)
+    
+    # Extract server block
+    server_block = lines[block_start:block_end+1]
+    
+    # Find /uploads location
+    uploads_start = -1
+    uploads_end = -1
+    uploads_brace_count = 0
+    
+    for i, line in enumerate(server_block):
+        if 'location /uploads' in line:
+            uploads_start = i
+            uploads_brace_count = 0
+        
+        if uploads_start >= 0:
+            uploads_brace_count += line.count('{') - line.count('}')
+            if uploads_brace_count == 0 and uploads_start < i:
+                uploads_end = i
+                break
+    
+    # New /uploads location block (must be before location /api)
+    new_uploads_block = '''    # Uploads static files - MUST be before location / to avoid 404
+    location /uploads/ {
+        alias /var/www/acoustic.uz/apps/backend/uploads/;
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+        
+        # CORS headers
+        add_header Access-Control-Allow-Origin * always;
+        add_header Access-Control-Allow-Methods "GET, HEAD, OPTIONS" always;
+        add_header Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization" always;
+        add_header Access-Control-Max-Age 3600 always;
+        
+        # Handle OPTIONS requests
+        if ($request_method = 'OPTIONS') {
+            add_header Access-Control-Allow-Origin * always;
+            add_header Access-Control-Allow-Methods "GET, HEAD, OPTIONS" always;
+            add_header Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept, Authorization" always;
+            add_header Access-Control-Max-Age 3600 always;
+            add_header Content-Length 0;
+            add_header Content-Type text/plain;
+            return 204;
+        }
+        
+        # Try to serve file, return 404 if not found
+        try_files $uri =404;
+    }
+'''
+    
+    # Find where to insert (before location /api)
+    api_location_idx = -1
+    for i, line in enumerate(server_block):
+        if 'location /api' in line:
+            api_location_idx = i
+            break
+    
+    # Build new server block
+    new_server_block = []
+    
+    # Add everything before /uploads location (or before /api if /uploads not found)
+    insert_idx = api_location_idx if api_location_idx >= 0 else len(server_block)
+    
+    # If /uploads exists, remove it first
+    if uploads_start >= 0 and uploads_end >= 0:
+        # Add lines before uploads
+        new_server_block.extend(server_block[:uploads_start])
+        # Skip old uploads block
+        # Add new uploads block before /api
+        if api_location_idx >= 0:
+            new_server_block.extend(server_block[uploads_end+1:api_location_idx])
+            new_server_block.append(new_uploads_block)
+            new_server_block.extend(server_block[api_location_idx:])
+        else:
+            new_server_block.append(new_uploads_block)
+            new_server_block.extend(server_block[uploads_end+1:])
+    else:
+        # /uploads not found, insert before /api
+        if api_location_idx >= 0:
+            new_server_block.extend(server_block[:api_location_idx])
+            new_server_block.append(new_uploads_block)
+            new_server_block.extend(server_block[api_location_idx:])
+        else:
+            # No /api found, insert after client settings
+            # Find where to insert (after client_max_body_size)
+            insert_after = -1
+            for i, line in enumerate(server_block):
+                if 'client_max_body_size' in line:
+                    insert_after = i
+                    break
+            
+            if insert_after >= 0:
+                new_server_block.extend(server_block[:insert_after+1])
+                new_server_block.append(new_uploads_block)
+                new_server_block.extend(server_block[insert_after+1:])
+            else:
+                # Insert at beginning of server block (after opening brace)
+                new_server_block.append(server_block[0])
+                new_server_block.append(new_uploads_block)
+                new_server_block.extend(server_block[1:])
+    
+    # Rebuild full config
+    new_lines = lines[:block_start] + new_server_block + lines[block_end+1:]
+    
     with open(config_file, 'w') as f:
         f.writelines(new_lines)
     
-    print("✅ Successfully fixed /uploads location block")
-    
+    print("✅ Successfully fixed /uploads location in a.acoustic.uz server block")
+    print(f"   - Moved /uploads/ before location /api")
+    print(f"   - Added trailing slash and try_files directive")
+
 except Exception as e:
     print(f"❌ Error: {e}")
     import traceback
@@ -128,57 +181,9 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# 4. Move /uploads before /api (if needed)
+# 4. Test config
 echo ""
-echo "📋 Step 4: Ensuring /uploads comes before /api..."
-python3 << 'PYTHON_SCRIPT'
-import re
-
-config_file = "/etc/nginx/sites-available/acoustic-uz.conf"
-
-with open(config_file, 'r') as f:
-    content = f.read()
-
-# Find a.acoustic.uz server block and reorder locations
-# Pattern: find server block, extract locations, reorder
-pattern = r'(server\s*\{[^}]*?server_name\s+a\.acoustic\.uz.*?)(location\s+/uploads/[^{]*?\{[^}]*?\})(.*?)(location\s+/api[^{]*?\{[^}]*?\})(.*?)(location\s*=\s*/\s*\{[^}]*?\})(.*?)(location\s+/\s*\{[^}]*?\})(.*?listen\s+443)'
-
-match = re.search(pattern, content, re.DOTALL)
-if match:
-    server_start = match.group(1)
-    uploads_block = match.group(2)
-    between_uploads_api = match.group(3)
-    api_block = match.group(4)
-    between_api_root = match.group(5)
-    root_block = match.group(6)
-    between_root_slash = match.group(7)
-    slash_block = match.group(8)
-    after_slash = match.group(9)
-    listen_block = match.group(10)
-    
-    # Reorder: uploads before api
-    new_content = (
-        server_start +
-        uploads_block + '\n\n' +
-        api_block + '\n\n' +
-        between_api_root +
-        root_block + '\n    \n' +
-        between_root_slash +
-        slash_block + '\n\n' +
-        after_slash +
-        listen_block
-    )
-    
-    with open(config_file, 'w') as f:
-        f.write(new_content)
-    print("✅ Reordered /uploads before /api")
-else:
-    print("⚠️  Could not reorder (might already be correct)")
-PYTHON_SCRIPT
-
-# 5. Test config
-echo ""
-echo "📋 Step 5: Testing Nginx config..."
+echo "📋 Step 3: Testing Nginx config..."
 if nginx -t 2>&1 | grep -q "successful"; then
     echo "   ✅ Config is valid"
 else
@@ -189,9 +194,9 @@ else
     exit 1
 fi
 
-# 6. Reload Nginx
+# 5. Reload Nginx
 echo ""
-echo "📋 Step 6: Reloading Nginx..."
+echo "📋 Step 4: Reloading Nginx..."
 systemctl reload nginx && echo "   ✅ Nginx reloaded" || {
     echo "   ❌ Reload failed! Restoring backup..."
     cp "$BACKUP_FILE" "$CONFIG_FILE"
@@ -199,24 +204,20 @@ systemctl reload nginx && echo "   ✅ Nginx reloaded" || {
     exit 1
 }
 
-# 7. Test
+# 6. Test
 echo ""
-echo "📋 Step 7: Testing uploads endpoint..."
+echo "📋 Step 5: Testing uploads endpoint..."
 TEST_FILE="2025-12-04-1764833768750-blob-rbrw6k.webp"
 TEST_URL="https://a.acoustic.uz/uploads/$TEST_FILE"
 
 HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$TEST_URL" 2>/dev/null || echo "000")
-CONTENT_TYPE=$(curl -s -I "$TEST_URL" 2>/dev/null | grep -i "content-type" | cut -d: -f2 | tr -d '\r\n' || echo "")
 
 if [ "$HTTP_CODE" = "200" ]; then
     echo "   ✅ File accessible! (HTTP 200)"
-    echo "   📄 Content-Type: $CONTENT_TYPE"
+    echo "   🔗 URL: $TEST_URL"
 elif [ "$HTTP_CODE" = "404" ]; then
-    echo "   ❌ File NOT found (HTTP 404)"
+    echo "   ⚠️  File not found (HTTP 404)"
     echo "   💡 Check if file exists: ls -lh /var/www/acoustic.uz/apps/backend/uploads/$TEST_FILE"
-elif [ "$HTTP_CODE" = "403" ]; then
-    echo "   ⚠️  Access forbidden (HTTP 403)"
-    echo "   💡 Check file permissions"
 else
     echo "   ⚠️  Unexpected response (HTTP $HTTP_CODE)"
 fi
@@ -224,7 +225,11 @@ fi
 echo ""
 echo "✅ Fix complete!"
 echo ""
+echo "📋 Summary:"
+echo "  - Only a.acoustic.uz server block was modified"
+echo "  - /uploads/ location moved before location /api"
+echo "  - Backup saved: $BACKUP_FILE"
+echo ""
 echo "🔍 Test URLs:"
 echo "  - https://a.acoustic.uz/uploads/$TEST_FILE"
-echo "  - https://a.acoustic.uz/uploads/ (directory listing)"
-
+echo "  - https://a.acoustic.uz/uploads/ (should return 403 or directory listing)"
