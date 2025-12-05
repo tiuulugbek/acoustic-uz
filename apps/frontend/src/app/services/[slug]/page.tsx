@@ -143,7 +143,7 @@ export default async function ServiceSlugPage({ params }: ServicePageProps) {
         <section className="bg-white py-12">
           <div className="mx-auto max-w-6xl px-4 md:px-6">
             {services.length > 0 ? (
-              <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              <div className="grid gap-4 grid-cols-2 sm:gap-6 md:grid-cols-3 lg:grid-cols-4">
                 {services.map((service) => {
                   const serviceTitle = getBilingualText(service.title_uz, service.title_ru, locale);
                   const serviceExcerpt = getBilingualText(service.excerpt_uz, service.excerpt_ru, locale);
