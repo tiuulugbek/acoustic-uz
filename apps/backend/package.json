@@ -4,8 +4,8 @@
   "description": "Backend API for acoustic.uz",
   "scripts": {
     "postinstall": "node postinstall.js",
-    "build": "nest build",
-    "dev": "pnpm build && nest start --watch",
+    "build": "pnpm exec nest build",
+    "dev": "pnpm build && pnpm exec nest start --watch",
     "start": "node dist/main",
     "start:prod": "node dist/main",
     "restart": "pkill -9 -f 'nest start' 2>/dev/null || true; pkill -9 -f '@acoustic/backend' 2>/dev/null || true; pkill -9 -f 'node.*3001' 2>/dev/null || true; sleep 3; pnpm run dev",
