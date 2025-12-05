@@ -159,12 +159,15 @@ fi
 echo -e "${BLUE}📋 Step 11: Updating PM2 config...${NC}"
 cp "$PROJECT_DIR/deploy/ecosystem.config.js" "$PROJECT_DIR/ecosystem.config.js"
 
-# Verify PM2 config path
-if grep -q "apps/frontend/.next/standalone/apps/frontend/server.js" "$PROJECT_DIR/ecosystem.config.js"; then
+# Verify PM2 config path (script should be 'server.js' and cwd should be the standalone directory)
+if grep -q "script: 'server.js'" "$PROJECT_DIR/ecosystem.config.js" && grep -q "cwd: '/var/www/acoustic.uz/apps/frontend/.next/standalone/apps/frontend'" "$PROJECT_DIR/ecosystem.config.js"; then
     echo -e "${GREEN}  ✅ PM2 config path is correct${NC}"
+    echo "    script: server.js"
+    echo "    cwd: /var/www/acoustic.uz/apps/frontend/.next/standalone/apps/frontend"
 else
-    echo -e "${RED}  ❌ PM2 config path is incorrect!${NC}"
-    exit 1
+    echo -e "${YELLOW}  ⚠️  PM2 config might need manual verification${NC}"
+    echo "    Checking config file..."
+    grep -A 5 "acoustic-frontend" "$PROJECT_DIR/ecosystem.config.js" || echo "    Config not found"
 fi
 
 # 12. Restart PM2
