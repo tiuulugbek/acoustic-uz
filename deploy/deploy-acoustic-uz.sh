@@ -144,8 +144,12 @@ if [ ! -f "$PROJECT_DIR/.env" ]; then
     # Read database password
     read -p "  Enter database password for 'acoustic' user: " DB_PASSWORD
     
-    # Update .env file
-    sed -i "s|DATABASE_URL=.*|DATABASE_URL=postgresql://acoustic:$DB_PASSWORD@localhost:5432/acoustic|g" "$PROJECT_DIR/.env"
+    # URL encode password (handle special characters)
+    # Using Python for URL encoding
+    DB_PASSWORD_ENCODED=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$DB_PASSWORD'))")
+    
+    # Update .env file with URL-encoded password
+    sed -i "s|DATABASE_URL=.*|DATABASE_URL=postgresql://acoustic:$DB_PASSWORD_ENCODED@localhost:5432/acoustic|g" "$PROJECT_DIR/.env"
     sed -i "s|JWT_ACCESS_SECRET=.*|JWT_ACCESS_SECRET=$JWT_ACCESS_SECRET|g" "$PROJECT_DIR/.env"
     sed -i "s|JWT_REFRESH_SECRET=.*|JWT_REFRESH_SECRET=$JWT_REFRESH_SECRET|g" "$PROJECT_DIR/.env"
     sed -i "s|CORS_ORIGIN=.*|CORS_ORIGIN=https://$FRONTEND_DOMAIN,https://$ADMIN_DOMAIN|g" "$PROJECT_DIR/.env"
