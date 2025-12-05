@@ -87,5 +87,101 @@ ${lead.productId ? `🛍️ *Mahsulot ID:* ${lead.productId}\n` : ''}
     const settings = await this.settingsService.get();
     return settings.telegramButtonBotUsername || null;
   }
+
+  /**
+   * Send lead status update to Telegram
+   * Used when admin updates lead status in admin panel
+   */
+  async sendLeadStatusUpdate(lead: {
+    id: string;
+    name: string;
+    phone: string;
+    status?: string | null;
+    oldStatus?: string | null;
+  }): Promise<boolean> {
+    try {
+      const settings = await this.settingsService.get();
+
+      if (!settings.telegramBotToken || !settings.telegramChatId) {
+        return false;
+      }
+
+      if (!this.formsBot) {
+        this.formsBot = new TelegramBot(settings.telegramBotToken);
+      }
+
+      const statusLabels: Record<string, string> = {
+        new: '🆕 Yangi',
+        in_progress: '⏳ Ko\'rib chiqilmoqda',
+        completed: '✅ Yakunlangan',
+        cancelled: '❌ Bekor qilingan',
+      };
+
+      const oldStatusLabel = lead.oldStatus ? statusLabels[lead.oldStatus] || lead.oldStatus : 'Noma\'lum';
+      const newStatusLabel = lead.status ? statusLabels[lead.status] || lead.status : 'Noma\'lum';
+
+      const message = `
+🔄 *Lead holati yangilandi*
+👤 *Ism:* ${lead.name}
+📞 *Telefon:* ${lead.phone}
+📋 *Eski holat:* ${oldStatusLabel}
+📋 *Yangi holat:* ${newStatusLabel}
+🆔 *ID:* ${lead.id.slice(0, 8)}...
+      `.trim();
+
+      await this.formsBot.sendMessage(settings.telegramChatId, message, {
+        parse_mode: 'Markdown',
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Telegram status update error:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Send lead deletion notification to Telegram
+   * Used when admin deletes a lead in admin panel
+   */
+  async sendLeadDeletion(lead: {
+    id: string;
+    name: string;
+    phone: string;
+    source?: string | null;
+  }): Promise<boolean> {
+    try {
+      const settings = await this.settingsService.get();
+
+      if (!settings.telegramBotToken || !settings.telegramChatId) {
+        return false;
+      }
+
+      if (!this.formsBot) {
+        this.formsBot = new TelegramBot(settings.telegramBotToken);
+      }
+
+      // Format source as hashtag
+      const sourceHashtag = lead.source 
+        ? `#${lead.source.replace(/[^a-zA-Z0-9_]/g, '_')}` 
+        : '';
+
+      const message = `
+🗑️ *Lead o'chirildi*
+👤 *Ism:* ${lead.name}
+📞 *Telefon:* ${lead.phone}
+${sourceHashtag ? `${sourceHashtag}\n` : ''}🆔 *ID:* ${lead.id.slice(0, 8)}...
+      `.trim();
+
+      await this.formsBot.sendMessage(settings.telegramChatId, message, {
+        parse_mode: 'Markdown',
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Telegram deletion notification error:', error);
+      return false;
+    }
+  }
 }
 
