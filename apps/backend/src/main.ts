@@ -38,6 +38,12 @@ async function bootstrap() {
     optionsSuccessStatus: 200,
   });
 
+  // Serve static files from uploads directory - BEFORE global prefix
+  // This allows /uploads/ to work without /api prefix
+  app.useStaticAssets(join(process.cwd(), 'uploads'), {
+    prefix: '/uploads/',
+  });
+
   // Validation
   app.useGlobalPipes(
     new ValidationPipe({
@@ -50,13 +56,8 @@ async function bootstrap() {
     })
   );
 
-  // Global prefix
+  // Global prefix (applies to controllers, not static assets)
   app.setGlobalPrefix('api');
-
-  // Serve static files from uploads directory
-  app.useStaticAssets(join(process.cwd(), 'uploads'), {
-    prefix: '/uploads/',
-  });
 
   // Swagger
   const config = new DocumentBuilder()
