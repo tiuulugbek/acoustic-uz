@@ -13,6 +13,7 @@ import {
   PictureOutlined,
   OrderedListOutlined,
   QuestionCircleOutlined,
+  MessageOutlined,
 } from '@ant-design/icons';
 import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import type { MenuProps } from 'antd';
@@ -128,6 +129,11 @@ const menuItems: MenuProps['items'] = [
     key: '/faq',
     icon: <QuestionCircleOutlined />,
     label: 'Savol-Javob',
+  },
+  {
+    key: '/leads',
+    icon: <MessageOutlined />,
+    label: 'So\'rovlar',
   },
   {
     type: 'divider',

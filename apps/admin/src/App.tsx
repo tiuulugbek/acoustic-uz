@@ -17,6 +17,7 @@ import MenusPage from './pages/Menus';
 import FAQPage from './pages/FAQ';
 import SettingsPage from './pages/Settings';
 import MediaPage from './pages/Media';
+import LeadsPage from './pages/Leads';
 
 function App() {
   return (
@@ -39,6 +40,7 @@ function App() {
           <Route path="menus" element={<MenusPage />} />
           <Route path="faq" element={<FAQPage />} />
           <Route path="media" element={<MediaPage />} />
+          <Route path="leads" element={<LeadsPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
