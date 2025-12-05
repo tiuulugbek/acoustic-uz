@@ -7,9 +7,21 @@ ADD COLUMN     "workingHours_uz" TEXT;
 -- AlterTable
 ALTER TABLE "CatalogPageConfig" ALTER COLUMN "updatedAt" DROP DEFAULT;
 
--- AlterTable
-ALTER TABLE "Post" ADD COLUMN     "categoryId" TEXT,
-ADD COLUMN     "postType" TEXT NOT NULL DEFAULT 'article';
+-- AlterTable - Add categoryId if not exists
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'Post' AND column_name = 'categoryId') THEN
+        ALTER TABLE "Post" ADD COLUMN "categoryId" TEXT;
+    END IF;
+END $$;
+
+-- AlterTable - Add postType if not exists
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'Post' AND column_name = 'postType') THEN
+        ALTER TABLE "Post" ADD COLUMN "postType" TEXT NOT NULL DEFAULT 'article';
+    END IF;
+END $$;
 
 -- CreateTable
 CREATE TABLE "PostCategory" (
@@ -36,17 +48,24 @@ CREATE INDEX "PostCategory_slug_idx" ON "PostCategory"("slug");
 -- CreateIndex
 CREATE INDEX "PostCategory_status_order_idx" ON "PostCategory"("status", "order");
 
--- CreateIndex
-CREATE INDEX "Post_categoryId_idx" ON "Post"("categoryId");
+-- CreateIndex - Create indexes if not exists
+CREATE INDEX IF NOT EXISTS "Post_categoryId_idx" ON "Post"("categoryId");
 
 -- CreateIndex
-CREATE INDEX "Post_categoryId_status_idx" ON "Post"("categoryId", "status");
+CREATE INDEX IF NOT EXISTS "Post_categoryId_status_idx" ON "Post"("categoryId", "status");
 
 -- CreateIndex
-CREATE INDEX "Post_postType_idx" ON "Post"("postType");
+CREATE INDEX IF NOT EXISTS "Post_postType_idx" ON "Post"("postType");
 
--- AddForeignKey
-ALTER TABLE "Post" ADD CONSTRAINT "Post_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "PostCategory"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+-- AddForeignKey - Add foreign key if not exists
+DO $$ 
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'Post_categoryId_fkey'
+    ) THEN
+        ALTER TABLE "Post" ADD CONSTRAINT "Post_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES "PostCategory"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+END $$;
 
 -- AddForeignKey
 ALTER TABLE "HomepagePlaceholder" ADD CONSTRAINT "HomepagePlaceholder_imageId_fkey" FOREIGN KEY ("imageId") REFERENCES "Media"("id") ON DELETE SET NULL ON UPDATE CASCADE;
