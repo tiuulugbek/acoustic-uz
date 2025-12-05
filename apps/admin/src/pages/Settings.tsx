@@ -61,6 +61,15 @@ export default function SettingsPage() {
     posts?: { sections?: SidebarSection[]; brandIds?: string[] };
   }>({});
   const [sidebarConfigImageModals, setSidebarConfigImageModals] = useState<Record<string, Record<string, boolean>>>({});
+  
+  // Social media links state
+  const [socialLinks, setSocialLinks] = useState<{
+    tiktok?: string;
+    instagram?: string;
+    facebook?: string;
+    youtube?: string;
+    telegram?: string;
+  }>({});
 
 
   const { data: settings, isLoading } = useQuery<SettingsDto, ApiError>({
@@ -162,6 +171,35 @@ export default function SettingsPage() {
       form.setFieldsValue({
         sidebarBrandIds: settings.sidebarBrandIds || [],
       });
+      
+      // Initialize social media links
+      if (settings.socialLinks && typeof settings.socialLinks === 'object') {
+        const links = settings.socialLinks as Record<string, string>;
+        setSocialLinks({
+          tiktok: links.tiktok || '',
+          instagram: links.instagram || '',
+          facebook: links.facebook || '',
+          youtube: links.youtube || '',
+          telegram: links.telegram || '',
+        });
+        form.setFieldsValue({
+          socialTiktok: links.tiktok || '',
+          socialInstagram: links.instagram || '',
+          socialFacebook: links.facebook || '',
+          socialYoutube: links.youtube || '',
+          socialTelegram: links.telegram || '',
+        });
+      } else {
+        // Default empty values
+        setSocialLinks({});
+        form.setFieldsValue({
+          socialTiktok: '',
+          socialInstagram: '',
+          socialFacebook: '',
+          socialYoutube: '',
+          socialTelegram: '',
+        });
+      }
     }
   }, [settings, form]);
 
@@ -519,6 +557,28 @@ export default function SettingsPage() {
       await updateMutation.mutateAsync(payload);
     } catch (error) {
       console.error('Form validation error:', error);
+    }
+  };
+
+  // Handle social media links save
+  const handleSocialLinksSave = async () => {
+    try {
+      const values = await form.validateFields(['socialTiktok', 'socialInstagram', 'socialFacebook', 'socialYoutube', 'socialTelegram']);
+      const socialLinksData: Record<string, string> = {};
+      
+      if (values.socialTiktok?.trim()) socialLinksData.tiktok = values.socialTiktok.trim();
+      if (values.socialInstagram?.trim()) socialLinksData.instagram = values.socialInstagram.trim();
+      if (values.socialFacebook?.trim()) socialLinksData.facebook = values.socialFacebook.trim();
+      if (values.socialYoutube?.trim()) socialLinksData.youtube = values.socialYoutube.trim();
+      if (values.socialTelegram?.trim()) socialLinksData.telegram = values.socialTelegram.trim();
+      
+      const payload: UpdateSettingsPayload = {
+        socialLinks: Object.keys(socialLinksData).length > 0 ? socialLinksData : undefined,
+      };
+      await updateMutation.mutateAsync(payload);
+      setSocialLinks(socialLinksData);
+    } catch (error) {
+      console.error('Social links save error:', error);
     }
   };
 
@@ -964,6 +1024,75 @@ export default function SettingsPage() {
             key: 'homepage-content',
             label: 'Bosh sahifa kontenti',
             children: <HomepageContentTab />,
+          },
+          {
+            key: 'social-media',
+            label: 'Ijtimoiy tarmoqlar',
+            children: (
+              <Form form={form} layout="vertical">
+                <Card>
+                  <Alert
+                    message="Ijtimoiy tarmoq linklari"
+                    description="Footer'dagi ijtimoiy tarmoq linklarini boshqaring. To'liq URL kiriting (masalan: https://instagram.com/acoustic)"
+                    type="info"
+                    showIcon
+                    style={{ marginBottom: 24 }}
+                  />
+                  
+                  <Form.Item
+                    label="TikTok"
+                    name="socialTiktok"
+                    extra="TikTok profil linki (masalan: https://tiktok.com/@acoustic)"
+                  >
+                    <Input placeholder="https://tiktok.com/@acoustic" />
+                  </Form.Item>
+
+                  <Form.Item
+                    label="Instagram"
+                    name="socialInstagram"
+                    extra="Instagram profil linki (masalan: https://instagram.com/acoustic)"
+                  >
+                    <Input placeholder="https://instagram.com/acoustic" />
+                  </Form.Item>
+
+                  <Form.Item
+                    label="Facebook"
+                    name="socialFacebook"
+                    extra="Facebook profil linki (masalan: https://facebook.com/acoustic)"
+                  >
+                    <Input placeholder="https://facebook.com/acoustic" />
+                  </Form.Item>
+
+                  <Form.Item
+                    label="YouTube"
+                    name="socialYoutube"
+                    extra="YouTube kanal linki (masalan: https://youtube.com/@acoustic)"
+                  >
+                    <Input placeholder="https://youtube.com/@acoustic" />
+                  </Form.Item>
+
+                  <Form.Item
+                    label="Telegram"
+                    name="socialTelegram"
+                    extra="Telegram kanal yoki bot linki (masalan: https://t.me/acoustic)"
+                  >
+                    <Input placeholder="https://t.me/acoustic" />
+                  </Form.Item>
+
+                  <div style={{ marginTop: 24, textAlign: 'right' }}>
+                    <Button
+                      type="primary"
+                      icon={<SaveOutlined />}
+                      onClick={handleSocialLinksSave}
+                      loading={updateMutation.isPending}
+                      size="large"
+                    >
+                      Saqlash
+                    </Button>
+                  </div>
+                </Card>
+              </Form>
+            ),
           },
         ]}
       />
