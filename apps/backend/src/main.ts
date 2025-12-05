@@ -40,7 +40,15 @@ async function bootstrap() {
 
   // Serve static files from uploads directory - BEFORE global prefix
   // This allows /uploads/ to work without /api prefix
-  app.useStaticAssets(join(process.cwd(), 'uploads'), {
+  // Use explicit path: if cwd is project root, use apps/backend/uploads
+  // If cwd is backend root, use uploads
+  const uploadsPath = process.cwd().endsWith('backend')
+    ? join(process.cwd(), 'uploads')
+    : join(process.cwd(), 'apps', 'backend', 'uploads');
+  
+  logger.log(`📁 Serving static files from: ${uploadsPath}`);
+  
+  app.useStaticAssets(uploadsPath, {
     prefix: '/uploads/',
   });
 
