@@ -354,14 +354,18 @@ export default async function BranchPage({ params }: BranchPageProps) {
                   </h2>
                   <div className="rounded-lg overflow-hidden border border-border bg-muted/20">
                     {branch.tour3d_config ? (
-                      <div className="w-full" style={{ aspectRatio: '16 / 9', minHeight: '300px' }}>
+                      <div className="w-full" style={{ aspectRatio: '16 / 9', minHeight: '250px', maxHeight: '500px' }}>
                         <PanoramaViewer config={branch.tour3d_config as TourConfig} locale={locale} />
                       </div>
                     ) : (
                       <div
-                        className="w-full aspect-video"
+                        className="w-full"
+                        style={{ aspectRatio: '16 / 9', minHeight: '250px', maxHeight: '500px', position: 'relative', overflow: 'hidden' }}
                         dangerouslySetInnerHTML={{
-                          __html: branch.tour3d_iframe?.replace(/width="[^"]*"/gi, 'width="100%"') || '',
+                          __html: branch.tour3d_iframe
+                            ?.replace(/width="[^"]*"/gi, 'width="100%"')
+                            .replace(/height="[^"]*"/gi, 'height="100%"')
+                            .replace(/style="[^"]*"/gi, 'style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;"') || '',
                         }}
                       />
                     )}
@@ -384,13 +388,14 @@ export default async function BranchPage({ params }: BranchPageProps) {
                         paddingBottom: '56.25%', // 16:9 aspect ratio
                         height: 0,
                         overflow: 'hidden',
-                        minHeight: '300px'
+                        minHeight: '250px',
+                        maxHeight: '500px'
                       }}
                       dangerouslySetInnerHTML={{ 
                         __html: branch.map_iframe
                           .replace(/width="[^"]*"/gi, 'width="100%"')
                           .replace(/height="[^"]*"/gi, 'height="100%"')
-                          .replace(/style="[^"]*"/gi, 'style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; min-height: 300px;"')
+                          .replace(/style="[^"]*"/gi, 'style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;"')
                           .replace(/<iframe/gi, '<iframe loading="lazy" allowfullscreen')
                           .replace(/sandbox="[^"]*"/gi, '') // Remove sandbox if present
                           .replace(/maps\.google\.com\/maps\?q=([^&"']+)/gi, (match, coords) => {
@@ -402,13 +407,13 @@ export default async function BranchPage({ params }: BranchPageProps) {
                   </div>
                 ) : branch.latitude && branch.longitude ? (
                   // If coordinates are available, use Yandex Maps embed (more reliable than Google Maps)
-                  <div className="mb-4 rounded-lg overflow-hidden border border-border bg-gray-100 relative" style={{ paddingBottom: '56.25%', height: 0, minHeight: '300px' }}>
+                  <div className="mb-4 rounded-lg overflow-hidden border border-border bg-gray-100 relative" style={{ paddingBottom: '56.25%', height: 0, minHeight: '250px', maxHeight: '500px' }}>
                     <iframe
                       src={`https://yandex.com/map-widget/v1/?ll=${branch.longitude},${branch.latitude}&z=16&pt=${branch.longitude},${branch.latitude}&lang=${locale === 'ru' ? 'ru_RU' : 'uz_UZ'}`}
                       width="100%"
                       height="100%"
                       className="absolute top-0 left-0 w-full h-full"
-                      style={{ border: 0, minHeight: '300px' }}
+                      style={{ border: 0 }}
                       allowFullScreen
                       loading="lazy"
                       referrerPolicy="no-referrer-when-downgrade"
