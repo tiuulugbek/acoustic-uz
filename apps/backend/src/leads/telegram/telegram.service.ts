@@ -36,12 +36,17 @@ export class TelegramService {
         this.formsBot = new TelegramBot(settings.telegramBotToken);
       }
 
+      // Format source as hashtag for better analytics
+      const sourceHashtag = lead.source 
+        ? `#${lead.source.replace(/[^a-zA-Z0-9_]/g, '_')}` 
+        : '';
+
       const message = `
 🆕 *Yangi so'rov*
 👤 *Ism:* ${lead.name}
 📞 *Telefon:* ${lead.phone}
 ${lead.email ? `📧 *Email:* ${lead.email}\n` : ''}
-${lead.source ? `📍 *Manba:* ${lead.source}\n` : ''}
+${sourceHashtag ? `${sourceHashtag}\n` : ''}
 ${lead.message ? `💬 *Xabar:* ${lead.message}\n` : ''}
 ${lead.productId ? `🛍️ *Mahsulot ID:* ${lead.productId}\n` : ''}
       `.trim();

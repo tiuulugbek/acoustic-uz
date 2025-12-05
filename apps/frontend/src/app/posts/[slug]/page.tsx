@@ -250,7 +250,7 @@ export default async function PostPage({ params }: PostPageProps) {
                       : 'Bizning mutaxassislarimiz barcha savollaringizga javob berishga va eshitishingiz uchun eng yaxshi yechimni topishga tayyor.'}
                   </p>
                 </div>
-                <AppointmentForm locale={locale} doctorId={post.authorId || null} />
+                <AppointmentForm locale={locale} doctorId={post.authorId || null} source={`post-${post.slug}`} />
               </div>
             </div>
 

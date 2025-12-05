@@ -9,6 +9,7 @@ import type { BranchResponse } from '@/lib/api';
 interface AppointmentFormProps {
   locale: 'uz' | 'ru';
   doctorId?: string | null;
+  source?: string; // Source identifier (e.g., 'post-{slug}', 'service-{slug}', 'product-{slug}')
 }
 
 // Phone number mask function for Uzbekistan (+998)
@@ -34,7 +35,7 @@ const getPhoneDigits = (formatted: string): string => {
   return formatted.replace(/\D/g, '');
 };
 
-export default function AppointmentForm({ locale, doctorId }: AppointmentFormProps) {
+export default function AppointmentForm({ locale, doctorId, source }: AppointmentFormProps) {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('+998 ');
   const [selectedBranch, setSelectedBranch] = useState<string>('');
@@ -106,10 +107,15 @@ export default function AppointmentForm({ locale, doctorId }: AppointmentFormPro
         ? getBilingualText(selectedBranchData.name_uz, selectedBranchData.name_ru, locale)
         : '';
 
+      // Build source string: use provided source or default format
+      const sourceString = source 
+        ? `${source}_branch_${selectedBranch}${doctorId ? `_doctor_${doctorId}` : ''}`
+        : `appointment_form${doctorId ? `_doctor_${doctorId}` : ''}_branch_${selectedBranch}`;
+
       await createLead({
         name: fullName.trim(),
         phone: phoneDigits,
-        source: `appointment_form${doctorId ? `_doctor_${doctorId}` : ''}_branch_${selectedBranch}`,
+        source: sourceString,
         message: branchName ? `${locale === 'ru' ? 'Филиал' : 'Filial'}: ${branchName}` : undefined,
       }, locale);
 

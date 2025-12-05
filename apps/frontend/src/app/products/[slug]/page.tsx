@@ -14,6 +14,7 @@ import { getProductBySlug, getProductCategories, getBrands, getSettings } from '
 import ProductTabs from '@/components/product-tabs';
 import ProductSpecsTable from '@/components/product-specs-table';
 import ProductFeaturesList from '@/components/product-features-list';
+import AppointmentForm from '@/components/appointment-form';
 import { detectLocale } from '@/lib/locale-server';
 import { getBilingualText } from '@/lib/locale';
 import Sidebar from '@/components/sidebar';
@@ -544,13 +545,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                     <span className="font-bold">{isRu ? 'Способ оплаты' : 'To\'lov turi'}:</span>{' '}
                     {isRu ? 'Наличными, картой Visa/MasterCard' : 'Naqd pul, Visa/MasterCard kartasi'}
                   </p>
-                  <Link
-                    href="/contact"
-                    className="inline-flex items-center gap-2 rounded-lg bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-accent"
-                  >
-                    <Phone className="h-4 w-4" />
-                    {isRu ? 'Записаться на подбор' : 'Tanlash uchun yozilish'}
-                  </Link>
+                  <AppointmentForm locale={locale} doctorId={null} source={`product-${product.slug}`} />
                 </div>
               </div>
 

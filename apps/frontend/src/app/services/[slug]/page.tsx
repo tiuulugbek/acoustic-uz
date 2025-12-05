@@ -376,7 +376,7 @@ export default async function ServiceSlugPage({ params }: ServicePageProps) {
                     : 'Bizning mutaxassislarimiz barcha savollaringizga javob berishga va eshitishingiz uchun eng yaxshi yechimni topishga tayyor.'}
                 </p>
               </div>
-              <AppointmentForm locale={locale} doctorId={null} />
+              <AppointmentForm locale={locale} doctorId={null} source={`service-${service.slug}`} />
             </div>
           </article>
 
