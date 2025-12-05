@@ -23,44 +23,66 @@ cd apps/frontend
 
 # Set environment variable
 export NEXT_PUBLIC_API_URL="https://a.acoustic.uz/api"
+export NODE_ENV="production"
 
 # Clean build
+echo "   Cleaning old build files..."
 rm -rf .next
 rm -rf dist
 rm -rf out
+rm -rf node_modules/.cache
 
 # Build
+echo "   Building frontend..."
 pnpm build || {
     echo "❌ Frontend build failed!"
     exit 1
 }
 
+echo "   ✅ Frontend build complete!"
+
 # 4. Copy standalone build files
 echo "📦 Copying standalone build files..."
 if [ -d ".next/standalone" ]; then
+    echo "   Found standalone build, copying..."
     # Copy standalone files
     cp -r .next/standalone/* "$PROJECT_DIR/" || true
     
-    # Copy static files
+    # Copy static files (CRITICAL for chunks)
     if [ -d ".next/static" ]; then
+        echo "   Copying static files..."
         mkdir -p "$PROJECT_DIR/.next/static"
         cp -r .next/static/* "$PROJECT_DIR/.next/static/" || true
+        echo "   ✅ Static files copied"
     fi
-    
-    # Copy public files
-    if [ -d "public" ]; then
-        cp -r public/* "$PROJECT_DIR/public/" 2>/dev/null || true
-    fi
-else
-    echo "⚠️  Standalone build not found, using regular build..."
-    # Copy .next directory
-    cp -r .next "$PROJECT_DIR/" || true
     
     # Copy public files
     if [ -d "public" ]; then
         mkdir -p "$PROJECT_DIR/public"
         cp -r public/* "$PROJECT_DIR/public/" 2>/dev/null || true
     fi
+else
+    echo "⚠️  Standalone build not found, copying regular build..."
+    # Copy .next directory (CRITICAL for chunks)
+    if [ -d ".next" ]; then
+        echo "   Copying .next directory..."
+        cp -r .next "$PROJECT_DIR/" || true
+        echo "   ✅ .next directory copied"
+    fi
+    
+    # Copy public files
+    if [ -d "public" ]; then
+        mkdir -p "$PROJECT_DIR/public"
+        cp -r public/* "$PROJECT_DIR/public/" 2>/dev/null || true
+    fi
+fi
+
+# Verify static files were copied
+if [ -d "$PROJECT_DIR/.next/static" ]; then
+    STATIC_COUNT=$(find "$PROJECT_DIR/.next/static" -type f | wc -l)
+    echo "   ✅ Found $STATIC_COUNT static files in .next/static"
+else
+    echo "   ⚠️  WARNING: .next/static directory not found!"
 fi
 
 cd "$PROJECT_DIR"
