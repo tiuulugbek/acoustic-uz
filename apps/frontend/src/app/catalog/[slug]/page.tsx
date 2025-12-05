@@ -334,7 +334,7 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
                 {/* Products Grid */}
                 {paginatedProducts.length > 0 ? (
                   <>
-                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid gap-4 grid-cols-2 sm:gap-6 lg:grid-cols-3">
                       {paginatedProducts.map((product) => {
                         const rawImage = product.galleryUrls?.[0] ?? product.brand?.logo?.url ?? '';
                         const mainImage = rawImage ? normalizeImageUrl(rawImage) : placeholderImage;
@@ -346,28 +346,28 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
                           <Link
                             key={product.id}
                             href={`/products/${product.slug}`}
-                            className="group flex flex-col gap-4 rounded-2xl border border-border/60 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-brand-primary/50 hover:shadow-lg"
+                            className="group flex flex-col gap-3 sm:gap-4 rounded-2xl border border-border/60 bg-white p-3 sm:p-5 shadow-sm transition hover:-translate-y-1 hover:border-brand-primary/50 hover:shadow-lg"
                           >
                             <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-brand-primary/5">
                               <Image
                                 src={mainImage}
                                 alt={productName}
                                 fill
-                                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                                className="object-contain p-4 transition-transform duration-300 group-hover:scale-105"
+                                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 33vw"
+                                className="object-contain p-2 sm:p-4 transition-transform duration-300 group-hover:scale-105"
                               />
                             </div>
-                            <div className="space-y-2">
-                              <h3 className="text-lg font-semibold text-brand-accent group-hover:text-brand-primary">{productName}</h3>
+                            <div className="space-y-1.5 sm:space-y-2">
+                              <h3 className="text-sm sm:text-lg font-semibold text-brand-accent group-hover:text-brand-primary line-clamp-2">{productName}</h3>
                               {product.brand && <p className="text-xs text-muted-foreground">{product.brand.name}</p>}
-                              {priceFormatted && <p className="text-xl font-semibold text-brand-primary">{priceFormatted}</p>}
+                              {priceFormatted && <p className="text-base sm:text-xl font-semibold text-brand-primary">{priceFormatted}</p>}
                               {availability && (
                                 <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold ${availability.color}`}>
                                   {locale === 'ru' ? availability.ru : availability.uz}
                                 </span>
                               )}
                             </div>
-                            <span className="mt-auto inline-flex items-center gap-2 text-sm font-semibold text-brand-primary group-hover:text-brand-accent" suppressHydrationWarning>
+                            <span className="mt-auto inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-brand-primary group-hover:text-brand-accent" suppressHydrationWarning>
                               {locale === 'ru' ? 'Подробнее' : 'Batafsil'} →
                             </span>
                           </Link>
@@ -535,7 +535,7 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
                 {/* Products Grid */}
                 {paginatedProducts.length > 0 ? (
                   <>
-                    <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid gap-4 grid-cols-2 sm:gap-6 lg:grid-cols-3">
                       {paginatedProducts.map((product) => {
                         const rawImage = product.galleryUrls?.[0] ?? product.brand?.logo?.url ?? '';
                         const mainImage = rawImage ? normalizeImageUrl(rawImage) : placeholderImage;
@@ -547,26 +547,26 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
                           <Link
                             key={product.id}
                             href={`/products/${product.slug}`}
-                            className="group flex flex-col gap-4 rounded-2xl border border-border/60 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-brand-primary/50 hover:shadow-lg"
+                            className="group flex flex-col gap-3 sm:gap-4 rounded-2xl border border-border/60 bg-white p-3 sm:p-5 shadow-sm transition hover:-translate-y-1 hover:border-brand-primary/50 hover:shadow-lg"
                           >
                             <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-brand-primary/5">
                               <Image
                                 src={mainImage}
                                 alt={productName}
                                 fill
-                                className="object-contain transition-transform group-hover:scale-105"
-                                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                                className="object-contain p-2 sm:p-4 transition-transform group-hover:scale-105"
+                                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 33vw"
                               />
                             </div>
-                            <div className="flex flex-col gap-2">
+                            <div className="flex flex-col gap-1.5 sm:gap-2">
                               {product.brand && (
                                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                   {product.brand.name}
                                 </p>
                               )}
-                              <h3 className="line-clamp-2 font-semibold leading-tight" suppressHydrationWarning>{productName}</h3>
+                              <h3 className="line-clamp-2 text-sm sm:text-base font-semibold leading-tight" suppressHydrationWarning>{productName}</h3>
                               {priceFormatted && (
-                                <p className="text-lg font-bold text-brand-primary" suppressHydrationWarning>{priceFormatted}</p>
+                                <p className="text-base sm:text-lg font-bold text-brand-primary" suppressHydrationWarning>{priceFormatted}</p>
                               )}
                               {availability && (
                                 <span className={`inline-block w-fit rounded-full px-2 py-1 text-xs font-medium ${availability.color}`} suppressHydrationWarning>
@@ -920,28 +920,28 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
                         <Link
                           key={product.id}
                           href={`/products/${product.slug}`}
-                          className="group flex flex-col gap-4 rounded-2xl border border-border/60 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-brand-primary/50 hover:shadow-lg"
+                          className="group flex flex-col gap-3 sm:gap-4 rounded-2xl border border-border/60 bg-white p-3 sm:p-5 shadow-sm transition hover:-translate-y-1 hover:border-brand-primary/50 hover:shadow-lg"
                         >
                           <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-brand-primary/5">
                             <Image
                               src={mainImage}
                               alt={productName}
                               fill
-                              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                              className="object-contain p-4 transition-transform duration-300 group-hover:scale-105"
+                              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 33vw"
+                              className="object-contain p-2 sm:p-4 transition-transform duration-300 group-hover:scale-105"
                             />
                           </div>
-                          <div className="space-y-2">
-                            <h3 className="text-lg font-semibold text-brand-accent group-hover:text-brand-primary" suppressHydrationWarning>{productName}</h3>
+                          <div className="space-y-1.5 sm:space-y-2">
+                            <h3 className="text-sm sm:text-lg font-semibold text-brand-accent group-hover:text-brand-primary line-clamp-2" suppressHydrationWarning>{productName}</h3>
                             {product.brand && <p className="text-xs text-muted-foreground">{product.brand.name}</p>}
-                            {priceFormatted && <p className="text-xl font-semibold text-brand-primary">{priceFormatted}</p>}
+                            {priceFormatted && <p className="text-base sm:text-xl font-semibold text-brand-primary">{priceFormatted}</p>}
                             {availability && (
                               <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold ${availability.color}`} suppressHydrationWarning>
                                 {locale === 'ru' ? availability.ru : availability.uz}
                               </span>
                             )}
                           </div>
-                          <span className="mt-auto inline-flex items-center gap-2 text-sm font-semibold text-brand-primary group-hover:text-brand-accent" suppressHydrationWarning>
+                          <span className="mt-auto inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-brand-primary group-hover:text-brand-accent" suppressHydrationWarning>
                             {locale === 'ru' ? 'Подробнее' : 'Batafsil'} →
                           </span>
                         </Link>
