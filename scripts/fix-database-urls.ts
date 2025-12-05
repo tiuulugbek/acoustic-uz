@@ -50,31 +50,37 @@ function normalizeUrl(url: string): string {
 
       // Fix empty or incorrect hostname
       if (!urlObj.hostname || urlObj.hostname === '' || urlObj.hostname.startsWith('.')) {
-        urlObj.hostname = 'api.acoustic.uz';
+        urlObj.hostname = 'a.acoustic.uz';
         urlObj.protocol = 'https:';
       }
 
-      // Fix incorrect domain: acoustic.uz -> api.acoustic.uz
+      // Fix incorrect domain: acoustic.uz -> a.acoustic.uz
       if (urlObj.hostname === 'acoustic.uz' || urlObj.hostname === 'www.acoustic.uz') {
-        urlObj.hostname = 'api.acoustic.uz';
+        urlObj.hostname = 'a.acoustic.uz';
       }
 
-      // Fix incorrect domain: localhost:3001 -> api.acoustic.uz (in production)
+      // Fix incorrect domain: localhost:3001 -> a.acoustic.uz (in production)
       if (urlObj.hostname === 'localhost' && urlObj.port === '3001') {
-        urlObj.hostname = 'api.acoustic.uz';
+        urlObj.hostname = 'a.acoustic.uz';
         urlObj.port = '';
         urlObj.protocol = 'https:';
       }
 
       // Fix old domains
       if (urlObj.hostname === 'news.acoustic.uz' || urlObj.hostname === 'api.news.acoustic.uz') {
-        urlObj.hostname = 'api.acoustic.uz';
+        urlObj.hostname = 'a.acoustic.uz';
+        urlObj.protocol = 'https:';
+      }
+
+      // Fix api.acoustic.uz -> a.acoustic.uz (old API domain)
+      if (urlObj.hostname === 'api.acoustic.uz') {
+        urlObj.hostname = 'a.acoustic.uz';
         urlObj.protocol = 'https:';
       }
 
       // Fix old.acoustic.uz domain
       if (urlObj.hostname === 'old.acoustic.uz' || urlObj.hostname === 'www.old.acoustic.uz') {
-        urlObj.hostname = 'api.acoustic.uz';
+        urlObj.hostname = 'a.acoustic.uz';
         urlObj.protocol = 'https:';
       }
 
@@ -103,24 +109,27 @@ function normalizeUrl(url: string): string {
       // If URL parsing fails, try simple string replacement as fallback
       let fixedUrl = url;
 
-      // Fix empty hostname (.acoustic.uz -> api.acoustic.uz)
-      fixedUrl = fixedUrl.replace(/https?:\/\/\.acoustic\.uz\//g, 'https://api.acoustic.uz/');
+      // Fix empty hostname (.acoustic.uz -> a.acoustic.uz)
+      fixedUrl = fixedUrl.replace(/https?:\/\/\.acoustic\.uz\//g, 'https://a.acoustic.uz/');
 
-      // Fix acoustic.uz/api/uploads/ -> api.acoustic.uz/uploads/
-      fixedUrl = fixedUrl.replace(/https?:\/\/acoustic\.uz\/api\/uploads\//g, 'https://api.acoustic.uz/uploads/');
-      fixedUrl = fixedUrl.replace(/https?:\/\/www\.acoustic\.uz\/api\/uploads\//g, 'https://api.acoustic.uz/uploads/');
+      // Fix acoustic.uz/api/uploads/ -> a.acoustic.uz/uploads/
+      fixedUrl = fixedUrl.replace(/https?:\/\/acoustic\.uz\/api\/uploads\//g, 'https://a.acoustic.uz/uploads/');
+      fixedUrl = fixedUrl.replace(/https?:\/\/www\.acoustic\.uz\/api\/uploads\//g, 'https://a.acoustic.uz/uploads/');
 
-      // Fix localhost:3001 -> api.acoustic.uz
-      fixedUrl = fixedUrl.replace(/http:\/\/localhost:3001\/uploads\//g, 'https://api.acoustic.uz/uploads/');
-      fixedUrl = fixedUrl.replace(/http:\/\/localhost:3001\/api\/uploads\//g, 'https://api.acoustic.uz/uploads/');
+      // Fix localhost:3001 -> a.acoustic.uz
+      fixedUrl = fixedUrl.replace(/http:\/\/localhost:3001\/uploads\//g, 'https://a.acoustic.uz/uploads/');
+      fixedUrl = fixedUrl.replace(/http:\/\/localhost:3001\/api\/uploads\//g, 'https://a.acoustic.uz/uploads/');
 
       // Fix old domains
-      fixedUrl = fixedUrl.replace(/https?:\/\/news\.acoustic\.uz\//g, 'https://api.acoustic.uz/');
-      fixedUrl = fixedUrl.replace(/https?:\/\/api\.news\.acoustic\.uz\//g, 'https://api.acoustic.uz/');
+      fixedUrl = fixedUrl.replace(/https?:\/\/news\.acoustic\.uz\//g, 'https://a.acoustic.uz/');
+      fixedUrl = fixedUrl.replace(/https?:\/\/api\.news\.acoustic\.uz\//g, 'https://a.acoustic.uz/');
+      
+      // Fix api.acoustic.uz -> a.acoustic.uz (old API domain)
+      fixedUrl = fixedUrl.replace(/https?:\/\/api\.acoustic\.uz\//g, 'https://a.acoustic.uz/');
       
       // Fix old.acoustic.uz domain
-      fixedUrl = fixedUrl.replace(/https?:\/\/old\.acoustic\.uz\//g, 'https://api.acoustic.uz/');
-      fixedUrl = fixedUrl.replace(/https?:\/\/www\.old\.acoustic\.uz\//g, 'https://api.acoustic.uz/');
+      fixedUrl = fixedUrl.replace(/https?:\/\/old\.acoustic\.uz\//g, 'https://a.acoustic.uz/');
+      fixedUrl = fixedUrl.replace(/https?:\/\/www\.old\.acoustic\.uz\//g, 'https://a.acoustic.uz/');
       
       // Fix wp-content/uploads/ -> uploads/
       fixedUrl = fixedUrl.replace(/\/wp-content\/uploads\//g, '/uploads/');
@@ -131,7 +140,7 @@ function normalizeUrl(url: string): string {
 
   // If relative URL starting with /uploads/, make it absolute
   if (url.startsWith('/uploads/')) {
-    const baseUrl = 'https://api.acoustic.uz';
+    const baseUrl = 'https://a.acoustic.uz';
 
     // Encode only the filename part
     const pathParts = url.split('/');

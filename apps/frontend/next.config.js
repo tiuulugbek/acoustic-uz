@@ -33,7 +33,7 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'api.acoustic.uz',
+        hostname: 'a.acoustic.uz',
         pathname: '/uploads/**',
       },
     ],

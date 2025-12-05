@@ -5,7 +5,7 @@
 
 /**
  * Normalize image URL for display in frontend
- * Converts relative URLs (/uploads/...) to absolute URLs (https://api.acoustic.uz/uploads/...)
+ * Converts relative URLs (/uploads/...) to absolute URLs (https://a.acoustic.uz/uploads/...)
  * Also handles filename encoding for URLs with spaces
  */
 export function normalizeImageUrl(url: string | null | undefined): string {
@@ -18,19 +18,25 @@ export function normalizeImageUrl(url: string | null | undefined): string {
       
       // Fix empty or incorrect hostname
       if (!urlObj.hostname || urlObj.hostname === '' || urlObj.hostname.startsWith('.')) {
-        urlObj.hostname = 'api.acoustic.uz';
+        urlObj.hostname = 'a.acoustic.uz';
         urlObj.protocol = 'https:';
       }
       
-      // Fix incorrect domain: acoustic.uz -> api.acoustic.uz
+      // Fix incorrect domain: acoustic.uz -> a.acoustic.uz
       if (urlObj.hostname === 'acoustic.uz' || urlObj.hostname === 'www.acoustic.uz') {
-        urlObj.hostname = 'api.acoustic.uz';
+        urlObj.hostname = 'a.acoustic.uz';
       }
       
-      // Fix incorrect domain: localhost:3001 -> api.acoustic.uz (in production)
+      // Fix incorrect domain: localhost:3001 -> a.acoustic.uz (in production)
       if (urlObj.hostname === 'localhost' && urlObj.port === '3001') {
-        urlObj.hostname = 'api.acoustic.uz';
+        urlObj.hostname = 'a.acoustic.uz';
         urlObj.port = '';
+        urlObj.protocol = 'https:';
+      }
+      
+      // Fix api.acoustic.uz -> a.acoustic.uz (old API domain)
+      if (urlObj.hostname === 'api.acoustic.uz') {
+        urlObj.hostname = 'a.acoustic.uz';
         urlObj.protocol = 'https:';
       }
       
@@ -56,16 +62,19 @@ export function normalizeImageUrl(url: string | null | undefined): string {
       // If URL parsing fails, try simple string replacement as fallback
       let fixedUrl = url;
       
-      // Fix empty hostname (.acoustic.uz -> api.acoustic.uz)
-      fixedUrl = fixedUrl.replace(/https?:\/\/\.acoustic\.uz\//g, 'https://api.acoustic.uz/');
+      // Fix empty hostname (.acoustic.uz -> a.acoustic.uz)
+      fixedUrl = fixedUrl.replace(/https?:\/\/\.acoustic\.uz\//g, 'https://a.acoustic.uz/');
       
-      // Fix acoustic.uz/api/uploads/ -> api.acoustic.uz/uploads/
-      fixedUrl = fixedUrl.replace(/https?:\/\/acoustic\.uz\/api\/uploads\//g, 'https://api.acoustic.uz/uploads/');
-      fixedUrl = fixedUrl.replace(/https?:\/\/www\.acoustic\.uz\/api\/uploads\//g, 'https://api.acoustic.uz/uploads/');
+      // Fix acoustic.uz/api/uploads/ -> a.acoustic.uz/uploads/
+      fixedUrl = fixedUrl.replace(/https?:\/\/acoustic\.uz\/api\/uploads\//g, 'https://a.acoustic.uz/uploads/');
+      fixedUrl = fixedUrl.replace(/https?:\/\/www\.acoustic\.uz\/api\/uploads\//g, 'https://a.acoustic.uz/uploads/');
       
-      // Fix localhost:3001 -> api.acoustic.uz
-      fixedUrl = fixedUrl.replace(/http:\/\/localhost:3001\/uploads\//g, 'https://api.acoustic.uz/uploads/');
-      fixedUrl = fixedUrl.replace(/http:\/\/localhost:3001\/api\/uploads\//g, 'https://api.acoustic.uz/uploads/');
+      // Fix localhost:3001 -> a.acoustic.uz
+      fixedUrl = fixedUrl.replace(/http:\/\/localhost:3001\/uploads\//g, 'https://a.acoustic.uz/uploads/');
+      fixedUrl = fixedUrl.replace(/http:\/\/localhost:3001\/api\/uploads\//g, 'https://a.acoustic.uz/uploads/');
+      
+      // Fix api.acoustic.uz -> a.acoustic.uz (old API domain)
+      fixedUrl = fixedUrl.replace(/https?:\/\/api\.acoustic\.uz\//g, 'https://a.acoustic.uz/');
       
       return fixedUrl;
     }
@@ -75,7 +84,7 @@ export function normalizeImageUrl(url: string | null | undefined): string {
   if (url.startsWith('/uploads/')) {
     // In Next.js, NEXT_PUBLIC_* vars are inlined at build time
     // If not set during build, fallback to production URL
-    const apiBase = process.env.NEXT_PUBLIC_API_URL || 'https://api.acoustic.uz/api';
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || 'https://a.acoustic.uz/api';
     
     // Properly extract base URL by removing /api from the end
     let baseUrl = apiBase;
