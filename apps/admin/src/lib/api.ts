@@ -1621,4 +1621,36 @@ export const updateSettings = (payload: UpdateSettingsPayload) =>
     body: JSON.stringify(payload),
   });
 
+// Leads interfaces and functions
+export interface LeadDto {
+  id: string;
+  name: string;
+  phone: string;
+  email?: string | null;
+  source?: string | null;
+  message?: string | null;
+  productId?: string | null;
+  status?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type UpdateLeadPayload = {
+  status?: string;
+};
+
+export const getLeads = () => request<LeadDto[]>('/leads', { auth: true });
+export const getLead = (id: string) => request<LeadDto>(`/leads/${id}`, { auth: true });
+export const updateLead = (id: string, payload: UpdateLeadPayload) =>
+  request<LeadDto>(`/leads/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+    auth: true,
+  });
+export const deleteLead = (id: string) =>
+  request<void>(`/leads/${id}`, {
+    method: 'DELETE',
+    auth: true,
+  });
+
 // AmoCRM API - REMOVED (no longer used)
