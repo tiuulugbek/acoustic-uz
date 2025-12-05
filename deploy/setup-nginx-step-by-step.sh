@@ -66,12 +66,13 @@ if [ "$setup_ssl" = "y" ]; then
         -d www.acoustic.uz \
         -d a.acoustic.uz \
         -d admin.acoustic.uz \
+        --expand \
         --non-interactive \
         --agree-tos \
         --email admin@acoustic.uz \
         --redirect || {
         echo "⚠️  Certbot failed. You can try again later."
-        echo "  Run: certbot --nginx -d acoustic.uz -d www.acoustic.uz -d a.acoustic.uz -d admin.acoustic.uz"
+        echo "  Run: certbot --nginx --expand -d acoustic.uz -d www.acoustic.uz -d a.acoustic.uz -d admin.acoustic.uz"
     }
     
     # Test config after SSL
