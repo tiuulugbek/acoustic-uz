@@ -86,8 +86,15 @@ if [ -d "$PROJECT_DIR" ] && [ -d "$PROJECT_DIR/.git" ]; then
     # Verify remote URL
     CURRENT_REMOTE=$(git remote get-url origin)
     echo -e "${BLUE}  Current remote: $CURRENT_REMOTE${NC}"
-    # Pull latest changes
-    git pull origin main
+    # Configure pull strategy (merge)
+    git config pull.rebase false
+    # Pull latest changes (force merge if divergent)
+    echo -e "${YELLOW}  Pulling latest changes...${NC}"
+    git pull origin main --no-edit || {
+        echo -e "${YELLOW}  ⚠️  Merge conflict detected, resetting to remote...${NC}"
+        git fetch origin main
+        git reset --hard origin/main
+    }
 else
     echo -e "${YELLOW}  Cloning repository...${NC}"
     if [ -d "$PROJECT_DIR" ]; then
