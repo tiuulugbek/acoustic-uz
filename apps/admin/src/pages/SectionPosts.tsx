@@ -13,6 +13,7 @@ import {
   message,
   Upload,
   Image,
+  Tabs,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { UploadOutlined, FolderOutlined, PlusOutlined } from '@ant-design/icons';
@@ -34,6 +35,8 @@ import {
   MediaDto,
   getPostCategories,
   PostCategoryDto,
+  createPostCategory,
+  CreatePostCategoryPayload,
   getDoctors,
   DoctorDto,
 } from '../lib/api';
@@ -43,6 +46,7 @@ import { compressImage } from '../utils/image-compression';
 import { ApiError } from '../lib/api';
 import RichTextEditor from '../components/RichTextEditor';
 import MediaLibraryModal from '../components/MediaLibraryModal';
+import { createSlug } from '../utils/slug';
 
 const statusOptions = [
   { label: 'Nashr etilgan', value: 'published' },
@@ -63,13 +67,18 @@ interface SectionPostsPageProps {
 export default function SectionPostsPage({ section, sectionName }: SectionPostsPageProps) {
   const queryClient = useQueryClient();
   const [form] = Form.useForm();
+  const [categoryForm] = Form.useForm();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<PostDto | null>(null);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [coverModalOpen, setCoverModalOpen] = useState(false);
+  const [categoryImageModalOpen, setCategoryImageModalOpen] = useState(false);
+  const [uploadingCategoryImage, setUploadingCategoryImage] = useState(false);
+  const [categoryImagePreview, setCategoryImagePreview] = useState<string | null>(null);
 
-  // Fetch posts filtered by section categories
+  // Fetch categories for this section
   const { data: categories } = useQuery<PostCategoryDto[], ApiError>({
     queryKey: ['post-categories', section],
     queryFn: () => getPostCategories(section),
@@ -78,16 +87,23 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
 
   const categoryIds = useMemo(() => categories?.map(cat => cat.id) || [], [categories]);
 
+  // Fetch all posts and filter by section (category or no category)
   const { data, isLoading } = useQuery<PostDto[], ApiError>({
     queryKey: ['posts', section],
     queryFn: async () => {
       const allPosts = await getPosts();
-      // Filter posts that belong to categories in this section
-      return allPosts.filter(post => 
-        post.categoryId && categoryIds.includes(post.categoryId) && post.postType === 'article'
-      );
+      // Filter posts: either belong to section categories OR have no category but are articles
+      return allPosts.filter(post => {
+        if (post.postType !== 'article') return false;
+        // If post has category, it must belong to this section
+        if (post.categoryId) {
+          return categoryIds.includes(post.categoryId);
+        }
+        // If no category, show it in this section (for backward compatibility)
+        return true;
+      });
     },
-    enabled: categoryIds.length > 0,
+    enabled: true, // Always enabled, even if no categories
     retry: false,
   });
 
@@ -152,6 +168,18 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
     onError: (error) => message.error(error.message || "O'chirishda xatolik"),
   });
 
+  const { mutateAsync: createCategoryMutation, isPending: isCreatingCategory } = useMutation({
+    mutationFn: createPostCategory,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['post-categories', section] });
+      message.success('Kategoriya saqlandi');
+      setIsCategoryModalOpen(false);
+      categoryForm.resetFields();
+      setCategoryImagePreview(null);
+    },
+    onError: (error: ApiError) => message.error(error.message || 'Kategoriya saqlashda xatolik'),
+  });
+
   const openCreateModal = () => {
     setEditingPost(null);
     setCoverPreview(null);
@@ -160,7 +188,7 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
       postType: 'article',
       status: 'draft',
       publishAt: dayjs(),
-      categoryId: categoryOptions.length > 0 ? categoryOptions[0].value : undefined,
+      categoryId: undefined,
       authorId: undefined,
     });
     setIsModalOpen(true);
@@ -191,6 +219,18 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
     setIsModalOpen(true);
   };
 
+  const openCreateCategoryModal = () => {
+    categoryForm.resetFields();
+    categoryForm.setFieldsValue({
+      section: section,
+      status: 'published',
+      order: 0,
+      imageId: null,
+    });
+    setCategoryImagePreview(null);
+    setIsCategoryModalOpen(true);
+  };
+
   const handleDelete = async (post: PostDto) => {
     await deletePostMutation(post.id);
   };
@@ -218,6 +258,29 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
     message.success('Rasm tanlandi');
   };
 
+  const handleCategoryImageUpload = async (file: File) => {
+    setUploadingCategoryImage(true);
+    try {
+      const compressedFile = await compressImage(file);
+      const media = await uploadMedia(compressedFile);
+      categoryForm.setFieldsValue({ imageId: media.id });
+      setCategoryImagePreview(normalizeImageUrl(media.url));
+      message.success('Rasm yuklandi');
+    } catch (error) {
+      message.error('Rasm yuklashda xatolik');
+    } finally {
+      setUploadingCategoryImage(false);
+    }
+    return false;
+  };
+
+  const handleSelectCategoryImageFromMedia = (media: MediaDto) => {
+    categoryForm.setFieldsValue({ imageId: media.id });
+    setCategoryImagePreview(normalizeImageUrl(media.url));
+    setCategoryImageModalOpen(false);
+    message.success('Rasm tanlandi');
+  };
+
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
@@ -226,7 +289,7 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
         title_ru: values.title_ru,
         body_uz: values.body_uz,
         body_ru: values.body_ru,
-        slug: values.slug,
+        slug: values.slug || createSlug(values.title_uz),
         postType: 'article',
         categoryId: values.categoryId || null,
         authorId: values.authorId || null,
@@ -248,6 +311,26 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
     }
   };
 
+  const handleCategorySubmit = async () => {
+    try {
+      const values = await categoryForm.validateFields();
+      const payload: CreatePostCategoryPayload = {
+        name_uz: values.name_uz,
+        name_ru: values.name_ru,
+        slug: values.slug || createSlug(values.name_uz),
+        description_uz: values.description_uz || null,
+        description_ru: values.description_ru || null,
+        order: values.order || 0,
+        status: values.status || 'published',
+        section: section,
+        imageId: values.imageId || null,
+      };
+      await createCategoryMutation(payload);
+    } catch (error) {
+      console.error('Category form validation error:', error);
+    }
+  };
+
   const columns: ColumnsType<PostDto> = [
     {
       title: 'Sarlavha (uz)',
@@ -261,7 +344,7 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
       key: 'category',
       render: (category: any) => {
         const categoryId = category?.id || (category as any)?.categoryId;
-        if (!categoryId) return <Tag>Umumiy</Tag>;
+        if (!categoryId) return <Tag>Kategoriyasiz</Tag>;
         const cat = categories?.find(c => c.id === categoryId);
         return <Tag color="blue">{cat?.name_uz || 'Noma\'lum'}</Tag>;
       },
@@ -314,18 +397,15 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
     <div style={{ padding: '24px' }}>
       <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h1>{sectionName.uz} bo'limi maqolalari</h1>
-        <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
-          Yangi maqola
-        </Button>
+        <Space>
+          <Button onClick={openCreateCategoryModal}>
+            Yangi kategoriya
+          </Button>
+          <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
+            Yangi maqola
+          </Button>
+        </Space>
       </div>
-
-      {categoryOptions.length === 0 && (
-        <div style={{ marginBottom: '16px', padding: '16px', background: '#fffbe6', border: '1px solid #ffe58f', borderRadius: '4px' }}>
-          <p style={{ margin: 0 }}>
-            <strong>Eslatma:</strong> Bu bo'lim uchun kategoriyalar mavjud emas. Avval "Maqolalar" bo'limida kategoriya yarating va uni "{sectionName.uz}" bo'limiga biriktiring.
-          </p>
-        </div>
-      )}
 
       <Table
         columns={columns}
@@ -335,6 +415,7 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
         pagination={{ pageSize: 10 }}
       />
 
+      {/* Post Modal */}
       <Modal
         title={editingPost ? 'Maqolani tahrirlash' : 'Yangi maqola'}
         open={isModalOpen}
@@ -351,7 +432,16 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
             name="title_uz"
             rules={[{ required: true, message: 'Iltimos sarlavha kiriting' }]}
           >
-            <Input placeholder="Masalan, Bepul maslahat" />
+            <Input 
+              placeholder="Masalan, Bepul maslahat"
+              onChange={(e) => {
+                const title = e.target.value;
+                const currentSlug = form.getFieldValue('slug');
+                if (!currentSlug || currentSlug === createSlug(form.getFieldValue('title_uz') || '')) {
+                  form.setFieldsValue({ slug: createSlug(title) });
+                }
+              }}
+            />
           </Form.Item>
           <Form.Item
             label="Sarlavha (ru)"
@@ -361,14 +451,14 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
             <Input placeholder="Например, Бесплатная консультация" />
           </Form.Item>
           <Form.Item
-            label="Kategoriya"
+            label="Kategoriya (ixtiyoriy)"
             name="categoryId"
-            rules={[{ required: true, message: 'Kategoriyani tanlang' }]}
+            extra="Kategoriyani tanlang yoki bo'sh qoldiring"
           >
             <Select
-              placeholder="Kategoriyani tanlang"
+              placeholder="Kategoriyani tanlang (ixtiyoriy)"
               options={categoryOptions}
-              disabled={categoryOptions.length === 0}
+              allowClear
             />
           </Form.Item>
           <Form.Item label="Muallif (ixtiyoriy)" name="authorId">
@@ -439,13 +529,97 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
         </Form>
       </Modal>
 
+      {/* Category Modal */}
+      <Modal
+        title="Yangi kategoriya"
+        open={isCategoryModalOpen}
+        onCancel={() => setIsCategoryModalOpen(false)}
+        onOk={handleCategorySubmit}
+        confirmLoading={isCreatingCategory}
+        width={600}
+        okText="Saqlash"
+        cancelText="Bekor qilish"
+      >
+        <Form layout="vertical" form={categoryForm}>
+          <Form.Item
+            label="Nomi (uz)"
+            name="name_uz"
+            rules={[{ required: true, message: 'Iltimos nom kiriting' }]}
+          >
+            <Input placeholder="Masalan, Eshitish maslahati" />
+          </Form.Item>
+          <Form.Item
+            label="Nomi (ru)"
+            name="name_ru"
+            rules={[{ required: true, message: 'Пожалуйста, введите название' }]}
+          >
+            <Input placeholder="Например, Консультация по слуху" />
+          </Form.Item>
+          <Form.Item
+            label="Slug"
+            name="slug"
+            extra="URL uchun qisqa nom (avtomatik yaratiladi)"
+          >
+            <Input placeholder="Avtomatik yaratiladi..." />
+          </Form.Item>
+          <Form.Item label="Tavsif (uz)" name="description_uz">
+            <Input.TextArea rows={3} placeholder="Kategoriya tavsifi (ixtiyoriy)" />
+          </Form.Item>
+          <Form.Item label="Tavsif (ru)" name="description_ru">
+            <Input.TextArea rows={3} placeholder="Описание категории (необязательно)" />
+          </Form.Item>
+          <Form.Item label="Rasm (ixtiyoriy)" name="imageId" extra="Kategoriya rasmi">
+            <ImageSizeHint type="category" showAsAlert={false} />
+            <Space direction="vertical" style={{ width: '100%' }}>
+              {categoryImagePreview && (
+                <Image
+                  src={categoryImagePreview}
+                  alt="Category preview"
+                  style={{ maxWidth: 200, maxHeight: 200, objectFit: 'cover' }}
+                  preview={false}
+                />
+              )}
+              <Space>
+                <Upload
+                  beforeUpload={handleCategoryImageUpload}
+                  showUploadList={false}
+                  accept="image/*"
+                >
+                  <Button icon={<UploadOutlined />} loading={uploadingCategoryImage}>
+                    Rasm yuklash
+                  </Button>
+                </Upload>
+                <Button
+                  icon={<FolderOutlined />}
+                  onClick={() => setCategoryImageModalOpen(true)}
+                >
+                  Mavjud rasmdan tanlash
+                </Button>
+              </Space>
+            </Space>
+          </Form.Item>
+          <Form.Item label="Holat" name="status" initialValue="published">
+            <Select options={statusOptions} />
+          </Form.Item>
+          <Form.Item label="Tartib" name="order" initialValue={0}>
+            <Input type="number" placeholder="0" />
+          </Form.Item>
+        </Form>
+      </Modal>
+
       <MediaLibraryModal
         open={coverModalOpen}
         onCancel={() => setCoverModalOpen(false)}
         onSelect={handleSelectCoverFromMedia}
         fileType="image"
       />
+
+      <MediaLibraryModal
+        open={categoryImageModalOpen}
+        onCancel={() => setCategoryImageModalOpen(false)}
+        onSelect={handleSelectCategoryImageFromMedia}
+        fileType="image"
+      />
     </div>
   );
 }
-
