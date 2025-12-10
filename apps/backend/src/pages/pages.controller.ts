@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, NotFoundException, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { PagesService } from './pages.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -13,8 +13,8 @@ export class PagesController {
 
   @Public()
   @Get('slug/:slug')
-  async findBySlug(@Param('slug') slug: string) {
-    const page = await this.service.findBySlug(slug);
+  async findBySlug(@Param('slug') slug: string, @Query('includeDraft') includeDraft?: string) {
+    const page = await this.service.findBySlug(slug, includeDraft === 'true');
     if (!page) {
       throw new NotFoundException(`Page with slug "${slug}" not found`);
     }
@@ -31,8 +31,13 @@ export class PagesController {
   @UseGuards(JwtAuthGuard, RbacGuard)
   @Post()
   @RequirePermissions('content.write')
-  create(@Body() dto: unknown) {
-    return this.service.create(dto);
+  async create(@Body() dto: unknown) {
+    try {
+      return await this.service.create(dto);
+    } catch (error) {
+      console.error('Error creating page:', error);
+      throw error;
+    }
   }
 
   @UseGuards(JwtAuthGuard, RbacGuard)

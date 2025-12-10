@@ -1401,7 +1401,7 @@ export type CreatePagePayload = {
 export type UpdatePagePayload = Partial<CreatePagePayload>;
 
 export const getPages = () => request<PageDto[]>('/pages');
-export const getPageBySlug = async (slug: string): Promise<PageDto | null> => {
+export const getPageBySlug = async (slug: string, includeDraft = true): Promise<PageDto | null> => {
   try {
     return await request<PageDto>(`/pages/slug/${slug}`);
   } catch (error) {

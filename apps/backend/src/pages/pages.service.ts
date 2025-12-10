@@ -5,9 +5,14 @@ import { PrismaService } from '../prisma/prisma.service';
 export class PagesService {
   constructor(private prisma: PrismaService) {}
 
-  async findBySlug(slug: string) {
-    const page = await this.prisma.page.findUnique({
-      where: { slug, status: 'published' },
+  async findBySlug(slug: string, includeDraft = false) {
+    const where: any = { slug };
+    if (!includeDraft) {
+      where.status = 'published';
+    }
+    
+    const page = await this.prisma.page.findFirst({
+      where,
     });
 
     if (!page) {
