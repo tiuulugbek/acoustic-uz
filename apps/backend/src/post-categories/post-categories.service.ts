@@ -32,16 +32,24 @@ export class PostCategoriesService {
   }
 
   async create(data: unknown) {
-    return this.prisma.postCategory.create({ 
-      data: data as any,
+    const { imageId, ...rest } = data as any;
+    return this.prisma.postCategory.create({
+      data: {
+        ...rest,
+        image: imageId ? { connect: { id: imageId } } : undefined,
+      },
       include: { image: true },
     });
   }
 
   async update(id: string, data: unknown) {
-    return this.prisma.postCategory.update({ 
-      where: { id }, 
-      data: data as any,
+    const { imageId, ...rest } = data as any;
+    return this.prisma.postCategory.update({
+      where: { id },
+      data: {
+        ...rest,
+        image: imageId !== undefined ? (imageId ? { connect: { id: imageId } } : { disconnect: true }) : undefined,
+      },
       include: { image: true },
     });
   }
