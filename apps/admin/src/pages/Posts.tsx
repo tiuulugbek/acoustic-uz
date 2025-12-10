@@ -69,12 +69,16 @@ function formatDate(date?: string) {
   return dayjs(date).format('DD.MM.YYYY');
 }
 
-// Posts Tab Component
+// Posts Tab Component - Only shows news (postType='news')
 function PostsTab() {
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery<PostDto[], ApiError>({
-    queryKey: ['posts'],
-    queryFn: getPosts,
+    queryKey: ['posts', 'news'],
+    queryFn: async () => {
+      const allPosts = await getPosts();
+      // Filter only news posts (not articles)
+      return allPosts.filter(post => post.postType === 'news');
+    },
     retry: false,
   });
 
@@ -173,7 +177,7 @@ function PostsTab() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<PostDto | null>(null);
   const [form] = Form.useForm();
-  const [postType, setPostType] = useState<'article' | 'news'>('article');
+  const [postType, setPostType] = useState<'article' | 'news'>('news');
   const [uploadingCover, setUploadingCover] = useState(false);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [coverModalOpen, setCoverModalOpen] = useState(false);
@@ -185,6 +189,7 @@ function PostsTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['posts'] });
       queryClient.invalidateQueries({ queryKey: ['posts', 'news'] });
+      queryClient.invalidateQueries({ queryKey: ['posts', 'news'] });
       message.success('Maqola saqlandi');
     },
     onError: (error) => message.error(error.message || 'Saqlashda xatolik'),
@@ -194,6 +199,7 @@ function PostsTab() {
     mutationFn: ({ id, payload }) => updatePost(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['posts'] });
+      queryClient.invalidateQueries({ queryKey: ['posts', 'news'] });
       queryClient.invalidateQueries({ queryKey: ['posts', 'news'] });
       message.success('Maqola yangilandi');
     },
@@ -205,6 +211,7 @@ function PostsTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['posts'] });
       queryClient.invalidateQueries({ queryKey: ['posts', 'news'] });
+      queryClient.invalidateQueries({ queryKey: ['posts', 'news'] });
       message.success('Maqola o‘chirildi');
     },
     onError: (error) => message.error(error.message || "O'chirishda xatolik"),
@@ -212,11 +219,11 @@ function PostsTab() {
 
   const openCreateModal = () => {
     setEditingPost(null);
-    setPostType('article');
+    setPostType('news');
     setCoverPreview(null);
     form.resetFields();
     form.setFieldsValue({
-      postType: 'article',
+      postType: 'news', // Default to news
       status: 'draft',
       publishAt: dayjs(),
       categoryId: undefined, // Reset category
@@ -227,7 +234,7 @@ function PostsTab() {
 
   const openEditModal = (post: PostDto) => {
     setEditingPost(post);
-    const postTypeValue = (post as any).postType || 'article';
+    const postTypeValue = (post as any).postType || 'news';
     setPostType(postTypeValue);
     setCoverPreview(post.cover?.url ? normalizeImageUrl(post.cover.url) : null);
     
@@ -291,7 +298,7 @@ function PostsTab() {
         body_uz: values.body_uz,
         body_ru: values.body_ru,
         slug: values.slug,
-        postType: values.postType || 'article',
+        postType: values.postType || 'news',
         categoryId: values.categoryId || null,
         authorId: values.authorId || null,
         excerpt_uz: values.excerpt_uz,
@@ -335,7 +342,7 @@ function PostsTab() {
               color={type === 'news' ? 'blue' : 'green'} 
               style={{ fontWeight: 'bold' }}
             >
-              {type === 'news' ? '📰 Yangilik' : '📄 Maqola'}
+              {type === 'news' ? '📰 Yangilik' : '📄 Maqola (eski)'}
             </Tag>
           );
         },
