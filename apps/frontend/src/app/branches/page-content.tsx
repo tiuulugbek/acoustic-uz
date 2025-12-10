@@ -91,12 +91,9 @@ export default function BranchesPageContent({
                   <ul className="space-y-4">
                     {usefulArticles.map((article) => {
                       const title = getBilingualText(article.title_uz, article.title_ru, locale);
-                      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-                      let imageUrl = article.cover?.url || '';
-                      if (imageUrl && imageUrl.startsWith('/') && !imageUrl.startsWith('//')) {
-                        const baseUrl = API_BASE_URL.replace('/api', '');
-                        imageUrl = `${baseUrl}${imageUrl}`;
-                      }
+                      const imageUrl = article.cover?.url ? 
+                        (article.cover.url.startsWith('http') ? article.cover.url : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3001'}${article.cover.url}`) 
+                        : '';
                       
                       return (
                         <li key={article.id}>
