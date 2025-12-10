@@ -4,7 +4,7 @@ import { detectLocale } from '@/lib/locale-server';
 import { getBilingualText } from '@/lib/locale';
 import PageHeader from '@/components/page-header';
 import ServiceContent from '@/components/service-content';
-import PostsList from '@/components/posts-list';
+import PostsListPaginated from '@/components/posts-list-paginated';
 import CategoryGrid from '@/components/category-grid';
 import { notFound } from 'next/navigation';
 
@@ -108,13 +108,13 @@ export default async function ChildrenHearingPage() {
             <CategoryGrid categories={categories} locale={locale} />
           )}
           
-          {/* Posts List */}
+          {/* Posts List with Pagination */}
           {posts && posts.length > 0 && (
             <div>
               <h2 className="mb-6 text-2xl font-bold text-foreground">
                 {locale === 'ru' ? 'Статьи' : 'Maqolalar'}
               </h2>
-              <PostsList posts={posts} locale={locale} layout="two-column" />
+              <PostsListPaginated posts={posts} locale={locale} postsPerPage={6} />
             </div>
           )}
         </div>
