@@ -6,14 +6,30 @@ node_modules
 # Testing
 coverage
 *.lcov
+.nyc_output
 
 # Next.js
 .next/
 out/
 build/
 dist/
+.vercel
 
-# Production
+# Production builds
+apps/*/dist/
+apps/*/build/
+apps/*/.next/
+apps/*/out/
+packages/*/dist/
+packages/*/build/
+
+# Environment variables
+.env
+.env*.local
+.env.production
+.env.development
+
+# Logs
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -21,17 +37,10 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Environment variables
-.env
-.env*.local
-.env.production
-
-# Vercel
-.vercel
-
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+tsconfig.tsbuildinfo
 
 # IDE
 .vscode/
@@ -40,21 +49,55 @@ next-env.d.ts
 *.swo
 *~
 .DS_Store
+*.sublime-project
+*.sublime-workspace
 
 # Turbo
 .turbo
+.turbo-cache
 
 # Prisma
 prisma/migrations/*/migration.sql.bak
+prisma/*.db
+prisma/*.db-journal
 
 # Docker
 docker-compose.override.yml
+*.dockerignore
 
-# Uploads
+# Uploads and storage
 uploads/
 storage/
+public/uploads/
 
-# Temporary
+# Temporary files
 tmp/
 temp/
+*.tmp
+*.temp
 
+# OS files
+Thumbs.db
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Cache directories
+.cache/
+.parcel-cache/
+.eslintcache
+.stylelintcache
+
+# Build artifacts
+*.map
+*.min.js
+*.min.css
+
+# PM2
+.pm2/
+ecosystem.config.js.bak
+
+# Backup files
+*.bak
+*.backup
+*~
