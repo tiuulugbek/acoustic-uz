@@ -521,10 +521,22 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
         <>
           <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h2>{sectionName.uz} bo'limi maqolalari</h2>
-            <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />} 
+              onClick={openCreateModal}
+              disabled={categoryOptions.length === 0}
+            >
               Yangi maqola
             </Button>
           </div>
+          {categoryOptions.length === 0 && (
+            <div style={{ marginBottom: '16px', padding: '16px', background: '#fffbe6', border: '1px solid #ffe58f', borderRadius: '4px' }}>
+              <p style={{ margin: 0 }}>
+                <strong>Eslatma:</strong> Avval "Kategoriyalar" tabida kategoriya yarating. Maqola yaratish uchun kategoriya kerak.
+              </p>
+            </div>
+          )}
           <Table
             columns={columns}
             dataSource={data || []}
