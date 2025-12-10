@@ -108,9 +108,9 @@ export default async function PostPage({ params }: PostPageProps) {
     : null;
   const coverUrl = post.cover?.url;
 
-  // Get related posts from the same category
+  // Get related posts from the same category (only articles, not news)
   const relatedPosts = post.categoryId 
-    ? await getPosts(locale, true, post.categoryId)
+    ? await getPosts(locale, true, post.categoryId, 'article')
     : [];
   const filteredRelatedPosts = relatedPosts
     .filter(p => p.id !== post.id && p.status === 'published')
