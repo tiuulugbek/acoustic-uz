@@ -82,6 +82,14 @@ pnpm --filter @acoustic/shared build || {
 echo -e "${BLUE}🏗️  Step 6: Building frontend (production)...${NC}"
 cd "$FRONTEND_DIR"
 
+# Ensure tailwindcss and other build tools are available
+if [ ! -f "node_modules/.bin/tailwindcss" ] && [ ! -d "node_modules/tailwindcss" ]; then
+    echo -e "${YELLOW}  ⚠️  TailwindCSS not found, installing devDependencies...${NC}"
+    export NODE_ENV=development
+    pnpm install --frozen-lockfile || pnpm install
+    export NODE_ENV=production
+fi
+
 export NODE_ENV=production
 export NEXT_PUBLIC_API_URL="https://a.acoustic.uz/api"
 export NEXT_PUBLIC_SITE_URL="https://acoustic.uz"
