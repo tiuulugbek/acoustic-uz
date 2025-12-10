@@ -1403,7 +1403,8 @@ export type UpdatePagePayload = Partial<CreatePagePayload>;
 export const getPages = () => request<PageDto[]>('/pages');
 export const getPageBySlug = async (slug: string, includeDraft = true): Promise<PageDto | null> => {
   try {
-    return await request<PageDto>(`/pages/slug/${slug}`);
+    const params = includeDraft ? '?includeDraft=true' : '';
+    return await request<PageDto>(`/pages/slug/${slug}${params}`);
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) {
       return null;
