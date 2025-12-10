@@ -36,7 +36,10 @@ import {
   getPostCategories,
   PostCategoryDto,
   createPostCategory,
+  updatePostCategory,
+  deletePostCategory,
   CreatePostCategoryPayload,
+  UpdatePostCategoryPayload,
   getDoctors,
   DoctorDto,
 } from '../lib/api';
@@ -71,6 +74,7 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<PostDto | null>(null);
+  const [editingCategory, setEditingCategory] = useState<PostCategoryDto | null>(null);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [coverModalOpen, setCoverModalOpen] = useState(false);
@@ -172,12 +176,38 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
     mutationFn: createPostCategory,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['post-categories', section] });
+      queryClient.invalidateQueries({ queryKey: ['posts', section] });
       message.success('Kategoriya saqlandi');
       setIsCategoryModalOpen(false);
       categoryForm.resetFields();
       setCategoryImagePreview(null);
+      setEditingCategory(null);
     },
     onError: (error: ApiError) => message.error(error.message || 'Kategoriya saqlashda xatolik'),
+  });
+
+  const { mutateAsync: updateCategoryMutation, isPending: isUpdatingCategory } = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: UpdatePostCategoryPayload }) => updatePostCategory(id, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['post-categories', section] });
+      queryClient.invalidateQueries({ queryKey: ['posts', section] });
+      message.success('Kategoriya yangilandi');
+      setIsCategoryModalOpen(false);
+      categoryForm.resetFields();
+      setCategoryImagePreview(null);
+      setEditingCategory(null);
+    },
+    onError: (error: ApiError) => message.error(error.message || 'Kategoriyani yangilashda xatolik'),
+  });
+
+  const { mutateAsync: deleteCategoryMutation, isPending: isDeletingCategory } = useMutation<void, ApiError, string>({
+    mutationFn: deletePostCategory,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['post-categories', section] });
+      queryClient.invalidateQueries({ queryKey: ['posts', section] });
+      message.success('Kategoriya o\'chirildi');
+    },
+    onError: (error) => message.error(error.message || "Kategoriyani o'chirishda xatolik"),
   });
 
   const openCreateModal = () => {
@@ -220,6 +250,7 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
   };
 
   const openCreateCategoryModal = () => {
+    setEditingCategory(null);
     categoryForm.resetFields();
     categoryForm.setFieldsValue({
       section: section,
@@ -229,6 +260,27 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
     });
     setCategoryImagePreview(null);
     setIsCategoryModalOpen(true);
+  };
+
+  const openEditCategoryModal = (category: PostCategoryDto) => {
+    setEditingCategory(category);
+    setCategoryImagePreview(category.image?.url ? normalizeImageUrl(category.image.url) : null);
+    categoryForm.setFieldsValue({
+      name_uz: category.name_uz,
+      name_ru: category.name_ru,
+      slug: category.slug,
+      description_uz: category.description_uz || undefined,
+      description_ru: category.description_ru || undefined,
+      order: category.order,
+      status: category.status,
+      section: category.section || section,
+      imageId: category.image?.id || undefined,
+    });
+    setIsCategoryModalOpen(true);
+  };
+
+  const handleDeleteCategory = async (category: PostCategoryDto) => {
+    await deleteCategoryMutation(category.id);
   };
 
   const handleDelete = async (post: PostDto) => {
@@ -325,11 +377,78 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
         section: section,
         imageId: values.imageId || null,
       };
-      await createCategoryMutation(payload);
+      if (editingCategory) {
+        await updateCategoryMutation({ id: editingCategory.id, payload });
+      } else {
+        await createCategoryMutation(payload);
+      }
     } catch (error) {
       console.error('Category form validation error:', error);
     }
   };
+
+  const categoryColumns: ColumnsType<PostCategoryDto> = [
+    {
+      title: 'Nomi (uz)',
+      dataIndex: 'name_uz',
+      key: 'name_uz',
+      render: (text: string) => <span>{text}</span>,
+    },
+    {
+      title: 'Slug',
+      dataIndex: 'slug',
+      key: 'slug',
+    },
+    {
+      title: 'Tartib',
+      dataIndex: 'order',
+      key: 'order',
+    },
+    {
+      title: 'Holat',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: string) => {
+        const statusMap: Record<string, { label: string; color: string }> = {
+          published: { label: 'Nashr etilgan', color: 'green' },
+          draft: { label: 'Qoralama', color: 'orange' },
+          archived: { label: 'Arxiv', color: 'default' },
+        };
+        const statusInfo = statusMap[status] || { label: status, color: 'default' };
+        return <Tag color={statusInfo.color}>{statusInfo.label}</Tag>;
+      },
+    },
+    {
+      title: 'Rasm',
+      dataIndex: 'image',
+      key: 'image',
+      render: (image: MediaDto) => (
+        image?.url ? <Image src={normalizeImageUrl(image.url)} alt="Category" width={50} height={50} style={{ objectFit: 'cover' }} /> : '-'
+      ),
+    },
+    {
+      title: 'Amallar',
+      key: 'actions',
+      render: (_: any, record: PostCategoryDto) => (
+        <Space>
+          <Button size="small" onClick={() => openEditCategoryModal(record)}>
+            Tahrirlash
+          </Button>
+          <Popconfirm
+            title="Kategoriyani o'chirish"
+            description="Ushbu kategoriyani o'chirishni xohlaysizmi? Bu unga bog'liq maqolalarni ham o'chirmaydi, faqat kategoriyani olib tashlaydi."
+            onConfirm={() => handleDeleteCategory(record)}
+            okText="Ha"
+            cancelText="Yo'q"
+          >
+            <Button size="small" danger loading={isDeletingCategory}>
+              O'chirish
+            </Button>
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ];
 
   const columns: ColumnsType<PostDto> = [
     {
@@ -393,27 +512,55 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
     },
   ];
 
+  const tabItems = [
+    {
+      key: 'posts',
+      label: 'Maqolalar',
+      children: (
+        <>
+          <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2>{sectionName.uz} bo'limi maqolalari</h2>
+            <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
+              Yangi maqola
+            </Button>
+          </div>
+          <Table
+            columns={columns}
+            dataSource={data || []}
+            loading={isLoading}
+            rowKey="id"
+            pagination={{ pageSize: 10 }}
+          />
+        </>
+      ),
+    },
+    {
+      key: 'categories',
+      label: 'Kategoriyalar',
+      children: (
+        <>
+          <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2>{sectionName.uz} bo'limi kategoriyalari</h2>
+            <Button type="primary" icon={<PlusOutlined />} onClick={openCreateCategoryModal}>
+              Yangi kategoriya
+            </Button>
+          </div>
+          <Table
+            columns={categoryColumns}
+            dataSource={categories || []}
+            loading={false}
+            rowKey="id"
+            pagination={{ pageSize: 10 }}
+          />
+        </>
+      ),
+    },
+  ];
+
   return (
     <div style={{ padding: '24px' }}>
-      <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h1>{sectionName.uz} bo'limi maqolalari</h1>
-        <Space>
-          <Button onClick={openCreateCategoryModal}>
-            Yangi kategoriya
-          </Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
-            Yangi maqola
-          </Button>
-        </Space>
-      </div>
-
-      <Table
-        columns={columns}
-        dataSource={data || []}
-        loading={isLoading}
-        rowKey="id"
-        pagination={{ pageSize: 10 }}
-      />
+      <h1 style={{ marginBottom: '24px' }}>{sectionName.uz} bo'limi</h1>
+      <Tabs defaultActiveKey="posts" items={tabItems} />
 
       {/* Post Modal */}
       <Modal
@@ -531,11 +678,15 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
 
       {/* Category Modal */}
       <Modal
-        title="Yangi kategoriya"
+        title={editingCategory ? 'Kategoriyani tahrirlash' : 'Yangi kategoriya'}
         open={isCategoryModalOpen}
-        onCancel={() => setIsCategoryModalOpen(false)}
+        onCancel={() => {
+          setIsCategoryModalOpen(false);
+          setEditingCategory(null);
+          setCategoryImagePreview(null);
+        }}
         onOk={handleCategorySubmit}
-        confirmLoading={isCreatingCategory}
+        confirmLoading={isCreatingCategory || isUpdatingCategory}
         width={600}
         okText="Saqlash"
         cancelText="Bekor qilish"
