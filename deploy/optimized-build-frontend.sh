@@ -45,6 +45,10 @@ rm -rf .turbo
 rm -rf .cache
 rm -rf .parcel-cache
 
+# Remove Next.js cache more aggressively
+find . -name ".next" -type d -exec rm -rf {} + 2>/dev/null || true
+find . -name "node_modules/.cache" -type d -exec rm -rf {} + 2>/dev/null || true
+
 # Remove TypeScript build info
 find . -name "*.tsbuildinfo" -delete 2>/dev/null || true
 find . -name "tsconfig.tsbuildinfo" -delete 2>/dev/null || true
