@@ -128,10 +128,43 @@ echo -e "${GREEN}✅ Backend restarted${NC}"
 echo ""
 echo -e "${BLUE}📋 Step 6: Rebuilding admin panel...${NC}"
 cd "$PROJECT_DIR/apps/admin"
-pnpm install --frozen-lockfile || pnpm install
+
+# Install dependencies (including devDependencies for build)
+echo -e "${YELLOW}  Installing admin dependencies (including devDependencies)...${NC}"
+NODE_ENV=development pnpm install --frozen-lockfile || pnpm install || {
+    echo -e "${YELLOW}  ⚠️  pnpm install failed, trying without frozen lockfile...${NC}"
+    pnpm install
+}
+
+# Verify vite is available
+if [ ! -f "node_modules/.bin/vite" ] && [ ! -f "node_modules/vite/bin/vite.js" ]; then
+    echo -e "${YELLOW}  ⚠️  Vite not found, installing vite...${NC}"
+    pnpm add -D vite@^5.0.8 || {
+        echo -e "${RED}❌ Failed to install vite${NC}"
+        exit 1
+    }
+fi
+
+# Build admin panel
+echo -e "${BLUE}  Building admin panel...${NC}"
 pnpm build || {
     echo -e "${RED}❌ Admin build failed${NC}"
-    exit 1
+    echo -e "${YELLOW}  Trying alternative build method...${NC}"
+    # Try with direct path
+    if [ -f "node_modules/.bin/vite" ]; then
+        ./node_modules/.bin/vite build || {
+            echo -e "${RED}❌ Admin build failed with direct path${NC}"
+            exit 1
+        }
+    elif [ -f "node_modules/vite/bin/vite.js" ]; then
+        node node_modules/vite/bin/vite.js build || {
+            echo -e "${RED}❌ Admin build failed with vite.js path${NC}"
+            exit 1
+        }
+    else
+        echo -e "${RED}❌ Vite not found in any expected location${NC}"
+        exit 1
+    fi
 }
 echo -e "${GREEN}✅ Admin panel built successfully${NC}"
 
