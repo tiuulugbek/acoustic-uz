@@ -91,23 +91,22 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
 
   const categoryIds = useMemo(() => categories?.map(cat => cat.id) || [], [categories]);
 
-  // Fetch all posts and filter by section (category or no category)
+  // Fetch posts ONLY from categories in this section
+  // Each section shows only posts that belong to its own categories
   const { data, isLoading } = useQuery<PostDto[], ApiError>({
     queryKey: ['posts', section],
     queryFn: async () => {
       const allPosts = await getPosts();
-      // Filter posts: either belong to section categories OR have no category but are articles
+      // Filter posts: only include posts that belong to this section's categories
       return allPosts.filter(post => {
+        // Only show articles
         if (post.postType !== 'article') return false;
-        // If post has category, it must belong to this section
-        if (post.categoryId) {
-          return categoryIds.includes(post.categoryId);
-        }
-        // If no category, show it in this section (for backward compatibility)
-        return true;
+        // Post must have a category AND belong to this section
+        if (!post.categoryId) return false;
+        return categoryIds.includes(post.categoryId);
       });
     },
-    enabled: true, // Always enabled, even if no categories
+    enabled: categoryIds.length > 0, // Only enabled if there are categories
     retry: false,
   });
 
@@ -214,11 +213,13 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
     setEditingPost(null);
     setCoverPreview(null);
     form.resetFields();
+    // Set default category to first category in this section (if available)
+    const defaultCategoryId = categoryOptions.length > 0 ? categoryOptions[0].value : undefined;
     form.setFieldsValue({
       postType: 'article',
       status: 'draft',
       publishAt: dayjs(),
-      categoryId: undefined,
+      categoryId: defaultCategoryId, // Set default category from this section
       authorId: undefined,
     });
     setIsModalOpen(true);
@@ -343,7 +344,7 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
         body_ru: values.body_ru,
         slug: values.slug || createSlug(values.title_uz),
         postType: 'article',
-        categoryId: values.categoryId || null,
+        categoryId: values.categoryId, // Category is required
         authorId: values.authorId || null,
         excerpt_uz: values.excerpt_uz,
         excerpt_ru: values.excerpt_ru,
@@ -598,14 +599,15 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
             <Input placeholder="Например, Бесплатная консультация" />
           </Form.Item>
           <Form.Item
-            label="Kategoriya (ixtiyoriy)"
+            label="Kategoriya"
             name="categoryId"
-            extra="Kategoriyani tanlang yoki bo'sh qoldiring"
+            rules={[{ required: true, message: 'Iltimos kategoriyani tanlang' }]}
+            extra="Maqola qaysi kategoriyaga tegishli bo'lishini tanlang"
           >
             <Select
-              placeholder="Kategoriyani tanlang (ixtiyoriy)"
+              placeholder="Kategoriyani tanlang"
               options={categoryOptions}
-              allowClear
+              disabled={categoryOptions.length === 0}
             />
           </Form.Item>
           <Form.Item label="Muallif (ixtiyoriy)" name="authorId">
