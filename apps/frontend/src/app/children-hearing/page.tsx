@@ -45,41 +45,29 @@ export default async function ChildrenHearingPage() {
     getBranches(locale),
   ]);
   
-  // Get posts from categories in this section
+  // Get posts ONLY from categories in this section
+  // Each section shows only posts that belong to its own categories
   const categoryIds = categories?.map(cat => cat.id) || [];
   let posts: any[] = [];
   
   if (categoryIds.length > 0) {
-    // Get posts from categories
+    // Get posts from categories in this section only
     const allPosts = await Promise.all(
       categoryIds.map(categoryId => getPosts(locale, true, categoryId, 'article'))
     );
     posts = allPosts.flat().filter((post, index, self) => 
       index === self.findIndex(p => p.id === post.id)
     );
+    
+    // Ensure posts belong to this section's categories
+    posts = posts.filter(post => {
+      // Only include posts that have a category AND belong to this section
+      return post.categoryId && categoryIds.includes(post.categoryId);
+    });
   }
   
-  // Also get all articles and filter by section (if they belong to section categories)
-  // This ensures posts are shown even if they're not directly linked to categories
-  const allArticles = await getPosts(locale, true, undefined, 'article');
-  const sectionArticles = allArticles.filter(post => {
-    // Include if post belongs to a category in this section
-    if (post.categoryId && categoryIds.includes(post.categoryId)) {
-      return true;
-    }
-    // Also include posts without category (for backward compatibility)
-    // But only if they are articles
-    if (!post.categoryId && post.postType === 'article') {
-      return true;
-    }
-    return false;
-  });
-  
-  // Combine and deduplicate
-  const allPostsCombined = [...posts, ...sectionArticles];
-  posts = allPostsCombined.filter((post, index, self) => 
-    index === self.findIndex(p => p.id === post.id)
-  );
+  // Posts without category are NOT shown in section pages
+  // Each section is isolated - only shows its own category posts
 
   // Use fallback if page doesn't exist or is not published
   const title = page && page.status === 'published' 
