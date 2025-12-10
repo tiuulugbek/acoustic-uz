@@ -42,12 +42,27 @@ export default async function PatientsPage() {
     getPostCategories(locale, 'patients'),
   ]);
   
-  // Get all posts from categories in this section
+  // Get all posts from categories in this section, or posts without category
   const categoryIds = categories?.map(cat => cat.id) || [];
-  const allPosts = await Promise.all(
-    categoryIds.map(categoryId => getPosts(locale, true, categoryId, 'article'))
-  );
-  const posts = allPosts.flat().filter((post, index, self) => 
+  let posts: any[] = [];
+  
+  if (categoryIds.length > 0) {
+    // Get posts from categories
+    const allPosts = await Promise.all(
+      categoryIds.map(categoryId => getPosts(locale, true, categoryId, 'article'))
+    );
+    posts = allPosts.flat().filter((post, index, self) => 
+      index === self.findIndex(p => p.id === post.id)
+    );
+  }
+  
+  // Also get posts without category (for backward compatibility)
+  const allPostsWithoutCategory = await getPosts(locale, true, undefined, 'article');
+  const postsWithoutCategory = allPostsWithoutCategory.filter(post => !post.categoryId);
+  
+  // Combine and deduplicate
+  const allPostsCombined = [...posts, ...postsWithoutCategory];
+  posts = allPostsCombined.filter((post, index, self) => 
     index === self.findIndex(p => p.id === post.id)
   );
 
