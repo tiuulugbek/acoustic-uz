@@ -87,7 +87,7 @@ export default async function CatalogPage({
         sort: searchParams.sort === 'price_asc' ? 'price_asc' : searchParams.sort === 'price_desc' ? 'price_desc' : 'newest',
       }, locale) || { items: [], total: 0, page: 1, pageSize: 12 },
       getProductCategories(locale),
-      getPosts(locale, true),
+      getPosts(locale, true, undefined, 'article'),
       getBrands(locale),
       getSettings(locale),
     ]);

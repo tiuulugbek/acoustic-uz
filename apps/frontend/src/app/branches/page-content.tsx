@@ -39,7 +39,7 @@ export default function BranchesPageContent() {
         
         const [branchesData, postsData] = await Promise.all([
           getBranches(detectedLocale),
-          getPosts(detectedLocale, true),
+          getPosts(detectedLocale, true, undefined, 'article'),
         ]);
         
         setBranches(branchesData || []);

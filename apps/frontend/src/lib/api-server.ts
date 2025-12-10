@@ -286,9 +286,10 @@ export async function getPosts(
   locale?: string,
   publicOnly = true,
   categoryId?: string,
+  postType?: string,
 ): Promise<PostResponse[]> {
   return safeApiCall(
-    () => getPostsApi(locale, publicOnly, categoryId),
+    () => getPostsApi(locale, publicOnly, categoryId, postType),
     [],
     'Failed to fetch posts',
   );

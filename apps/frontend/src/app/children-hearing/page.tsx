@@ -39,7 +39,7 @@ export default async function ChildrenHearingPage() {
   const page = await getPageBySlug('children-hearing', locale);
   // Get category ID for 'bolalar'
   const bolalarCategoryId = 'cmi8uhl640001x9s3dvuojp9a'; // Bolalar category ID
-  const posts = await getPosts(locale, true, bolalarCategoryId);
+  const posts = await getPosts(locale, true, bolalarCategoryId, 'article');
 
   // Use fallback if page doesn't exist or is not published
   const title = page && page.status === 'published' 

@@ -40,7 +40,7 @@ export default async function PatientsPage() {
   // Get posts for 'bemorlar' category by slug
   // We'll use the category slug 'bemorlar' - backend will handle it
   const bemorlarCategoryId = 'cmi8uhl5t0000x9s3mf4y07h2'; // Bemorlar category ID from database
-  const posts = await getPosts(locale, true, bemorlarCategoryId);
+  const posts = await getPosts(locale, true, bemorlarCategoryId, 'article');
 
   // Use fallback if page doesn't exist or is not published
   const title = page && page.status === 'published' 

@@ -5,10 +5,13 @@ import { PrismaService } from '../prisma/prisma.service';
 export class PostsService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(publicOnly = false, category?: string) {
+  async findAll(publicOnly = false, category?: string, postType?: string) {
     const where: any = publicOnly ? { status: 'published' } : {};
     if (category) {
       where.categoryId = category;
+    }
+    if (postType) {
+      where.postType = postType;
     }
     return this.prisma.post.findMany({
       where,

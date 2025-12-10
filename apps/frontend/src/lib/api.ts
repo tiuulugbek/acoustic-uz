@@ -600,10 +600,11 @@ export interface PostCategoryResponse {
   slug: string;
 }
 
-export const getPosts = (locale?: string, publicOnly = true, categoryId?: string) => {
+export const getPosts = (locale?: string, publicOnly = true, categoryId?: string, postType?: string) => {
   const params = new URLSearchParams();
   if (publicOnly) params.append('public', 'true');
   if (categoryId) params.append('categoryId', categoryId);
+  if (postType) params.append('postType', postType);
   const query = params.toString() ? `?${params.toString()}` : '';
   return fetchJson<PostResponse[]>(`/posts${query}`, locale);
 };

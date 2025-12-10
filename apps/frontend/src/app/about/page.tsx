@@ -98,7 +98,7 @@ export default async function AboutPage() {
   const galleryImages = page.gallery || [];
   
   // Fetch useful articles
-  const allPosts = await getPosts(locale, true);
+  const allPosts = await getPosts(locale, true, undefined, 'article');
   const usefulArticles = page.usefulArticleSlugs
     ? allPosts.filter((post) => page.usefulArticleSlugs?.includes(post.slug))
     : [];

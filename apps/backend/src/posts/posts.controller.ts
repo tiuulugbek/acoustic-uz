@@ -13,8 +13,12 @@ export class PostsController {
 
   @Public()
   @Get()
-  findAll(@Query('public') publicOnly?: string, @Query('categoryId') categoryId?: string) {
-    return this.service.findAll(publicOnly === 'true', categoryId);
+  findAll(
+    @Query('public') publicOnly?: string, 
+    @Query('categoryId') categoryId?: string,
+    @Query('postType') postType?: string
+  ) {
+    return this.service.findAll(publicOnly === 'true', categoryId, postType);
   }
 
   @Public()

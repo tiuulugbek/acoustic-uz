@@ -102,7 +102,7 @@ export default async function HomePage() {
     getShowcase('interacoustics', locale),
     getCatalogs(locale),
     getHomepageJourney(locale),
-    getPosts(locale, true),
+    getPosts(locale, true, undefined, 'news'),
     getPublicFaq(locale),
     getHomepageHearingAidItems(locale),
     getSettings(locale),
