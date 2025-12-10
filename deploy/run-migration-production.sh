@@ -37,10 +37,18 @@ fi
 echo -e "${GREEN}✅ Environment variables loaded${NC}"
 echo ""
 
+# Install dependencies first (to ensure workspace packages are linked)
+echo -e "${BLUE}📋 Step 1: Installing dependencies...${NC}"
+cd "$PROJECT_DIR"
+pnpm install --frozen-lockfile || pnpm install || {
+    echo -e "${YELLOW}⚠️  pnpm install failed, trying to continue...${NC}"
+}
+echo -e "${GREEN}✅ Dependencies installed${NC}"
+
 cd "$PROJECT_DIR/apps/backend"
 
 # Generate Prisma Client
-echo -e "${BLUE}📋 Step 1: Generating Prisma Client...${NC}"
+echo -e "${BLUE}📋 Step 2: Generating Prisma Client...${NC}"
 pnpm db:generate || {
     echo -e "${RED}❌ Prisma Client generation failed${NC}"
     exit 1
@@ -48,7 +56,7 @@ pnpm db:generate || {
 echo -e "${GREEN}✅ Prisma Client generated${NC}"
 
 # Run migration deploy (production mode - no shadow database)
-echo -e "${BLUE}📋 Step 2: Running migration deploy (production mode)...${NC}"
+echo -e "${BLUE}📋 Step 3: Running migration deploy (production mode)...${NC}"
 echo -e "${YELLOW}Note: Using migrate deploy instead of migrate dev (no shadow database needed)${NC}"
 pnpm db:migrate:deploy || {
     echo -e "${RED}❌ Migration deploy failed${NC}"
@@ -64,7 +72,7 @@ echo -e "${GREEN}✅ Migration completed successfully!${NC}"
 
 # Rebuild backend
 echo ""
-echo -e "${BLUE}📋 Step 3: Rebuilding backend...${NC}"
+echo -e "${BLUE}📋 Step 4: Rebuilding backend...${NC}"
 cd "$PROJECT_DIR/apps/backend"
 pnpm install --frozen-lockfile || pnpm install
 pnpm build || {
@@ -75,7 +83,7 @@ echo -e "${GREEN}✅ Backend built successfully${NC}"
 
 # Restart backend
 echo ""
-echo -e "${BLUE}📋 Step 4: Restarting backend...${NC}"
+echo -e "${BLUE}📋 Step 5: Restarting backend...${NC}"
 pm2 restart acoustic-backend || {
     echo -e "${YELLOW}⚠️  PM2 restart failed, trying start...${NC}"
     pm2 start ecosystem.config.js --only acoustic-backend
@@ -85,7 +93,7 @@ echo -e "${GREEN}✅ Backend restarted${NC}"
 
 # Rebuild admin panel
 echo ""
-echo -e "${BLUE}📋 Step 5: Rebuilding admin panel...${NC}"
+echo -e "${BLUE}📋 Step 6: Rebuilding admin panel...${NC}"
 cd "$PROJECT_DIR/apps/admin"
 pnpm install --frozen-lockfile || pnpm install
 pnpm build || {
@@ -96,7 +104,7 @@ echo -e "${GREEN}✅ Admin panel built successfully${NC}"
 
 # Rebuild frontend
 echo ""
-echo -e "${BLUE}📋 Step 6: Rebuilding frontend...${NC}"
+echo -e "${BLUE}📋 Step 7: Rebuilding frontend...${NC}"
 cd "$PROJECT_DIR"
 bash deploy/optimized-build-frontend.sh || {
     echo -e "${RED}❌ Frontend build failed${NC}"
