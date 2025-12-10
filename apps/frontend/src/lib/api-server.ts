@@ -67,6 +67,7 @@ export type {
   HearingAidItemResponse,
   HomepageNewsItemResponse,
   PostResponse,
+  PostCategoryResponse,
   FaqResponse,
   HomepageJourneyStepResponse,
   BrandResponse,
@@ -277,6 +278,20 @@ export async function getHomepageNews(
     () => getHomepageNewsApi(locale),
     [],
     'Failed to fetch homepage news',
+  );
+}
+
+/**
+ * Get post categories - returns empty array if backend is down
+ */
+export async function getPostCategories(
+  locale?: string,
+  section?: string,
+): Promise<PostCategoryResponse[]> {
+  return safeApiCall(
+    () => getPostCategoriesApi(locale, section),
+    [],
+    'Failed to fetch post categories',
   );
 }
 
