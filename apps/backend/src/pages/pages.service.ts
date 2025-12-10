@@ -41,7 +41,17 @@ export class PagesService {
   }
 
   async create(data: unknown) {
-    return this.prisma.page.create({ data: data as any });
+    try {
+      const pageData = data as any;
+      // Ensure status has a default value
+      if (!pageData.status) {
+        pageData.status = 'draft';
+      }
+      return await this.prisma.page.create({ data: pageData });
+    } catch (error) {
+      console.error('Error creating page:', error);
+      throw error;
+    }
   }
 
   async update(id: string, data: unknown) {
