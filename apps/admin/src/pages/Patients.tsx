@@ -1,5 +1,5 @@
 import { Tabs } from 'antd';
-import PageEditor from '../components/*Editor';
+import PageEditor from '../components/PageEditor';
 import SectionPostsPage from './SectionPosts';
 
 export default function PatientsPage() {
