@@ -627,13 +627,21 @@ function CategoriesTab() {
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery<PostCategoryDto[], ApiError>({
     queryKey: ['post-categories'],
-    queryFn: getPostCategories,
+    queryFn: () => getPostCategories(),
     retry: false,
+  });
+
+  const { data: mediaList } = useQuery({
+    queryKey: ['media'],
+    queryFn: getMedia,
   });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<PostCategoryDto | null>(null);
   const [form] = Form.useForm();
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
 
   const { mutateAsync: createCategoryMutation, isPending: isCreating } = useMutation({
     mutationFn: createPostCategory,
@@ -662,24 +670,53 @@ function CategoriesTab() {
     onError: (error: any) => message.error(error.message || "O'chirishda xatolik"),
   });
 
+  const handleImageUpload = async (file: File) => {
+    setUploadingImage(true);
+    try {
+      const compressedFile = await compressImage(file);
+      const media = await uploadMedia(compressedFile);
+      form.setFieldsValue({ imageId: media.id });
+      setImagePreview(normalizeImageUrl(media.url));
+      message.success('Rasm yuklandi');
+    } catch (error) {
+      message.error('Rasm yuklashda xatolik');
+    } finally {
+      setUploadingImage(false);
+    }
+    return false;
+  };
+
+  const handleSelectImageFromMedia = (media: MediaDto) => {
+    form.setFieldsValue({ imageId: media.id });
+    setImagePreview(normalizeImageUrl(media.url));
+    setImageModalOpen(false);
+    message.success('Rasm tanlandi');
+  };
+
   const openCreateModal = () => {
     setEditingCategory(null);
+    setImagePreview(null);
     form.resetFields();
     form.setFieldsValue({
       status: 'published',
       order: 0,
+      section: null,
+      imageId: null,
     });
     setIsModalOpen(true);
   };
 
   const openEditModal = (category: PostCategoryDto) => {
     setEditingCategory(category);
+    setImagePreview(category.image?.url ? normalizeImageUrl(category.image.url) : null);
     form.setFieldsValue({
       name_uz: category.name_uz,
       name_ru: category.name_ru,
       slug: category.slug,
       description_uz: category.description_uz,
       description_ru: category.description_ru,
+      section: category.section || null,
+      imageId: category.imageId || null,
       order: category.order,
       status: category.status,
     });
@@ -699,6 +736,8 @@ function CategoriesTab() {
         slug: values.slug || createSlug(values.name_uz),
         description_uz: values.description_uz || null,
         description_ru: values.description_ru || null,
+        section: values.section || null,
+        imageId: values.imageId || null,
         order: values.order || 0,
         status: values.status,
       };
@@ -711,6 +750,7 @@ function CategoriesTab() {
 
       setIsModalOpen(false);
       form.resetFields();
+      setImagePreview(null);
     } catch (error) {
       // validation error handled by antd
     }
@@ -732,6 +772,19 @@ function CategoriesTab() {
       title: 'Slug',
       dataIndex: 'slug',
       key: 'slug',
+    },
+    {
+      title: 'Bo\'lim',
+      dataIndex: 'section',
+      key: 'section',
+      render: (value: string | null) => {
+        if (!value) return <Tag>Umumiy</Tag>;
+        const labels: Record<string, string> = {
+          patients: 'Bemorlar',
+          children: 'Bolalar',
+        };
+        return <Tag color="blue">{labels[value] || value}</Tag>;
+      },
     },
     {
       title: 'Tartib',
@@ -826,6 +879,59 @@ function CategoriesTab() {
           <Form.Item label="Tavsif (ru)" name="description_ru">
             <Input.TextArea rows={2} placeholder="Описание категории (необязательно)" />
           </Form.Item>
+          <Form.Item 
+            label="Bo'lim" 
+            name="section"
+            help="Kategoriya qaysi bo'limga tegishli (Bemorlar yoki Bolalar)"
+          >
+            <Select 
+              placeholder="Bo'limni tanlang (ixtiyoriy)"
+              allowClear
+              options={[
+                { label: 'Bemorlar', value: 'patients' },
+                { label: 'Bolalar', value: 'children' },
+              ]}
+            />
+          </Form.Item>
+          <Form.Item
+            label="Rasm"
+            name="imageId"
+            extra="Kategoriya rasmi (bo'lim sahifasida ko'rsatiladi)"
+          >
+            <ImageSizeHint type="category" showAsAlert={false} />
+            <Space direction="vertical" style={{ width: '100%' }}>
+              {imagePreview && (
+                <Image
+                  src={imagePreview}
+                  alt="Category preview"
+                  style={{ maxWidth: 200, maxHeight: 200, objectFit: 'cover' }}
+                  preview={false}
+                />
+              )}
+              <Space>
+                <Upload
+                  beforeUpload={handleImageUpload}
+                  showUploadList={false}
+                  accept="image/*"
+                >
+                  <Button icon={<UploadOutlined />} loading={uploadingImage}>
+                    Rasm yuklash
+                  </Button>
+                </Upload>
+                <Button 
+                  icon={<FolderOutlined />} 
+                  onClick={() => setImageModalOpen(true)}
+                >
+                  Mavjud rasmdan tanlash
+                </Button>
+              </Space>
+              {form.getFieldValue('imageId') && (
+                <div style={{ fontSize: 12, color: '#666' }}>
+                  Tanlangan: {mediaList?.find(m => m.id === form.getFieldValue('imageId'))?.filename || 'Noma\'lum'}
+                </div>
+              )}
+            </Space>
+          </Form.Item>
           <Form.Item label="Tartib" name="order">
             <InputNumber min={0} style={{ width: '100%' }} />
           </Form.Item>
@@ -833,6 +939,14 @@ function CategoriesTab() {
             <Select options={statusOptions} />
           </Form.Item>
         </Form>
+
+        {/* Media Library Modal */}
+        <MediaLibraryModal
+          open={imageModalOpen}
+          onCancel={() => setImageModalOpen(false)}
+          onSelect={handleSelectImageFromMedia}
+          fileType="image"
+        />
       </Modal>
     </div>
   );

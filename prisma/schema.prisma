@@ -55,6 +55,7 @@ model Media {
   homepageServices    HomepageService[]
   productCategories   ProductCategory[]
   serviceCategories   ServiceCategory[]
+  postCategories      PostCategory[]
   catalogs            Catalog[]
   doctors             Doctor[]
   settingsCatalogHero Setting? @relation("SettingCatalogHero")
@@ -284,6 +285,9 @@ model PostCategory {
   slug        String   @unique
   description_uz String? @db.Text
   description_ru String? @db.Text
+  section     String?  // "patients" or "children" - which section this category belongs to
+  imageId     String?  @unique
+  image       Media?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
   order       Int      @default(0)
   status      String   @default("published")
   createdAt   DateTime @default(now())
@@ -292,6 +296,7 @@ model PostCategory {
 
   @@index([slug])
   @@index([status, order])
+  @@index([section])
 }
 
 model Post {

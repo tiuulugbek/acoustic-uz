@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
-import { getPageBySlug, getPosts } from '@/lib/api-server';
+import { getPageBySlug, getPosts, getPostCategories } from '@/lib/api-server';
 import { detectLocale } from '@/lib/locale-server';
 import { getBilingualText } from '@/lib/locale';
 import PageHeader from '@/components/page-header';
 import ServiceContent from '@/components/service-content';
 import PostsList from '@/components/posts-list';
+import CategoryGrid from '@/components/category-grid';
 import { notFound } from 'next/navigation';
 
 // Force dynamic rendering to always fetch fresh data from admin
@@ -36,11 +37,19 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function PatientsPage() {
   const locale = detectLocale();
-  const page = await getPageBySlug('patients', locale);
-  // Get posts for 'bemorlar' category by slug
-  // We'll use the category slug 'bemorlar' - backend will handle it
-  const bemorlarCategoryId = 'cmi8uhl5t0000x9s3mf4y07h2'; // Bemorlar category ID from database
-  const posts = await getPosts(locale, true, bemorlarCategoryId, 'article');
+  const [page, categories] = await Promise.all([
+    getPageBySlug('patients', locale),
+    getPostCategories(locale, 'patients'),
+  ]);
+  
+  // Get all posts from categories in this section
+  const categoryIds = categories?.map(cat => cat.id) || [];
+  const allPosts = await Promise.all(
+    categoryIds.map(categoryId => getPosts(locale, true, categoryId, 'article'))
+  );
+  const posts = allPosts.flat().filter((post, index, self) => 
+    index === self.findIndex(p => p.id === post.id)
+  );
 
   // Use fallback if page doesn't exist or is not published
   const title = page && page.status === 'published' 
@@ -78,9 +87,18 @@ export default async function PatientsPage() {
               </p>
             </div>
           )}
+
+          {/* Categories Grid */}
+          {categories && categories.length > 0 && (
+            <CategoryGrid categories={categories} locale={locale} />
+          )}
           
+          {/* Posts List */}
           {posts && posts.length > 0 && (
             <div>
+              <h2 className="mb-6 text-2xl font-bold text-foreground">
+                {locale === 'ru' ? 'Статьи' : 'Maqolalar'}
+              </h2>
               <PostsList posts={posts} locale={locale} layout="two-column" />
             </div>
           )}

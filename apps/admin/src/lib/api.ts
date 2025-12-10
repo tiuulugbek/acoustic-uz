@@ -184,6 +184,9 @@ export interface PostCategoryDto {
   slug: string;
   description_uz?: string | null;
   description_ru?: string | null;
+  section?: string | null; // "patients" or "children"
+  imageId?: string | null;
+  image?: MediaDto | null;
   order: number;
   status: string;
   createdAt: string;
@@ -193,7 +196,10 @@ export interface PostCategoryDto {
 export type CreatePostCategoryPayload = Omit<PostCategoryDto, 'id' | 'createdAt' | 'updatedAt'>;
 export type UpdatePostCategoryPayload = Partial<CreatePostCategoryPayload>;
 
-export const getPostCategories = () => request<PostCategoryDto[]>('/post-categories');
+export const getPostCategories = (section?: string) => {
+  const params = section ? `?section=${section}` : '';
+  return request<PostCategoryDto[]>(`/post-categories${params}`);
+};
 export const createPostCategory = (payload: CreatePostCategoryPayload) =>
   request<PostCategoryDto>('/post-categories', {
     method: 'POST',

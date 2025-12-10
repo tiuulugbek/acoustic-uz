@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { PostCategoriesService } from './post-categories.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -13,8 +13,8 @@ export class PostCategoriesController {
 
   @Public()
   @Get()
-  findAll() {
-    return this.service.findAll();
+  findAll(@Query('section') section?: string) {
+    return this.service.findAll(section);
   }
 
   @Public()

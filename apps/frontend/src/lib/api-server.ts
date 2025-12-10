@@ -18,6 +18,7 @@ import {
   getShowcase as getShowcaseApi,
   getHomepageHearingAidItems as getHomepageHearingAidItemsApi,
   getHomepageNews as getHomepageNewsApi,
+  getPostCategories as getPostCategoriesApi,
   getPosts as getPostsApi,
   getPostBySlug as getPostBySlugApi,
   getPublicFaq as getPublicFaqApi,

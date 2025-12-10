@@ -598,7 +598,21 @@ export interface PostCategoryResponse {
   name_uz: string;
   name_ru: string;
   slug: string;
+  description_uz?: string | null;
+  description_ru?: string | null;
+  section?: string | null; // "patients" or "children"
+  imageId?: string | null;
+  image?: MediaResponse | null;
+  order?: number;
+  status?: string;
 }
+
+export const getPostCategories = (locale?: string, section?: string) => {
+  const params = new URLSearchParams();
+  if (section) params.append('section', section);
+  const query = params.toString() ? `?${params.toString()}` : '';
+  return fetchJson<PostCategoryResponse[]>(`/post-categories${query}`, locale);
+};
 
 export const getPosts = (locale?: string, publicOnly = true, categoryId?: string, postType?: string) => {
   const params = new URLSearchParams();
