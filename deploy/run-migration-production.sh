@@ -75,21 +75,42 @@ echo ""
 echo -e "${BLUE}📋 Step 4: Rebuilding backend...${NC}"
 cd "$PROJECT_DIR/apps/backend"
 
-# Install dependencies if needed
-if [ ! -d "node_modules/@nestjs/cli" ]; then
-    echo -e "${YELLOW}  Installing backend dependencies...${NC}"
-    pnpm install --frozen-lockfile || pnpm install
+# Install dependencies (including devDependencies for build)
+echo -e "${YELLOW}  Installing backend dependencies (including devDependencies)...${NC}"
+NODE_ENV=development pnpm install --frozen-lockfile || pnpm install || {
+    echo -e "${YELLOW}  ⚠️  pnpm install failed, trying without frozen lockfile...${NC}"
+    pnpm install
+}
+
+# Verify nest CLI is available
+if [ ! -f "node_modules/.bin/nest" ] && [ ! -f "node_modules/@nestjs/cli/bin/nest.js" ]; then
+    echo -e "${YELLOW}  ⚠️  Nest CLI not found, installing @nestjs/cli...${NC}"
+    pnpm add -D @nestjs/cli@^10.2.1 || {
+        echo -e "${RED}❌ Failed to install @nestjs/cli${NC}"
+        exit 1
+    }
 fi
 
 # Build backend
+echo -e "${BLUE}  Building backend...${NC}"
 pnpm build || {
     echo -e "${RED}❌ Backend build failed${NC}"
     echo -e "${YELLOW}  Trying alternative build method...${NC}"
-    # Try with npx
-    npx nest build || {
-        echo -e "${RED}❌ Backend build failed with npx as well${NC}"
+    # Try with direct path
+    if [ -f "node_modules/.bin/nest" ]; then
+        ./node_modules/.bin/nest build || {
+            echo -e "${RED}❌ Backend build failed with direct path${NC}"
+            exit 1
+        }
+    elif [ -f "node_modules/@nestjs/cli/bin/nest.js" ]; then
+        node node_modules/@nestjs/cli/bin/nest.js build || {
+            echo -e "${RED}❌ Backend build failed with nest.js path${NC}"
+            exit 1
+        }
+    else
+        echo -e "${RED}❌ Nest CLI not found in any expected location${NC}"
         exit 1
-    }
+    fi
 }
 echo -e "${GREEN}✅ Backend built successfully${NC}"
 
