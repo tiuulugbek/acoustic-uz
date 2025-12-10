@@ -1,3 +1,5 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -10,6 +12,15 @@ const nextConfig = {
   // Ignore TypeScript errors during build (for production deployment)
   typescript: {
     ignoreBuildErrors: true,
+  },
+  // Webpack configuration for path resolution
+  webpack: (config, { isServer }) => {
+    // Add alias for @ path
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': path.resolve(__dirname, 'src'),
+    };
+    return config;
   },
   images: {
     unoptimized: true, // Disable Next.js Image Optimization to avoid /_next/image endpoint issues
