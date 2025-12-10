@@ -15,6 +15,7 @@ import AuthorCard from '@/components/author-card';
 import Sidebar from '@/components/sidebar';
 import { notFound } from 'next/navigation';
 import dayjs from 'dayjs';
+import { normalizeImageUrl } from '@/lib/image-utils';
 
 // ISR: Revalidate every 2 hours
 export const revalidate = 7200;
@@ -106,7 +107,7 @@ export default async function PostPage({ params }: PostPageProps) {
   const categoryName = post.category 
     ? getBilingualText(post.category.name_uz, post.category.name_ru, locale)
     : null;
-  const coverUrl = post.cover?.url;
+  const coverUrl = post.cover?.url ? normalizeImageUrl(post.cover.url) : null;
 
   // Get related posts from the same category (only articles, not news)
   const relatedPosts = post.categoryId 
@@ -155,6 +156,7 @@ export default async function PostPage({ params }: PostPageProps) {
                     className="object-cover"
                     sizes="(max-width: 768px) 100vw, (max-width: 1024px) 66vw, 896px"
                     priority
+                    unoptimized
                   />
                 </div>
               )}
@@ -234,7 +236,7 @@ export default async function PostPage({ params }: PostPageProps) {
               </div>
 
               {/* Author Card */}
-              {post.author && (
+              {post.author && post.authorId && (
                 <AuthorCard author={post.author} locale={locale} />
               )}
 
