@@ -45,7 +45,7 @@ export default async function PatientsPage() {
     getBranches(locale),
   ]);
   
-  // Get posts ONLY from categories in this section (no posts without category)
+  // Get posts from categories in this section
   const categoryIds = categories?.map(cat => cat.id) || [];
   let posts: any[] = [];
   
@@ -59,8 +59,27 @@ export default async function PatientsPage() {
     );
   }
   
-  // Only show posts that belong to this section's categories
-  // Posts without category are NOT shown in section pages
+  // Also get all articles and filter by section (if they belong to section categories)
+  // This ensures posts are shown even if they're not directly linked to categories
+  const allArticles = await getPosts(locale, true, undefined, 'article');
+  const sectionArticles = allArticles.filter(post => {
+    // Include if post belongs to a category in this section
+    if (post.categoryId && categoryIds.includes(post.categoryId)) {
+      return true;
+    }
+    // Also include posts without category (for backward compatibility)
+    // But only if they are articles
+    if (!post.categoryId && post.postType === 'article') {
+      return true;
+    }
+    return false;
+  });
+  
+  // Combine and deduplicate
+  const allPostsCombined = [...posts, ...sectionArticles];
+  posts = allPostsCombined.filter((post, index, self) => 
+    index === self.findIndex(p => p.id === post.id)
+  );
 
   // Use fallback if page doesn't exist or is not published
   const title = page && page.status === 'published' 
