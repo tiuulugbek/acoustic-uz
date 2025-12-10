@@ -235,8 +235,8 @@ export default async function PostPage({ params }: PostPageProps) {
                 </div>
               </div>
 
-              {/* Author Card */}
-              {post.author && post.authorId && (
+              {/* Author Card - Show if author exists */}
+              {post.author && (
                 <AuthorCard author={post.author} locale={locale} />
               )}
 
