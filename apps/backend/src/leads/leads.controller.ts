@@ -40,7 +40,18 @@ export class LeadsController {
   @Public()
   @Post()
   @ApiOperation({ summary: 'Create lead (public)' })
-  create(@Body() createDto: unknown) {
+  async create(@Body() createDto: unknown) {
+    // Track Telegram button clicks
+    const data = createDto as { source?: string };
+    if (data.source === 'telegram_button_click') {
+      // Create a minimal lead entry for tracking
+      return this.leadsService.create({
+        name: 'Telegram Button Click',
+        phone: 'N/A',
+        source: 'telegram_button_click',
+        message: 'User clicked Telegram button',
+      });
+    }
     return this.leadsService.create(createDto);
   }
 
@@ -51,6 +62,15 @@ export class LeadsController {
   @ApiOperation({ summary: 'Get all leads' })
   findAll() {
     return this.leadsService.findAll();
+  }
+
+  @UseGuards(JwtAuthGuard, RbacGuard)
+  @Get('stats/telegram-button')
+  @RequirePermissions('leads.read')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get Telegram button click statistics' })
+  getTelegramButtonStats() {
+    return this.leadsService.getTelegramButtonStats();
   }
 
   @UseGuards(JwtAuthGuard, RbacGuard)

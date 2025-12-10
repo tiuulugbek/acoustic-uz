@@ -17,6 +17,46 @@ export class LeadsService {
     });
   }
 
+  async getTelegramButtonStats() {
+    const totalClicks = await this.prisma.lead.count({
+      where: { source: 'telegram_button' },
+    });
+
+    const todayClicks = await this.prisma.lead.count({
+      where: {
+        source: 'telegram_button',
+        createdAt: {
+          gte: new Date(new Date().setHours(0, 0, 0, 0)),
+        },
+      },
+    });
+
+    const thisWeekClicks = await this.prisma.lead.count({
+      where: {
+        source: 'telegram_button',
+        createdAt: {
+          gte: new Date(new Date().setDate(new Date().getDate() - 7)),
+        },
+      },
+    });
+
+    const thisMonthClicks = await this.prisma.lead.count({
+      where: {
+        source: 'telegram_button',
+        createdAt: {
+          gte: new Date(new Date().setDate(1)),
+        },
+      },
+    });
+
+    return {
+      total: totalClicks,
+      today: todayClicks,
+      thisWeek: thisWeekClicks,
+      thisMonth: thisMonthClicks,
+    };
+  }
+
   async findOne(id: string) {
     return this.prisma.lead.findUnique({
       where: { id },
@@ -31,7 +71,8 @@ export class LeadsService {
 
     // Send to Telegram forms bot (for all form sources)
     // All leads from website forms go to Telegram bot
-    if (lead.source !== 'telegram_button') {
+    // Don't send telegram_button_click events to Telegram (they're just for tracking)
+    if (lead.source !== 'telegram_button' && lead.source !== 'telegram_button_click') {
       try {
         await this.telegramService.sendLead(lead);
       } catch (error) {

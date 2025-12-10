@@ -91,7 +91,26 @@ export default function TelegramButton() {
     return null;
   }
 
-  const handleClick = () => {
+  const handleClick = async () => {
+    // Track click
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://a.acoustic.uz/api'}/leads`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: 'Telegram Button Click',
+          phone: 'N/A',
+          source: 'telegram_button_click',
+          message: 'User clicked Telegram button',
+        }),
+      });
+    } catch (error) {
+      // Silently fail - don't block user from opening Telegram
+      console.error('Failed to track Telegram button click:', error);
+    }
+    
     // Open Telegram bot
     window.open(`https://t.me/${botUsername}`, '_blank');
     // Don't hide the button - it should always be visible

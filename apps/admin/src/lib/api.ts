@@ -1660,4 +1660,14 @@ export const deleteLead = (id: string) =>
     auth: true,
   });
 
+export interface TelegramButtonStats {
+  total: number;
+  today: number;
+  thisWeek: number;
+  thisMonth: number;
+}
+
+export const getTelegramButtonStats = () =>
+  request<TelegramButtonStats>('/leads/stats/telegram-button', { auth: true });
+
 // AmoCRM API - REMOVED (no longer used)

@@ -8,6 +8,10 @@ import {
   message,
   Select,
   Input,
+  Card,
+  Statistic,
+  Row,
+  Col,
 } from 'antd';
 import { DeleteOutlined, ReloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
@@ -20,8 +24,10 @@ import {
   getLeads,
   updateLead,
   deleteLead,
+  getTelegramButtonStats,
   LeadDto,
   UpdateLeadPayload,
+  TelegramButtonStats,
   ApiError,
 } from '../lib/api';
 
@@ -52,6 +58,9 @@ const formatSource = (source: string | null | undefined): string => {
   if (source.startsWith('appointment_form')) {
     return '📋 Qabulga yozilish';
   }
+  if (source === 'telegram_button_click') {
+    return '📱 Telegram tugmasi';
+  }
   
   return source;
 };
@@ -65,6 +74,7 @@ const getSourceColor = (source: string | null | undefined): string => {
   if (source.startsWith('product-')) return 'orange';
   if (source === 'contact-page') return 'purple';
   if (source.startsWith('appointment_form')) return 'cyan';
+  if (source === 'telegram_button_click') return 'blue';
   
   return 'default';
 };
@@ -78,6 +88,12 @@ export default function LeadsPage() {
   const { data: leads, isLoading, error } = useQuery<LeadDto[], ApiError>({
     queryKey: ['leads'],
     queryFn: getLeads,
+  });
+
+  const { data: telegramStats, isLoading: isLoadingStats } = useQuery<TelegramButtonStats, ApiError>({
+    queryKey: ['telegram-button-stats'],
+    queryFn: getTelegramButtonStats,
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   const { mutateAsync: updateLeadMutation, isPending: isUpdating } = useMutation<
@@ -276,12 +292,54 @@ export default function LeadsPage() {
         <h2 style={{ fontSize: '20px', fontWeight: 600 }}>So'rovlar</h2>
         <Button
           icon={<ReloadOutlined />}
-          onClick={() => queryClient.invalidateQueries({ queryKey: ['leads'] })}
+          onClick={() => {
+            queryClient.invalidateQueries({ queryKey: ['leads'] });
+            queryClient.invalidateQueries({ queryKey: ['telegram-button-stats'] });
+          }}
           loading={isLoading}
         >
           Yangilash
         </Button>
       </div>
+
+      {/* Telegram Button Statistics */}
+      {telegramStats && (
+        <Card style={{ marginBottom: '24px' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px' }}>
+            📱 Telegram Tugmasi Statistika
+          </h3>
+          <Row gutter={16}>
+            <Col xs={12} sm={6}>
+              <Statistic
+                title="Jami bosilgan"
+                value={telegramStats.total}
+                loading={isLoadingStats}
+              />
+            </Col>
+            <Col xs={12} sm={6}>
+              <Statistic
+                title="Bugun"
+                value={telegramStats.today}
+                loading={isLoadingStats}
+              />
+            </Col>
+            <Col xs={12} sm={6}>
+              <Statistic
+                title="Bu hafta"
+                value={telegramStats.thisWeek}
+                loading={isLoadingStats}
+              />
+            </Col>
+            <Col xs={12} sm={6}>
+              <Statistic
+                title="Bu oy"
+                value={telegramStats.thisMonth}
+                loading={isLoadingStats}
+              />
+            </Col>
+          </Row>
+        </Card>
+      )}
 
       {/* Filters */}
       <div style={{ marginBottom: '16px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
