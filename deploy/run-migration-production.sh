@@ -61,8 +61,51 @@ pnpm db:migrate:deploy || {
 
 echo ""
 echo -e "${GREEN}✅ Migration completed successfully!${NC}"
+
+# Rebuild backend
 echo ""
-echo -e "${BLUE}📋 Next steps:${NC}"
-echo "  1. Restart backend: pm2 restart acoustic-backend"
-echo "  2. Rebuild frontend: bash deploy/optimized-build-frontend.sh"
+echo -e "${BLUE}📋 Step 3: Rebuilding backend...${NC}"
+cd "$PROJECT_DIR/apps/backend"
+pnpm install --frozen-lockfile || pnpm install
+pnpm build || {
+    echo -e "${RED}❌ Backend build failed${NC}"
+    exit 1
+}
+echo -e "${GREEN}✅ Backend built successfully${NC}"
+
+# Restart backend
+echo ""
+echo -e "${BLUE}📋 Step 4: Restarting backend...${NC}"
+pm2 restart acoustic-backend || {
+    echo -e "${YELLOW}⚠️  PM2 restart failed, trying start...${NC}"
+    pm2 start ecosystem.config.js --only acoustic-backend
+}
+pm2 save
+echo -e "${GREEN}✅ Backend restarted${NC}"
+
+# Rebuild admin panel
+echo ""
+echo -e "${BLUE}📋 Step 5: Rebuilding admin panel...${NC}"
+cd "$PROJECT_DIR/apps/admin"
+pnpm install --frozen-lockfile || pnpm install
+pnpm build || {
+    echo -e "${RED}❌ Admin build failed${NC}"
+    exit 1
+}
+echo -e "${GREEN}✅ Admin panel built successfully${NC}"
+
+# Rebuild frontend
+echo ""
+echo -e "${BLUE}📋 Step 6: Rebuilding frontend...${NC}"
+cd "$PROJECT_DIR"
+bash deploy/optimized-build-frontend.sh || {
+    echo -e "${RED}❌ Frontend build failed${NC}"
+    exit 1
+}
+
+echo ""
+echo -e "${GREEN}✅ All migrations and builds completed successfully!${NC}"
+echo ""
+echo -e "${BLUE}📋 Services status:${NC}"
+pm2 list | grep -E "(acoustic-backend|acoustic-frontend)" || echo "  No services found"
 
