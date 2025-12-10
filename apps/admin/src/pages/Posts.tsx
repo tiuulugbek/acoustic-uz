@@ -882,12 +882,14 @@ function CategoriesTab() {
           <Form.Item 
             label="Bo'lim" 
             name="section"
-            help="Kategoriya qaysi bo'limga tegishli (Bemorlar yoki Bolalar)"
+            help="Kategoriya qaysi bo'limga tegishli. Agar bo'lim tanlanmasa, kategoriya umumiy bo'limda ko'rinadi."
+            rules={[{ required: false }]}
           >
             <Select 
               placeholder="Bo'limni tanlang (ixtiyoriy)"
               allowClear
               options={[
+                { label: 'Umumiy (bo\'limga tegishli emas)', value: 'general' },
                 { label: 'Bemorlar', value: 'patients' },
                 { label: 'Bolalar', value: 'children' },
               ]}
