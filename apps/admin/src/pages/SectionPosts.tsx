@@ -30,7 +30,6 @@ import {
   PostDto,
   CreatePostPayload,
   UpdatePostPayload,
-  getMedia,
   uploadMedia,
   MediaDto,
   getPostCategories,
@@ -89,12 +88,6 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
       );
     },
     enabled: categoryIds.length > 0,
-    retry: false,
-  });
-
-  const { data: mediaList } = useQuery<MediaDto[], ApiError>({
-    queryKey: ['media'],
-    queryFn: getMedia,
     retry: false,
   });
 
