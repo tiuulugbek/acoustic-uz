@@ -1,12 +1,14 @@
 import type { Metadata } from 'next';
-import { getPageBySlug, getPosts, getPostCategories } from '@/lib/api-server';
+import { getPageBySlug, getPosts, getPostCategories, getBranches } from '@/lib/api-server';
 import { detectLocale } from '@/lib/locale-server';
 import { getBilingualText } from '@/lib/locale';
 import PageHeader from '@/components/page-header';
-import ServiceContent from '@/components/service-content';
 import PostsListPaginated from '@/components/posts-list-paginated';
 import CategoryGrid from '@/components/category-grid';
-import { notFound } from 'next/navigation';
+import Link from 'next/link';
+import { MapPin, Phone } from 'lucide-react';
+import { normalizeImageUrl } from '@/lib/image-utils';
+import Image from 'next/image';
 
 // Force dynamic rendering to always fetch fresh data from admin
 export const dynamic = 'force-dynamic';
@@ -37,9 +39,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function PatientsPage() {
   const locale = detectLocale();
-  const [page, categories] = await Promise.all([
+  const [page, categories, branches] = await Promise.all([
     getPageBySlug('patients', locale),
     getPostCategories(locale, 'patients'),
+    getBranches(locale),
   ]);
   
   // Get all posts from categories in this section, or posts without category
@@ -70,9 +73,6 @@ export default async function PatientsPage() {
   const title = page && page.status === 'published' 
     ? getBilingualText(page.title_uz, page.title_ru, locale)
     : locale === 'ru' ? 'Пациентам' : 'Bemorlar';
-  const body = page && page.status === 'published'
-    ? getBilingualText(page.body_uz, page.body_ru, locale) || ''
-    : '';
 
   return (
     <main className="min-h-screen bg-background">
@@ -87,36 +87,105 @@ export default async function PatientsPage() {
 
       <section className="bg-white py-12">
         <div className="mx-auto max-w-6xl px-4 md:px-6">
-          {body && (
-            <div className="mb-8">
-              <ServiceContent content={body} locale={locale} />
+          <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
+            {/* Main Content */}
+            <div className="min-w-0">
+              {/* Categories Grid */}
+              {categories && categories.length > 0 && (
+                <div className="mb-8">
+                  <CategoryGrid categories={categories} locale={locale} />
+                </div>
+              )}
+              
+              {/* Posts List with Pagination */}
+              {posts && posts.length > 0 && (
+                <div>
+                  <h2 className="mb-6 text-2xl font-bold text-foreground">
+                    {locale === 'ru' ? 'Статьи' : 'Maqolalar'}
+                  </h2>
+                  <PostsListPaginated posts={posts} locale={locale} postsPerPage={6} />
+                </div>
+              )}
             </div>
-          )}
-          
-          {!body && (
-            <div className="mb-8">
-              <p className="text-lg text-muted-foreground">
-                {locale === 'ru' 
-                  ? 'В этом разделе вы найдете полную информацию о том, как устроен слух человека, какие причины влияют на его ухудшение, что такое тугоухость и можно ли ее вылечить.'
-                  : 'Ushbu bo\'limda siz odam eshitish organi qanday tuzilgan, uning yomonlashishiga qanday sabablar ta\'sir qiladi, tugouxoсть nima va uni davolash mumkinmi haqida to\'liq ma\'lumot topasiz.'}
-              </p>
-            </div>
-          )}
 
-          {/* Categories Grid */}
-          {categories && categories.length > 0 && (
-            <CategoryGrid categories={categories} locale={locale} />
-          )}
-          
-          {/* Posts List with Pagination */}
-          {posts && posts.length > 0 && (
-            <div>
-              <h2 className="mb-6 text-2xl font-bold text-foreground">
-                {locale === 'ru' ? 'Статьи' : 'Maqolalar'}
-              </h2>
-              <PostsListPaginated posts={posts} locale={locale} postsPerPage={6} />
-            </div>
-          )}
+            {/* Sidebar */}
+            <aside className="sticky top-6 h-fit space-y-6">
+              {/* Branches Card */}
+              {branches && branches.length > 0 && (
+                <div className="rounded-lg border border-border bg-white p-6 shadow-sm">
+                  <h3 className="mb-4 text-lg font-semibold text-foreground">
+                    {locale === 'ru' ? 'Наши филиалы' : 'Bizning filiallarimiz'}
+                  </h3>
+                  <div className="space-y-4">
+                    {branches.slice(0, 3).map((branch) => {
+                      const branchName = getBilingualText(branch.name_uz, branch.name_ru, locale);
+                      const branchAddress = getBilingualText(branch.address_uz, branch.address_ru, locale);
+                      const imageUrl = branch.image?.url ? normalizeImageUrl(branch.image.url) : null;
+                      
+                      return (
+                        <Link
+                          key={branch.id}
+                          href={`/branches/${branch.slug}`}
+                          className="group block rounded-lg border border-border bg-white p-3 transition-shadow hover:shadow-md"
+                        >
+                          {imageUrl && (
+                            <div className="relative mb-2 aspect-video w-full overflow-hidden rounded-md bg-muted">
+                              <Image
+                                src={imageUrl}
+                                alt={branchName}
+                                fill
+                                className="object-cover transition-transform group-hover:scale-105"
+                                sizes="(max-width: 1024px) 100vw, 320px"
+                              />
+                            </div>
+                          )}
+                          <h4 className="mb-1 text-sm font-semibold text-foreground group-hover:text-brand-primary transition-colors">
+                            {branchName}
+                          </h4>
+                          {branchAddress && (
+                            <div className="flex items-start gap-2 text-xs text-muted-foreground">
+                              <MapPin className="h-3 w-3 mt-0.5 flex-shrink-0 text-brand-primary" />
+                              <span className="line-clamp-2">{branchAddress}</span>
+                            </div>
+                          )}
+                          {branch.phone && (
+                            <div className="mt-2 flex items-center gap-2 text-xs text-brand-primary">
+                              <Phone className="h-3 w-3" />
+                              <span>{branch.phone}</span>
+                            </div>
+                          )}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                  <Link
+                    href="/branches"
+                    className="mt-4 block text-center text-sm font-medium text-brand-primary hover:text-brand-accent transition-colors"
+                  >
+                    {locale === 'ru' ? 'Все филиалы →' : 'Barcha filiallar →'}
+                  </Link>
+                </div>
+              )}
+
+              {/* Contact Card */}
+              <div className="rounded-lg border border-border bg-gradient-to-br from-brand-primary/5 to-brand-accent/5 p-6">
+                <h3 className="mb-3 text-lg font-semibold text-foreground">
+                  {locale === 'ru' ? 'Связаться с нами' : 'Biz bilan bog\'laning'}
+                </h3>
+                <p className="mb-4 text-sm text-muted-foreground">
+                  {locale === 'ru' 
+                    ? 'Наши специалисты готовы ответить на все ваши вопросы.'
+                    : 'Bizning mutaxassislarimiz barcha savollaringizga javob berishga tayyor.'}
+                </p>
+                <Link
+                  href="/contact"
+                  className="block w-full rounded-md bg-brand-primary px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-brand-accent"
+                >
+                  {locale === 'ru' ? 'Связаться' : 'Bog\'lanish'}
+                </Link>
+              </div>
+            </aside>
+          </div>
         </div>
       </section>
     </main>
