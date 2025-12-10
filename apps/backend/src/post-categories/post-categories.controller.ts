@@ -13,8 +13,13 @@ export class PostCategoriesController {
 
   @Public()
   @Get()
-  findAll(@Query('section') section?: string) {
-    return this.service.findAll(section);
+  async findAll(@Query('section') section?: string) {
+    try {
+      return await this.service.findAll(section);
+    } catch (error) {
+      console.error('Error fetching post categories:', error);
+      throw error;
+    }
   }
 
   @Public()

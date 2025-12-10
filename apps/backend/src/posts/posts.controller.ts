@@ -13,12 +13,17 @@ export class PostsController {
 
   @Public()
   @Get()
-  findAll(
+  async findAll(
     @Query('public') publicOnly?: string, 
     @Query('categoryId') categoryId?: string,
     @Query('postType') postType?: string
   ) {
-    return this.service.findAll(publicOnly === 'true', categoryId, postType);
+    try {
+      return await this.service.findAll(publicOnly === 'true', categoryId, postType);
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+      throw error;
+    }
   }
 
   @Public()
