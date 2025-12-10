@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getBilingualText } from '@/lib/locale';
+import { normalizeImageUrl } from '@/lib/image-utils';
 import Link from 'next/link';
 import Image from 'next/image';
 import { MapPin } from 'lucide-react';
@@ -91,9 +92,7 @@ export default function BranchesPageContent({
                   <ul className="space-y-4">
                     {usefulArticles.map((article) => {
                       const title = getBilingualText(article.title_uz, article.title_ru, locale);
-                      const imageUrl = article.cover?.url ? 
-                        (article.cover.url.startsWith('http') ? article.cover.url : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3001'}${article.cover.url}`) 
-                        : '';
+                      const imageUrl = normalizeImageUrl(article.cover?.url);
                       
                       return (
                         <li key={article.id}>
