@@ -74,10 +74,22 @@ echo -e "${GREEN}✅ Migration completed successfully!${NC}"
 echo ""
 echo -e "${BLUE}📋 Step 4: Rebuilding backend...${NC}"
 cd "$PROJECT_DIR/apps/backend"
-pnpm install --frozen-lockfile || pnpm install
+
+# Install dependencies if needed
+if [ ! -d "node_modules/@nestjs/cli" ]; then
+    echo -e "${YELLOW}  Installing backend dependencies...${NC}"
+    pnpm install --frozen-lockfile || pnpm install
+fi
+
+# Build backend
 pnpm build || {
     echo -e "${RED}❌ Backend build failed${NC}"
-    exit 1
+    echo -e "${YELLOW}  Trying alternative build method...${NC}"
+    # Try with npx
+    npx nest build || {
+        echo -e "${RED}❌ Backend build failed with npx as well${NC}"
+        exit 1
+    }
 }
 echo -e "${GREEN}✅ Backend built successfully${NC}"
 
