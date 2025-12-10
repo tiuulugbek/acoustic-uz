@@ -19,8 +19,24 @@ if [ -f "$PROJECT_ROOT/pnpm-workspace.yaml" ]; then
   mv "$PROJECT_ROOT/pnpm-workspace.yaml" "$PROJECT_ROOT/pnpm-workspace.yaml.bak" 2>/dev/null || true
 fi
 
-# Try global Prisma
-if command -v prisma &> /dev/null; then
+# Try to use Prisma - first try npx, then pnpm exec, then global
+if command -v npx &> /dev/null; then
+  echo "Using npx prisma..."
+  if npx prisma@5.22.0 generate --schema="$SCHEMA_PATH" 2>&1 | grep -q "Error"; then
+    echo "Generation failed, restoring workspace file..."
+    [ -f "$PROJECT_ROOT/pnpm-workspace.yaml.bak" ] && mv "$PROJECT_ROOT/pnpm-workspace.yaml.bak" "$PROJECT_ROOT/pnpm-workspace.yaml"
+    exit 1
+  fi
+  echo "✅ Success!"
+elif command -v pnpm &> /dev/null; then
+  echo "Using pnpm exec prisma..."
+  if pnpm exec prisma generate --schema="$SCHEMA_PATH" 2>&1 | grep -q "Error"; then
+    echo "Generation failed, restoring workspace file..."
+    [ -f "$PROJECT_ROOT/pnpm-workspace.yaml.bak" ] && mv "$PROJECT_ROOT/pnpm-workspace.yaml.bak" "$PROJECT_ROOT/pnpm-workspace.yaml"
+    exit 1
+  fi
+  echo "✅ Success!"
+elif command -v prisma &> /dev/null; then
   echo "Using global Prisma..."
   if prisma generate --schema="$SCHEMA_PATH" 2>&1 | grep -q "Error"; then
     echo "Generation failed, restoring workspace file..."
@@ -29,8 +45,14 @@ if command -v prisma &> /dev/null; then
   fi
   echo "✅ Success!"
 else
-  echo "❌ Prisma not found globally. Please install: npm install -g prisma@5.22.0"
-  exit 1
+  echo "❌ Prisma not found. Trying npx..."
+  if npx prisma@5.22.0 generate --schema="$SCHEMA_PATH"; then
+    echo "✅ Success with npx!"
+  else
+    echo "❌ Prisma generation failed. Please install: npm install -g prisma@5.22.0"
+    [ -f "$PROJECT_ROOT/pnpm-workspace.yaml.bak" ] && mv "$PROJECT_ROOT/pnpm-workspace.yaml.bak" "$PROJECT_ROOT/pnpm-workspace.yaml"
+    exit 1
+  fi
 fi
 
 # Restore workspace file
