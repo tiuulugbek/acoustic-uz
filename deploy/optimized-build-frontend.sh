@@ -64,9 +64,12 @@ echo -e "${BLUE}📥 Step 3: Pulling latest code...${NC}"
 cd "$PROJECT_DIR"
 git pull origin main || echo -e "${YELLOW}⚠️  Git pull failed, continuing...${NC}"
 
-# 4. Install dependencies (only if needed)
-echo -e "${BLUE}📦 Step 4: Installing dependencies...${NC}"
+# 4. Install dependencies (including devDependencies for build tools)
+echo -e "${BLUE}📦 Step 4: Installing dependencies (including devDependencies)...${NC}"
+# Temporarily set NODE_ENV to development to install devDependencies
+export NODE_ENV=development
 pnpm install --frozen-lockfile || pnpm install
+export NODE_ENV=production
 
 # 5. Build shared package
 echo -e "${BLUE}🏗️  Step 5: Building shared package...${NC}"
