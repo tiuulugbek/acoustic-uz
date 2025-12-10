@@ -113,7 +113,7 @@ const menuItems: MenuProps['items'] = [
   {
     key: '/posts',
     icon: <FileTextOutlined />,
-    label: 'Maqolalar',
+    label: 'Yangiliklar',
   },
   {
     key: '/banners',

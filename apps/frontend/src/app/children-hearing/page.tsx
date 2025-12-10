@@ -45,7 +45,7 @@ export default async function ChildrenHearingPage() {
     getBranches(locale),
   ]);
   
-  // Get all posts from categories in this section, or posts without category
+  // Get posts ONLY from categories in this section (no posts without category)
   const categoryIds = categories?.map(cat => cat.id) || [];
   let posts: any[] = [];
   
@@ -59,15 +59,8 @@ export default async function ChildrenHearingPage() {
     );
   }
   
-  // Also get posts without category (for backward compatibility)
-  const allPostsWithoutCategory = await getPosts(locale, true, undefined, 'article');
-  const postsWithoutCategory = allPostsWithoutCategory.filter(post => !post.categoryId);
-  
-  // Combine and deduplicate
-  const allPostsCombined = [...posts, ...postsWithoutCategory];
-  posts = allPostsCombined.filter((post, index, self) => 
-    index === self.findIndex(p => p.id === post.id)
-  );
+  // Only show posts that belong to this section's categories
+  // Posts without category are NOT shown in section pages
 
   // Use fallback if page doesn't exist or is not published
   const title = page && page.status === 'published' 

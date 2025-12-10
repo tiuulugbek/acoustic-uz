@@ -184,6 +184,7 @@ function PostsTab() {
     mutationFn: createPost,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['posts'] });
+      queryClient.invalidateQueries({ queryKey: ['posts', 'news'] });
       message.success('Maqola saqlandi');
     },
     onError: (error) => message.error(error.message || 'Saqlashda xatolik'),
@@ -193,6 +194,7 @@ function PostsTab() {
     mutationFn: ({ id, payload }) => updatePost(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['posts'] });
+      queryClient.invalidateQueries({ queryKey: ['posts', 'news'] });
       message.success('Maqola yangilandi');
     },
     onError: (error) => message.error(error.message || 'Yangilashda xatolik'),
@@ -202,6 +204,7 @@ function PostsTab() {
     mutationFn: deletePost,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['posts'] });
+      queryClient.invalidateQueries({ queryKey: ['posts', 'news'] });
       message.success('Maqola o‘chirildi');
     },
     onError: (error) => message.error(error.message || "O'chirishda xatolik"),
@@ -958,7 +961,7 @@ export default function PostsPage() {
   const tabItems: TabsProps['items'] = [
     {
       key: 'posts',
-      label: 'Maqolalar va Yangiliklar',
+      label: 'Yangiliklar',
       children: <PostsTab />,
     },
     {
