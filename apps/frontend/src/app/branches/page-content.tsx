@@ -5,71 +5,40 @@ import { useSearchParams } from 'next/navigation';
 import { getBilingualText } from '@/lib/locale';
 import Link from 'next/link';
 import Image from 'next/image';
-import { getBranches, type BranchResponse } from '@/lib/api-server';
-import { getPosts } from '@/lib/api-server';
 import { MapPin } from 'lucide-react';
 import BranchesMap from '@/components/branches-map';
 import BranchesList from '@/components/branches-list';
 import PageHeader from '@/components/page-header';
+import type { BranchResponse, PostResponse } from '@/lib/api';
 
-export default function BranchesPageContent() {
+interface BranchesPageContentProps {
+  initialBranches: BranchResponse[];
+  initialPosts: PostResponse[];
+  initialLocale: 'uz' | 'ru';
+}
+
+export default function BranchesPageContent({ 
+  initialBranches, 
+  initialPosts, 
+  initialLocale 
+}: BranchesPageContentProps) {
   const searchParams = useSearchParams();
-  const [branches, setBranches] = useState<BranchResponse[]>([]);
-  const [posts, setPosts] = useState<any[]>([]);
+  const [branches] = useState<BranchResponse[]>(initialBranches);
+  const [posts] = useState<PostResponse[]>(initialPosts);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
-  const [locale, setLocale] = useState<'uz' | 'ru'>('uz');
-  const [loading, setLoading] = useState(true);
+  const [locale] = useState<'uz' | 'ru'>(initialLocale);
   const [branchesByRegion, setBranchesByRegion] = useState<Record<string, BranchResponse[]>>({});
   const [regionNames, setRegionNames] = useState<Record<string, { uz: string; ru: string }>>({});
   
-  // Load data on mount and check URL params
+  // Check URL params on mount
   useEffect(() => {
-    const loadData = async () => {
-      try {
-        const detectedLocale = typeof document !== 'undefined' 
-          ? (document.documentElement.getAttribute('data-locale') as 'uz' | 'ru') || 'uz'
-          : 'uz';
-        setLocale(detectedLocale);
-        
-        // Check for region parameter in URL
-        const regionParam = searchParams.get('region');
-        if (regionParam) {
-          setSelectedRegion(regionParam);
-        }
-        
-        const [branchesData, postsData] = await Promise.all([
-          getBranches(detectedLocale),
-          getPosts(detectedLocale, true, undefined, 'article'),
-        ]);
-        
-        setBranches(branchesData || []);
-        setPosts(postsData || []);
-      } catch (error) {
-        console.error('Error loading branches data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    loadData();
+    const regionParam = searchParams.get('region');
+    if (regionParam) {
+      setSelectedRegion(regionParam);
+    }
   }, [searchParams]);
   
   const usefulArticles = posts?.slice(0, 5) || [];
-
-  if (loading) {
-    return (
-      <main className="min-h-screen bg-background">
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">
-              {locale === 'ru' ? 'Загрузка...' : 'Yuklanmoqda...'}
-            </p>
-          </div>
-        </div>
-      </main>
-    );
-  }
 
   return (
     <main className="min-h-screen bg-background">
