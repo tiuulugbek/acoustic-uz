@@ -13,8 +13,6 @@ import {
   message,
   Upload,
   Image,
-  Radio,
-  InputNumber,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { UploadOutlined, FolderOutlined, PlusOutlined } from '@ant-design/icons';
@@ -40,7 +38,6 @@ import {
   getDoctors,
   DoctorDto,
 } from '../lib/api';
-import { createSlug } from '../utils/slug';
 import ImageSizeHint from '../components/ImageSizeHint';
 import { normalizeImageUrl } from '../utils/image';
 import { compressImage } from '../utils/image-compression';
