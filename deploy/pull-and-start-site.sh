@@ -54,45 +54,104 @@ echo ""
 
 # Step 4: Build backend
 step "4" "Building backend"
-cd "$BACKEND_DIR"
+cd "$PROJECT_DIR"
 
 # Clean dist directory
-rm -rf dist
-mkdir -p dist
+rm -rf "$BACKEND_DIR/dist"
+mkdir -p "$BACKEND_DIR/dist"
 
-# Try nest build first
-echo "   Attempting: pnpm exec nest build"
 BUILD_LOG="/tmp/backend-build-$(date +%Y%m%d_%H%M%S).log"
-if pnpm exec nest build > "$BUILD_LOG" 2>&1; then
-    echo "   ✅ Nest build successful"
+BUILD_SUCCESS=false
+
+# Method 1: Try building from project root using pnpm filter (most reliable in monorepo)
+echo "   Method 1: pnpm --filter @acoustic/backend build"
+if pnpm --filter @acoustic/backend build > "$BUILD_LOG" 2>&1; then
+    echo "   ✅ Build command completed"
+    BUILD_SUCCESS=true
 else
-    echo "   ⚠️  Nest build failed, checking logs..."
-    echo "   Last 20 lines of build log:"
-    tail -20 "$BUILD_LOG" || true
+    echo "   ⚠️  Method 1 failed (exit code: $?)"
+    echo "   Last 10 lines:"
+    tail -10 "$BUILD_LOG" | sed 's/^/      /' || true
+fi
+
+# Check if build succeeded
+cd "$BACKEND_DIR"
+if [ -f "dist/main.js" ]; then
+    echo "   ✅ dist/main.js found!"
+    BUILD_SUCCESS=true
+elif [ -f "dist/src/main.js" ]; then
+    echo "   ⚠️  Found dist/src/main.js, copying to dist/main.js..."
+    cp dist/src/main.js dist/main.js
+    BUILD_SUCCESS=true
+fi
+
+# Method 2: If Method 1 didn't create dist/main.js, try nest build directly
+if [ "$BUILD_SUCCESS" = false ]; then
     echo ""
-    echo "   Trying alternative: pnpm exec tsc"
-    if pnpm exec tsc > "$BUILD_LOG" 2>&1; then
-        echo "   ✅ TypeScript compilation successful"
+    echo "   Method 2: nest build from backend directory"
+    cd "$BACKEND_DIR"
+    if pnpm exec nest build >> "$BUILD_LOG" 2>&1; then
+        echo "   ✅ Nest build completed"
+        if [ -f "dist/main.js" ]; then
+            BUILD_SUCCESS=true
+        elif [ -f "dist/src/main.js" ]; then
+            cp dist/src/main.js dist/main.js
+            BUILD_SUCCESS=true
+        fi
     else
-        echo "   ❌ TypeScript compilation also failed"
-        echo "   Build log saved to: $BUILD_LOG"
-        echo "   Last 30 lines:"
-        tail -30 "$BUILD_LOG" || true
-        exit 1
+        echo "   ⚠️  Method 2 failed (exit code: $?)"
     fi
 fi
 
-# Verify build output
-if [ ! -f "dist/main.js" ]; then
-    echo "   ❌ ERROR: dist/main.js not found after build"
-    echo "   Checking dist directory contents:"
-    ls -la dist/ 2>/dev/null || echo "   dist directory does not exist"
+# Method 3: If still failed, try tsc directly
+if [ "$BUILD_SUCCESS" = false ]; then
     echo ""
-    echo "   Full build log: $BUILD_LOG"
+    echo "   Method 3: tsc compilation"
+    cd "$BACKEND_DIR"
+    if pnpm exec tsc >> "$BUILD_LOG" 2>&1; then
+        echo "   ✅ TypeScript compilation completed"
+        if [ -f "dist/main.js" ]; then
+            BUILD_SUCCESS=true
+        elif [ -f "dist/src/main.js" ]; then
+            cp dist/src/main.js dist/main.js
+            BUILD_SUCCESS=true
+        fi
+    else
+        echo "   ⚠️  Method 3 failed (exit code: $?)"
+    fi
+fi
+
+# Final verification
+cd "$BACKEND_DIR"
+if [ -f "dist/main.js" ]; then
+    echo ""
+    echo "   ✅ Backend build verified (dist/main.js exists)"
+    echo "   File size: $(du -h dist/main.js | cut -f1)"
+else
+    echo ""
+    echo "   ❌ ERROR: dist/main.js not found after all build attempts"
+    echo ""
+    echo "   Diagnostic information:"
+    echo "   - Current directory: $(pwd)"
+    echo "   - dist directory exists: $([ -d "dist" ] && echo "Yes" || echo "No")"
+    
+    if [ -d "dist" ]; then
+        echo "   - dist contents:"
+        find dist -type f | head -20 | sed 's/^/      /' || echo "      Empty or no files"
+        echo ""
+        echo "   - Looking for any main.js:"
+        find dist -name "*main*.js" 2>/dev/null | sed 's/^/      /' || echo "      Not found"
+    fi
+    
+    echo ""
+    echo "   Build log saved to: $BUILD_LOG"
+    echo "   Last 50 lines of build log:"
+    tail -50 "$BUILD_LOG" | sed 's/^/      /' || true
+    echo ""
+    echo "   💡 Suggestion: Run 'bash deploy/diagnose-backend-build-issue.sh' for detailed diagnostics"
     exit 1
 fi
 
-echo "   ✅ Backend build verified (dist/main.js exists)"
 echo ""
 
 # Step 5: Build frontend
