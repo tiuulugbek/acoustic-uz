@@ -1,6 +1,6 @@
 // Use production API URL as default (fallback to localhost only in development)
 // Check if we're in production mode
-let API_BASE = 'https://api.acoustic.uz/api'; // Default to production
+let API_BASE = 'https://a.acoustic.uz/api'; // Default to production (a.acoustic.uz is the backend domain)
 
 // Try to get from window object first (injected by plugin)
 if (typeof window !== 'undefined' && (window as any).__VITE_API_URL__) {
@@ -11,7 +11,7 @@ if (typeof window !== 'undefined' && (window as any).__VITE_API_URL__) {
 } else {
   // Fallback: check if we're in development
   const isProduction = import.meta.env.PROD || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && !window.location.hostname.includes('localhost'));
-  API_BASE = isProduction ? 'https://api.acoustic.uz/api' : 'http://localhost:3001/api';
+  API_BASE = isProduction ? 'https://a.acoustic.uz/api' : 'http://localhost:3001/api';
 }
 
 interface RequestOptions extends RequestInit {
