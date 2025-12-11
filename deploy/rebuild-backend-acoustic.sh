@@ -26,20 +26,41 @@ pnpm --filter @acoustic/shared build
 # 5. Build backend
 echo "🏗️  Building backend..."
 cd apps/backend
-pnpm build
+
+# Clean dist directory first
+echo "🧹 Cleaning dist directory..."
+rm -rf dist
+
+# Build with error output
+echo "🔨 Running build..."
+if ! pnpm build 2>&1; then
+    echo ""
+    echo "❌ Build failed! Check errors above."
+    echo ""
+    echo "📋 Common issues:"
+    echo "  - Missing dependencies: pnpm install"
+    echo "  - TypeScript errors: Check tsconfig.json"
+    echo "  - Missing shared package: pnpm --filter @acoustic/shared build"
+    exit 1
+fi
 
 # 6. Check if build was successful
 if [ ! -f "dist/main.js" ]; then
     echo "❌ Build failed: dist/main.js not found"
+    echo "📋 Checking dist directory contents:"
+    ls -la dist/ 2>/dev/null || echo "  dist directory does not exist"
     exit 1
 fi
 
 if [ ! -f "dist/app.module.js" ]; then
-    echo "❌ Build failed: dist/app.module.js not found"
-    exit 1
+    echo "⚠️  Warning: dist/app.module.js not found"
+    echo "📋 Checking dist directory contents:"
+    ls -la dist/ | head -20
 fi
 
 echo "✅ Build successful!"
+echo "📋 Build output:"
+ls -lh dist/ | head -10
 
 # 7. Restart PM2
 echo "🔄 Restarting backend..."
