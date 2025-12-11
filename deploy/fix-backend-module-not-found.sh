@@ -56,11 +56,35 @@ echo "   Building backend..."
 cd "$BACKEND_DIR"
 BUILD_LOG="/tmp/backend-rebuild-$(date +%Y%m%d_%H%M%S).log"
 
-echo "   Running: pnpm exec nest build"
-set +e
-pnpm exec nest build > "$BUILD_LOG" 2>&1
-BUILD_EXIT=$?
-set -e
+# Try different methods to run nest build
+echo "   Trying nest build..."
+
+# Method 1: npx nest
+if command -v npx >/dev/null 2>&1; then
+    echo "   Method 1: npx nest build"
+    set +e
+    npx nest build > "$BUILD_LOG" 2>&1
+    BUILD_EXIT=$?
+    set -e
+elif [ -f "node_modules/.bin/nest" ]; then
+    echo "   Method 2: node_modules/.bin/nest build"
+    set +e
+    ./node_modules/.bin/nest build > "$BUILD_LOG" 2>&1
+    BUILD_EXIT=$?
+    set -e
+elif [ -f "../../node_modules/.bin/nest" ]; then
+    echo "   Method 3: ../../node_modules/.bin/nest build"
+    set +e
+    ../../node_modules/.bin/nest build > "$BUILD_LOG" 2>&1
+    BUILD_EXIT=$?
+    set -e
+else
+    echo "   ⚠️  nest CLI not found, trying pnpm exec..."
+    set +e
+    pnpm exec nest build > "$BUILD_LOG" 2>&1
+    BUILD_EXIT=$?
+    set -e
+fi
 
 echo "   Build exit code: $BUILD_EXIT"
 
@@ -79,10 +103,24 @@ fi
 if [ ! -d "dist" ] || [ ! -f "dist/main.js" ]; then
     echo ""
     echo "   ⚠️  dist/main.js not found after nest build, trying tsc..."
-    echo "   Running: pnpm exec tsc --skipLibCheck"
+    echo "   Running: tsc --skipLibCheck"
     set +e
-    pnpm exec tsc --skipLibCheck >> "$BUILD_LOG" 2>&1
-    TSC_EXIT=$?
+    
+    # Try different tsc methods
+    if command -v tsc >/dev/null 2>&1; then
+        tsc --skipLibCheck >> "$BUILD_LOG" 2>&1
+        TSC_EXIT=$?
+    elif [ -f "node_modules/.bin/tsc" ]; then
+        ./node_modules/.bin/tsc --skipLibCheck >> "$BUILD_LOG" 2>&1
+        TSC_EXIT=$?
+    elif [ -f "../../node_modules/.bin/tsc" ]; then
+        ../../node_modules/.bin/tsc --skipLibCheck >> "$BUILD_LOG" 2>&1
+        TSC_EXIT=$?
+    else
+        pnpm exec tsc --skipLibCheck >> "$BUILD_LOG" 2>&1
+        TSC_EXIT=$?
+    fi
+    
     set -e
     
     if [ -s "$BUILD_LOG" ] && [ $(wc -l < "$BUILD_LOG") -gt 5 ]; then
