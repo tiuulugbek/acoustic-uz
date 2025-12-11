@@ -6,7 +6,6 @@ import { redirect } from 'next/navigation';
 import { getCatalogs, getPosts, getBrands, getSettings } from '@/lib/api-server';
 import type { CatalogResponse, PostResponse, BrandResponse, SettingsResponse } from '@/lib/api';
 import { detectLocale } from '@/lib/locale-server';
-import CatalogHeroImage from '@/components/catalog-hero-image';
 import Sidebar from '@/components/sidebar';
 import MobileFilterDrawer from '@/components/mobile-filter-drawer';
 import { normalizeImageUrl } from '@/lib/image-utils';
@@ -594,13 +593,18 @@ export default async function CatalogPage({
               {/* Main Content - Banner and Brand Filter First */}
               <div className="space-y-6">
                 {/* 1. Promotional Hero Banner - First */}
-                {searchParams.productType === 'hearing-aids' && (
+                {searchParams.productType === 'hearing-aids' && settingsData?.catalogHeroImage?.url && (
                   <section className="relative w-full rounded-lg overflow-hidden">
-                    <CatalogHeroImage
-                      src={normalizeImageUrl(settingsData?.catalogHeroImage?.url) || '/images/catalog-hero.jpg'}
-                      alt={locale === 'ru' ? 'Каталог слуховых аппаратов' : 'Eshitish moslamalari katalogi'}
-                      locale={locale}
-                    />
+                    <div className="relative aspect-[21/9] w-full">
+                      <Image
+                        src={normalizeImageUrl(settingsData.catalogHeroImage.url)}
+                        alt={locale === 'ru' ? 'Каталог слуховых аппаратов' : 'Eshitish moslamalari katalogi'}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, 1200px"
+                        priority
+                      />
+                    </div>
                   </section>
                 )}
 

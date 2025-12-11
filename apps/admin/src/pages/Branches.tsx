@@ -37,7 +37,6 @@ import {
 } from '../lib/api';
 import { createSlug } from '../utils/slug';
 import MediaLibraryModal from '../components/MediaLibraryModal';
-import Tour3DEditor from '../components/Tour3DEditor';
 import ImageSizeHint from '../components/ImageSizeHint';
 import { normalizeImageUrl } from '../utils/image';
 import { compressImage } from '../utils/image-compression';
@@ -596,20 +595,9 @@ export default function BranchesPage() {
                       name="tour3d_config"
                       extra="Sahnalar va hotspot'larni qo'shing va tahrirlang. Panorama rasmlarni media kutubxonasidan tanlang."
                     >
-                      {activeTab === 'tour3d' && (
-                        <Tour3DEditor
-                          value={form.getFieldValue('tour3d_config')}
-                          onChange={(config) => {
-                            form.setFieldsValue({ tour3d_config: config });
-                          }}
-                          mediaList={mediaList || []}
-                        />
-                      )}
-                      {activeTab !== 'tour3d' && (
-                        <div style={{ padding: 20, textAlign: 'center', color: '#999' }}>
-                          "3D Tour" tab'iga o'ting
-                        </div>
-                      )}
+                      <div style={{ padding: 20, textAlign: 'center', color: '#999' }}>
+                        Tour3D editor hozircha mavjud emas. Keyingi versiyada qo'shiladi.
+                      </div>
                     </Form.Item>
                   </>
                 ),

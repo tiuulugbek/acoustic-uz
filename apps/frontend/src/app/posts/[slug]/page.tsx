@@ -7,10 +7,7 @@ import { detectLocale } from '@/lib/locale-server';
 import { getBilingualText } from '@/lib/locale';
 import PageHeader from '@/components/page-header';
 import ServiceContent from '@/components/service-content';
-import ShareButton from '@/components/share-button';
 import AppointmentForm from '@/components/appointment-form';
-import PostSidebar from '@/components/post-sidebar';
-import ArticleTOC from '@/components/article-toc';
 import AuthorCard from '@/components/author-card';
 import Sidebar from '@/components/sidebar';
 import { notFound } from 'next/navigation';
@@ -221,19 +218,6 @@ export default async function PostPage({ params }: PostPageProps) {
                 </div>
               )}
 
-              {/* Share Section */}
-              <div className="mt-8 flex items-center gap-4 border-t border-border pt-6">
-                <span className="text-sm font-medium text-foreground">
-                  {locale === 'ru' ? 'Поделиться:' : 'Ulashish:'}
-                </span>
-                <div className="flex items-center gap-2">
-                  <ShareButton
-                    title={title}
-                    text={excerpt || ''}
-                    locale={locale}
-                  />
-                </div>
-              </div>
 
               {/* Author Card - Show if author exists */}
               {post.author && (
@@ -260,8 +244,6 @@ export default async function PostPage({ params }: PostPageProps) {
             <div className="lg:col-span-1">
               <div className="sticky top-24 space-y-6">
                 <Sidebar locale={locale} settingsData={settings} brandsData={brands} pageType="posts" />
-                <ArticleTOC locale={locale} />
-                <PostSidebar locale={locale} relatedPosts={filteredRelatedPosts} />
               </div>
             </div>
           </div>
