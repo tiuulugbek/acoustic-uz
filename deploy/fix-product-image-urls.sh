@@ -159,25 +159,56 @@ async function fixProductUrls() {
         // Remove leading slash and /uploads/ prefix if present
         let cleanUrl = url.replace(/^\/+/, '').replace(/^uploads\//, '');
         
-        // Extract filename
+        // Extract filename and base name (without extension)
         const filename = path.basename(cleanUrl);
+        const baseName = path.parse(filename).name;
+        const ext = path.parse(filename).ext.toLowerCase();
+        
+        // Try different extensions (.jpg, .jpeg, .png, .webp)
+        const extensions = [ext, '.webp', '.jpg', '.jpeg', '.png'];
         
         // Try different possible locations
-        const possiblePaths = [
-          `products/${filename}`,           // Most likely location
-          cleanUrl,                          // Original path
-          `2024/07/${filename}`,            // Old location
-          `2024/06/${filename}`,
-          `2024/05/${filename}`,
-          filename,                          // Root of uploads
+        const possibleBasePaths = [
+          `products/${baseName}`,           // Most likely location
+          cleanUrl.replace(/\.(jpg|jpeg|png|webp)$/i, ''),  // Original path without extension
+          `2024/07/${baseName}`,            // Old location
+          `2024/06/${baseName}`,
+          `2024/05/${baseName}`,
+          `2024/04/${baseName}`,
+          `2024/03/${baseName}`,
+          `2024/02/${baseName}`,
+          `2024/01/${baseName}`,
+          `2023/12/${baseName}`,
+          baseName,                          // Root of uploads
         ];
 
         let foundPath = null;
-        for (const possiblePath of possiblePaths) {
-          const fullPath = path.join(uploadsDir, possiblePath);
-          if (fs.existsSync(fullPath)) {
-            foundPath = possiblePath;
-            break;
+        for (const basePath of possibleBasePaths) {
+          for (const extTry of extensions) {
+            const testPath = `${basePath}${extTry}`;
+            const fullPath = path.join(uploadsDir, testPath);
+            if (fs.existsSync(fullPath)) {
+              foundPath = testPath;
+              break;
+            }
+          }
+          if (foundPath) break;
+        }
+        
+        // Also try case-insensitive search in products directory
+        if (!foundPath && fs.existsSync(path.join(uploadsDir, 'products'))) {
+          const productsDir = path.join(uploadsDir, 'products');
+          const files = fs.readdirSync(productsDir);
+          const filenameLower = filename.toLowerCase();
+          const baseNameLower = baseName.toLowerCase();
+          
+          for (const file of files) {
+            const fileLower = file.toLowerCase();
+            const fileBaseName = path.parse(file).name.toLowerCase();
+            if (fileLower === filenameLower || fileBaseName === baseNameLower) {
+              foundPath = `products/${file}`;
+              break;
+            }
           }
         }
 
@@ -192,11 +223,38 @@ async function fixProductUrls() {
             console.log(`     New: ${newUrl}`);
           }
         } else {
-          // File not found, keep original URL but log warning
-          newUrls.push(url);
-          notFoundCount++;
-          console.log(`   ⚠️  File not found for: ${url} (product: ${product.slug})`);
-          console.log(`      Searched for: ${filename}`);
+          // File not found - try to find by product slug
+          const slugBasedPaths = [
+            `products/${product.slug}.webp`,
+            `products/${product.slug}.jpg`,
+            `products/${product.slug}.png`,
+            `products/${product.slug}-${baseName}.webp`,
+            `products/${product.slug}-${baseName}.jpg`,
+          ];
+          
+          let slugFoundPath = null;
+          for (const slugPath of slugBasedPaths) {
+            const fullPath = path.join(uploadsDir, slugPath);
+            if (fs.existsSync(fullPath)) {
+              slugFoundPath = slugPath;
+              break;
+            }
+          }
+          
+          if (slugFoundPath) {
+            const newUrl = `/uploads/${slugFoundPath}`;
+            newUrls.push(newUrl);
+            hasChanges = true;
+            console.log(`   ✅ Found by slug: ${product.slug}`);
+            console.log(`     Old: ${url}`);
+            console.log(`     New: ${newUrl}`);
+          } else {
+            // File not found, keep original URL but log warning
+            newUrls.push(url);
+            notFoundCount++;
+            console.log(`   ⚠️  File not found for: ${url} (product: ${product.slug})`);
+            console.log(`      Searched for: ${filename}`);
+          }
         }
       }
 
