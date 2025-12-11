@@ -43,6 +43,8 @@ fi
 # Clean admin build
 cd apps/admin
 rm -rf dist
+# Remove old vite.config.js if it exists (should use vite.config.ts)
+rm -f vite.config.js
 echo "   ✅ Admin build cleaned"
 echo ""
 
