@@ -144,18 +144,55 @@ async function fixProductUrls() {
     console.log('');
 
     const uploadsDir = '/var/www/acoustic.uz/apps/backend/uploads';
+    const productsDir = path.join(uploadsDir, 'products');
+    
+    // Scan all files in products directory
+    let allFiles = [];
+    if (fs.existsSync(productsDir)) {
+      allFiles = fs.readdirSync(productsDir).filter(f => {
+        const ext = path.parse(f).ext.toLowerCase();
+        return ['.webp', '.jpg', '.jpeg', '.png'].includes(ext);
+      });
+      console.log(`   Found ${allFiles.length} image files in products directory`);
+    }
+    
     let fixedCount = 0;
     let notFoundCount = 0;
 
     for (const product of products) {
-      if (!product.galleryUrls || product.galleryUrls.length === 0) {
-        continue;
-      }
-
       const newUrls = [];
       let hasChanges = false;
-
-      for (const url of product.galleryUrls) {
+      
+      // If galleryUrls is empty or null, try to find files by slug
+      if (!product.galleryUrls || product.galleryUrls.length === 0) {
+        // Find files that match this product slug
+        const slugLower = product.slug.toLowerCase();
+        const matchingFiles = allFiles.filter(file => {
+          const fileLower = file.toLowerCase();
+          const fileBaseName = path.parse(file).name.toLowerCase();
+          
+          // Check if file name contains product slug or vice versa
+          return fileBaseName.includes(slugLower) || 
+                 slugLower.includes(fileBaseName.split('-')[0]) ||
+                 fileBaseName.startsWith(slugLower) ||
+                 fileBaseName.startsWith(slugLower.replace(/-/g, '_'));
+        });
+        
+        if (matchingFiles.length > 0) {
+          // Use the first matching file (or all if multiple)
+          for (const file of matchingFiles.slice(0, 3)) { // Max 3 images per product
+            newUrls.push(`/uploads/products/${file}`);
+          }
+          hasChanges = true;
+          console.log(`   ✅ Found ${matchingFiles.length} file(s) for: ${product.slug}`);
+          matchingFiles.forEach(f => console.log(`      - ${f}`));
+        } else {
+          notFoundCount++;
+          console.log(`   ⚠️  No files found for: ${product.slug}`);
+        }
+      } else {
+        // Process existing URLs
+        for (const url of product.galleryUrls) {
         // Remove leading slash and /uploads/ prefix if present
         let cleanUrl = url.replace(/^\/+/, '').replace(/^uploads\//, '');
         
@@ -258,6 +295,7 @@ async function fixProductUrls() {
         }
       }
 
+      // If we found URLs (either from existing or by slug), update the product
       if (hasChanges && newUrls.length > 0) {
         await prisma.product.update({
           where: { id: product.id },
