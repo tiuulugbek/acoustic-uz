@@ -391,7 +391,17 @@ export default function SiteHeader({ initialSettings = null }: SiteHeaderProps =
     return <IconComponent className="h-4 w-4" />;
   };
 
-  const navItems: NavItem[] = useMemo(() => {
+  // Track if component is mounted to prevent hydration mismatch
+  const [mounted, setMounted] = useState(false);
+  const [navItems, setNavItems] = useState<NavItem[]>([]);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  
+  useEffect(() => {
+    if (!mounted) return;
+    
     console.log('[SiteHeader] Building navItems with locale:', displayLocale);
     const items = headerMenuItems.map((item) => {
       const label = getBilingualText(item.title_uz, item.title_ru, displayLocale);
@@ -428,8 +438,8 @@ export default function SiteHeader({ initialSettings = null }: SiteHeaderProps =
       };
     });
     console.log('[SiteHeader] navItems built with locale:', displayLocale, 'Items count:', items.length);
-    return items;
-  }, [headerMenuItems, catalogMenuItems, displayLocale]);
+    setNavItems(items);
+  }, [headerMenuItems, catalogMenuItems, displayLocale, mounted]);
 
   // Log current state for debugging
   useEffect(() => {
