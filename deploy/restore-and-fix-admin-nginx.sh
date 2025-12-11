@@ -11,13 +11,26 @@ echo ""
 
 # Step 1: Find and restore backup
 echo "📋 Step 1: Finding backup..."
-BACKUP_FILE=$(ls -t "$NGINX_CONFIG".backup.* 2>/dev/null | head -1)
-if [ -n "$BACKUP_FILE" ] && [ -f "$BACKUP_FILE" ]; then
-    echo "   Found backup: $BACKUP_FILE"
-    cp "$BACKUP_FILE" "$NGINX_CONFIG"
-    echo "   ✅ Backup restored"
+BACKUP_FILES=$(ls -t "$NGINX_CONFIG".backup.* 2>/dev/null | head -5)
+if [ -n "$BACKUP_FILES" ]; then
+    echo "   Available backups:"
+    echo "$BACKUP_FILES" | nl -w 2 -s '. ' | sed 's/^/      /'
+    echo ""
+    
+    # Use the most recent backup
+    BACKUP_FILE=$(echo "$BACKUP_FILES" | head -1)
+    echo "   Using most recent backup: $BACKUP_FILE"
+    
+    if [ -f "$BACKUP_FILE" ]; then
+        cp "$BACKUP_FILE" "$NGINX_CONFIG"
+        echo "   ✅ Backup restored"
+    else
+        echo "   ⚠️  Backup file not found, continuing with current config"
+    fi
 else
     echo "   ⚠️  No backup found, continuing with current config"
+    echo "   💡 If you want to restore manually, look for:"
+    echo "      ls -lt $NGINX_CONFIG.backup.*"
 fi
 echo ""
 
