@@ -34,7 +34,6 @@ import {
   ApiError,
 } from '../lib/api';
 import MediaLibraryModal from '../components/MediaLibraryModal';
-import HomepageContentTab from '../components/HomepageContentTab';
 import ImageSizeHint from '../components/ImageSizeHint';
 import { normalizeImageUrl } from '../utils/image';
 
@@ -1023,7 +1022,16 @@ export default function SettingsPage() {
           {
             key: 'homepage-content',
             label: 'Bosh sahifa kontenti',
-            children: <HomepageContentTab />,
+            children: (
+              <Card>
+                <Alert
+                  message="Bosh sahifa kontenti"
+                  description="Bu bo'lim hozircha mavjud emas. Keyingi versiyada qo'shiladi."
+                  type="info"
+                  showIcon
+                />
+              </Card>
+            ),
           },
           {
             key: 'social-media',
