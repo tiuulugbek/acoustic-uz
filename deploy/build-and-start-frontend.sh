@@ -34,7 +34,10 @@ fi
 
 # Build frontend
 export NODE_ENV=production
+export NEXT_PUBLIC_API_URL="https://a.acoustic.uz/api"
+export NEXT_PUBLIC_SITE_URL="https://acoustic.uz"
 echo "   Running: pnpm build"
+echo "   NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL"
 BUILD_LOG="/tmp/frontend-build-$(date +%Y%m%d_%H%M%S).log"
 
 if pnpm build > "$BUILD_LOG" 2>&1; then
