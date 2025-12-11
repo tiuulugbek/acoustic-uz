@@ -56,6 +56,7 @@ try:
         if in_a_acoustic_block:
             brace_count += line.count('{') - line.count('}')
             if brace_count == 0 and i > a_acoustic_start:
+                a_acoustic_end = i
                 break
     
     if a_acoustic_start == -1:
