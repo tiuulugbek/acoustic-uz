@@ -76,11 +76,15 @@ export default function WorkingHoursDisplay({ workingHours_uz, workingHours_ru, 
   // Parse lines (this is safe - no date logic)
   const lines = workingHours.split('\n').filter(line => line.trim());
   
-  // Only compute current day on client-side AFTER hydration to prevent hydration mismatch
+  // Track if component is mounted (client-side) to prevent hydration mismatch
+  const [mounted, setMounted] = useState(false);
   const [currentDayLine, setCurrentDayLine] = useState<number | null>(null);
   
   useEffect(() => {
-    // This only runs on client-side after hydration
+    // Mark as mounted (client-side)
+    setMounted(true);
+    
+    // Compute current day only on client-side after hydration
     if (workingHours) {
       const result = parseWorkingHoursClient(workingHours, locale);
       setCurrentDayLine(result.currentDayLine);
@@ -118,7 +122,9 @@ export default function WorkingHoursDisplay({ workingHours_uz, workingHours_ru, 
       </h3>
       <div className="space-y-1.5 text-xs sm:text-sm">
         {lines.map((line, idx) => {
-          const isCurrentDay = idx === currentDayLine;
+          // Only highlight current day after component is mounted (client-side)
+          // This prevents hydration mismatch between server and client
+          const isCurrentDay = mounted && idx === currentDayLine;
           return (
             <div 
               key={idx} 
@@ -127,13 +133,13 @@ export default function WorkingHoursDisplay({ workingHours_uz, workingHours_ru, 
                   ? 'bg-brand-primary text-white shadow-sm' 
                   : 'text-muted-foreground hover:bg-gray-50'
               }`}
+              suppressHydrationWarning
             >
               <Clock className={`h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0 mt-0.5 ${
                 isCurrentDay ? 'text-white' : 'text-brand-primary'
               }`} />
               <span 
-                className={`break-words ${isCurrentDay ? 'font-semibold text-white' : ''}`} 
-                suppressHydrationWarning
+                className={`break-words ${isCurrentDay ? 'font-semibold text-white' : ''}`}
               >
                 {line.trim()}
               </span>
