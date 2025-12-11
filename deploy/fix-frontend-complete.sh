@@ -97,10 +97,19 @@ echo ""
 echo "📋 Step 7: Starting frontend with 'next start'..."
 cd "$FRONTEND_DIR"
 
-pm2 start npm \
+# Create a wrapper script to avoid PM2 parameter issues with npm
+cat > /tmp/start-frontend.sh << 'EOF'
+#!/bin/bash
+cd /var/www/acoustic.uz/apps/frontend
+export NODE_ENV=production
+export PORT=3000
+export HOSTNAME=127.0.0.1
+exec npm start
+EOF
+chmod +x /tmp/start-frontend.sh
+
+pm2 start /tmp/start-frontend.sh \
     --name acoustic-frontend \
-    -- start \
-    --cwd "$FRONTEND_DIR" \
     --update-env \
     --log-date-format "YYYY-MM-DD HH:mm:ss Z" \
     --error /var/log/pm2/acoustic-frontend-error.log \
