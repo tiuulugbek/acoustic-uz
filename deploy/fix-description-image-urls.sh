@@ -195,8 +195,7 @@ async function fixDescriptionUrls() {
             hasChanges = true;
             console.log(`      Fixed: ${filename} → ${foundFile} (score: ${bestScore})`);
           } else {
-            // Keep original URL if file not found (don't break the description)
-            // But if it's an old date-based path, try to keep it working
+            // File not found - check if it's an old date-based path
             if (urlPath.includes('/2024/') || urlPath.includes('/2023/')) {
               // Try to find file in old location first
               const oldPath = path.join(uploadsDir, urlPath.replace(/^\/uploads\//, ''));
@@ -204,14 +203,26 @@ async function fixDescriptionUrls() {
                 // File exists in old location, keep original URL
                 console.log(`      ⚠️  File exists in old location: ${urlPath} (keeping original)`);
               } else {
-                console.log(`      ⚠️  Not found: ${filename} (keeping original URL)`);
+                // File doesn't exist - remove the image tag or comment it out
+                // Remove <img> tag containing this URL
+                const imgTagRegex = new RegExp(`<img[^>]*src=["']${oldUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}["'][^>]*>`, 'gi');
+                if (imgTagRegex.test(newText)) {
+                  newText = newText.replace(imgTagRegex, '<!-- Image removed: file not found -->');
+                  hasChanges = true;
+                  console.log(`      🗑️  Removed broken image tag: ${filename}`);
+                } else {
+                  // If not in img tag, just replace the URL with comment
+                  newText = newText.replace(oldUrl, '<!-- Image URL removed: file not found -->');
+                  hasChanges = true;
+                  console.log(`      🗑️  Removed broken URL: ${filename}`);
+                }
                 notFoundCount++;
               }
             } else {
+              // Not an old path - keep original URL
               console.log(`      ⚠️  Not found: ${filename} (keeping original URL)`);
               notFoundCount++;
             }
-            // Don't change the URL - keep it as is
           }
         } catch (e) {
           console.log(`      ❌ Error processing URL: ${oldUrl}`);
