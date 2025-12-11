@@ -57,11 +57,42 @@ cd "$BACKEND_DIR"
 BUILD_LOG="/tmp/backend-rebuild-$(date +%Y%m%d_%H%M%S).log"
 
 echo "   Running: pnpm exec nest build"
-if pnpm exec nest build > "$BUILD_LOG" 2>&1; then
-    echo "   ✅ Build command completed"
+set +e
+pnpm exec nest build > "$BUILD_LOG" 2>&1
+BUILD_EXIT=$?
+set -e
+
+echo "   Build exit code: $BUILD_EXIT"
+
+if [ -s "$BUILD_LOG" ]; then
+    echo "   Build output:"
+    cat "$BUILD_LOG" | sed 's/^/      /'
 else
-    echo "   ⚠️  Build command had errors, checking..."
-    tail -30 "$BUILD_LOG" | sed 's/^/      /' || true
+    echo "   ⚠️  Build log is empty"
+fi
+
+if [ $BUILD_EXIT -ne 0 ]; then
+    echo "   ⚠️  Build command had errors (exit code $BUILD_EXIT)"
+fi
+
+# Try alternative: tsc directly
+if [ ! -d "dist" ] || [ ! -f "dist/main.js" ]; then
+    echo ""
+    echo "   ⚠️  dist/main.js not found after nest build, trying tsc..."
+    echo "   Running: pnpm exec tsc --skipLibCheck"
+    set +e
+    pnpm exec tsc --skipLibCheck >> "$BUILD_LOG" 2>&1
+    TSC_EXIT=$?
+    set -e
+    
+    if [ -s "$BUILD_LOG" ] && [ $(wc -l < "$BUILD_LOG") -gt 5 ]; then
+        echo "   TSC output (last 30 lines):"
+        tail -30 "$BUILD_LOG" | sed 's/^/      /'
+    fi
+    
+    if [ -f "dist/main.js" ]; then
+        echo "   ✅ tsc created dist/main.js"
+    fi
 fi
 
 # Verify build output
