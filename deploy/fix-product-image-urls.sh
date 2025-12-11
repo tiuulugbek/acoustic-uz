@@ -165,30 +165,55 @@ async function fixProductUrls() {
       
       // If galleryUrls is empty or null, try to find files by slug
       if (!product.galleryUrls || product.galleryUrls.length === 0) {
-        // Find files that match this product slug
+        // Find files that match this product slug - be more precise
         const slugLower = product.slug.toLowerCase();
-        const matchingFiles = allFiles.filter(file => {
+        const slugParts = slugLower.split('-');
+        const slugFirstPart = slugParts[0]; // e.g., "oticon" from "oticon-own-iic"
+        
+        // Score files by how well they match
+        const scoredFiles = allFiles.map(file => {
           const fileLower = file.toLowerCase();
           const fileBaseName = path.parse(file).name.toLowerCase();
+          let score = 0;
           
-          // Check if file name contains product slug or vice versa
-          return fileBaseName.includes(slugLower) || 
-                 slugLower.includes(fileBaseName.split('-')[0]) ||
-                 fileBaseName.startsWith(slugLower) ||
-                 fileBaseName.startsWith(slugLower.replace(/-/g, '_'));
-        });
-        
-        if (matchingFiles.length > 0) {
-          // Use the first matching file (or all if multiple)
-          for (const file of matchingFiles.slice(0, 3)) { // Max 3 images per product
-            newUrls.push(`/uploads/products/${file}`);
+          // Exact match gets highest score
+          if (fileBaseName === slugLower) {
+            score = 100;
           }
+          // File starts with slug
+          else if (fileBaseName.startsWith(slugLower)) {
+            score = 90;
+          }
+          // File contains full slug
+          else if (fileBaseName.includes(slugLower)) {
+            score = 80;
+          }
+          // Slug contains file base name (without extra parts)
+          else if (slugLower.includes(fileBaseName.split('-')[0]) && fileBaseName.split('-')[0].length > 3) {
+            score = 70;
+          }
+          // File starts with first part of slug (e.g., "oticon")
+          else if (fileBaseName.startsWith(slugFirstPart) && slugFirstPart.length > 3) {
+            score = 50;
+          }
+          
+          return { file, score };
+        }).filter(item => item.score > 0)
+          .sort((a, b) => b.score - a.score); // Sort by score descending
+        
+        if (scoredFiles.length > 0 && scoredFiles[0].score >= 70) {
+          // Use only the best matching file (score >= 70)
+          const bestMatch = scoredFiles[0];
+          newUrls.push(`/uploads/products/${bestMatch.file}`);
           hasChanges = true;
-          console.log(`   ✅ Found ${matchingFiles.length} file(s) for: ${product.slug}`);
-          matchingFiles.forEach(f => console.log(`      - ${f}`));
+          console.log(`   ✅ Found file for: ${product.slug} (score: ${bestMatch.score})`);
+          console.log(`      - ${bestMatch.file}`);
         } else {
           notFoundCount++;
-          console.log(`   ⚠️  No files found for: ${product.slug}`);
+          console.log(`   ⚠️  No good match found for: ${product.slug}`);
+          if (scoredFiles.length > 0) {
+            console.log(`      Best match was: ${scoredFiles[0].file} (score: ${scoredFiles[0].score} - too low)`);
+          }
         }
       } else {
         // Process existing URLs
