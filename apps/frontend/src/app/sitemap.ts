@@ -1,117 +1,116 @@
 import { MetadataRoute } from 'next';
-import { getProducts, getServices, getPosts, getCatalogs, getServiceCategories } from '@/lib/api-server';
+import { getProducts, getPosts, getBranches, getServices, getServiceCategories } from '@/lib/api-server';
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
 
-// Force dynamic rendering for sitemap
-export const dynamic = 'force-dynamic';
-export const revalidate = 3600; // Revalidate every hour
+// Static pages that should be included in sitemap
+const staticPages = [
+  '',
+  'catalog',
+  'contact',
+  'faq',
+  'branches',
+  'patients',
+  'children-hearing',
+];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const urls: MetadataRoute.Sitemap = [];
+  const sitemapEntries: MetadataRoute.Sitemap = [];
 
-  // Homepage
-  urls.push({
-    url: BASE_URL,
-    lastModified: new Date(),
-    changeFrequency: 'daily',
-    priority: 1.0,
-  });
+  // Helper function to add URL
+  const addUrl = (
+    url: string,
+    lastModified?: Date,
+    changeFrequency: 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never' = 'weekly',
+    priority: number = 0.8,
+  ) => {
+    const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url.startsWith('/') ? url : `/${url}`}`;
+    
+    sitemapEntries.push({
+      url: fullUrl,
+      lastModified,
+      changeFrequency,
+      priority,
+    });
+  };
 
-  // Catalog page
-  urls.push({
-    url: `${BASE_URL}/catalog`,
-    lastModified: new Date(),
-    changeFrequency: 'daily',
-    priority: 0.9,
-  });
-
-  // Services page
-  urls.push({
-    url: `${BASE_URL}/services`,
-    lastModified: new Date(),
-    changeFrequency: 'weekly',
-    priority: 0.8,
+  // Add static pages
+  staticPages.forEach((page) => {
+    const priority = page === '' ? 1.0 : page === 'catalog' ? 0.9 : 0.8;
+    addUrl(`/${page}`, new Date(), 'daily', priority);
   });
 
   try {
-    // Products - fix parameter order
-    const productsResponse = await getProducts({ limit: 1000, status: 'published' }, 'uz');
-    if (productsResponse?.items) {
-      productsResponse.items.forEach((product) => {
-        urls.push({
-          url: `${BASE_URL}/products/${product.slug}`,
-          lastModified: product.updatedAt ? new Date(product.updatedAt) : new Date(),
-          changeFrequency: 'weekly',
-          priority: 0.8,
-        });
-      });
-    }
-
-    // Services
-    const services = await getServices('uz');
-    if (services) {
-      services.forEach((service) => {
-        if (service.status === 'published') {
-          urls.push({
-            url: `${BASE_URL}/services/${service.slug}`,
-            lastModified: service.updatedAt ? new Date(service.updatedAt) : new Date(),
-            changeFrequency: 'monthly',
-            priority: 0.7,
-          });
-        }
-      });
-    }
-
-    // Service Categories
-    const serviceCategories = await getServiceCategories('uz');
-    if (serviceCategories?.items) {
-      serviceCategories.items.forEach((category) => {
-        if (category.status === 'published') {
-          urls.push({
-            url: `${BASE_URL}/services/${category.slug}`,
-            lastModified: new Date(),
-            changeFrequency: 'monthly',
-            priority: 0.7,
-          });
-        }
-      });
-    }
-
-    // Posts
-    const posts = await getPosts('uz', true);
-    if (posts) {
-      posts.forEach((post) => {
-        if (post.status === 'published') {
-          urls.push({
-            url: `${BASE_URL}/posts/${post.slug}`,
-            lastModified: post.updatedAt ? new Date(post.updatedAt) : new Date(),
-            changeFrequency: 'weekly',
-            priority: 0.6,
-          });
-        }
-      });
-    }
-
-    // Catalogs
-    const catalogs = await getCatalogs('uz');
-    if (catalogs) {
-      catalogs.forEach((catalog) => {
-        if (catalog.status === 'published') {
-          urls.push({
-            url: `${BASE_URL}/catalog/${catalog.slug}`,
-            lastModified: new Date(),
-            changeFrequency: 'weekly',
-            priority: 0.7,
-          });
-        }
-      });
-    }
+    // Add products
+    const productsResponse = await getProducts({ page: 1, limit: 1000 }, 'uz');
+    const products = Array.isArray(productsResponse) ? productsResponse : productsResponse.items || [];
+    
+    products.forEach((product) => {
+      if (product.status === 'published') {
+        addUrl(`/products/${product.slug}`, product.updatedAt ? new Date(product.updatedAt) : undefined, 'weekly', 0.7);
+      }
+    });
   } catch (error) {
-    console.error('[Sitemap] Error generating sitemap:', error);
-    // Continue with basic URLs even if API fails
+    console.error('[Sitemap] Failed to fetch products:', error);
   }
 
-  return urls;
+  try {
+    // Add posts (articles and news)
+    const posts = await getPosts('uz', true);
+    const publishedPosts = posts.filter((post) => post.status === 'published');
+    
+    publishedPosts.forEach((post) => {
+      const priority = post.postType === 'news' ? 0.6 : 0.7;
+      addUrl(`/posts/${post.slug}`, post.updatedAt ? new Date(post.updatedAt) : undefined, 'weekly', priority);
+    });
+  } catch (error) {
+    console.error('[Sitemap] Failed to fetch posts:', error);
+  }
+
+  try {
+    // Add branches
+    const branches = await getBranches('uz');
+    const publishedBranches = branches.filter((branch) => branch.status === 'published');
+    
+    publishedBranches.forEach((branch) => {
+      if (branch.slug) {
+        addUrl(`/branches/${branch.slug}`, branch.updatedAt ? new Date(branch.updatedAt) : undefined, 'monthly', 0.6);
+      }
+    });
+  } catch (error) {
+    console.error('[Sitemap] Failed to fetch branches:', error);
+  }
+
+  try {
+    // Add services
+    const services = await getServices('uz');
+    const publishedServices = services.filter((service) => service.status === 'published');
+    
+    publishedServices.forEach((service) => {
+      addUrl(`/services/${service.slug}`, service.updatedAt ? new Date(service.updatedAt) : undefined, 'weekly', 0.7);
+    });
+  } catch (error) {
+    console.error('[Sitemap] Failed to fetch services:', error);
+  }
+
+  try {
+    // Add service categories (these are also accessible via /services/[slug])
+    const serviceCategories = await getServiceCategories('uz');
+    const publishedCategories = serviceCategories.filter((cat) => cat.status === 'published');
+    
+    publishedCategories.forEach((category) => {
+      // Only add if not already added as a service
+      addUrl(`/services/${category.slug}`, undefined, 'weekly', 0.6);
+    });
+  } catch (error) {
+    console.error('[Sitemap] Failed to fetch service categories:', error);
+  }
+
+  // Remove duplicates (in case same URL appears multiple times)
+  const uniqueEntries = sitemapEntries.filter((entry, index, self) =>
+    index === self.findIndex((e) => e.url === entry.url)
+  );
+
+  return uniqueEntries;
 }
 

@@ -90,114 +90,12 @@ export class ProductsService {
       skip: offset,
     });
 
-    // Fetch Media URLs for all products
-    const allMediaIds = items.flatMap(product => [
-      ...(product.thumbnailId ? [product.thumbnailId] : []),
-      ...product.galleryIds.filter(id => id !== product.thumbnailId),
-    ]);
-
-    const mediaMap = new Map<string, string>();
-    if (allMediaIds.length > 0) {
-      const media = await this.prisma.media.findMany({
-        where: { id: { in: allMediaIds } },
-        select: { id: true, url: true },
-      });
-      media.forEach(m => mediaMap.set(m.id, m.url));
-    }
-
-    // Convert relative URLs to absolute URLs for frontend
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 
-                    (process.env.NODE_ENV === 'production' ? 'https://api.acoustic.uz' : 'http://localhost:3001');
-    
-    // Helper function to normalize URLs
-    const normalizeUrl = (url: string): string => {
-      if (!url) return url;
-      let fixed = url.trim();
-      
-      // Fix malformed URLs like "https://.acoustic.uz/..." -> "https://acoustic.uz/..."
-      // Fix "https://.domain" -> "https://domain" (remove dot after //)
-      if (fixed.includes('://.')) {
-        fixed = fixed.replace(/:\/\/\./g, '://');
-      }
-      
-      // Fix "https:/.domain" -> "https://domain" (remove dot after slash)
-      if (fixed.match(/^https:\/\./)) {
-        fixed = fixed.replace(/^https:\/\./, 'https://');
-      }
-      if (fixed.match(/^http:\/\./)) {
-        fixed = fixed.replace(/^http:\/\./, 'http://');
-      }
-      
-      // Fix "https:/domain" -> "https://domain" (but not if already https://)
-      if (fixed.startsWith('https:/') && !fixed.startsWith('https://')) {
-        fixed = fixed.replace(/^https:\//, 'https://');
-      }
-      if (fixed.startsWith('http:/') && !fixed.startsWith('http://')) {
-        fixed = fixed.replace(/^http:\//, 'http://');
-      }
-      
-      // Fix double slashes after domain
-      fixed = fixed.replace(/(https?:\/\/[^\/]+)\/+/g, '$1/');
-      
-      // Only replace production URLs with localhost in development (not in production!)
-      if (process.env.NODE_ENV !== 'production' && fixed.includes('acoustic.uz')) {
-        // Extract path from URL
-        const urlMatch = fixed.match(/https?:\/\/[^\/]+(\/.*)/);
-        if (urlMatch) {
-          const path = urlMatch[1];
-          fixed = `http://localhost:3001${path}`;
-        }
-      }
-      
-      return fixed;
-    };
-    
-    // Map products with galleryUrls
-    const itemsWithGalleryUrls = items.map(product => {
-      const mediaUrls: string[] = [];
-      
-      // Add thumbnail first if exists
-      if (product.thumbnailId && mediaMap.has(product.thumbnailId)) {
-        const url = mediaMap.get(product.thumbnailId)!;
-        // Always normalize URLs, even if they don't start with http
-        const normalizedUrl = url.startsWith('http') || url.startsWith('https') 
-          ? normalizeUrl(url) 
-          : normalizeUrl(`${baseUrl}${url}`);
-        mediaUrls.push(normalizedUrl);
-      }
-      
-      // Add gallery images
-      for (const id of product.galleryIds) {
-        if (id !== product.thumbnailId && mediaMap.has(id)) {
-          const url = mediaMap.get(id)!;
-          // Always normalize URLs, even if they don't start with http
-          const normalizedUrl = url.startsWith('http') || url.startsWith('https') 
-            ? normalizeUrl(url) 
-            : normalizeUrl(`${baseUrl}${url}`);
-          mediaUrls.push(normalizedUrl);
-        }
-      }
-
-      // Normalize existing galleryUrls if any
-      const existingUrls = (product.galleryUrls || []).map(normalizeUrl);
-
-      // Always normalize URLs, prefer mediaUrls but merge with normalized existingUrls
-      const finalUrls = mediaUrls.length > 0 
-        ? [...mediaUrls, ...existingUrls.filter(url => !mediaUrls.includes(url))]
-        : existingUrls;
-
-      return {
-        ...product,
-        galleryUrls: finalUrls.length > 0 ? finalUrls : [],
-      };
-    });
-
     // Calculate page number (1-based)
     const pageSize = limit;
     const page = Math.floor(offset / pageSize) + 1;
 
     return {
-      items: itemsWithGalleryUrls,
+      items,
       total,
       page,
       pageSize,
@@ -227,94 +125,6 @@ export class ProductsService {
       throw new NotFoundException('Product not found');
     }
 
-    // Fetch Media URLs from galleryIds and thumbnailId
-    const mediaIds = [
-      ...(product.thumbnailId ? [product.thumbnailId] : []),
-      ...product.galleryIds.filter(id => id !== product.thumbnailId), // Avoid duplicates
-    ];
-    
-    const mediaUrls: string[] = [];
-    if (mediaIds.length > 0) {
-      const media = await this.prisma.media.findMany({
-        where: { id: { in: mediaIds } },
-        select: { id: true, url: true },
-      });
-      
-      // Order: thumbnail first, then galleryIds
-      const mediaMap = new Map(media.map(m => [m.id, m.url]));
-      if (product.thumbnailId && mediaMap.has(product.thumbnailId)) {
-        mediaUrls.push(mediaMap.get(product.thumbnailId)!);
-      }
-      for (const id of product.galleryIds) {
-        if (id !== product.thumbnailId && mediaMap.has(id)) {
-          mediaUrls.push(mediaMap.get(id)!);
-        }
-      }
-    }
-    
-    // Merge with existing galleryUrls (if any)
-    // Convert relative URLs to absolute URLs for frontend
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 
-                    (process.env.NODE_ENV === 'production' ? 'https://api.acoustic.uz' : 'http://localhost:3001');
-    
-    // Helper function to normalize URLs
-    const normalizeUrl = (url: string): string => {
-      if (!url) return url;
-      let fixed = url.trim();
-      
-      // Fix malformed URLs like "https://.acoustic.uz/..." -> "https://acoustic.uz/..."
-      // Fix "https://.domain" -> "https://domain" (remove dot after //)
-      if (fixed.includes('://.')) {
-        fixed = fixed.replace(/:\/\/\./g, '://');
-      }
-      
-      // Fix "https:/.domain" -> "https://domain" (remove dot after slash)
-      if (fixed.match(/^https:\/\./)) {
-        fixed = fixed.replace(/^https:\/\./, 'https://');
-      }
-      if (fixed.match(/^http:\/\./)) {
-        fixed = fixed.replace(/^http:\/\./, 'http://');
-      }
-      
-      // Fix "https:/domain" -> "https://domain" (but not if already https://)
-      if (fixed.startsWith('https:/') && !fixed.startsWith('https://')) {
-        fixed = fixed.replace(/^https:\//, 'https://');
-      }
-      if (fixed.startsWith('http:/') && !fixed.startsWith('http://')) {
-        fixed = fixed.replace(/^http:\//, 'http://');
-      }
-      
-      // Fix double slashes after domain
-      fixed = fixed.replace(/(https?:\/\/[^\/]+)\/+/g, '$1/');
-      
-      // Only replace production URLs with localhost in development (not in production!)
-      if (process.env.NODE_ENV !== 'production' && fixed.includes('acoustic.uz')) {
-        // Extract path from URL
-        const urlMatch = fixed.match(/https?:\/\/[^\/]+(\/.*)/);
-        if (urlMatch) {
-          const path = urlMatch[1];
-          fixed = `http://localhost:3001${path}`;
-        }
-      }
-      
-      return fixed;
-    };
-    
-    const allGalleryUrls = [
-      ...mediaUrls.map(url => {
-        // Always normalize URLs, even if they don't start with http
-        return url.startsWith('http') || url.startsWith('https') 
-          ? normalizeUrl(url) 
-          : normalizeUrl(`${baseUrl}${url}`);
-      }),
-      ...(product.galleryUrls || []).map(url => {
-        // Always normalize URLs, even if they don't start with http
-        return url.startsWith('http') || url.startsWith('https') 
-          ? normalizeUrl(url) 
-          : normalizeUrl(`${baseUrl}${url}`);
-      }),
-    ];
-
     const relatedProducts = product.relatedProductIds.length
       ? await this.prisma.product.findMany({
           where: { id: { in: product.relatedProductIds }, status: 'published' },
@@ -338,7 +148,6 @@ export class ProductsService {
 
     return {
       ...product,
-      galleryUrls: allGalleryUrls.length > 0 ? allGalleryUrls : product.galleryUrls,
       relatedProducts,
       usefulArticles,
     };

@@ -11,27 +11,8 @@ const queryClient = new QueryClient({
       staleTime: 60 * 1000,
       refetchOnWindowFocus: false,
     },
-    mutations: {
-      onError: (error: any) => {
-        // Handle 401 errors globally for mutations
-        if (error?.status === 401) {
-          try {
-            localStorage.removeItem('admin_user');
-          } catch (err) {
-            // ignore
-          }
-          if (window.location.pathname !== '/login') {
-            queryClient.clear();
-            window.location.href = '/login';
-          }
-        }
-      },
-    },
   },
 });
-
-// Make queryClient available globally for API request handler
-(window as any).__queryClient = queryClient;
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

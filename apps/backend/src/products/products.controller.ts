@@ -1,14 +1,11 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, UploadedFile, UseInterceptors, Res } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RbacGuard } from '../common/guards/rbac.guard';
 import { RequirePermissions } from '../common/decorators/permissions.decorator';
 import { Public } from '../common/decorators/public.decorator';
-import { CreateProductDto } from './dto/create-product.dto';
-import { UpdateProductDto } from './dto/update-product.dto';
-import { FilterProductsDto } from './dto/filter-products.dto';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { Response } from 'express';
@@ -21,10 +18,30 @@ export class ProductsController {
   @Public()
   @Get()
   @ApiOperation({ summary: 'Get all products (public)' })
-  @ApiResponse({ status: 200, description: 'Mahsulotlar ro\'yxati' })
-  findAll(@Query() filters: FilterProductsDto) {
-    const limit = filters.limit ? parseInt(String(filters.limit), 10) : undefined;
-    const offset = filters.offset ? parseInt(String(filters.offset), 10) : undefined;
+  findAll(
+    @Query()
+    filters: {
+      status?: string;
+      brandId?: string;
+      categoryId?: string;
+      catalogId?: string;
+      productType?: string;
+      search?: string;
+      audience?: string;
+      formFactor?: string;
+      signalProcessing?: string;
+      powerLevel?: string;
+      hearingLossLevel?: string;
+      smartphoneCompatibility?: string;
+      paymentOption?: string;
+      availabilityStatus?: string;
+      limit?: string;
+      offset?: string;
+      sort?: 'newest' | 'price_asc' | 'price_desc';
+    },
+  ) {
+    const limit = filters.limit ? parseInt(filters.limit, 10) : undefined;
+    const offset = filters.offset ? parseInt(filters.offset, 10) : undefined;
     return this.productsService.findAll({
       ...filters,
       status: 'published',
@@ -37,8 +54,6 @@ export class ProductsController {
   @Public()
   @Get('slug/:slug')
   @ApiOperation({ summary: 'Get product by slug (public)' })
-  @ApiResponse({ status: 200, description: 'Mahsulot ma\'lumotlari' })
-  @ApiResponse({ status: 404, description: 'Mahsulot topilmadi' })
   findBySlug(@Param('slug') slug: string) {
     return this.productsService.findBySlug(slug);
   }
@@ -47,25 +62,30 @@ export class ProductsController {
   @Get('admin')
   @RequirePermissions('content.read')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get all products (admin)' })
-  @ApiResponse({ status: 200, description: 'Mahsulotlar ro\'yxati (admin)' })
-  findAllAdmin(@Query() filters: FilterProductsDto) {
-    // Parse limit and offset from query string
-    const parsedFilters = {
-      ...filters,
-      limit: filters.limit ? Number(filters.limit) : undefined,
-      offset: filters.offset ? Number(filters.offset) : undefined,
-    };
-    return this.productsService.findAll(parsedFilters);
+  findAllAdmin(
+    @Query()
+    filters: {
+      status?: string;
+      brandId?: string;
+      categoryId?: string;
+      search?: string;
+      audience?: string;
+      formFactor?: string;
+      signalProcessing?: string;
+      powerLevel?: string;
+      hearingLossLevel?: string;
+      smartphoneCompatibility?: string;
+      paymentOption?: string;
+      availabilityStatus?: string;
+    },
+  ) {
+    return this.productsService.findAll(filters);
   }
 
   @UseGuards(JwtAuthGuard, RbacGuard)
   @Get('admin/:id')
   @RequirePermissions('content.read')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get product by ID (admin)' })
-  @ApiResponse({ status: 200, description: 'Mahsulot ma\'lumotlari' })
-  @ApiResponse({ status: 404, description: 'Mahsulot topilmadi' })
   findOne(@Param('id') id: string) {
     return this.productsService.findOne(id);
   }
@@ -74,10 +94,7 @@ export class ProductsController {
   @Post()
   @RequirePermissions('content.write')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Create new product' })
-  @ApiResponse({ status: 201, description: 'Mahsulot yaratildi' })
-  @ApiResponse({ status: 400, description: 'Validation error' })
-  create(@Body() createDto: CreateProductDto) {
+  create(@Body() createDto: unknown) {
     return this.productsService.create(createDto);
   }
 
@@ -85,10 +102,7 @@ export class ProductsController {
   @Patch(':id')
   @RequirePermissions('content.write')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update product' })
-  @ApiResponse({ status: 200, description: 'Mahsulot yangilandi' })
-  @ApiResponse({ status: 404, description: 'Mahsulot topilmadi' })
-  update(@Param('id') id: string, @Body() updateDto: UpdateProductDto) {
+  update(@Param('id') id: string, @Body() updateDto: unknown) {
     return this.productsService.update(id, updateDto);
   }
 
