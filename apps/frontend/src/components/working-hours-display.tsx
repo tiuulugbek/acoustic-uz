@@ -72,7 +72,17 @@ function parseWorkingHoursClient(workingHours: string, locale: 'uz' | 'ru') {
 
 export default function WorkingHoursDisplay({ workingHours_uz, workingHours_ru, locale }: WorkingHoursDisplayProps) {
   const workingHours = getBilingualText(workingHours_uz, workingHours_ru, locale) || '';
-  const { lines, currentDayLine } = useMemo(() => parseWorkingHoursClient(workingHours, locale), [workingHours, locale]);
+  
+  // Only compute current day on client-side to prevent hydration mismatch
+  const { lines, currentDayLine } = useMemo(() => {
+    if (typeof window === 'undefined') {
+      // Server-side: return lines without current day highlighting
+      const lines = workingHours.split('\n').filter(line => line.trim());
+      return { lines, currentDayLine: null };
+    }
+    // Client-side: compute with current day highlighting
+    return parseWorkingHoursClient(workingHours, locale);
+  }, [workingHours, locale]);
 
   if (!workingHours_uz && !workingHours_ru) {
     return (
