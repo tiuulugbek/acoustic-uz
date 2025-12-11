@@ -116,11 +116,11 @@ export default function WorkingHoursDisplay({ workingHours_uz, workingHours_ru, 
   }
 
   return (
-    <div>
+    <div suppressHydrationWarning>
       <h3 className="mb-2 text-xs sm:text-sm font-semibold text-foreground uppercase" suppressHydrationWarning>
         {locale === 'ru' ? 'Время работы' : 'Ish vaqti'}
       </h3>
-      <div className="space-y-1.5 text-xs sm:text-sm">
+      <div className="space-y-1.5 text-xs sm:text-sm" suppressHydrationWarning>
         {lines.map((line, idx) => {
           // Only highlight current day after component is mounted (client-side)
           // This prevents hydration mismatch between server and client
@@ -137,9 +137,10 @@ export default function WorkingHoursDisplay({ workingHours_uz, workingHours_ru, 
             >
               <Clock className={`h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0 mt-0.5 ${
                 isCurrentDay ? 'text-white' : 'text-brand-primary'
-              }`} />
+              }`} suppressHydrationWarning />
               <span 
                 className={`break-words ${isCurrentDay ? 'font-semibold text-white' : ''}`}
+                suppressHydrationWarning
               >
                 {line.trim()}
               </span>
