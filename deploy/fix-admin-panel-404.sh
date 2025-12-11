@@ -45,6 +45,8 @@ cd apps/admin
 rm -rf dist
 # Remove old vite.config.js if it exists (should use vite.config.ts)
 rm -f vite.config.js
+# Remove any .js files in src directory (should only have .tsx/.ts files)
+find src -name "*.js" -type f -delete 2>/dev/null || true
 echo "   ✅ Admin build cleaned"
 echo ""
 
