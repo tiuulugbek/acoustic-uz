@@ -1,77 +1,84 @@
 #!/bin/bash
-
-# Final deployment verification
+# Final verification of all services
 
 set -e
 
-cd /var/www/news.acoustic.uz
+echo "🔍 Final verification of all services..."
+echo ""
 
-echo "🎉 Final deployment verification..."
+# Step 1: Check backend
+echo "📋 Step 1: Backend verification..."
+BACKEND_STATUS=$(pm2 jlist 2>/dev/null | grep -o '"name":"acoustic-backend"[^}]*"status":"[^"]*' | grep -o '"status":"[^"]*' | cut -d'"' -f4 || echo "unknown")
+echo "   PM2 Status: $BACKEND_STATUS"
 
-# 1. PM2 statusini ko'rsatish
-echo "📊 PM2 status:"
+if [ "$BACKEND_STATUS" = "online" ]; then
+    echo "   ✅ Backend is online"
+    
+    # Test Swagger docs
+    SWAGGER_HTTP=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3001/api/docs 2>/dev/null || echo "000")
+    if [ "$SWAGGER_HTTP" = "200" ]; then
+        echo "   ✅ Swagger docs accessible (HTTP $SWAGGER_HTTP)"
+    else
+        echo "   ⚠️  Swagger docs not accessible (HTTP $SWAGGER_HTTP)"
+    fi
+    
+    # Test API
+    API_HTTP=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3001/api 2>/dev/null || echo "000")
+    echo "   API endpoint: HTTP $API_HTTP"
+else
+    echo "   ❌ Backend is not online"
+fi
+echo ""
+
+# Step 2: Check frontend
+echo "📋 Step 2: Frontend verification..."
+FRONTEND_STATUS=$(pm2 jlist 2>/dev/null | grep -o '"name":"acoustic-frontend"[^}]*"status":"[^"]*' | grep -o '"status":"[^"]*' | cut -d'"' -f4 || echo "unknown")
+echo "   PM2 Status: $FRONTEND_STATUS"
+
+if [ "$FRONTEND_STATUS" = "online" ]; then
+    echo "   ✅ Frontend is online"
+    
+    FRONTEND_HTTP=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/ 2>/dev/null || echo "000")
+    if [ "$FRONTEND_HTTP" = "200" ]; then
+        echo "   ✅ Frontend responding (HTTP $FRONTEND_HTTP)"
+    else
+        echo "   ⚠️  Frontend not responding (HTTP $FRONTEND_HTTP)"
+    fi
+else
+    echo "   ❌ Frontend is not online"
+fi
+echo ""
+
+# Step 3: Check via Nginx
+echo "📋 Step 3: Nginx verification..."
+NGINX_HTTP=$(curl -s -o /dev/null -w "%{http_code}" https://acoustic.uz/ 2>/dev/null || echo "000")
+if [ "$NGINX_HTTP" = "200" ]; then
+    echo "   ✅ Website accessible via Nginx (HTTP $NGINX_HTTP)"
+else
+    echo "   ⚠️  Website not accessible via Nginx (HTTP $NGINX_HTTP)"
+    echo "   Checking Nginx error logs..."
+    sudo tail -10 /var/log/nginx/acoustic.uz.error.log 2>/dev/null | sed 's/^/      /' || echo "      Cannot read logs"
+fi
+
+API_NGINX_HTTP=$(curl -s -o /dev/null -w "%{http_code}" https://a.acoustic.uz/api/docs 2>/dev/null || echo "000")
+if [ "$API_NGINX_HTTP" = "200" ]; then
+    echo "   ✅ API accessible via Nginx (HTTP $API_NGINX_HTTP)"
+else
+    echo "   ⚠️  API not accessible via Nginx (HTTP $API_NGINX_HTTP)"
+fi
+echo ""
+
+# Step 4: Summary
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "📊 Summary:"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 pm2 status
-
-# 2. Backend ni test qilish
 echo ""
-echo "🧪 Backend ni test qilish..."
-BACKEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3001/api/docs || echo "000")
-if [ "$BACKEND_STATUS" = "200" ] || [ "$BACKEND_STATUS" = "301" ] || [ "$BACKEND_STATUS" = "302" ]; then
-    echo "✅ Backend ishlayapti! (HTTP $BACKEND_STATUS)"
-else
-    echo "⚠️ Backend javob bermayapti (HTTP $BACKEND_STATUS)"
-fi
-
-# 3. Frontend ni test qilish
+echo "🌐 URLs:"
+echo "  - Frontend (local): http://127.0.0.1:3000"
+echo "  - Backend (local): http://127.0.0.1:3001"
+echo "  - Swagger (local): http://127.0.0.1:3001/api/docs"
+echo "  - Frontend (public): https://acoustic.uz"
+echo "  - Admin (public): https://admin.acoustic.uz"
+echo "  - API (public): https://a.acoustic.uz/api"
 echo ""
-echo "🧪 Frontend ni test qilish..."
-FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 || echo "000")
-if [ "$FRONTEND_STATUS" = "200" ] || [ "$FRONTEND_STATUS" = "301" ] || [ "$FRONTEND_STATUS" = "302" ]; then
-    echo "✅ Frontend ishlayapti! (HTTP $FRONTEND_STATUS)"
-else
-    echo "⚠️ Frontend javob bermayapti (HTTP $FRONTEND_STATUS)"
-fi
-
-# 4. Nginx ni test qilish
-echo ""
-echo "🧪 Nginx ni test qilish..."
-if systemctl is-active --quiet nginx; then
-    echo "✅ Nginx ishlayapti!"
-else
-    echo "⚠️ Nginx ishlamayapti!"
-fi
-
-# 5. Portlarni tekshirish
-echo ""
-echo "📋 Portlarni tekshirish..."
-if lsof -i:3000 >/dev/null 2>&1; then
-    echo "✅ Port 3000 (Frontend) ishlatilmoqda"
-else
-    echo "⚠️ Port 3000 (Frontend) bo'sh"
-fi
-
-if lsof -i:3001 >/dev/null 2>&1; then
-    echo "✅ Port 3001 (Backend) ishlatilmoqda"
-else
-    echo "⚠️ Port 3001 (Backend) bo'sh"
-fi
-
-# 6. PM2 loglarini ko'rsatish (oxirgi 5 qator)
-echo ""
-echo "📋 PM2 loglar (oxirgi 5 qator):"
-echo "Backend:"
-pm2 logs acoustic-backend --lines 5 --nostream || true
-echo ""
-echo "Frontend:"
-pm2 logs acoustic-frontend --lines 5 --nostream || true
-
-echo ""
-echo "✅ Final verification yakunlandi!"
-echo ""
-echo "📋 Xulosa:"
-echo "- Backend: http://localhost:3001/api/docs"
-echo "- Frontend: http://localhost:3000"
-echo "- PM2: pm2 status"
-echo "- Logs: pm2 logs"
-
-
