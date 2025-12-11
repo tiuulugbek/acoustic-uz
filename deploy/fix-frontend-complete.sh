@@ -104,6 +104,8 @@ cd /var/www/acoustic.uz/apps/frontend
 export NODE_ENV=production
 export PORT=3000
 export HOSTNAME=127.0.0.1
+export NEXT_PUBLIC_API_URL=https://a.acoustic.uz/api
+export NEXT_PUBLIC_SITE_URL=https://acoustic.uz
 exec npm start
 EOF
 chmod +x /tmp/start-frontend.sh
