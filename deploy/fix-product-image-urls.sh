@@ -84,9 +84,46 @@ echo ""
 # Step 4: Create Node.js script to fix URLs
 echo "📋 Step 4: Creating script to fix URLs..."
 cat > /tmp/fix-product-urls.js << 'NODE_SCRIPT'
+// Add node_modules to require path
+const path = require('path');
+const Module = require('module');
+const originalRequire = Module.prototype.require;
+
+// Try to find @prisma/client in common locations
+const possiblePaths = [
+  '/var/www/acoustic.uz/node_modules',
+  '/var/www/acoustic.uz/apps/backend/node_modules',
+  process.cwd() + '/node_modules',
+  process.cwd() + '/../../node_modules',
+];
+
+let prismaPath = null;
+for (const possiblePath of possiblePaths) {
+  try {
+    const testPath = path.join(possiblePath, '@prisma/client');
+    require.resolve(testPath);
+    prismaPath = possiblePath;
+    break;
+  } catch (e) {
+    // Continue searching
+  }
+}
+
+if (prismaPath) {
+  Module.prototype.require = function(id) {
+    if (id === '@prisma/client' || id.startsWith('@prisma/')) {
+      try {
+        return originalRequire.call(this, path.join(prismaPath, id));
+      } catch (e) {
+        return originalRequire.call(this, id);
+      }
+    }
+    return originalRequire.call(this, id);
+  };
+}
+
 const { PrismaClient } = require('@prisma/client');
 const fs = require('fs');
-const path = require('path');
 
 // Prisma Client will use DATABASE_URL from environment
 const prisma = new PrismaClient();
@@ -204,12 +241,34 @@ fi
 
 # Step 5: Run the script
 echo "📋 Step 5: Running script to fix URLs..."
-cd "$BACKEND_DIR"
 
-# Ensure we're in the right directory with node_modules
-if [ ! -d "node_modules" ] && [ -d "../../node_modules" ]; then
-    cd ../..
+# Find node_modules directory
+NODE_MODULES_DIR=""
+for POSSIBLE_NM in \
+    "$PROJECT_DIR/node_modules" \
+    "$BACKEND_DIR/node_modules" \
+    "$PROJECT_DIR/apps/backend/node_modules"
+do
+    if [ -d "$POSSIBLE_NM" ] && [ -d "$POSSIBLE_NM/@prisma/client" ]; then
+        NODE_MODULES_DIR="$POSSIBLE_NM"
+        echo "   ✅ Found node_modules: $NODE_MODULES_DIR"
+        break
+    fi
+done
+
+if [ -z "$NODE_MODULES_DIR" ]; then
+    echo "   ❌ node_modules/@prisma/client not found"
+    echo "   Installing dependencies..."
+    cd "$PROJECT_DIR"
+    pnpm install
+    NODE_MODULES_DIR="$PROJECT_DIR/node_modules"
 fi
+
+# Set NODE_PATH to include node_modules
+export NODE_PATH="$NODE_MODULES_DIR:$NODE_PATH"
+
+# Run script from project root to ensure Prisma can find schema
+cd "$PROJECT_DIR"
 
 if node /tmp/fix-product-urls.js; then
     echo "   ✅ URLs fixed"
