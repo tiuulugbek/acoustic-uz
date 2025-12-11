@@ -69,13 +69,14 @@ try:
     # Extract server block
     server_block = lines[a_acoustic_start:a_acoustic_end+1]
     
-    # Find /api location block
+    # Find /api location block (but not /api/docs)
     api_start = -1
     api_end = -1
     api_brace_count = 0
     
     for i, line in enumerate(server_block):
-        if 'location /api' in line:
+        # Match "location /api {" but not "location /api/docs"
+        if 'location /api' in line and '/api/docs' not in line and '{' in line:
             api_start = i
             api_brace_count = 0
         
