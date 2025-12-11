@@ -35,27 +35,32 @@ async function bootstrap() {
     'http://localhost:5173',
   ];
   
-  let corsOrigins: string[] | boolean;
+  let corsOrigins: string[] | boolean | ((origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => void);
   if (corsOriginsEnv) {
     // Merge environment origins with defaults
     const envOrigins = corsOriginsEnv.split(',').map(origin => origin.trim()).filter(Boolean);
     corsOrigins = [...new Set([...defaultOrigins, ...envOrigins])];
   } else {
-    // If no CORS_ORIGIN env var, allow all origins (development)
-    corsOrigins = true;
+    // If no CORS_ORIGIN env var, use callback function to allow all origins
+    corsOrigins = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      // Allow all origins
+      callback(null, true);
+    };
   }
   
   app.enableCors({
     origin: corsOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Locale'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Locale', 'Accept', 'Origin', 'X-Requested-With'],
     exposedHeaders: ['Vary', 'Cache-Control'],
-    // Allow images to be loaded from backend
-    optionsSuccessStatus: 200,
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
   });
   
-  logger.log(`🌐 CORS enabled for origins: ${Array.isArray(corsOrigins) ? corsOrigins.join(', ') : 'all'}`);
+  logger.log(`🌐 CORS enabled for origins: ${Array.isArray(corsOrigins) ? corsOrigins.join(', ') : 'all (with callback)'}`);
 
   // Serve static files from uploads directory - BEFORE global prefix
   // This allows /uploads/ to work without /api prefix
