@@ -63,7 +63,7 @@ export default defineConfig({
       name: 'inject-version',
       transformIndexHtml(html) {
         // Inject version as both script and meta tag for better cache handling
-        const scriptTag = `<script>window.__APP_VERSION__='${version}';window.__BUILD_TIME__='${buildTime}';window.__VITE_API_URL__='${process.env.VITE_API_URL || 'https://api.acoustic.uz/api'}';</script>`;
+        const scriptTag = `<script>window.__APP_VERSION__='${version}';window.__BUILD_TIME__='${buildTime}';window.__VITE_API_URL__='${process.env.VITE_API_URL || 'https://a.acoustic.uz/api'}';</script>`;
         const metaTag = `<meta name="app-version" content="${version}" /><meta name="build-time" content="${buildTime}" />`;
         return html.replace(
           '<head>',
@@ -79,10 +79,10 @@ export default defineConfig({
         {
           name: 'replace-localhost',
           renderChunk(code, chunk) {
-            const apiUrl = process.env.VITE_API_URL || 'https://api.acoustic.uz/api';
+            const apiUrl = process.env.VITE_API_URL || 'https://a.acoustic.uz/api';
             // Replace localhost:3001 with production URL
             code = code.replace(/http:\/\/localhost:3001\/api/g, apiUrl);
-            code = code.replace(/localhost:3001/g, 'api.acoustic.uz');
+            code = code.replace(/localhost:3001/g, 'a.acoustic.uz');
             return code;
           },
         },
@@ -95,7 +95,7 @@ export default defineConfig({
     '__BUILD_TIME__': JSON.stringify(buildTime),
     // Force VITE_API_URL to production API URL during build
     'import.meta.env.VITE_API_URL': JSON.stringify(
-      process.env.VITE_API_URL || 'https://api.acoustic.uz/api'
+      process.env.VITE_API_URL || 'https://a.acoustic.uz/api'
     ),
     'import.meta.env.PROD': JSON.stringify(true),
     'import.meta.env.DEV': JSON.stringify(false),
