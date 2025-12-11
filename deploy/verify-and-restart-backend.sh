@@ -98,13 +98,11 @@ if [ -f "dist/main.js" ]; then
     pm2 start dist/main.js \
         --name acoustic-backend \
         --cwd "$BACKEND_DIR" \
-        --env production \
         --update-env \
         --log-date-format "YYYY-MM-DD HH:mm:ss Z" \
         --error /var/log/pm2/acoustic-backend-error.log \
         --output /var/log/pm2/acoustic-backend-out.log \
         --merge-logs \
-        --autorestart \
         --max-memory-restart 500M
 else
     echo "   ❌ dist/main.js not found, cannot start backend"
