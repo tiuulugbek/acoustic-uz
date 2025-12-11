@@ -143,6 +143,7 @@ async function fixDescriptionUrls() {
           const baseName = path.parse(filename).name;
           
           // Try to find the file in products directory
+          // Be VERY strict - only accept exact or very close matches
           let foundFile = null;
           let bestScore = 0;
           
@@ -150,7 +151,7 @@ async function fixDescriptionUrls() {
           // Remove size suffix (e.g., -300x269)
           const cleanBaseName = searchBaseName.replace(/-\d+x\d+$/, '');
           
-          // Score files by how well they match
+          // Score files by how well they match - stricter scoring
           for (const file of allFiles) {
             const fileBaseName = path.parse(file).name.toLowerCase();
             let score = 0;
@@ -159,35 +160,49 @@ async function fixDescriptionUrls() {
             if (fileBaseName === searchBaseName || fileBaseName === cleanBaseName) {
               score = 100;
             }
-            // File base name contains the search base name (without size)
-            else if (fileBaseName.includes(cleanBaseName) && cleanBaseName.length > 5) {
+            // File base name starts with clean base name (very strict)
+            else if (fileBaseName.startsWith(cleanBaseName) && cleanBaseName.length > 8) {
+              score = 90;
+            }
+            // Clean base name starts with file base name (very strict)
+            else if (cleanBaseName.startsWith(fileBaseName) && fileBaseName.length > 8) {
+              score = 85;
+            }
+            // File contains clean base name AND clean base name is long enough
+            else if (fileBaseName.includes(cleanBaseName) && cleanBaseName.length > 10) {
               score = 80;
             }
-            // Search base name contains file base name
-            else if (cleanBaseName.includes(fileBaseName) && fileBaseName.length > 5) {
-              score = 70;
-            }
-            // Partial match - first part matches
-            else if (fileBaseName.split('-')[0] === cleanBaseName.split('-')[0] && cleanBaseName.split('-')[0].length > 3) {
-              score = 50;
-            }
             
-            // Only accept matches with score >= 70 to avoid wrong matches
-            if (score >= 70 && score > bestScore) {
+            // Only accept matches with score >= 85 to avoid wrong matches
+            // This is stricter than before to prevent wrong file assignments
+            if (score >= 85 && score > bestScore) {
               foundFile = file;
               bestScore = score;
             }
           }
           
-          if (foundFile && bestScore >= 70) {
+          if (foundFile && bestScore >= 85) {
             const newUrl = `https://a.acoustic.uz/uploads/products/${foundFile}`;
             newText = newText.replace(oldUrl, newUrl);
             hasChanges = true;
             console.log(`      Fixed: ${filename} → ${foundFile} (score: ${bestScore})`);
           } else {
             // Keep original URL if file not found (don't break the description)
-            console.log(`      ⚠️  Not found: ${filename} (keeping original URL)`);
-            notFoundCount++;
+            // But if it's an old date-based path, try to keep it working
+            if (urlPath.includes('/2024/') || urlPath.includes('/2023/')) {
+              // Try to find file in old location first
+              const oldPath = path.join(uploadsDir, urlPath.replace(/^\/uploads\//, ''));
+              if (fs.existsSync(oldPath)) {
+                // File exists in old location, keep original URL
+                console.log(`      ⚠️  File exists in old location: ${urlPath} (keeping original)`);
+              } else {
+                console.log(`      ⚠️  Not found: ${filename} (keeping original URL)`);
+                notFoundCount++;
+              }
+            } else {
+              console.log(`      ⚠️  Not found: ${filename} (keeping original URL)`);
+              notFoundCount++;
+            }
             // Don't change the URL - keep it as is
           }
         } catch (e) {
