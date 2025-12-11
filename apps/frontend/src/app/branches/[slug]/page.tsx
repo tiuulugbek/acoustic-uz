@@ -8,6 +8,7 @@ import { getBilingualText } from '@/lib/locale';
 import { MapPin, Phone, Clock, Navigation, ExternalLink } from 'lucide-react';
 import type { TourConfig } from '@/types/tour';
 import PageHeader from '@/components/page-header';
+import WorkingHoursDisplay from '@/components/working-hours-display';
 
 // Dynamically import PanoramaViewer for client-side rendering
 const PanoramaViewer = dynamicImport(() => import('@/components/tour/PanoramaViewer'), {
@@ -530,39 +531,11 @@ export default async function BranchPage({ params }: BranchPageProps) {
                 {/* Working Hours */}
                 {(branch.workingHours_uz || branch.workingHours_ru) ? (() => {
                   const workingHours = getBilingualText(branch.workingHours_uz, branch.workingHours_ru, locale) || '';
-                  const { lines, currentDayLine } = parseWorkingHours(workingHours, locale);
+                  // Skip current day detection on server to prevent hydration mismatch
+                  const { lines } = parseWorkingHours(workingHours, locale, true);
                   
                   return (
-                    <div>
-                      <h3 className="mb-2 text-xs sm:text-sm font-semibold text-foreground uppercase" suppressHydrationWarning>
-                        {locale === 'ru' ? 'Время работы' : 'Ish vaqti'}
-                      </h3>
-                      <div className="space-y-1.5 text-xs sm:text-sm">
-                        {lines.map((line, idx) => {
-                          const isCurrentDay = idx === currentDayLine;
-                          return (
-                            <div 
-                              key={idx} 
-                              className={`flex items-start gap-2 rounded-md px-2 py-1.5 transition-colors ${
-                                isCurrentDay 
-                                  ? 'bg-brand-primary text-white shadow-sm' 
-                                  : 'text-muted-foreground hover:bg-gray-50'
-                              }`}
-                            >
-                              <Clock className={`h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0 mt-0.5 ${
-                                isCurrentDay ? 'text-white' : 'text-brand-primary'
-                              }`} />
-                              <span 
-                                className={`break-words ${isCurrentDay ? 'font-semibold text-white' : ''}`} 
-                                suppressHydrationWarning
-                              >
-                                {line.trim()}
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
+                    <WorkingHoursDisplay lines={lines} locale={locale} />
                   );
                 })() : (
                   // Fallback: Show default working hours if not set
