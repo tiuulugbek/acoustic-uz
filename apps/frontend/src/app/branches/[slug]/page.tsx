@@ -434,11 +434,13 @@ export default async function BranchPage({ params }: BranchPageProps) {
 
                 {/* Working Hours */}
                 {(branch.workingHours_uz || branch.workingHours_ru) ? (
-                  <WorkingHoursDisplay 
-                    workingHours_uz={branch.workingHours_uz} 
-                    workingHours_ru={branch.workingHours_ru} 
-                    locale={locale} 
-                  />
+                  <div suppressHydrationWarning>
+                    <WorkingHoursDisplay 
+                      workingHours_uz={branch.workingHours_uz} 
+                      workingHours_ru={branch.workingHours_ru} 
+                      locale={locale} 
+                    />
+                  </div>
                 ) : (
                   // Fallback: Show default working hours if not set
                   <div>
