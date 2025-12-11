@@ -203,19 +203,9 @@ async function fixDescriptionUrls() {
                 // File exists in old location, keep original URL
                 console.log(`      ⚠️  File exists in old location: ${urlPath} (keeping original)`);
               } else {
-                // File doesn't exist - remove the image tag or comment it out
-                // Remove <img> tag containing this URL
-                const imgTagRegex = new RegExp(`<img[^>]*src=["']${oldUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}["'][^>]*>`, 'gi');
-                if (imgTagRegex.test(newText)) {
-                  newText = newText.replace(imgTagRegex, '<!-- Image removed: file not found -->');
-                  hasChanges = true;
-                  console.log(`      🗑️  Removed broken image tag: ${filename}`);
-                } else {
-                  // If not in img tag, just replace the URL with comment
-                  newText = newText.replace(oldUrl, '<!-- Image URL removed: file not found -->');
-                  hasChanges = true;
-                  console.log(`      🗑️  Removed broken URL: ${filename}`);
-                }
+                // File doesn't exist - keep the original URL (don't remove)
+                // The image will show as broken, but the URL structure is preserved
+                console.log(`      ⚠️  Not found: ${filename} (keeping original URL)`);
                 notFoundCount++;
               }
             } else {
