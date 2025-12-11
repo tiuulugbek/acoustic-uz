@@ -3,6 +3,11 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { execSync } from 'child_process';
+import { fileURLToPath } from 'url';
+
+// Get __dirname equivalent in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Read package.json to get base version
 const packageJson = JSON.parse(readFileSync(path.resolve(__dirname, './package.json'), 'utf-8'));
