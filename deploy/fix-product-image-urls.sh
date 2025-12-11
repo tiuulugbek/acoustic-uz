@@ -42,12 +42,27 @@ echo ""
 
 # Step 3: Create Node.js script to fix URLs
 echo "📋 Step 3: Creating script to fix URLs..."
-cat > /tmp/fix-product-urls.js << 'NODE_SCRIPT'
+
+# Get DATABASE_URL from .env
+DATABASE_URL=$(grep "^DATABASE_URL=" "$BACKEND_DIR/.env" | cut -d'=' -f2- | tr -d '"' | tr -d "'")
+
+if [ -z "$DATABASE_URL" ]; then
+    echo "   ❌ DATABASE_URL not found in .env"
+    exit 1
+fi
+
+cat > /tmp/fix-product-urls.js << NODE_SCRIPT
 const { PrismaClient } = require('@prisma/client');
 const fs = require('fs');
 const path = require('path');
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL || '$DATABASE_URL'
+    }
+  }
+});
 
 async function fixProductUrls() {
   try {
@@ -157,11 +172,13 @@ if [ ! -d "node_modules" ]; then
     cd "$BACKEND_DIR"
 fi
 
-# Run the script
+# Run the script with DATABASE_URL environment variable
+export DATABASE_URL
 if node /tmp/fix-product-urls.js; then
     echo "   ✅ URLs fixed"
 else
     echo "   ❌ Failed to fix URLs"
+    echo "   Check error above"
     exit 1
 fi
 echo ""
