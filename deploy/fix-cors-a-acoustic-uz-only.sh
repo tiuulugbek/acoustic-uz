@@ -85,14 +85,6 @@ try:
                 api_end = i
                 break
     
-    if api_start == -1:
-        print("❌ Could not find /api location block in a.acoustic.uz server block")
-        sys.exit(1)
-    
-    if api_end == -1:
-        print("❌ Could not find end of /api location block")
-        sys.exit(1)
-    
     # New /api location block with CORS headers
     new_api_block = '''    # API endpoints
     location /api {
@@ -132,12 +124,38 @@ try:
     }
 '''
     
-    # Replace /api location block
-    new_server_block = (
-        server_block[:api_start] +
-        new_api_block.split('\n') +
-        server_block[api_end+1:]
-    )
+    # Replace or add /api location block
+    if api_start >= 0 and api_end >= 0:
+        # Replace existing /api location block
+        new_api_lines = []
+        for line in new_api_block.split('\n'):
+            if line.strip():  # Skip empty lines
+                new_api_lines.append(line + '\n')
+        
+        new_server_block = (
+            server_block[:api_start] +
+            new_api_lines +
+            server_block[api_end+1:]
+        )
+    else:
+        # Add new /api location block before root location or at the end
+        # Find where to insert (before location = / or location /)
+        insert_idx = len(server_block)
+        for i, line in enumerate(server_block):
+            if 'location = /' in line or 'location / {' in line:
+                insert_idx = i
+                break
+        
+        new_api_lines = []
+        for line in new_api_block.split('\n'):
+            if line.strip():  # Skip empty lines
+                new_api_lines.append(line + '\n')
+        
+        new_server_block = (
+            server_block[:insert_idx] +
+            new_api_lines +
+            server_block[insert_idx:]
+        )
     
     # Reconstruct file
     new_lines = (
