@@ -29,24 +29,6 @@ export const revalidate = 0;
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
-// Helper function to parse working hours and highlight current day
-// Note: currentDayLine is computed client-side to avoid hydration mismatch
-function parseWorkingHours(workingHours: string, locale: 'uz' | 'ru', skipCurrentDay = false) {
-  if (!workingHours) return { lines: [], currentDayLine: null };
-  
-  const lines = workingHours.split('\n').filter(line => line.trim());
-  
-  // Skip current day detection on server-side to prevent hydration mismatch
-  // Current day will be detected client-side in the component
-  if (skipCurrentDay) {
-    return { lines, currentDayLine: null };
-  }
-  
-  const today = new Date().getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-  
-  return { lines };
-}
-
 interface BranchPageProps {
   params: {
     slug: string;
@@ -451,14 +433,13 @@ export default async function BranchPage({ params }: BranchPageProps) {
                 </div>
 
                 {/* Working Hours */}
-                {(branch.workingHours_uz || branch.workingHours_ru) ? (() => {
-                  const workingHours = getBilingualText(branch.workingHours_uz, branch.workingHours_ru, locale) || '';
-                  const { lines } = parseWorkingHours(workingHours);
-                  
-                  return (
-                    <WorkingHoursDisplay lines={lines} locale={locale} />
-                  );
-                })() : (
+                {(branch.workingHours_uz || branch.workingHours_ru) ? (
+                  <WorkingHoursDisplay 
+                    workingHours_uz={branch.workingHours_uz} 
+                    workingHours_ru={branch.workingHours_ru} 
+                    locale={locale} 
+                  />
+                ) : (
                   // Fallback: Show default working hours if not set
                   <div>
                     <h3 className="mb-2 text-xs sm:text-sm font-semibold text-foreground uppercase" suppressHydrationWarning>
