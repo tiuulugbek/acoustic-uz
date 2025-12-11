@@ -144,32 +144,51 @@ async function fixDescriptionUrls() {
           
           // Try to find the file in products directory
           let foundFile = null;
+          let bestScore = 0;
           
-          // First, try exact match
+          const searchBaseName = baseName.toLowerCase();
+          // Remove size suffix (e.g., -300x269)
+          const cleanBaseName = searchBaseName.replace(/-\d+x\d+$/, '');
+          
+          // Score files by how well they match
           for (const file of allFiles) {
             const fileBaseName = path.parse(file).name.toLowerCase();
-            const searchBaseName = baseName.toLowerCase();
+            let score = 0;
             
-            // Remove size suffix (e.g., -300x269)
-            const cleanBaseName = searchBaseName.replace(/-\d+x\d+$/, '');
+            // Exact match gets highest score
+            if (fileBaseName === searchBaseName || fileBaseName === cleanBaseName) {
+              score = 100;
+            }
+            // File base name contains the search base name (without size)
+            else if (fileBaseName.includes(cleanBaseName) && cleanBaseName.length > 5) {
+              score = 80;
+            }
+            // Search base name contains file base name
+            else if (cleanBaseName.includes(fileBaseName) && fileBaseName.length > 5) {
+              score = 70;
+            }
+            // Partial match - first part matches
+            else if (fileBaseName.split('-')[0] === cleanBaseName.split('-')[0] && cleanBaseName.split('-')[0].length > 3) {
+              score = 50;
+            }
             
-            if (fileBaseName === searchBaseName || 
-                fileBaseName === cleanBaseName ||
-                fileBaseName.includes(cleanBaseName) ||
-                cleanBaseName.includes(fileBaseName.split('-')[0])) {
+            // Only accept matches with score >= 70 to avoid wrong matches
+            if (score >= 70 && score > bestScore) {
               foundFile = file;
-              break;
+              bestScore = score;
             }
           }
           
-          if (foundFile) {
+          if (foundFile && bestScore >= 70) {
             const newUrl = `https://a.acoustic.uz/uploads/products/${foundFile}`;
             newText = newText.replace(oldUrl, newUrl);
             hasChanges = true;
-            console.log(`      Fixed: ${filename} → ${foundFile}`);
+            console.log(`      Fixed: ${filename} → ${foundFile} (score: ${bestScore})`);
           } else {
-            console.log(`      ⚠️  Not found: ${filename}`);
+            // Keep original URL if file not found (don't break the description)
+            console.log(`      ⚠️  Not found: ${filename} (keeping original URL)`);
             notFoundCount++;
+            // Don't change the URL - keep it as is
           }
         } catch (e) {
           console.log(`      ❌ Error processing URL: ${oldUrl}`);
