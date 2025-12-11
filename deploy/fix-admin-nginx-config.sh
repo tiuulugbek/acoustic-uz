@@ -46,21 +46,23 @@ else
     # Add admin server block
     python3 << 'PYTHON_SCRIPT'
 import re
+import sys
 
 config_file = "/etc/nginx/sites-available/acoustic-uz.conf"
 
-with open(config_file, 'r') as f:
-    content = f.read()
-
-# Check if admin block already exists
-if 'server_name admin.acoustic.uz' in content:
-    print("   Admin block already exists")
-    exit(0)
-
-# Find the end of the file or a good place to insert
-# Insert before the last closing brace or at the end
-admin_block = '''
-# Admin Panel (admin.acoustic.uz)
+try:
+    with open(config_file, 'r') as f:
+        lines = f.readlines()
+    
+    # Check if admin block already exists
+    content_str = ''.join(lines)
+    if 'server_name admin.acoustic.uz' in content_str:
+        print("   Admin block already exists")
+        sys.exit(0)
+    
+    # Find the last server block and add after it
+    # Look for the last closing brace of a server block before the final closing brace
+    admin_block = '''# Admin Panel (admin.acoustic.uz)
 server {
     listen 80;
     listen [::]:80;
@@ -83,23 +85,58 @@ server {
     }
 
     # Static assets caching
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+    location ~* \\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
         expires 1y;
         add_header Cache-Control "public, immutable";
     }
 }
 '''
-
-# Add before the last closing brace
-if content.rstrip().endswith('}'):
-    content = content.rstrip()[:-1] + admin_block + '\n}'
-else:
-    content += admin_block
-
-with open(config_file, 'w') as f:
-    f.write(content)
-
-print("   ✅ Admin server block added")
+    
+    # Find the last server block closing brace (before the final http block closing brace)
+    # Count braces to find the right place
+    brace_count = 0
+    insert_pos = -1
+    
+    for i in range(len(lines) - 1, -1, -1):
+        line = lines[i]
+        brace_count += line.count('}') - line.count('{')
+        
+        # If we're at brace_count == 1, we're inside http block but outside server blocks
+        # Look for the last server block closing brace
+        if brace_count == 1 and '}' in line and 'server' in lines[max(0, i-5):i+1]:
+            # Check if this is a server block closing
+            # Look backwards for server keyword
+            for j in range(max(0, i-20), i):
+                if 'server {' in lines[j] or 'server{' in lines[j]:
+                    insert_pos = i + 1
+                    break
+            if insert_pos != -1:
+                break
+    
+    # If we didn't find a good position, add before the last closing brace
+    if insert_pos == -1:
+        # Find the last closing brace
+        for i in range(len(lines) - 1, -1, -1):
+            if '}' in lines[i]:
+                insert_pos = i
+                break
+    
+    if insert_pos == -1:
+        insert_pos = len(lines) - 1
+    
+    # Insert the admin block
+    lines.insert(insert_pos, admin_block + '\n')
+    
+    with open(config_file, 'w') as f:
+        f.writelines(lines)
+    
+    print("   ✅ Admin server block added")
+    sys.exit(0)
+except Exception as e:
+    print(f"   ❌ Error: {e}")
+    import traceback
+    traceback.print_exc()
+    sys.exit(1)
 PYTHON_SCRIPT
 fi
 echo ""
