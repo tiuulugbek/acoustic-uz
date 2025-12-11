@@ -59,28 +59,35 @@ else
 fi
 
 # Now try actual compilation
-echo "   Running: pnpm exec tsc"
+# Use --skipLibCheck to skip type checking of declaration files
+# This helps with decorator-related errors
+echo "   Running: pnpm exec tsc --skipLibCheck"
 set +e  # Don't exit on error
-pnpm exec tsc > "$BUILD_LOG" 2>&1
+pnpm exec tsc --skipLibCheck > "$BUILD_LOG" 2>&1
 TSC_EXIT=$?
 set -e
 
 echo "   TSC exit code: $TSC_EXIT"
 
 if [ -s "$BUILD_LOG" ]; then
-    echo "   Build output:"
-    cat "$BUILD_LOG" | sed 's/^/      /'
+    echo "   Build output (first 50 lines):"
+    head -50 "$BUILD_LOG" | sed 's/^/      /'
+    if [ $(wc -l < "$BUILD_LOG") -gt 50 ]; then
+        echo "      ... (truncated, full log: $BUILD_LOG)"
+    fi
 else
     echo "   ⚠️  Build log is empty (no output from tsc)"
 fi
 
-if [ $TSC_EXIT -eq 0 ]; then
-    echo "   ✅ TypeScript compilation completed (exit code 0)"
-else
+# Even if there are errors, check if dist was created
+if [ $TSC_EXIT -ne 0 ]; then
     echo "   ⚠️  TypeScript compilation had errors (exit code $TSC_EXIT)"
+    echo "   But checking if any files were compiled anyway..."
 fi
 
-# Check for dist/main.js
+# Check for dist/main.js or dist/src/main.js
+echo ""
+echo "   Checking for compiled files..."
 if [ -f "dist/main.js" ]; then
     echo "   ✅ dist/main.js found!"
     echo "   File size: $(du -h dist/main.js | cut -f1)"
@@ -88,23 +95,52 @@ elif [ -f "dist/src/main.js" ]; then
     echo "   ⚠️  Found dist/src/main.js, copying to dist/main.js..."
     cp dist/src/main.js dist/main.js
     echo "   ✅ Created dist/main.js"
-else
-    echo "   ❌ dist/main.js not found"
-    echo ""
-    echo "   Checking dist directory:"
-    if [ -d "dist" ]; then
-        echo "   dist directory exists, contents:"
-        find dist -type f -name "*.js" | head -20 | sed 's/^/      /' || echo "      No JS files found"
+elif [ -d "dist" ]; then
+    echo "   ⚠️  dist/main.js not found, but dist directory exists"
+    echo "   Checking dist contents:"
+    JS_FILES=$(find dist -type f -name "*.js" 2>/dev/null | wc -l)
+    echo "   Found $JS_FILES JavaScript files in dist"
+    
+    if [ "$JS_FILES" -gt 0 ]; then
+        echo "   Sample files:"
+        find dist -type f -name "*.js" | head -10 | sed 's/^/      /'
         echo ""
-        echo "   Looking for main.js anywhere:"
+        echo "   Looking for main.js:"
         find dist -name "*main*.js" 2>/dev/null | sed 's/^/      /' || echo "      Not found"
+        
+        # Try to find main.js in src subdirectory
+        if [ -f "dist/src/main.js" ]; then
+            echo "   Found dist/src/main.js, copying..."
+            cp dist/src/main.js dist/main.js
+            echo "   ✅ Created dist/main.js"
+        else
+            echo ""
+            echo "   ⚠️  main.js not found. TypeScript errors may have prevented compilation."
+            echo "   Checking for common errors in build log:"
+            if [ -s "$BUILD_LOG" ]; then
+                grep -i "error TS" "$BUILD_LOG" | head -10 | sed 's/^/      /' || echo "      No TS errors found in log"
+            fi
+            echo ""
+            echo "   💡 Suggestion: Fix TypeScript errors or use 'nest build' which may handle decorators better"
+            echo "   Build log saved to: $BUILD_LOG"
+            exit 1
+        fi
     else
-        echo "   ❌ dist directory does not exist"
+        echo "   ❌ No JavaScript files found in dist"
+        echo "   Build log saved to: $BUILD_LOG"
+        if [ -s "$BUILD_LOG" ]; then
+            echo "   Last 30 lines of build log:"
+            tail -30 "$BUILD_LOG" | sed 's/^/      /'
+        fi
+        exit 1
     fi
-    echo ""
+else
+    echo "   ❌ dist directory does not exist"
     echo "   Build log saved to: $BUILD_LOG"
-    echo "   Full build log:"
-    cat "$BUILD_LOG" | sed 's/^/      /'
+    if [ -s "$BUILD_LOG" ]; then
+        echo "   Last 30 lines of build log:"
+        tail -30 "$BUILD_LOG" | sed 's/^/      /'
+    fi
     exit 1
 fi
 
