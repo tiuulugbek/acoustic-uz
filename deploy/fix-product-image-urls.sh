@@ -241,41 +241,41 @@ fi
 
 # Step 5: Run the script
 echo "📋 Step 5: Running script to fix URLs..."
-
-# Find node_modules directory
-NODE_MODULES_DIR=""
-for POSSIBLE_NM in \
-    "$PROJECT_DIR/node_modules" \
-    "$BACKEND_DIR/node_modules" \
-    "$PROJECT_DIR/apps/backend/node_modules"
-do
-    if [ -d "$POSSIBLE_NM" ] && [ -d "$POSSIBLE_NM/@prisma/client" ]; then
-        NODE_MODULES_DIR="$POSSIBLE_NM"
-        echo "   ✅ Found node_modules: $NODE_MODULES_DIR"
-        break
-    fi
-done
-
-if [ -z "$NODE_MODULES_DIR" ]; then
-    echo "   ❌ node_modules/@prisma/client not found"
-    echo "   Installing dependencies..."
-    cd "$PROJECT_DIR"
-    pnpm install
-    NODE_MODULES_DIR="$PROJECT_DIR/node_modules"
-fi
-
-# Set NODE_PATH to include node_modules
-export NODE_PATH="$NODE_MODULES_DIR:$NODE_PATH"
-
-# Run script from project root to ensure Prisma can find schema
 cd "$PROJECT_DIR"
 
-if node /tmp/fix-product-urls.js; then
-    echo "   ✅ URLs fixed"
+# Use pnpm exec to ensure Prisma Client is available
+# Or use node with NODE_PATH set
+if command -v pnpm >/dev/null 2>&1; then
+    echo "   Using pnpm exec to run script..."
+    if pnpm exec node /tmp/fix-product-urls.js; then
+        echo "   ✅ URLs fixed"
+    else
+        echo "   ❌ Failed to fix URLs"
+        echo "   Check error above"
+        exit 1
+    fi
 else
-    echo "   ❌ Failed to fix URLs"
-    echo "   Check error above"
-    exit 1
+    # Fallback: try to find node_modules and set NODE_PATH
+    if [ -d "$PROJECT_DIR/node_modules/@prisma/client" ]; then
+        export NODE_PATH="$PROJECT_DIR/node_modules:$NODE_PATH"
+        echo "   Using NODE_PATH: $NODE_PATH"
+    elif [ -d "$BACKEND_DIR/node_modules/@prisma/client" ]; then
+        export NODE_PATH="$BACKEND_DIR/node_modules:$NODE_PATH"
+        echo "   Using NODE_PATH: $NODE_PATH"
+    else
+        echo "   ❌ @prisma/client not found in node_modules"
+        echo "   Installing dependencies..."
+        pnpm install
+        export NODE_PATH="$PROJECT_DIR/node_modules:$NODE_PATH"
+    fi
+    
+    if node /tmp/fix-product-urls.js; then
+        echo "   ✅ URLs fixed"
+    else
+        echo "   ❌ Failed to fix URLs"
+        echo "   Check error above"
+        exit 1
+    fi
 fi
 echo ""
 
