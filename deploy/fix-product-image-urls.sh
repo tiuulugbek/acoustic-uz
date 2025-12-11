@@ -12,15 +12,37 @@ echo ""
 
 # Step 1: Check database connection
 echo "📋 Step 1: Checking database connection..."
-cd "$BACKEND_DIR"
+cd "$PROJECT_DIR"
 
-if [ ! -f ".env" ]; then
+# First, find .env file
+ENV_FILE=""
+for POSSIBLE_ENV in \
+    "$PROJECT_DIR/.env" \
+    "$BACKEND_DIR/.env" \
+    "$PROJECT_DIR/apps/backend/.env"
+do
+    if [ -f "$POSSIBLE_ENV" ]; then
+        ENV_FILE="$POSSIBLE_ENV"
+        echo "   ✅ Found .env file: $ENV_FILE"
+        break
+    fi
+done
+
+if [ -z "$ENV_FILE" ] || [ ! -f "$ENV_FILE" ]; then
     echo "   ❌ .env file not found"
+    echo "   Searched:"
+    echo "      $PROJECT_DIR/.env"
+    echo "      $BACKEND_DIR/.env"
+    echo "      $PROJECT_DIR/apps/backend/.env"
+    echo ""
+    echo "   Current directory: $(pwd)"
+    echo "   PROJECT_DIR: $PROJECT_DIR"
+    echo "   BACKEND_DIR: $BACKEND_DIR"
     exit 1
 fi
 
 # Check if DATABASE_URL is set
-if ! grep -q "DATABASE_URL" .env; then
+if ! grep -q "DATABASE_URL" "$ENV_FILE"; then
     echo "   ❌ DATABASE_URL not found in .env"
     exit 1
 fi
@@ -40,37 +62,9 @@ if [ -d "$UPLOADS_DIR/products" ]; then
 fi
 echo ""
 
-# Step 3: Load environment variables
+# Step 3: Load environment variables (ENV_FILE already found in Step 1)
 echo "📋 Step 3: Loading environment variables..."
-cd "$PROJECT_DIR"
-
-# Check .env file location - try multiple locations
-ENV_FILE=""
-for POSSIBLE_ENV in \
-    "$PROJECT_DIR/.env" \
-    "$BACKEND_DIR/.env" \
-    "$PROJECT_DIR/apps/backend/.env" \
-    "$(dirname "$PROJECT_DIR")/.env"
-do
-    if [ -f "$POSSIBLE_ENV" ]; then
-        ENV_FILE="$POSSIBLE_ENV"
-        echo "   Found .env at: $ENV_FILE"
-        break
-    fi
-done
-
-if [ -z "$ENV_FILE" ] || [ ! -f "$ENV_FILE" ]; then
-    echo "   ❌ .env file not found"
-    echo "   Searched locations:"
-    echo "      $PROJECT_DIR/.env"
-    echo "      $BACKEND_DIR/.env"
-    echo "      $PROJECT_DIR/apps/backend/.env"
-    echo ""
-    echo "   💡 Please create .env file with DATABASE_URL"
-    exit 1
-fi
-
-echo "   ✅ Using .env file: $ENV_FILE"
+echo "   Using .env file: $ENV_FILE"
 
 # Load DATABASE_URL - handle different formats
 # Support both DATABASE_URL=... and DATABASE_URL="..." formats
