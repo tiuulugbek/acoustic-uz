@@ -29,10 +29,18 @@ export const revalidate = 0;
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 // Helper function to parse working hours and highlight current day
-function parseWorkingHours(workingHours: string, locale: 'uz' | 'ru') {
+// Note: currentDayLine is computed client-side to avoid hydration mismatch
+function parseWorkingHours(workingHours: string, locale: 'uz' | 'ru', skipCurrentDay = false) {
   if (!workingHours) return { lines: [], currentDayLine: null };
   
   const lines = workingHours.split('\n').filter(line => line.trim());
+  
+  // Skip current day detection on server-side to prevent hydration mismatch
+  // Current day will be detected client-side in the component
+  if (skipCurrentDay) {
+    return { lines, currentDayLine: null };
+  }
+  
   const today = new Date().getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
   
   // Day names mapping (including variations)
