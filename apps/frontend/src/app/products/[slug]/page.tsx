@@ -545,13 +545,17 @@ export default async function ProductPage({ params }: ProductPageProps) {
                     <span className="font-bold">{isRu ? 'Способ оплаты' : 'To\'lov turi'}:</span>{' '}
                     {isRu ? 'Наличными, картой Visa/MasterCard' : 'Naqd pul, Visa/MasterCard kartasi'}
                   </p>
-                  <AppointmentForm locale={locale} doctorId={null} source={`product-${product.slug}`} />
                 </div>
               </div>
 
               {/* Tabs - Below image and product info */}
               <div>
                 <ProductTabs tabs={productTabs} />
+              </div>
+
+              {/* Appointment Form - Below tabs */}
+              <div className="mt-6">
+                <AppointmentForm locale={locale} doctorId={null} source={`product-${product.slug}`} />
               </div>
             </div>
 
