@@ -44,85 +44,7 @@ function parseWorkingHours(workingHours: string, locale: 'uz' | 'ru', skipCurren
   
   const today = new Date().getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
   
-  // Day names mapping (including variations)
-  const dayNames: Record<string, Record<string, number>> = {
-    uz: {
-      'yakshanba': 0,
-      'dushanba': 1,
-      'seshanba': 2,
-      'chorshanba': 3,
-      'payshanba': 4,
-      'juma': 5,
-      'shanba': 6,
-    },
-    ru: {
-      'воскресенье': 0,
-      'понедельник': 1,
-      'вторник': 2,
-      'среда': 3,
-      'четверг': 4,
-      'пятница': 5,
-      'суббота': 6,
-    },
-  };
-  
-  const dayMap = dayNames[locale];
-  let currentDayLine: number | null = null;
-  
-  // Find current day line
-  lines.forEach((line, index) => {
-    const lowerLine = line.toLowerCase();
-    
-    // Check if line contains current day name
-    for (const [dayName, dayNumber] of Object.entries(dayMap)) {
-      if (dayNumber === today && lowerLine.includes(dayName)) {
-        currentDayLine = index;
-        break;
-      }
-    }
-    
-    // Also check for day ranges (e.g., "Понедельник - Пятница" when today is Wednesday)
-    if (currentDayLine === null) {
-      // Check if line contains a range that includes today
-      const rangePatterns: Record<string, Array<[number, number]>> = {
-        uz: [
-          [1, 5], // Dushanba - Juma
-          [5, 6], // Juma - Shanba
-          [6, 0], // Shanba - Yakshanba
-        ],
-        ru: [
-          [1, 5], // Понедельник - Пятница
-          [5, 6], // Пятница - Суббота
-          [6, 0], // Суббота - Воскресенье
-        ],
-      };
-      
-      const ranges = rangePatterns[locale];
-      for (const [startDay, endDay] of ranges) {
-        const startDayName = Object.entries(dayMap).find(([_, num]) => num === startDay)?.[0];
-        const endDayName = Object.entries(dayMap).find(([_, num]) => num === endDay)?.[0];
-        
-        if (startDayName && endDayName && lowerLine.includes(startDayName) && lowerLine.includes(endDayName)) {
-          // Check if today is within the range
-          if (startDay <= endDay) {
-            // Normal range (e.g., Monday to Friday)
-            if (today >= startDay && today <= endDay) {
-              currentDayLine = index;
-              break;
-            }
-          } else {
-            // Wrapping range (e.g., Saturday to Sunday)
-            if (today >= startDay || today <= endDay) {
-              currentDayLine = index;
-              break;
-            }
-          }
-        }
-      }
-    }
-  });
-  
-  return { lines, currentDayLine };
+  return { lines };
 }
 
 interface BranchPageProps {
@@ -531,8 +453,7 @@ export default async function BranchPage({ params }: BranchPageProps) {
                 {/* Working Hours */}
                 {(branch.workingHours_uz || branch.workingHours_ru) ? (() => {
                   const workingHours = getBilingualText(branch.workingHours_uz, branch.workingHours_ru, locale) || '';
-                  // Skip current day detection on server to prevent hydration mismatch
-                  const { lines } = parseWorkingHours(workingHours, locale, true);
+                  const { lines } = parseWorkingHours(workingHours);
                   
                   return (
                     <WorkingHoursDisplay lines={lines} locale={locale} />
