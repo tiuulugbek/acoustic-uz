@@ -18,13 +18,21 @@ export class LeadsService {
   }
 
   async getTelegramButtonStats() {
+    // Count both telegram_button and telegram_button_click sources
+    const sourceFilter = {
+      OR: [
+        { source: 'telegram_button' },
+        { source: 'telegram_button_click' },
+      ],
+    };
+
     const totalClicks = await this.prisma.lead.count({
-      where: { source: 'telegram_button' },
+      where: sourceFilter,
     });
 
     const todayClicks = await this.prisma.lead.count({
       where: {
-        source: 'telegram_button',
+        ...sourceFilter,
         createdAt: {
           gte: new Date(new Date().setHours(0, 0, 0, 0)),
         },
@@ -33,7 +41,7 @@ export class LeadsService {
 
     const thisWeekClicks = await this.prisma.lead.count({
       where: {
-        source: 'telegram_button',
+        ...sourceFilter,
         createdAt: {
           gte: new Date(new Date().setDate(new Date().getDate() - 7)),
         },
@@ -42,7 +50,7 @@ export class LeadsService {
 
     const thisMonthClicks = await this.prisma.lead.count({
       where: {
-        source: 'telegram_button',
+        ...sourceFilter,
         createdAt: {
           gte: new Date(new Date().setDate(1)),
         },
