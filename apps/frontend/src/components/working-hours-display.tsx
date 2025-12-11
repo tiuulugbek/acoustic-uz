@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { Clock } from 'lucide-react';
 import { getBilingualText, type Locale } from '@/lib/locale';
 
@@ -73,15 +73,18 @@ function parseWorkingHoursClient(workingHours: string, locale: 'uz' | 'ru') {
 export default function WorkingHoursDisplay({ workingHours_uz, workingHours_ru, locale }: WorkingHoursDisplayProps) {
   const workingHours = getBilingualText(workingHours_uz, workingHours_ru, locale) || '';
   
-  // Only compute current day on client-side to prevent hydration mismatch
-  const { lines, currentDayLine } = useMemo(() => {
-    if (typeof window === 'undefined') {
-      // Server-side: return lines without current day highlighting
-      const lines = workingHours.split('\n').filter(line => line.trim());
-      return { lines, currentDayLine: null };
+  // Parse lines (this is safe - no date logic)
+  const lines = workingHours.split('\n').filter(line => line.trim());
+  
+  // Only compute current day on client-side AFTER hydration to prevent hydration mismatch
+  const [currentDayLine, setCurrentDayLine] = useState<number | null>(null);
+  
+  useEffect(() => {
+    // This only runs on client-side after hydration
+    if (workingHours) {
+      const result = parseWorkingHoursClient(workingHours, locale);
+      setCurrentDayLine(result.currentDayLine);
     }
-    // Client-side: compute with current day highlighting
-    return parseWorkingHoursClient(workingHours, locale);
   }, [workingHours, locale]);
 
   if (!workingHours_uz && !workingHours_ru) {
