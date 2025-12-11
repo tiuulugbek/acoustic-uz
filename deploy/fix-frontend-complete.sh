@@ -1,147 +1,156 @@
 #!/bin/bash
-
-# Complete fix for frontend 404 error
-# Usage: ./fix-frontend-complete.sh
+# Complete frontend fix - rebuild and start without standalone
 
 set -e
 
 PROJECT_DIR="/var/www/acoustic.uz"
+FRONTEND_DIR="$PROJECT_DIR/apps/frontend"
 
 echo "🔧 Complete frontend fix..."
 echo ""
 
 cd "$PROJECT_DIR"
 
-# 1. Stop PM2
-echo "🛑 Step 1: Stopping PM2..."
+# Step 1: Stop frontend
+echo "📋 Step 1: Stopping frontend..."
 pm2 stop acoustic-frontend 2>/dev/null || true
+pm2 delete acoustic-frontend 2>/dev/null || true
+sleep 2
+echo "   ✅ Frontend stopped"
+echo ""
 
-# 2. Clean everything
-echo "🧹 Step 2: Cleaning old builds..."
-cd apps/frontend
-rm -rf .next
+# Step 2: Build shared package
+echo "📋 Step 2: Building shared package..."
 cd "$PROJECT_DIR"
+if [ ! -d "packages/shared/dist" ]; then
+    echo "   Building shared package..."
+    pnpm --filter @acoustic/shared build
+    echo "   ✅ Shared package built"
+else
+    echo "   ✅ Shared package already built"
+fi
+echo ""
 
-# 3. Rebuild frontend with proper environment
-echo "📦 Step 3: Rebuilding frontend..."
-cd apps/frontend
+# Step 3: Clean everything
+echo "📋 Step 3: Cleaning frontend..."
+cd "$FRONTEND_DIR"
+rm -rf .next
+rm -rf node_modules/.cache
+echo "   ✅ Frontend cleaned"
+echo ""
+
+# Step 4: Install dependencies
+echo "📋 Step 4: Installing dependencies..."
+export NODE_ENV=development
+pnpm install
+echo "   ✅ Dependencies installed"
+echo ""
+
+# Step 5: Build frontend (standard build, standalone disabled in config)
+echo "📋 Step 5: Building frontend..."
+cd "$FRONTEND_DIR"
 
 export NODE_ENV=production
-export NEXT_PUBLIC_API_URL="https://a.acoustic.uz/api"
-export NEXT_PUBLIC_SITE_URL="https://acoustic.uz"
-export NEXT_TELEMETRY_DISABLED=1
 
-echo "  Environment:"
-echo "    NODE_ENV=$NODE_ENV"
-echo "    NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL"
-echo "    NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL"
+BUILD_LOG="/tmp/frontend-build-$(date +%Y%m%d_%H%M%S).log"
+echo "   Running: pnpm build"
+echo "   Build log: $BUILD_LOG"
 
-pnpm build
+if pnpm build 2>&1 | tee "$BUILD_LOG"; then
+    echo ""
+    echo "   ✅ Frontend build completed"
+else
+    echo ""
+    echo "   ⚠️  Frontend build had errors, checking..."
+    tail -50 "$BUILD_LOG" | sed 's/^/      /' || true
+    
+    if [ ! -d ".next" ]; then
+        echo "   ❌ Frontend build failed - .next directory not found"
+        exit 1
+    fi
+fi
+echo ""
 
-# 4. Verify standalone build
-echo "📋 Step 4: Verifying standalone build..."
-STANDALONE_SERVER=".next/standalone/apps/frontend/server.js"
-if [ ! -f "$STANDALONE_SERVER" ]; then
-    echo "  ❌ Standalone server.js NOT found!"
-    echo "  Checking .next structure:"
-    find .next -name "server.js" 2>/dev/null | head -5
-    echo "  Listing .next/standalone:"
-    ls -la .next/standalone/ 2>/dev/null || echo "    standalone directory not found"
+# Step 6: Verify build
+echo "📋 Step 6: Verifying build..."
+if [ -d ".next" ]; then
+    echo "   ✅ .next directory exists"
+    
+    if [ -d ".next/static" ]; then
+        echo "   ✅ Static files found"
+    else
+        echo "   ⚠️  Static files not found"
+    fi
+    
+    if [ -f ".next/BUILD_ID" ]; then
+        echo "   ✅ BUILD_ID found"
+    else
+        echo "   ⚠️  BUILD_ID not found"
+    fi
+else
+    echo "   ❌ .next directory not found"
     exit 1
 fi
-echo "  ✅ Standalone server.js exists"
+echo ""
 
-# 5. Copy static files
-echo "📋 Step 5: Copying static files..."
-if [ -d ".next/static" ]; then
-    mkdir -p .next/standalone/apps/frontend/.next
-    cp -r .next/static .next/standalone/apps/frontend/.next/
-    echo "  ✅ Static files copied"
-else
-    echo "  ⚠️  .next/static not found"
-fi
+# Step 7: Start frontend with next start
+echo "📋 Step 7: Starting frontend with 'next start'..."
+cd "$FRONTEND_DIR"
 
-# 6. Copy public files
-echo "📋 Step 6: Copying public files..."
-if [ -d "public" ]; then
-    cp -r public .next/standalone/apps/frontend/ 2>/dev/null || {
-        echo "  ⚠️  Public files copy failed (may already exist)"
-    }
-    echo "  ✅ Public files copied"
-else
-    echo "  ⚠️  public directory not found"
-fi
+pm2 start npm \
+    --name acoustic-frontend \
+    -- start \
+    --cwd "$FRONTEND_DIR" \
+    --update-env \
+    --log-date-format "YYYY-MM-DD HH:mm:ss Z" \
+    --error /var/log/pm2/acoustic-frontend-error.log \
+    --output /var/log/pm2/acoustic-frontend-out.log \
+    --merge-logs \
+    --max-memory-restart 500M
 
-# 7. Verify final structure
-echo "📋 Step 7: Verifying final structure..."
-cd "$PROJECT_DIR"
-FINAL_SERVER="apps/frontend/.next/standalone/apps/frontend/server.js"
-if [ -f "$FINAL_SERVER" ]; then
-    echo "  ✅ Final server.js path exists: $FINAL_SERVER"
-    ls -lh "$FINAL_SERVER"
-else
-    echo "  ❌ Final server.js NOT found!"
-    exit 1
-fi
-
-# 8. Update PM2 config
-echo "📋 Step 8: Updating PM2 config..."
-cp deploy/ecosystem.config.js ecosystem.config.js
-
-# Verify PM2 config
-if grep -q "apps/frontend/.next/standalone/apps/frontend/server.js" ecosystem.config.js; then
-    echo "  ✅ PM2 config is correct"
-else
-    echo "  ❌ PM2 config path is incorrect!"
-    exit 1
-fi
-
-# 9. Start PM2
-echo "🚀 Step 9: Starting PM2..."
-pm2 delete acoustic-frontend 2>/dev/null || true
-pm2 start ecosystem.config.js --only acoustic-frontend
-pm2 save
-
-# Wait for startup
-echo "  Waiting for startup..."
 sleep 5
+echo ""
 
-# 10. Check PM2 status
-echo "📋 Step 10: Checking PM2 status..."
-pm2 list | grep acoustic-frontend
-
-# 11. Check port
-echo "📋 Step 11: Checking port 3000..."
-if netstat -tulpn | grep -q ":3000"; then
-    echo "  ✅ Port 3000 is listening"
+# Step 8: Check status
+echo "📋 Step 8: Checking frontend status..."
+FRONTEND_STATUS=$(pm2 jlist 2>/dev/null | grep -o '"name":"acoustic-frontend"[^}]*"status":"[^"]*' | grep -o '"status":"[^"]*' | cut -d'"' -f4 || echo "unknown")
+if [ "$FRONTEND_STATUS" = "online" ]; then
+    echo "   ✅ Frontend is online"
 else
-    echo "  ❌ Port 3000 is NOT listening"
+    echo "   ⚠️  Frontend status: $FRONTEND_STATUS"
+    echo ""
+    echo "   Recent errors:"
+    pm2 logs acoustic-frontend --err --lines 20 --nostream 2>/dev/null | tail -20 | sed 's/^/      /' || true
+fi
+echo ""
+
+# Step 9: Verify
+echo "📋 Step 9: Verifying frontend..."
+sleep 3
+
+FRONTEND_HTTP=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/ 2>/dev/null || echo "000")
+if [ "$FRONTEND_HTTP" = "200" ]; then
+    echo "   ✅ Frontend responding locally (HTTP $FRONTEND_HTTP)"
+else
+    echo "   ⚠️  Frontend not responding locally (HTTP $FRONTEND_HTTP)"
+    echo "   Check logs: pm2 logs acoustic-frontend --lines 30"
 fi
 
-# 12. Test local connection
-echo "📋 Step 12: Testing local connection..."
-HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 || echo "000")
-if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "304" ]; then
-    echo "  ✅ Local connection successful (HTTP $HTTP_CODE)"
-elif [ "$HTTP_CODE" = "404" ]; then
-    echo "  ❌ Still getting 404. Checking logs..."
-    pm2 logs acoustic-frontend --lines 20 --nostream
+NGINX_HTTP=$(curl -s -o /dev/null -w "%{http_code}" https://acoustic.uz/ 2>/dev/null || echo "000")
+if [ "$NGINX_HTTP" = "200" ]; then
+    echo "   ✅ Website accessible via Nginx (HTTP $NGINX_HTTP)"
 else
-    echo "  ⚠️  HTTP $HTTP_CODE - Checking logs..."
-    pm2 logs acoustic-frontend --lines 20 --nostream
+    echo "   ⚠️  Website not accessible via Nginx (HTTP $NGINX_HTTP)"
 fi
 
-# 13. Show recent logs
 echo ""
-echo "📋 Step 13: Recent logs (last 15 lines):"
-pm2 logs acoustic-frontend --lines 15 --nostream 2>/dev/null || echo "  No logs yet"
-
+echo "✅ Frontend fix complete!"
 echo ""
-echo "✅ Fix complete!"
+pm2 status acoustic-frontend
 echo ""
-echo "📋 Next steps:"
-echo "  1. Check PM2: pm2 list"
-echo "  2. Check logs: pm2 logs acoustic-frontend"
-echo "  3. Test local: curl http://localhost:3000"
-echo "  4. Test via Nginx: curl https://acoustic.uz"
-
+echo "🌐 URLs:"
+echo "  - Frontend: https://acoustic.uz"
+echo "  - Local: http://127.0.0.1:3000"
+echo ""
+echo "📋 To check logs:"
+echo "  pm2 logs acoustic-frontend --lines 50"
