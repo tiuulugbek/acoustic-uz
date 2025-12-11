@@ -122,20 +122,26 @@ export default function WorkingHoursDisplay({ workingHours_uz, workingHours_ru, 
       </h3>
       <div className="space-y-1.5 text-xs sm:text-sm" suppressHydrationWarning>
         {lines.map((line, idx) => {
-          // Use data attribute instead of className to prevent hydration mismatch
+          // Use data attribute - always set to prevent hydration mismatch
           // Only highlight current day after component is mounted (client-side)
           const isCurrentDay = mounted && idx === currentDayLine;
+          // Always set data attribute to prevent hydration mismatch
+          const dataAttr = mounted ? (isCurrentDay ? 'true' : 'false') : 'false';
           return (
             <div 
               key={idx} 
-              data-current-day={isCurrentDay ? 'true' : 'false'}
+              data-current-day={dataAttr}
               className="flex items-start gap-2 rounded-md px-2 py-1.5 transition-colors text-muted-foreground hover:bg-gray-50 data-[current-day=true]:bg-brand-primary data-[current-day=true]:text-white data-[current-day=true]:shadow-sm"
               suppressHydrationWarning
             >
-              <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0 mt-0.5 text-brand-primary data-[current-day=true]:text-white" data-current-day={isCurrentDay ? 'true' : 'false'} suppressHydrationWarning />
+              <Clock 
+                className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0 mt-0.5 text-brand-primary data-[current-day=true]:text-white" 
+                data-current-day={dataAttr}
+                suppressHydrationWarning 
+              />
               <span 
                 className="break-words data-[current-day=true]:font-semibold data-[current-day=true]:text-white"
-                data-current-day={isCurrentDay ? 'true' : 'false'}
+                data-current-day={dataAttr}
                 suppressHydrationWarning
               >
                 {line.trim()}
