@@ -47,13 +47,14 @@ cd "$PROJECT_DIR"
 # Check .env file location - try multiple locations
 ENV_FILE=""
 for POSSIBLE_ENV in \
-    "$BACKEND_DIR/.env" \
     "$PROJECT_DIR/.env" \
+    "$BACKEND_DIR/.env" \
     "$PROJECT_DIR/apps/backend/.env" \
     "$(dirname "$PROJECT_DIR")/.env"
 do
     if [ -f "$POSSIBLE_ENV" ]; then
         ENV_FILE="$POSSIBLE_ENV"
+        echo "   Found .env at: $ENV_FILE"
         break
     fi
 done
@@ -61,39 +62,29 @@ done
 if [ -z "$ENV_FILE" ] || [ ! -f "$ENV_FILE" ]; then
     echo "   ❌ .env file not found"
     echo "   Searched locations:"
-    echo "      $BACKEND_DIR/.env"
     echo "      $PROJECT_DIR/.env"
+    echo "      $BACKEND_DIR/.env"
     echo "      $PROJECT_DIR/apps/backend/.env"
     echo ""
-    echo "   💡 Creating .env file from example..."
-    
-    # Try to find .env.example
-    if [ -f "$PROJECT_DIR/.env.example" ]; then
-        cp "$PROJECT_DIR/.env.example" "$PROJECT_DIR/.env"
-        echo "   ✅ Created .env from .env.example"
-        echo "   ⚠️  Please update DATABASE_URL in $PROJECT_DIR/.env"
-        ENV_FILE="$PROJECT_DIR/.env"
-    else
-        echo "   ❌ .env.example also not found"
-        echo "   Please create .env file manually with DATABASE_URL"
-        exit 1
-    fi
+    echo "   💡 Please create .env file with DATABASE_URL"
+    exit 1
 fi
 
-echo "   ✅ Found .env file: $ENV_FILE"
+echo "   ✅ Using .env file: $ENV_FILE"
 
 # Load DATABASE_URL - handle different formats
-DATABASE_URL=$(grep "^DATABASE_URL=" "$ENV_FILE" | head -1 | cut -d'=' -f2- | sed 's/^["'\'']//' | sed 's/["'\'']$//')
+# Support both DATABASE_URL=... and DATABASE_URL="..." formats
+DATABASE_URL=$(grep "^DATABASE_URL=" "$ENV_FILE" | head -1 | cut -d'=' -f2- | sed 's/^["'\'']//' | sed 's/["'\'']$//' | sed 's/^[[:space:]]*//' | sed 's/[[:space:]]*$//')
 
 if [ -z "$DATABASE_URL" ]; then
     echo "   ❌ DATABASE_URL not found in .env"
-    echo "   File contents (first 5 lines):"
-    head -5 "$ENV_FILE" | sed 's/^/      /'
+    echo "   File contents (first 10 lines with DATABASE):"
+    grep -i "database" "$ENV_FILE" | head -5 | sed 's/^/      /' || echo "      No DATABASE found"
     exit 1
 fi
 
 export DATABASE_URL
-echo "   ✅ DATABASE_URL loaded"
+echo "   ✅ DATABASE_URL loaded (first 20 chars: ${DATABASE_URL:0:20}...)"
 echo ""
 
 # Step 4: Create Node.js script to fix URLs
