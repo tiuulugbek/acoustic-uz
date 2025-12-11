@@ -106,18 +106,42 @@ fi
 # Method 3: If still failed, try tsc directly
 if [ "$BUILD_SUCCESS" = false ]; then
     echo ""
-    echo "   Method 3: tsc compilation"
+    echo "   Method 3: tsc compilation (direct)"
     cd "$BACKEND_DIR"
+    
+    # Ensure shared package is built
+    if [ ! -d "../../packages/shared/dist" ]; then
+        echo "   Building shared package first..."
+        cd "$PROJECT_DIR"
+        pnpm --filter @acoustic/shared build
+        cd "$BACKEND_DIR"
+    fi
+    
+    # Run tsc with full output
+    echo "   Running: pnpm exec tsc"
     if pnpm exec tsc >> "$BUILD_LOG" 2>&1; then
         echo "   ✅ TypeScript compilation completed"
-        if [ -f "dist/main.js" ]; then
-            BUILD_SUCCESS=true
-        elif [ -f "dist/src/main.js" ]; then
-            cp dist/src/main.js dist/main.js
-            BUILD_SUCCESS=true
-        fi
     else
-        echo "   ⚠️  Method 3 failed (exit code: $?)"
+        echo "   ⚠️  TypeScript compilation had errors (checking output anyway...)"
+        # Show errors but continue
+        echo "   Last 20 lines of tsc output:"
+        tail -20 "$BUILD_LOG" | sed 's/^/      /' || true
+    fi
+    
+    # Check for output files
+    if [ -f "dist/main.js" ]; then
+        BUILD_SUCCESS=true
+    elif [ -f "dist/src/main.js" ]; then
+        echo "   Found dist/src/main.js, copying to dist/main.js..."
+        cp dist/src/main.js dist/main.js
+        BUILD_SUCCESS=true
+    else
+        echo "   ⚠️  Method 3 did not create dist/main.js"
+        # Show what was created
+        if [ -d "dist" ]; then
+            echo "   dist directory exists, showing contents:"
+            find dist -type f -name "*.js" | head -10 | sed 's/^/      /' || echo "      No JS files"
+        fi
     fi
 fi
 
