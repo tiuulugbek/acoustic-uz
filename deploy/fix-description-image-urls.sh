@@ -138,6 +138,14 @@ async function fixDescriptionUrls() {
           const urlObj = new URL(oldUrl);
           const urlPath = urlObj.pathname;
           
+          // Skip external URLs (not from a.acoustic.uz or acoustic.uz)
+          const hostname = urlObj.hostname.toLowerCase();
+          if (hostname && !hostname.includes('acoustic.uz') && !hostname.includes('localhost')) {
+            // External URL - keep it as is
+            console.log(`      ℹ️  External URL kept: ${hostname}`);
+            continue;
+          }
+          
           // Extract filename from old path (e.g., /uploads/2024/07/itc90-300x269.png)
           const filename = path.basename(urlPath);
           const baseName = path.parse(filename).name;
