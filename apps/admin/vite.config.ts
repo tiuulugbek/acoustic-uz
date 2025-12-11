@@ -5,7 +5,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
 
-// Get __dirname equivalent in ES modules
+// ES module compatible __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -25,7 +25,7 @@ try {
   console.log(`[Vite Config] Generated version: ${version}`);
   console.log(`[Vite Config] Git hash: ${gitHash}`);
   console.log(`[Vite Config] Build timestamp: ${buildTimestamp}`);
-} catch (error) {
+} catch (error: any) {
   // Fallback if git is not available
   const buildTimestamp = new Date().toISOString().replace(/[-:T]/g, '').split('.')[0].slice(0, 14);
   version = `${baseVersion}.${buildTimestamp}`;
