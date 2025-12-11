@@ -14,11 +14,12 @@ export default function TelegramButton() {
   const [isLoading, setIsLoading] = useState(true);
   const [isChatBubbleVisible, setIsChatBubbleVisible] = useState(true);
   
-  // Get locale from DOM synchronously to prevent hydration mismatch
-  // Use useMemo to ensure it's computed once and matches server render
-  const locale = useMemo(() => {
-    if (typeof window === 'undefined') return 'uz' as Locale;
-    return getLocaleFromDOM();
+  // Get locale from DOM - use useState to prevent hydration mismatch
+  const [locale, setLocale] = useState<Locale>('uz');
+  
+  useEffect(() => {
+    // Only compute locale on client-side after hydration
+    setLocale(getLocaleFromDOM());
   }, []);
 
   useEffect(() => {
