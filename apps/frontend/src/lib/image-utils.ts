@@ -61,13 +61,19 @@ export function normalizeImageUrl(url: string | null | undefined): string {
         urlObj.pathname = urlObj.pathname.substring(uploadsIndex);
       }
       
-      // Only encode the filename part, not the entire path
+      // Don't encode the filename - keep it as is for better compatibility
+      // Most web servers handle filenames correctly without encoding
+      // Only encode if there are actual spaces or special characters that need encoding
       const pathParts = urlObj.pathname.split('/');
       const filename = pathParts.pop();
       if (filename) {
-        // Encode only the filename to handle spaces and special characters
-        const encodedFilename = encodeURIComponent(filename);
-        urlObj.pathname = [...pathParts, encodedFilename].join('/');
+        // Check if filename needs encoding (has spaces or special chars)
+        if (filename.includes(' ') || filename.includes('%')) {
+          // Only encode if necessary
+          const encodedFilename = encodeURIComponent(filename);
+          urlObj.pathname = [...pathParts, encodedFilename].join('/');
+        }
+        // Otherwise keep filename as is
       }
       
       return urlObj.toString();
@@ -118,12 +124,17 @@ export function normalizeImageUrl(url: string | null | undefined): string {
       baseUrl = baseUrl.slice(0, -1);
     }
     
-    // Encode only the filename part
+    // Don't encode filename unless necessary (has spaces or special chars)
     const pathParts = url.split('/');
     const filename = pathParts.pop();
     if (filename) {
-      const encodedFilename = encodeURIComponent(filename);
-      return `${baseUrl}${pathParts.join('/')}/${encodedFilename}`;
+      // Only encode if filename has spaces or special characters
+      if (filename.includes(' ') || filename.includes('%')) {
+        const encodedFilename = encodeURIComponent(filename);
+        return `${baseUrl}${pathParts.join('/')}/${encodedFilename}`;
+      }
+      // Otherwise keep filename as is
+      return `${baseUrl}${pathParts.join('/')}/${filename}`;
     }
     return `${baseUrl}${url}`;
   }
