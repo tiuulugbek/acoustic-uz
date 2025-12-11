@@ -293,7 +293,8 @@ async function fixProductUrls() {
             console.log(`      Searched for: ${filename}`);
           }
         }
-      }
+        } // End of for (const url of product.galleryUrls)
+      } // End of else (process existing URLs)
 
       // If we found URLs (either from existing or by slug), update the product
       if (hasChanges && newUrls.length > 0) {
