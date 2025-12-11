@@ -48,24 +48,43 @@ rm -rf "$BACKEND_DIR/dist"
 echo "   ✅ Cleaned dist directory"
 echo ""
 
-echo "📋 Step 6: Attempting build with verbose output..."
+echo "📋 Step 6: Checking NestJS CLI..."
 cd "$BACKEND_DIR"
+echo "   Checking if nest command exists:"
+which nest || pnpm exec which nest || echo "   ❌ nest not found"
+echo "   NestJS CLI version:"
+pnpm exec nest --version 2>&1 || echo "   ❌ Cannot get version"
+echo ""
+
+echo "📋 Step 7: Attempting build with verbose output..."
 BUILD_LOG="/tmp/backend-build-diagnostic-$(date +%Y%m%d_%H%M%S).log"
 
-echo "   Running: pnpm exec nest build --verbose"
-pnpm exec nest build --verbose > "$BUILD_LOG" 2>&1
+echo "   Running: pnpm exec nest build"
+set +e  # Don't exit on error for this test
+pnpm exec nest build > "$BUILD_LOG" 2>&1
 BUILD_EXIT=$?
+set -e
 
 echo "   Build exit code: $BUILD_EXIT"
+echo "   Build log size: $(wc -l < "$BUILD_LOG" 2>/dev/null || echo "0") lines"
 echo ""
 
 if [ $BUILD_EXIT -eq 0 ]; then
-    echo "   ✅ Build command succeeded"
+    echo "   ✅ Build command succeeded (exit code 0)"
 else
-    echo "   ❌ Build command failed"
+    echo "   ❌ Build command failed (exit code $BUILD_EXIT)"
 fi
 
-echo "📋 Step 7: Checking build output..."
+# Show build log content
+if [ -s "$BUILD_LOG" ]; then
+    echo "   Build log content:"
+    cat "$BUILD_LOG" | sed 's/^/      /'
+else
+    echo "   ⚠️  Build log is empty - command produced no output"
+fi
+echo ""
+
+echo "📋 Step 8: Checking build output..."
 echo "   dist directory exists: $([ -d "$BACKEND_DIR/dist" ] && echo "✅ Yes" || echo "❌ No")"
 
 if [ -d "$BACKEND_DIR/dist" ]; then
@@ -82,7 +101,7 @@ else
 fi
 echo ""
 
-echo "📋 Step 8: Build log analysis..."
+echo "📋 Step 9: Build log analysis..."
 if [ -f "$BUILD_LOG" ]; then
     echo "   Build log saved to: $BUILD_LOG"
     echo "   Build log size: $(wc -l < "$BUILD_LOG") lines"
@@ -97,7 +116,32 @@ else
 fi
 echo ""
 
-echo "📋 Step 9: Trying alternative build method..."
+echo "📋 Step 10: Trying TypeScript compiler directly..."
+cd "$BACKEND_DIR"
+echo "   Running: pnpm exec tsc"
+TSC_LOG="/tmp/backend-tsc-build-$(date +%Y%m%d_%H%M%S).log"
+set +e
+pnpm exec tsc > "$TSC_LOG" 2>&1
+TSC_EXIT=$?
+set -e
+
+echo "   TSC exit code: $TSC_EXIT"
+if [ -s "$TSC_LOG" ]; then
+    echo "   TSC output (last 30 lines):"
+    tail -30 "$TSC_LOG" | sed 's/^/      /'
+else
+    echo "   ⚠️  TSC log is empty"
+fi
+
+if [ -d "$BACKEND_DIR/dist" ]; then
+    echo "   ✅ dist directory created by tsc"
+    find "$BACKEND_DIR/dist" -name "main.js" | sed 's/^/      /' || echo "      main.js not found"
+else
+    echo "   ❌ dist directory still not created"
+fi
+echo ""
+
+echo "📋 Step 11: Trying alternative build method..."
 cd "$PROJECT_DIR"
 echo "   Running: pnpm --filter @acoustic/backend build"
 ALTERNATIVE_LOG="/tmp/backend-build-alternative-$(date +%Y%m%d_%H%M%S).log"
@@ -113,7 +157,7 @@ if [ -d "$BACKEND_DIR/dist" ]; then
 fi
 echo ""
 
-echo "📋 Step 10: Checking working directory during build..."
+echo "📋 Step 12: Checking working directory during build..."
 cd "$BACKEND_DIR"
 echo "   Current directory: $(pwd)"
 echo "   Checking if nest CLI is available:"
