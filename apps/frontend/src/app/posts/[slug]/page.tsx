@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
+import Script from 'next/script';
 import { Calendar, Tag, ArrowLeft } from 'lucide-react';
 import { getPostBySlug, getPosts, getBrands, getSettings } from '@/lib/api-server';
 import { detectLocale } from '@/lib/locale-server';
@@ -114,8 +115,85 @@ export default async function PostPage({ params }: PostPageProps) {
     .filter(p => p.id !== post.id && p.status === 'published')
     .slice(0, 3);
 
+  // Build Article Structured Data
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
+  const postUrl = `${baseUrl}/posts/${post.slug}`;
+  const articleImageUrl = coverUrl 
+    ? (coverUrl.startsWith('http') ? coverUrl : `${baseUrl}${coverUrl}`)
+    : `${baseUrl}/logo.png`;
+  
+  const articleJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: title,
+    image: articleImageUrl,
+    datePublished: post.publishAt ? new Date(post.publishAt).toISOString() : undefined,
+    dateModified: post.updatedAt ? new Date(post.updatedAt).toISOString() : undefined,
+    author: post.author ? {
+      '@type': 'Person',
+      name: post.author.name,
+    } : undefined,
+    publisher: {
+      '@type': 'Organization',
+      name: 'Acoustic.uz',
+      logo: {
+        '@type': 'ImageObject',
+        url: settings?.logo?.url 
+          ? (settings.logo.url.startsWith('http') 
+              ? settings.logo.url 
+              : `${baseUrl}${settings.logo.url}`)
+          : `${baseUrl}/logo.png`,
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': postUrl,
+    },
+    description: excerpt || undefined,
+    articleSection: categoryName || undefined,
+  };
+
+  // Build BreadcrumbList Structured Data
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: locale === 'ru' ? 'Главная' : 'Bosh sahifa',
+        item: baseUrl,
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: categoryName || (locale === 'ru' ? 'Статьи' : 'Maqolalar'),
+        item: post.categoryId ? `${baseUrl}/patients` : `${baseUrl}/patients`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: title,
+        item: postUrl,
+      },
+    ],
+  };
+
   return (
     <main className="min-h-screen bg-background">
+      {/* Article Structured Data */}
+      <Script
+        id="article-jsonld"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+      />
+      
+      {/* BreadcrumbList Structured Data */}
+      <Script
+        id="breadcrumb-jsonld"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       <PageHeader
         locale={locale}
         breadcrumbs={[

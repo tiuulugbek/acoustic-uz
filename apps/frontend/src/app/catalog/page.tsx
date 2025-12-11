@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import Script from 'next/script';
 import { ArrowRight } from 'lucide-react';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
@@ -18,11 +19,15 @@ export async function generateMetadata(): Promise<Metadata> {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
   const catalogUrl = `${baseUrl}/catalog`;
 
+  const title = locale === 'ru' ? 'Каталог' : 'Katalog';
+  const description = locale === 'ru'
+    ? 'Каталог слуховых аппаратов и решений от Acoustic. Выберите подходящий аппарат под ваш образ жизни, уровень активности и бюджет.'
+    : "Acoustic eshitish markazining katalogi — eshitish apparatlari, implantlar va aksessuarlar haqida ma'lumot.";
+  const imageUrl = `${baseUrl}/logo.png`;
+
   return {
-    title: locale === 'ru' ? 'Каталог — Acoustic.uz' : 'Katalog — Acoustic.uz',
-    description: locale === 'ru'
-      ? 'Каталог слуховых аппаратов и решений от Acoustic. Выберите подходящий аппарат под ваш образ жизни, уровень активности и бюджет.'
-      : "Acoustic eshitish markazining katalogi — eshitish apparatlari, implantlar va aksessuarlar haqida ma'lumot.",
+    title: `${title} — Acoustic.uz`,
+    description,
     alternates: {
       canonical: catalogUrl,
       languages: {
@@ -30,6 +35,28 @@ export async function generateMetadata(): Promise<Metadata> {
         ru: catalogUrl,
         'x-default': catalogUrl,
       },
+    },
+    openGraph: {
+      title: `${title} — Acoustic.uz`,
+      description,
+      url: catalogUrl,
+      siteName: 'Acoustic.uz',
+      images: [
+        {
+          url: imageUrl,
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
+      locale: locale === 'ru' ? 'ru_RU' : 'uz_UZ',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${title} — Acoustic.uz`,
+      description,
+      images: [imageUrl],
     },
   };
 }
@@ -139,8 +166,36 @@ export default async function CatalogPage({
       'out-of-stock': { uz: 'Tugagan', ru: 'Нет в наличии' },
     };
     
+    // Build BreadcrumbList Structured Data
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
+    const catalogUrl = `${baseUrl}/catalog`;
+    const breadcrumbJsonLd = {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: locale === 'ru' ? 'Главная' : 'Bosh sahifa',
+          item: baseUrl,
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: locale === 'ru' ? 'Каталог' : 'Katalog',
+          item: catalogUrl,
+        },
+      ],
+    };
+
     return (
       <main className="min-h-screen bg-background">
+        {/* BreadcrumbList Structured Data */}
+        <Script
+          id="breadcrumb-jsonld"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+        />
         {/* Breadcrumbs */}
         <section className="bg-muted/40">
           <div className="mx-auto max-w-6xl px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:px-6">
