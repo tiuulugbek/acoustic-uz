@@ -92,12 +92,16 @@ async function fixProductUrls() {
       let hasChanges = false;
 
       for (const url of product.galleryUrls) {
-        // Extract filename from URL
-        const filename = path.basename(url);
+        // Remove leading slash and /uploads/ prefix if present
+        let cleanUrl = url.replace(/^\/+/, '').replace(/^uploads\//, '');
+        
+        // Extract filename
+        const filename = path.basename(cleanUrl);
         
         // Try different possible locations
         const possiblePaths = [
           `products/${filename}`,           // Most likely location
+          cleanUrl,                          // Original path
           `2024/07/${filename}`,            // Old location
           `2024/06/${filename}`,
           `2024/05/${filename}`,
@@ -122,14 +126,13 @@ async function fixProductUrls() {
             console.log(`   Product: ${product.name_uz || product.slug}`);
             console.log(`     Old: ${url}`);
             console.log(`     New: ${newUrl}`);
-          } else {
-            newUrls.push(url);
           }
         } else {
           // File not found, keep original URL but log warning
           newUrls.push(url);
           notFoundCount++;
           console.log(`   ⚠️  File not found for: ${url} (product: ${product.slug})`);
+          console.log(`      Searched for: ${filename}`);
         }
       }
 
