@@ -7,9 +7,13 @@
  * Normalize image URL for display in frontend
  * Converts relative URLs (/uploads/...) to absolute URLs (https://a.acoustic.uz/uploads/...)
  * Also handles filename encoding for URLs with spaces
+ * Ensures all image URLs point to https://a.acoustic.uz/uploads/
  */
 export function normalizeImageUrl(url: string | null | undefined): string {
   if (!url) return '';
+  
+  // Trim whitespace
+  url = url.trim();
   
   // If already absolute URL, ensure pathname is properly encoded and fix domain
   if (url.startsWith('http://') || url.startsWith('https://')) {
@@ -25,10 +29,11 @@ export function normalizeImageUrl(url: string | null | undefined): string {
       // Fix incorrect domain: acoustic.uz -> a.acoustic.uz
       if (urlObj.hostname === 'acoustic.uz' || urlObj.hostname === 'www.acoustic.uz') {
         urlObj.hostname = 'a.acoustic.uz';
+        urlObj.protocol = 'https:';
       }
       
       // Fix incorrect domain: localhost:3001 -> a.acoustic.uz (in production)
-      if (urlObj.hostname === 'localhost' && urlObj.port === '3001') {
+      if (urlObj.hostname === 'localhost' || urlObj.hostname === '127.0.0.1') {
         urlObj.hostname = 'a.acoustic.uz';
         urlObj.port = '';
         urlObj.protocol = 'https:';
@@ -49,14 +54,22 @@ export function normalizeImageUrl(url: string | null | undefined): string {
         urlObj.pathname = urlObj.pathname.replace(/\/api\//, '/');
       }
       
+      // Ensure pathname starts with /uploads/ for upload files
+      if (!urlObj.pathname.startsWith('/uploads/') && urlObj.pathname.includes('/uploads/')) {
+        // Extract path after /uploads/
+        const uploadsIndex = urlObj.pathname.indexOf('/uploads/');
+        urlObj.pathname = urlObj.pathname.substring(uploadsIndex);
+      }
+      
       // Only encode the filename part, not the entire path
       const pathParts = urlObj.pathname.split('/');
       const filename = pathParts.pop();
       if (filename) {
-        // Encode only the filename to handle spaces
+        // Encode only the filename to handle spaces and special characters
         const encodedFilename = encodeURIComponent(filename);
         urlObj.pathname = [...pathParts, encodedFilename].join('/');
       }
+      
       return urlObj.toString();
     } catch {
       // If URL parsing fails, try simple string replacement as fallback
@@ -65,6 +78,10 @@ export function normalizeImageUrl(url: string | null | undefined): string {
       // Fix empty hostname (.acoustic.uz -> a.acoustic.uz)
       fixedUrl = fixedUrl.replace(/https?:\/\/\.acoustic\.uz\//g, 'https://a.acoustic.uz/');
       
+      // Fix acoustic.uz/uploads/ -> a.acoustic.uz/uploads/
+      fixedUrl = fixedUrl.replace(/https?:\/\/acoustic\.uz\/uploads\//g, 'https://a.acoustic.uz/uploads/');
+      fixedUrl = fixedUrl.replace(/https?:\/\/www\.acoustic\.uz\/uploads\//g, 'https://a.acoustic.uz/uploads/');
+      
       // Fix acoustic.uz/api/uploads/ -> a.acoustic.uz/uploads/
       fixedUrl = fixedUrl.replace(/https?:\/\/acoustic\.uz\/api\/uploads\//g, 'https://a.acoustic.uz/uploads/');
       fixedUrl = fixedUrl.replace(/https?:\/\/www\.acoustic\.uz\/api\/uploads\//g, 'https://a.acoustic.uz/uploads/');
@@ -72,9 +89,12 @@ export function normalizeImageUrl(url: string | null | undefined): string {
       // Fix localhost:3001 -> a.acoustic.uz
       fixedUrl = fixedUrl.replace(/http:\/\/localhost:3001\/uploads\//g, 'https://a.acoustic.uz/uploads/');
       fixedUrl = fixedUrl.replace(/http:\/\/localhost:3001\/api\/uploads\//g, 'https://a.acoustic.uz/uploads/');
+      fixedUrl = fixedUrl.replace(/http:\/\/127\.0\.0\.1:3001\/uploads\//g, 'https://a.acoustic.uz/uploads/');
+      fixedUrl = fixedUrl.replace(/http:\/\/127\.0\.0\.1:3001\/api\/uploads\//g, 'https://a.acoustic.uz/uploads/');
       
       // Fix api.acoustic.uz -> a.acoustic.uz (old API domain)
       fixedUrl = fixedUrl.replace(/https?:\/\/api\.acoustic\.uz\//g, 'https://a.acoustic.uz/');
+      fixedUrl = fixedUrl.replace(/https?:\/\/api\.acoustic\.uz\/uploads\//g, 'https://a.acoustic.uz/uploads/');
       
       return fixedUrl;
     }
