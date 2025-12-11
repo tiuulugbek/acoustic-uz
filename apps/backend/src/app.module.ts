@@ -20,7 +20,6 @@ import { CatalogsModule } from './catalogs/catalogs.module';
 import { ProductsModule } from './products/products.module';
 import { ShowcasesModule } from './showcases/showcases.module';
 import { PostsModule } from './posts/posts.module';
-import { PostCategoriesModule } from './post-categories/post-categories.module';
 import { FaqModule } from './faq/faq.module';
 import { BranchesModule } from './branches/branches.module';
 import { PagesModule } from './pages/pages.module';
@@ -30,13 +29,6 @@ import { MenusModule } from './menus/menus.module';
 import { AuditLogModule } from './audit-log/audit-log.module';
 import { HomepageModule } from './homepage/homepage.module';
 import { DoctorsModule } from './doctors/doctors.module';
-import { HomepageSectionsModule } from './homepage-sections/homepage-sections.module';
-import { HomepageLinksModule } from './homepage-links/homepage-links.module';
-import { HomepagePlaceholdersModule } from './homepage-placeholders/homepage-placeholders.module';
-import { HomepageEmptyStatesModule } from './homepage-empty-states/homepage-empty-states.module';
-import { CatalogPageConfigModule } from './catalog-page-config/catalog-page-config.module';
-import { CommonTextsModule } from './common-texts/common-texts.module';
-import { AvailabilityStatusesModule } from './availability-statuses/availability-statuses.module';
 import { HearingTestModule } from './hearing-test/hearing-test.module';
 import { LocaleCacheInterceptor } from './common/interceptors/locale-cache.interceptor';
 
@@ -99,7 +91,6 @@ import { LocaleCacheInterceptor } from './common/interceptors/locale-cache.inter
     ProductsModule,
     ShowcasesModule,
     PostsModule,
-    PostCategoriesModule,
     FaqModule,
     BranchesModule,
     PagesModule,
@@ -109,13 +100,6 @@ import { LocaleCacheInterceptor } from './common/interceptors/locale-cache.inter
     AuditLogModule,
     HomepageModule,
     DoctorsModule,
-    HomepageSectionsModule,
-    HomepageLinksModule,
-    HomepagePlaceholdersModule,
-    HomepageEmptyStatesModule,
-    CatalogPageConfigModule,
-    CommonTextsModule,
-    AvailabilityStatusesModule,
     HearingTestModule,
   ],
   providers: [
