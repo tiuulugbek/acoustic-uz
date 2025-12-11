@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { getSettings } from '@/lib/api';
 import { getLocaleFromDOM } from '@/lib/locale-client';
 import type { SettingsResponse } from '@/lib/api';
@@ -13,11 +13,12 @@ export default function TelegramButton() {
   const [phoneNumber, setPhoneNumber] = useState<string>('1385');
   const [isLoading, setIsLoading] = useState(true);
   const [isChatBubbleVisible, setIsChatBubbleVisible] = useState(true);
-  const [locale, setLocale] = useState<Locale>('uz');
-
-  // Get locale from DOM (client-side)
-  useEffect(() => {
-    setLocale(getLocaleFromDOM());
+  
+  // Get locale from DOM synchronously to prevent hydration mismatch
+  // Use useMemo to ensure it's computed once and matches server render
+  const locale = useMemo(() => {
+    if (typeof window === 'undefined') return 'uz' as Locale;
+    return getLocaleFromDOM();
   }, []);
 
   useEffect(() => {
