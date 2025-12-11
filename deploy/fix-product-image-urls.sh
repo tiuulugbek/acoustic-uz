@@ -40,29 +40,47 @@ if [ -d "$UPLOADS_DIR/products" ]; then
 fi
 echo ""
 
-# Step 3: Create Node.js script to fix URLs
-echo "📋 Step 3: Creating script to fix URLs..."
+# Step 3: Load environment variables
+echo "📋 Step 3: Loading environment variables..."
+cd "$BACKEND_DIR"
 
-# Get DATABASE_URL from .env
-DATABASE_URL=$(grep "^DATABASE_URL=" "$BACKEND_DIR/.env" | cut -d'=' -f2- | tr -d '"' | tr -d "'")
+# Check .env file location
+ENV_FILE=".env"
+if [ ! -f "$ENV_FILE" ]; then
+    # Try parent directory
+    ENV_FILE="../.env"
+    if [ ! -f "$ENV_FILE" ]; then
+        ENV_FILE="../../.env"
+    fi
+fi
 
+if [ ! -f "$ENV_FILE" ]; then
+    echo "   ❌ .env file not found"
+    echo "   Searched: $BACKEND_DIR/.env, ../.env, ../../.env"
+    exit 1
+fi
+
+echo "   ✅ Found .env file: $ENV_FILE"
+
+# Load DATABASE_URL
+export $(grep "^DATABASE_URL=" "$ENV_FILE" | xargs)
 if [ -z "$DATABASE_URL" ]; then
     echo "   ❌ DATABASE_URL not found in .env"
     exit 1
 fi
 
-cat > /tmp/fix-product-urls.js << NODE_SCRIPT
+echo "   ✅ DATABASE_URL loaded"
+echo ""
+
+# Step 4: Create Node.js script to fix URLs
+echo "📋 Step 4: Creating script to fix URLs..."
+cat > /tmp/fix-product-urls.js << 'NODE_SCRIPT'
 const { PrismaClient } = require('@prisma/client');
 const fs = require('fs');
 const path = require('path');
 
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL || '$DATABASE_URL'
-    }
-  }
-});
+// Prisma Client will use DATABASE_URL from environment
+const prisma = new PrismaClient();
 
 async function fixProductUrls() {
   try {
@@ -175,8 +193,15 @@ if [ ! -d "node_modules" ]; then
     cd "$BACKEND_DIR"
 fi
 
-# Run the script with DATABASE_URL environment variable
-export DATABASE_URL
+# Step 5: Run the script
+echo "📋 Step 5: Running script to fix URLs..."
+cd "$BACKEND_DIR"
+
+# Ensure we're in the right directory with node_modules
+if [ ! -d "node_modules" ] && [ -d "../../node_modules" ]; then
+    cd ../..
+fi
+
 if node /tmp/fix-product-urls.js; then
     echo "   ✅ URLs fixed"
 else
