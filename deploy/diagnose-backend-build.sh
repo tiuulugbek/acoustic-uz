@@ -68,19 +68,26 @@ cd "$BACKEND_DIR"
 rm -rf dist
 echo "   Running: pnpm exec nest build"
 echo "   --- Build Output Start ---"
-pnpm exec nest build 2>&1 | tee /tmp/backend-build.log || {
-    echo "   --- Build Output End ---"
+set +e  # Don't exit on error so we can capture output
+BUILD_OUTPUT=$(pnpm exec nest build 2>&1)
+BUILD_EXIT_CODE=$?
+echo "$BUILD_OUTPUT" | tee /tmp/backend-build.log
+set -e  # Re-enable exit on error
+echo "   --- Build Output End ---"
+
+if [ $BUILD_EXIT_CODE -ne 0 ]; then
     echo ""
-    echo "❌ Build failed!"
+    echo "❌ Build failed with exit code: $BUILD_EXIT_CODE"
     echo ""
-    echo "📋 Last 50 lines of build output:"
-    tail -50 /tmp/backend-build.log
+    echo "📋 Full build output saved to: /tmp/backend-build.log"
     echo ""
     echo "📋 Checking for common errors:"
-    grep -i "error\|failed\|cannot\|not found" /tmp/backend-build.log | head -20 || echo "   No obvious error patterns found"
+    grep -i "error\|failed\|cannot\|not found\|missing\|undefined" /tmp/backend-build.log | head -30 || echo "   No obvious error patterns found"
+    echo ""
+    echo "📋 Last 100 lines of build output:"
+    tail -100 /tmp/backend-build.log
     exit 1
-}
-echo "   --- Build Output End ---"
+fi
 
 # 7. Verify build output
 echo ""
