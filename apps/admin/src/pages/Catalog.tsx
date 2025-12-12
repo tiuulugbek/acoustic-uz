@@ -20,7 +20,8 @@ import {
   Row,
   Col,
 } from 'antd';
-import { UploadOutlined, DeleteOutlined } from '@ant-design/icons';
+import { UploadOutlined, DeleteOutlined, FolderOutlined } from '@ant-design/icons';
+import MediaLibraryModal from '../components/MediaLibraryModal';
 import type { UploadProps } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -925,6 +926,12 @@ function ProductManager({ productTypeFilter }: { productTypeFilter?: string }) {
   const [form] = Form.useForm();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editing, setEditing] = useState<ProductDto | null>(null);
+  const [galleryModalOpen, setGalleryModalOpen] = useState(false);
+  const [uploadingGallery, setUploadingGallery] = useState(false);
+  const { data: mediaList } = useQuery<MediaDto[], ApiError>({
+    queryKey: ['media'],
+    queryFn: getMedia,
+  });
 
   const { mutateAsync: createMutation, isPending: isCreating } = useMutation<ProductDto, ApiError, CreateProductPayload>({
     mutationFn: createProduct,
@@ -980,8 +987,46 @@ function ProductManager({ productTypeFilter }: { productTypeFilter?: string }) {
       tinnitusSupport: false,
       availabilityStatus: 'in-stock',
       catalogIds: [],
+      galleryIds: [],
     });
     setIsModalOpen(true);
+  };
+
+  const handleGalleryUpload: UploadProps['customRequest'] = async (options) => {
+    const { file, onSuccess, onError } = options;
+    setUploadingGallery(true);
+    try {
+      const compressedFile = await compressImage(file as File);
+      const media = await uploadMedia(compressedFile);
+      const currentGalleryIds = form.getFieldValue('galleryIds') || [];
+      form.setFieldsValue({ galleryIds: [...currentGalleryIds, media.id] });
+      message.success('Rasm galereyaga qo\'shildi');
+      queryClient.invalidateQueries({ queryKey: ['media'] });
+      onSuccess?.(media);
+    } catch (error) {
+      const apiError = error as ApiError;
+      message.error(apiError.message || 'Rasm yuklashda xatolik');
+      onError?.(error as Error);
+    } finally {
+      setUploadingGallery(false);
+    }
+  };
+
+  const handleSelectGalleryMedia = (media: MediaDto) => {
+    const currentGalleryIds = form.getFieldValue('galleryIds') || [];
+    if (!currentGalleryIds.includes(media.id)) {
+      form.setFieldsValue({ galleryIds: [...currentGalleryIds, media.id] });
+      message.success('Rasm galereyaga qo\'shildi');
+    } else {
+      message.info('Bu rasm allaqachon galereyada');
+    }
+    setGalleryModalOpen(false);
+  };
+
+  const handleRemoveGalleryImage = (mediaId: string) => {
+    const currentGalleryIds = form.getFieldValue('galleryIds') || [];
+    form.setFieldsValue({ galleryIds: currentGalleryIds.filter((id: string) => id !== mediaId) });
+    message.success('Rasm galereyadan olib tashlandi');
   };
 
   const openEditModal = (product: ProductDto) => {
@@ -1002,7 +1047,7 @@ function ProductManager({ productTypeFilter }: { productTypeFilter?: string }) {
       catalogIds: product.catalogs?.map(c => c.id) ?? [],
       status: product.status,
       specsText: product.specsText ?? undefined,
-      galleryIds: product.galleryIds?.length ? product.galleryIds.join(', ') : undefined,
+      galleryIds: product.galleryIds ?? [],
       galleryUrls: product.galleryUrls?.length ? product.galleryUrls.join(', ') : undefined,
       audience: product.audience ?? [],
       formFactors: product.formFactors?.[0] ?? undefined, // Take first formFactor for single select
@@ -1044,8 +1089,9 @@ function ProductManager({ productTypeFilter }: { productTypeFilter?: string }) {
     try {
       const values = await form.validateFields();
 
-      const galleryIds =
-        values.galleryIds !== undefined ? parseCommaSeparated(String(values.galleryIds)) ?? [] : undefined;
+      const galleryIds = Array.isArray(values.galleryIds) 
+        ? values.galleryIds.filter((id: string) => id && id.trim().length > 0)
+        : undefined;
 
       const galleryUrls = normalizeCommaSeparatedField(
         values.galleryUrls !== undefined ? String(values.galleryUrls) : undefined,
@@ -1527,8 +1573,87 @@ function ProductManager({ productTypeFilter }: { productTypeFilter?: string }) {
           )}
 
           {/* Gallery - Always show */}
-          <Divider orientation="left">Rasmlar</Divider>
-          <Form.Item label="Gallery URL (vergul bilan ajratilgan)" name="galleryUrls" extra="Rasm URLlarini vergul bilan ajrating">
+          <Divider orientation="left">Galereya rasmlari</Divider>
+
+          <Form.Item
+            label="Galereya rasmlari"
+            name="galleryIds"
+            extra="Mahsulot sahifasida ko'rsatiladigan rasmlar galereyasi"
+          >
+            <div>
+              {/* Selected gallery images preview */}
+              {(() => {
+                const selectedIds = form.getFieldValue('galleryIds') || [];
+                if (selectedIds.length === 0) {
+                  return (
+                    <div style={{ marginBottom: 16, padding: 16, background: '#f5f5f5', borderRadius: 4, textAlign: 'center', color: '#999' }}>
+                      Galereyada rasmlar yo'q. Media kutubxonasidan rasmlarni tanlang yoki yangi rasm yuklang.
+                    </div>
+                  );
+                }
+                return (
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 12 }}>
+                      {selectedIds.map((mediaId: string) => {
+                        const media = mediaList?.find(m => m.id === mediaId);
+                        if (!media) return null;
+                        return (
+                          <div key={mediaId} style={{ position: 'relative', border: '1px solid #d9d9d9', borderRadius: 4, overflow: 'hidden' }}>
+                            <Image
+                              src={normalizeImageUrl(media.url)}
+                              alt={media.filename}
+                              style={{ width: '100%', height: 120, objectFit: 'cover' }}
+                              preview={true}
+                            />
+                            <Button
+                              type="text"
+                              danger
+                              icon={<DeleteOutlined />}
+                              size="small"
+                              onClick={() => handleRemoveGalleryImage(mediaId)}
+                              style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(255, 255, 255, 0.9)' }}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Upload
+                    customRequest={handleGalleryUpload}
+                    showUploadList={false}
+                    accept="image/*"
+                    multiple
+                  >
+                    <Button icon={<UploadOutlined />} loading={uploadingGallery} block>
+                      Yangi rasm yuklash
+                    </Button>
+                  </Upload>
+                </Col>
+                <Col span={12}>
+                  <Button
+                    icon={<FolderOutlined />}
+                    onClick={() => setGalleryModalOpen(true)}
+                    block
+                  >
+                    Media kutubxonasidan tanlash
+                  </Button>
+                </Col>
+              </Row>
+
+              {form.getFieldValue('galleryIds')?.length > 0 && (
+                <div style={{ marginTop: 8, fontSize: 12, color: '#666' }}>
+                  Tanlangan: {form.getFieldValue('galleryIds')?.length || 0} ta rasm
+                </div>
+              )}
+            </div>
+          </Form.Item>
+
+          <Form.Item label="Gallery URL (ixtiyoriy - eski usul)" name="galleryUrls" extra="Agar media kutubxonasidan tanlash mumkin bo'lmasa, URLlarni vergul bilan ajrating">
             <Input.TextArea rows={2} placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg" />
           </Form.Item>
 
