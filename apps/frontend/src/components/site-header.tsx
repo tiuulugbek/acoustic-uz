@@ -353,13 +353,22 @@ export default function SiteHeader({ initialSettings = null, initialLocale }: Si
   const [headerMenuItems, setHeaderMenuItems] = useState<MenuItemResponse[]>([]);
   
   useEffect(() => {
+    // Only update menu items after component is mounted to prevent hydration mismatch
+    if (!mounted) {
+      setHeaderMenuItems([]);
+      return;
+    }
+    
     if (headerMenu?.items?.length) {
-      setHeaderMenuItems([...headerMenu.items].sort((a, b) => a.order - b.order));
+      const sortedItems = [...headerMenu.items].sort((a, b) => a.order - b.order);
+      console.log('[SiteHeader] Setting headerMenuItems:', sortedItems.length, 'items');
+      setHeaderMenuItems(sortedItems);
     } else {
       // No fallback - return empty array if backend is unavailable
+      console.log('[SiteHeader] No menu items available, setting empty array');
       setHeaderMenuItems([]);
     }
-  }, [headerMenu, displayLocale]);
+  }, [headerMenu, displayLocale, mounted]);
 
   const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
     '/services': Stethoscope,

@@ -33,27 +33,29 @@ export default function TelegramButton({ initialLocale }: TelegramButtonProps = 
   }, []);
 
   useEffect(() => {
+    // Only fetch settings after component is mounted
+    if (!mounted) return;
+    
     const fetchSettings = async () => {
       try {
         console.log('[TelegramButton] Fetching settings...');
-        const settings = await getSettings();
+        const settings = await getSettings(locale);
         console.log('[TelegramButton] Settings received:', {
-          hasBotUsername: !!settings.telegramButtonBotUsername,
-          botUsername: settings.telegramButtonBotUsername,
-          hasMessageUz: !!settings.telegramButtonMessage_uz,
-          hasMessageRu: !!settings.telegramButtonMessage_ru,
-          messageUz: settings.telegramButtonMessage_uz,
-          messageRu: settings.telegramButtonMessage_ru,
-          phonePrimary: settings.phonePrimary,
+          hasBotUsername: !!settings?.telegramButtonBotUsername,
+          botUsername: settings?.telegramButtonBotUsername,
+          hasMessageUz: !!settings?.telegramButtonMessage_uz,
+          hasMessageRu: !!settings?.telegramButtonMessage_ru,
+          messageUz: settings?.telegramButtonMessage_uz,
+          messageRu: settings?.telegramButtonMessage_ru,
+          phonePrimary: settings?.phonePrimary,
         });
-        console.log('[TelegramButton] Full settings object:', JSON.stringify(settings, null, 2));
         
         // Set phone number
-        if (settings.phonePrimary) {
+        if (settings?.phonePrimary) {
           setPhoneNumber(settings.phonePrimary);
         }
         
-        if (settings.telegramButtonBotUsername) {
+        if (settings?.telegramButtonBotUsername) {
           // Remove @ if present
           const username = settings.telegramButtonBotUsername.replace('@', '');
           setBotUsername(username);
@@ -70,14 +72,16 @@ export default function TelegramButton({ initialLocale }: TelegramButtonProps = 
         }
       } catch (error) {
         console.error('[TelegramButton] Failed to fetch Telegram bot settings:', error);
+        // Set loading to false even on error to prevent infinite loading
+        setIsLoading(false);
       } finally {
         setIsLoading(false);
-        console.log('[TelegramButton] Loading complete. isLoading:', false, 'botUsername:', botUsername);
+        console.log('[TelegramButton] Loading complete. isLoading:', false);
       }
     };
 
     fetchSettings();
-  }, [locale]);
+  }, [locale, mounted]);
 
   // Debug logging
   useEffect(() => {
