@@ -18,7 +18,8 @@ export default function DebugHydration() {
     const originalError = console.error;
     const originalWarn = console.warn;
     
-    console.error = function(...args: any[]) {
+    // Helper function to check if error is hydration-related
+    function isHydrationError(args: any[]) {
       try {
         const errorStr = args[0]?.toString?.() || '';
         const allArgsStr = args.map(a => {
@@ -30,7 +31,7 @@ export default function DebugHydration() {
         }).join(' ');
         
         // Check for hydration errors - be very permissive
-        const isHydrationError = 
+        return (
           errorStr.includes('Hydration') ||
           errorStr.includes('hydration') ||
           errorStr.includes('306') ||
@@ -39,6 +40,8 @@ export default function DebugHydration() {
           errorStr.includes('Minified React error #310') ||
           errorStr.includes('react.dev/errors/306') ||
           errorStr.includes('react.dev/errors/310') ||
+          errorStr.includes('visit https://react.dev/errors/306') ||
+          errorStr.includes('visit https://react.dev/errors/310') ||
           allArgsStr.includes('Hydration') ||
           allArgsStr.includes('hydration') ||
           allArgsStr.includes('306') ||
@@ -46,16 +49,21 @@ export default function DebugHydration() {
           allArgsStr.includes('Minified React error #306') ||
           allArgsStr.includes('Minified React error #310') ||
           allArgsStr.includes('react.dev/errors/306') ||
-          allArgsStr.includes('react.dev/errors/310');
-        
-        if (isHydrationError) {
-          // Suppress hydration warnings - they are expected in some cases
-          // Log to console.warn for debugging but don't show as error
-          originalWarn.call(console, '[Hydration Warning Suppressed (DebugHydration)]', ...args);
-          return;
-        }
+          allArgsStr.includes('react.dev/errors/310') ||
+          allArgsStr.includes('visit https://react.dev/errors/306') ||
+          allArgsStr.includes('visit https://react.dev/errors/310')
+        );
       } catch (e) {
-        // If error checking fails, fall through to original error handler
+        return false;
+      }
+    }
+    
+    console.error = function(...args: any[]) {
+      if (isHydrationError(args)) {
+        // Suppress hydration warnings - they are expected in some cases
+        // Log to console.warn for debugging but don't show as error
+        originalWarn.call(console, '[Hydration Warning Suppressed (DebugHydration)]', ...args);
+        return;
       }
       originalError.apply(console, args);
     };
