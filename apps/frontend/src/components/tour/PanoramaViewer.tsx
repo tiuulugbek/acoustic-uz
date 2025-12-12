@@ -1322,10 +1322,10 @@ export default function PanoramaViewer({ config, locale = 'uz', className = '', 
                   flex: 1,
                 }}
               >
-                <div className="text-sm font-semibold mb-0.5 text-center">
+                <div className="text-sm font-semibold mb-0.5 text-center" suppressHydrationWarning>
                   {currentHotspots[hoveredHotspotIndex].text}
                 </div>
-                <div className="text-xs text-gray-600 text-center">
+                <div className="text-xs text-gray-600 text-center" suppressHydrationWarning>
                   {currentHotspots[hoveredHotspotIndex].type === 'scene' 
                     ? (locale === 'ru' 
                         ? `Перейти к ${currentHotspots[hoveredHotspotIndex].text}`
@@ -1676,7 +1676,9 @@ export default function PanoramaViewer({ config, locale = 'uz', className = '', 
                   border: 'none',
                 }}
               >
-                {hotspot.text || (hotspot.type === 'scene' ? `Scene ${index + 1}` : `Hotspot ${index + 1}`)}
+                <span suppressHydrationWarning>
+                  {hotspot.text || (hotspot.type === 'scene' ? `Scene ${index + 1}` : `Hotspot ${index + 1}`)}
+                </span>
               </button>
             );
           })}
@@ -1712,11 +1714,11 @@ export default function PanoramaViewer({ config, locale = 'uz', className = '', 
                 />
               </svg>
             </button>
-            <h3 className="mb-4 text-2xl font-bold text-foreground">
+            <h3 className="mb-4 text-2xl font-bold text-foreground" suppressHydrationWarning>
               {hotspotModal.text}
             </h3>
             {hotspotModal.description && (
-              <p className="text-muted-foreground whitespace-pre-line">
+              <p className="text-muted-foreground whitespace-pre-line" suppressHydrationWarning>
                 {hotspotModal.description}
               </p>
             )}
