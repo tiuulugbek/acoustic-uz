@@ -30,9 +30,11 @@ export default function BranchesPageContent({
   const [locale] = useState<'uz' | 'ru'>(initialLocale);
   const [branchesByRegion, setBranchesByRegion] = useState<Record<string, BranchResponse[]>>({});
   const [regionNames, setRegionNames] = useState<Record<string, { uz: string; ru: string }>>({});
+  const [mounted, setMounted] = useState(false);
   
-  // Check URL params on mount
+  // Check URL params on mount - only after hydration
   useEffect(() => {
+    setMounted(true);
     const regionParam = searchParams.get('region');
     if (regionParam) {
       setSelectedRegion(regionParam);
@@ -42,7 +44,7 @@ export default function BranchesPageContent({
   const usefulArticles = posts?.slice(0, 5) || [];
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-screen bg-background" suppressHydrationWarning>
       <PageHeader
         locale={locale}
         breadcrumbs={[
@@ -54,13 +56,13 @@ export default function BranchesPageContent({
       />
 
       {/* Main Content */}
-      <section className="bg-muted/40 py-8">
-        <div className="mx-auto max-w-6xl px-4 md:px-6">
-          <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+      <section className="bg-muted/40 py-8" suppressHydrationWarning>
+        <div className="mx-auto max-w-6xl px-4 md:px-6" suppressHydrationWarning>
+          <div className="grid gap-6 lg:grid-cols-[2fr_1fr]" suppressHydrationWarning>
             {/* Left Column - Map and Branches List */}
-            <div className="space-y-8">
+            <div className="space-y-8" suppressHydrationWarning>
               {/* Map */}
-              <div className="rounded-lg bg-white p-4 shadow-sm">
+              <div className="rounded-lg bg-white p-4 shadow-sm" suppressHydrationWarning>
                 <BranchesMap 
                   branches={branches} 
                   locale={locale}
@@ -83,8 +85,8 @@ export default function BranchesPageContent({
             </div>
 
             {/* Right Column - Useful Articles - Sticky Sidebar */}
-            <aside className="lg:sticky lg:top-4 lg:self-start space-y-6">
-              <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
+            <aside className="lg:sticky lg:top-4 lg:self-start space-y-6" suppressHydrationWarning>
+              <div className="rounded-lg border border-border bg-card p-6 shadow-sm" suppressHydrationWarning>
                 <h3 className="mb-4 text-lg font-semibold text-foreground" suppressHydrationWarning>
                   {locale === 'ru' ? 'Полезные статьи' : 'Foydali maqolalar'}
                 </h3>

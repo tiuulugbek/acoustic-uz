@@ -210,12 +210,20 @@ export default function BranchesMap({ branches, locale, onRegionSelect, selected
 
   // Map branches to regions based on coordinates (bbox) and city names
   // IMPORTANT: Each branch should be mapped to ONLY ONE region
-  const branchesByRegion = useMemo(() => {
+  // Use useState + useEffect instead of useMemo to prevent hydration mismatch
+  const [branchesByRegion, setBranchesByRegion] = useState<Record<string, typeof branchesWithCoords>>({});
+  
+  useEffect(() => {
+    // Only compute after map is loaded and on client side
+    if (!mapLoaded || typeof window === 'undefined') {
+      return;
+    }
+    
     const mapping: Record<string, typeof branchesWithCoords> = {};
     const branchToRegionMap = new Map<string, string>(); // Track which branch belongs to which region
     
     // Get map info for bbox calculations
-    const mapInfo = typeof window !== 'undefined' ? window.simplemaps_countrymap_mapinfo : null;
+    const mapInfo = window.simplemaps_countrymap_mapinfo;
     
     for (const branch of branchesWithCoords) {
       // Skip if branch is already mapped to a region
@@ -298,6 +306,8 @@ export default function BranchesMap({ branches, locale, onRegionSelect, selected
       count: mapping[region].length
     })));
     
+    setBranchesByRegion(mapping);
+    
     // Convert to BranchResponse format for parent component
     const branchesByRegionResponse: Record<string, BranchResponse[]> = {};
     for (const [regionCode, branchCoords] of Object.entries(mapping)) {
@@ -316,8 +326,6 @@ export default function BranchesMap({ branches, locale, onRegionSelect, selected
     if (onRegionNamesChange) {
       onRegionNamesChange(REGION_NAMES);
     }
-    
-    return mapping;
   }, [branchesWithCoords, mapLoaded, branches, onBranchesByRegionChange, onRegionNamesChange]);
 
   // Helper function to group branches by proximity
@@ -497,7 +505,7 @@ export default function BranchesMap({ branches, locale, onRegionSelect, selected
         }}
       />
       
-      <div className="relative w-full aspect-[1000/652] max-h-[500px] bg-gradient-to-b from-blue-50 to-blue-100 rounded-lg overflow-hidden border border-blue-200">
+      <div className="relative w-full aspect-[1000/652] max-h-[500px] bg-gradient-to-b from-blue-50 to-blue-100 rounded-lg overflow-hidden border border-blue-200" suppressHydrationWarning>
         <style dangerouslySetInnerHTML={{__html: `
           @keyframes markerPulse {
             0%, 100% {
@@ -516,9 +524,10 @@ export default function BranchesMap({ branches, locale, onRegionSelect, selected
                 onClick={handleZoomOut}
                 className="absolute top-4 right-4 z-10 flex items-center gap-2 rounded-lg bg-white px-4 py-2 shadow-lg hover:bg-gray-50 transition-colors"
                 title={locale === 'ru' ? 'Вернуться к полной карте' : 'To\'liq xaritaga qaytish'}
+                suppressHydrationWarning
               >
                 <ZoomOut className="h-4 w-4" />
-                <span className="text-sm font-medium">
+                <span className="text-sm font-medium" suppressHydrationWarning>
                   {locale === 'ru' ? 'Вся карта' : 'To\'liq xarita'}
                 </span>
               </button>
@@ -531,6 +540,7 @@ export default function BranchesMap({ branches, locale, onRegionSelect, selected
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
               preserveAspectRatio="xMidYMid meet"
+              suppressHydrationWarning
             >
               {/* Uzbekistan regions - using paths from simplemaps */}
               {REGIONS_TO_SHOW.map((region) => {
