@@ -115,7 +115,16 @@ export default function SiteHeader({ initialSettings = null }: SiteHeaderProps =
     return cookieLocale;
   };
   
-  const [displayLocale, setDisplayLocale] = useState<Locale>(getInitialLocale);
+  // Use DEFAULT_LOCALE as initial value to match SSR, then update in useEffect
+  const [displayLocale, setDisplayLocale] = useState<Locale>(DEFAULT_LOCALE);
+  const [mounted, setMounted] = useState(false);
+  
+  // Set initial locale from DOM after mount to prevent hydration mismatch
+  useEffect(() => {
+    setMounted(true);
+    const initialLocale = getInitialLocale();
+    setDisplayLocale(initialLocale);
+  }, []); // Only run once on mount
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuRefreshKey, setMenuRefreshKey] = useState(0);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
