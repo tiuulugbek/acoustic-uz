@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ZoomOut } from 'lucide-react';
 import type { BranchResponse } from '@/lib/api';
 import Script from 'next/script';
@@ -123,8 +123,13 @@ export default function BranchesMapSidebar({ branches, locale, onRegionSelect, s
   const svgRef = useRef<SVGSVGElement>(null);
 
   // Filter branches with coordinates and convert to SVG positions
-  const branchesWithCoords = useMemo(() => {
-    return branches
+  // Use useState + useEffect instead of useMemo to prevent hydration mismatch
+  type BranchWithCoords = BranchResponse & { svgX: number; svgY: number };
+  const [branchesWithCoords, setBranchesWithCoords] = useState<BranchWithCoords[]>([]);
+  const [branchesByRegion, setBranchesByRegion] = useState<Record<string, BranchWithCoords[]>>({});
+  
+  useEffect(() => {
+    const filtered = branches
       .filter((branch) => branch.latitude != null && branch.longitude != null)
       .map((branch) => {
         const svgPos = latLngToSvg(branch.latitude!, branch.longitude!);
@@ -135,16 +140,22 @@ export default function BranchesMapSidebar({ branches, locale, onRegionSelect, s
           ...branch,
           svgX: x,
           svgY: y,
-        };
+        } as BranchWithCoords;
       });
+    
+    setBranchesWithCoords(filtered);
   }, [branches]);
 
-  // Map branches to regions
-  const branchesByRegion = useMemo(() => {
-    const mapping: Record<string, typeof branchesWithCoords> = {};
+  // Map branches to regions - only after map is loaded and on client side
+  useEffect(() => {
+    if (!mapLoaded || typeof window === 'undefined' || branchesWithCoords.length === 0) {
+      return;
+    }
+    
+    const mapping: Record<string, BranchWithCoords[]> = {};
     const branchToRegionMap = new Map<string, string>();
     
-    const mapInfo = typeof window !== 'undefined' ? window.simplemaps_countrymap_mapinfo : null;
+    const mapInfo = window.simplemaps_countrymap_mapinfo;
     
     for (const branch of branchesWithCoords) {
       if (branchToRegionMap.has(branch.id)) continue;
@@ -205,6 +216,8 @@ export default function BranchesMapSidebar({ branches, locale, onRegionSelect, s
       }
     }
     
+    setBranchesByRegion(mapping);
+    
     // Convert to BranchResponse format
     const branchesByRegionResponse: Record<string, BranchResponse[]> = {};
     for (const [regionCode, branchCoords] of Object.entries(mapping)) {
@@ -221,8 +234,6 @@ export default function BranchesMapSidebar({ branches, locale, onRegionSelect, s
     if (onRegionNamesChange) {
       onRegionNamesChange(REGION_NAMES);
     }
-    
-    return mapping;
   }, [branchesWithCoords, mapLoaded, branches, onBranchesByRegionChange, onRegionNamesChange]);
 
   const handleRegionClick = (regionCode: string) => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { MapPin, X, ZoomOut } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import type { BranchResponse } from '@/lib/api';
@@ -147,7 +147,11 @@ export default function BranchesMap({ branches, locale, onRegionSelect, selected
   const svgRef = useRef<SVGSVGElement>(null);
 
   // Filter branches with coordinates and convert to SVG positions
-  const branchesWithCoords = useMemo(() => {
+  // Use useState + useEffect instead of useMemo to prevent hydration mismatch
+  type BranchWithCoords = BranchResponse & { svgX: number; svgY: number };
+  const [branchesWithCoords, setBranchesWithCoords] = useState<BranchWithCoords[]>([]);
+  
+  useEffect(() => {
     console.log('🗺️ [MAP] Total branches received:', branches.length);
     console.log('🗺️ [MAP] Sample branch:', branches[0] ? {
       id: branches[0].id,
@@ -191,7 +195,7 @@ export default function BranchesMap({ branches, locale, onRegionSelect, selected
           ...branch,
           svgX: x,
           svgY: y,
-        };
+        } as BranchWithCoords;
       });
     
     console.log('🗺️ [MAP] Branches with coords:', filtered.length, 'out of', branches.length);
@@ -205,7 +209,7 @@ export default function BranchesMap({ branches, locale, onRegionSelect, selected
       });
     }
     
-    return filtered;
+    setBranchesWithCoords(filtered);
   }, [branches]);
 
   // Map branches to regions based on coordinates (bbox) and city names
