@@ -22,22 +22,30 @@ let resizeTimeout: NodeJS.Timeout | null = null;
  */
 export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
   const tooltipRefsRef = useRef<Map<HTMLElement, TooltipRef>>(new Map());
+  const cleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     // Wait a bit for DOM to be ready, especially if HTML is set via dangerouslySetInnerHTML
     const setupTooltips = () => {
-      if (!containerRef.current) {
-        console.warn('[Tooltip] Container ref is null, retrying...');
+      const container = containerRef.current;
+      
+      if (!container) {
+        console.warn('[Tooltip] Container ref is null, retrying in 100ms...');
         // Retry after a short delay
         setTimeout(setupTooltips, 100);
         return;
       }
 
-      const container = containerRef.current;
       const tooltipRefs = tooltipRefsRef.current;
       
-      console.log('[Tooltip] Setting up tooltip manager for container:', container);
-      console.log('[Tooltip] Container HTML:', container.innerHTML.substring(0, 200));
+      console.log('[Tooltip] ✅ Setting up tooltip manager for container:', container);
+      console.log('[Tooltip] Container HTML length:', container.innerHTML.length);
+      
+      // Check if already set up
+      if (cleanupRef.current) {
+        console.log('[Tooltip] Already set up, skipping...');
+        return;
+      }
 
     // Cleanup function
     const cleanup = () => {
@@ -478,14 +486,19 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
       attributes: false, // Don't watch attributes - too expensive
     });
 
-      return () => {
+      const cleanupFn = () => {
         observer.disconnect();
+        document.removeEventListener('mouseover', handleDocumentMouseOver, true);
+        document.removeEventListener('mouseout', handleDocumentMouseOut, true);
         container.removeEventListener('mouseover', handleMouseOver, true);
         container.removeEventListener('mouseout', handleMouseOut, true);
         container.removeEventListener('mouseover', handleMouseOver, false);
         container.removeEventListener('mouseout', handleMouseOut, false);
         cleanup();
       };
+      
+      cleanupRef.current = cleanupFn;
+      return cleanupFn;
     };
 
     // Start setup with a small delay to ensure DOM is ready
@@ -493,6 +506,10 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
     
     return () => {
       clearTimeout(timeoutId);
+      if (cleanupRef.current) {
+        cleanupRef.current();
+        cleanupRef.current = null;
+      }
     };
   }, [containerRef]);
 }
