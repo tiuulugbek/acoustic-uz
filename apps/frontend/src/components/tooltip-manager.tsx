@@ -24,10 +24,15 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
   const tooltipRefsRef = useRef<Map<HTMLElement, TooltipRef>>(new Map());
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current) {
+      console.warn('[Tooltip] Container ref is null');
+      return;
+    }
 
     const container = containerRef.current;
     const tooltipRefs = tooltipRefsRef.current;
+    
+    console.log('[Tooltip] Setting up tooltip manager for container:', container);
 
     // Cleanup function
     const cleanup = () => {
@@ -293,7 +298,15 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
     // These events bubble properly unlike mouseenter/mouseleave
     const handleMouseOver = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (!target) return;
+      if (!target) {
+        console.log('[Tooltip] handleMouseOver: No target');
+        return;
+      }
+      
+      // Check if event originated from within our container
+      if (!container.contains(target)) {
+        return;
+      }
       
       // Find the closest element with tooltip attributes (not class-based)
       let trigger: HTMLElement | null = target.closest('[data-tooltip-keyword]') as HTMLElement;
@@ -318,10 +331,11 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
           'text-brand-primary',
           'hover:border-brand-primary'
         );
+        console.log('[Tooltip] Added classes to trigger on mouseover:', trigger.getAttribute('data-tooltip-keyword'));
       }
       
       // Debug log
-      console.log('[Tooltip] Mouse over trigger:', trigger.getAttribute('data-tooltip-keyword'));
+      console.log('[Tooltip] Mouse over trigger:', trigger.getAttribute('data-tooltip-keyword'), trigger);
       
       // If we're already hovering over this trigger, don't do anything
       if (currentHoveredTrigger === trigger) {
@@ -412,12 +426,21 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
     // Initial class setup
     ensureClasses();
 
-    // Add event listeners with capture phase for better event delegation
+    // Add event listeners - try both capture and bubble phases
+    // Capture phase first to catch events early
     container.addEventListener('mouseover', handleMouseOver, true);
     container.addEventListener('mouseout', handleMouseOut, true);
     
+    // Also add bubble phase listeners as fallback
+    container.addEventListener('mouseover', handleMouseOver, false);
+    container.addEventListener('mouseout', handleMouseOut, false);
+    
     // Debug: Log when container is ready
-    console.log('[Tooltip] Container ready:', container, 'Triggers found:', container.querySelectorAll('[data-tooltip-keyword]').length);
+    const initialTriggers = container.querySelectorAll('[data-tooltip-keyword]');
+    console.log('[Tooltip] Container ready:', container, 'Triggers found:', initialTriggers.length);
+    if (initialTriggers.length > 0) {
+      console.log('[Tooltip] Sample trigger:', initialTriggers[0]);
+    }
 
     // Use MutationObserver with throttling to watch for new tooltip triggers
     let mutationTimeout: NodeJS.Timeout | null = null;
@@ -454,6 +477,8 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
       observer.disconnect();
       container.removeEventListener('mouseover', handleMouseOver, true);
       container.removeEventListener('mouseout', handleMouseOut, true);
+      container.removeEventListener('mouseover', handleMouseOver, false);
+      container.removeEventListener('mouseout', handleMouseOut, false);
       cleanup();
     };
   }, [containerRef]);
