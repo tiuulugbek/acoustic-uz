@@ -20,13 +20,16 @@ module.exports = {
     },
     {
       name: 'acoustic-frontend',
-      script: 'server.js',
-      cwd: '/var/www/acoustic.uz/apps/frontend/.next/standalone/apps/frontend',
+      script: 'pnpm',
+      args: 'start',
+      cwd: '/var/www/acoustic.uz/apps/frontend',
       instances: 1,
       exec_mode: 'fork',
       env: {
         NODE_ENV: 'production',
-        PORT: 3000
+        PORT: 3000,
+        NEXT_PUBLIC_API_URL: 'https://a.acoustic.uz/api',
+        NEXT_PUBLIC_SITE_URL: 'https://acoustic.uz'
       },
       error_file: '/var/log/pm2/acoustic-frontend-error.log',
       out_file: '/var/log/pm2/acoustic-frontend-out.log',

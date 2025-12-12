@@ -105,59 +105,62 @@ pnpm build || {
     exit 1
 }
 
-# 7. Verify standalone build
-echo -e "${BLUE}📋 Step 7: Verifying standalone build...${NC}"
-STANDALONE_DIR="$FRONTEND_DIR/.next/standalone/apps/frontend"
-STANDALONE_SERVER="$STANDALONE_DIR/server.js"
-
-if [ ! -f "$STANDALONE_SERVER" ]; then
-    echo -e "${RED}❌ Standalone server.js NOT found${NC}"
+# 7. Verify build output
+echo -e "${BLUE}📋 Step 7: Verifying build output...${NC}"
+if [ ! -d "$FRONTEND_DIR/.next" ]; then
+    echo -e "${RED}❌ .next directory NOT found${NC}"
     exit 1
 fi
-echo -e "${GREEN}  ✅ Standalone server.js exists${NC}"
 
-# 8. Copy .next/static to standalone (required for Next.js)
-echo -e "${BLUE}📋 Step 8: Copying .next/static files...${NC}"
+# Check for standard Next.js build (not standalone)
+if [ -d "$FRONTEND_DIR/.next/standalone" ]; then
+    echo -e "${YELLOW}  ⚠️  Standalone build found (but not required)${NC}"
+    STANDALONE_DIR="$FRONTEND_DIR/.next/standalone/apps/frontend"
+    STANDALONE_SERVER="$STANDALONE_DIR/server.js"
+    if [ -f "$STANDALONE_SERVER" ]; then
+        echo -e "${GREEN}  ✅ Standalone server.js exists (can be used)${NC}"
+    fi
+else
+    echo -e "${GREEN}  ✅ Standard Next.js build (using next start)${NC}"
+fi
+
+# 8. Verify static files
+echo -e "${BLUE}📋 Step 8: Verifying static files...${NC}"
 if [ -d "$FRONTEND_DIR/.next/static" ]; then
-    mkdir -p "$STANDALONE_DIR/.next/static"
-    rm -rf "$STANDALONE_DIR/.next/static"/* || true
-    cp -r "$FRONTEND_DIR/.next/static"/* "$STANDALONE_DIR/.next/static/" || {
-        echo -e "${RED}❌ Failed to copy static files${NC}"
-        exit 1
-    }
-    STATIC_COUNT=$(find "$STANDALONE_DIR/.next/static" -type f | wc -l)
-    echo -e "${GREEN}  ✅ Copied $STATIC_COUNT static files${NC}"
+    STATIC_COUNT=$(find "$FRONTEND_DIR/.next/static" -type f | wc -l)
+    STATIC_SIZE=$(du -sh "$FRONTEND_DIR/.next/static" | awk '{print $1}')
+    echo -e "${GREEN}  ✅ Found $STATIC_COUNT static files ($STATIC_SIZE)${NC}"
 else
     echo -e "${RED}❌ .next/static directory not found${NC}"
     exit 1
 fi
 
-# 9. Copy public files
-echo -e "${BLUE}📋 Step 9: Copying public files...${NC}"
-if [ -d "$FRONTEND_DIR/public" ]; then
-    mkdir -p "$STANDALONE_DIR/public"
-    cp -r "$FRONTEND_DIR/public"/* "$STANDALONE_DIR/public/" 2>/dev/null || true
-    echo -e "${GREEN}  ✅ Public files copied${NC}"
-fi
-
-# 10. Clean up unnecessary files from standalone build
-echo -e "${BLUE}📋 Step 10: Cleaning up unnecessary files...${NC}"
-# Remove source maps in production (optional, reduces size)
-find "$STANDALONE_DIR" -name "*.map" -delete 2>/dev/null || true
-echo -e "${GREEN}  ✅ Cleaned up unnecessary files${NC}"
-
-# 11. Show build size
-echo -e "${BLUE}📋 Step 11: Build size information...${NC}"
-STANDALONE_SIZE=$(du -sh "$STANDALONE_DIR" | awk '{print $1}')
-STATIC_SIZE=$(du -sh "$STANDALONE_DIR/.next/static" | awk '{print $1}')
-echo "  Standalone directory: $STANDALONE_SIZE"
+# 9. Show build size
+echo -e "${BLUE}📋 Step 9: Build size information...${NC}"
+NEXT_SIZE=$(du -sh "$FRONTEND_DIR/.next" | awk '{print $1}')
+echo "  .next directory: $NEXT_SIZE"
 echo "  Static files: $STATIC_SIZE"
 
-# 12. Restart PM2
-echo -e "${BLUE}🚀 Step 12: Restarting PM2...${NC}"
+# 10. Restart PM2
+echo -e "${BLUE}🚀 Step 10: Restarting PM2...${NC}"
 cd "$PROJECT_DIR"
 pm2 delete acoustic-frontend 2>/dev/null || true
-pm2 start ecosystem.config.js --only acoustic-frontend
+sleep 1
+
+# Check if standalone build exists, otherwise use standard next start
+if [ -f "$FRONTEND_DIR/.next/standalone/apps/frontend/server.js" ]; then
+    echo -e "${GREEN}  ✅ Using standalone build${NC}"
+    pm2 start ecosystem.config.js --only acoustic-frontend
+else
+    echo -e "${GREEN}  ✅ Using standard Next.js build (next start)${NC}"
+    # Start with pnpm start directly
+    cd "$FRONTEND_DIR"
+    pm2 start pnpm --name acoustic-frontend -- start --update-env || {
+        echo -e "${RED}  ❌ Failed to start frontend${NC}"
+        exit 1
+    }
+    cd "$PROJECT_DIR"
+fi
 pm2 save
 
 # Wait for startup
