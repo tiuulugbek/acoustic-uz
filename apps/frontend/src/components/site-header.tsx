@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Menu,
@@ -251,7 +251,10 @@ export default function SiteHeader({ initialSettings = null }: SiteHeaderProps =
     placeholderData: (previousData) => previousData, // Keep previous data while loading to prevent menu from disappearing
   });
 
-  const catalogMenuItems = useMemo(() => {
+  // Use useState + useEffect instead of useMemo to prevent hydration mismatch
+  const [catalogMenuItems, setCatalogMenuItems] = useState<Array<{ href: string; label: string }>>([]);
+  
+  useEffect(() => {
     const mainSections = [
       {
         href: '/catalog?productType=hearing-aids',
@@ -290,7 +293,7 @@ export default function SiteHeader({ initialSettings = null }: SiteHeaderProps =
       },
     ];
 
-    return [...mainSections, ...otherSections];
+    setCatalogMenuItems([...mainSections, ...otherSections]);
   }, [displayLocale]);
 
   const { data: headerMenu, refetch: refetchMenu, isLoading: isLoadingMenu } = useQuery({
@@ -363,14 +366,17 @@ export default function SiteHeader({ initialSettings = null }: SiteHeaderProps =
     };
   }, [displayLocale, refetchMenu, queryClient, localeChangeInProgress]);
 
-  const headerMenuItems = useMemo<MenuItemResponse[]>(() => {
+  // Use useState + useEffect instead of useMemo to prevent hydration mismatch
+  const [headerMenuItems, setHeaderMenuItems] = useState<MenuItemResponse[]>([]);
+  
+  useEffect(() => {
     if (headerMenu?.items?.length) {
-      return [...headerMenu.items].sort((a, b) => a.order - b.order);
+      setHeaderMenuItems([...headerMenu.items].sort((a, b) => a.order - b.order));
+    } else {
+      // No fallback - return empty array if backend is unavailable
+      setHeaderMenuItems([]);
     }
-
-    // No fallback - return empty array if backend is unavailable
-    return [];
-  }, [headerMenu, displayLocale]); // Add displayLocale to dependencies to ensure recalculation
+  }, [headerMenu, displayLocale]);
 
   const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
     '/services': Stethoscope,

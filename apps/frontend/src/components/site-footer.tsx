@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import React from 'react';
 import { Mail, Phone } from 'lucide-react';
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getMenu, getSettings, type MenuItemResponse, type MenuResponse, type SettingsResponse } from '@/lib/api';
 import { getLocaleFromDOM, getLocaleFromCookie, type Locale } from '@/lib/locale-client';
@@ -220,29 +220,37 @@ export default function SiteFooter() {
     };
   }, [displayLocale, queryClient, localeChangeInProgress]);
 
-  // Process footer menu items
-  const footerMenuItems = useMemo<MenuItemResponse[]>(() => {
+  // Process footer menu items - Use useState + useEffect instead of useMemo to prevent hydration mismatch
+  const [footerMenuItems, setFooterMenuItems] = useState<MenuItemResponse[]>([]);
+  
+  useEffect(() => {
     if (footerMenu?.items?.length) {
-      return [...footerMenu.items].sort((a, b) => a.order - b.order);
+      setFooterMenuItems([...footerMenu.items].sort((a, b) => a.order - b.order));
+    } else {
+      setFooterMenuItems([]);
     }
-    return [];
   }, [footerMenu, displayLocale]);
 
   // Split footer items into sections (center links, catalog links, social links)
   // Center links: first 6 items (or all if less than 6)
   // Catalog links: items with href containing '/catalog'
   // Social links: items with external URLs or specific social media links
-  const centerLinksList = useMemo(() => {
-    return footerMenuItems
+  const [centerLinksList, setCenterLinksList] = useState<Array<{ href: string; label: string }>>([]);
+  
+  useEffect(() => {
+    const centerLinks = footerMenuItems
       .filter(item => !item.href.includes('/catalog') && !item.href.startsWith('http'))
       .slice(0, 6)
       .map(item => ({
         href: item.href,
         label: getBilingualText(item.title_uz, item.title_ru, displayLocale),
       }));
+    setCenterLinksList(centerLinks);
   }, [footerMenuItems, displayLocale]);
 
-  const catalogLinksList = useMemo(() => {
+  const [catalogLinksList, setCatalogLinksList] = useState<Array<{ href: string; label: string }>>([]);
+  
+  useEffect(() => {
     const catalogItems = footerMenuItems
       .filter(item => item.href.includes('/catalog'))
       .map(item => ({
@@ -252,20 +260,22 @@ export default function SiteFooter() {
     
     // If no catalog items in footer menu, use default catalog links
     if (catalogItems.length === 0) {
-      return [
+      setCatalogLinksList([
         { href: '/catalog?productType=hearing-aids', label: displayLocale === 'ru' ? 'Аппараты для взрослых' : 'Kattalar uchun apparatlar' },
         { href: '/catalog?productType=hearing-aids&filter=children', label: displayLocale === 'ru' ? 'Аппараты для детей' : 'Bolalar uchun apparatlar' },
         { href: '/catalog?productType=accessories&filter=wireless', label: displayLocale === 'ru' ? 'Беспроводные аксессуары' : 'Simsiz aksessuarlar' },
         { href: '/catalog/batteries', label: displayLocale === 'ru' ? 'Батареи' : 'Batareyalar' },
         { href: '/catalog/earmolds', label: displayLocale === 'ru' ? 'Ушные вкладыши' : 'Quloq vkladishlari' },
         { href: '/catalog/care', label: displayLocale === 'ru' ? 'Средства по уходу' : 'Parvarish vositalari' },
-      ];
+      ]);
+    } else {
+      setCatalogLinksList(catalogItems);
     }
-    
-    return catalogItems;
   }, [footerMenuItems, displayLocale]);
 
-  const socialRowLinksList = useMemo(() => {
+  const [socialRowLinksList, setSocialRowLinksList] = useState<Array<{ href: string; label: string }>>([]);
+  
+  useEffect(() => {
     // First, try to get social links from Settings
     const socialLinksFromSettings = settings?.socialLinks as Record<string, string> | undefined;
     
@@ -297,7 +307,8 @@ export default function SiteFooter() {
       
       // Only return if we have at least one social link
       if (links.length > 1) {
-        return links;
+        setSocialRowLinksList(links);
+        return;
       }
     }
     
@@ -312,24 +323,25 @@ export default function SiteFooter() {
     );
     
     if (socialItems.length > 0) {
-      return [
+      setSocialRowLinksList([
         { href: '/contact', label: displayLocale === 'ru' ? 'Связаться с нами' : "Biz bilan bog'laning" },
         ...socialItems.map(item => ({
           href: item.href,
           label: getBilingualText(item.title_uz, item.title_ru, displayLocale),
         }))
-      ];
+      ]);
+      return;
     }
     
     // Final fallback: use default links
-    return [
+    setSocialRowLinksList([
       { href: '/contact', label: displayLocale === 'ru' ? 'Связаться с нами' : "Biz bilan bog'laning" },
       { href: 'https://tiktok.com/@acoustic', label: 'TikTok' },
       { href: 'https://instagram.com/acoustic', label: 'Instagram' },
       { href: 'https://facebook.com/acoustic', label: 'Facebook' },
       { href: 'https://youtube.com/acoustic', label: 'YouTube' },
       { href: 'https://t.me/acoustic', label: 'Telegram' },
-    ];
+    ]);
   }, [footerMenuItems, displayLocale, settings]);
 
   return (
