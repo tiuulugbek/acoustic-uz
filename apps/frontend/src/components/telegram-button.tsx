@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { getSettings } from '@/lib/api';
 import { getLocaleFromDOM } from '@/lib/locale-client';
 import type { SettingsResponse } from '@/lib/api';

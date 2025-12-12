@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { MapPin } from 'lucide-react';
@@ -36,8 +36,10 @@ const REGION_TO_CITIES: Record<string, string[]> = {
 };
 
 export default function BranchesList({ branches, selectedRegion, locale, onClearFilter, branchesByRegion, regionNames }: BranchesListProps) {
-  // Filter branches by selected region - use branchesByRegion if available (more accurate)
-  const filteredBranches = useMemo(() => {
+  // Filter branches by selected region - use useState + useEffect to prevent hydration mismatch
+  const [filteredBranches, setFilteredBranches] = useState<BranchResponse[]>(branches);
+  
+  useEffect(() => {
     console.log('🔍 [FILTER] Filtering branches:', {
       selectedRegion,
       totalBranches: branches.length,
@@ -47,13 +49,15 @@ export default function BranchesList({ branches, selectedRegion, locale, onClear
     
     if (!selectedRegion) {
       console.log('🔍 [FILTER] No region selected, returning all branches');
-      return branches;
+      setFilteredBranches(branches);
+      return;
     }
     
     // First, try to use branchesByRegion (coordinate-based, more accurate)
     if (branchesByRegion && branchesByRegion[selectedRegion]) {
       console.log('🔍 [FILTER] Using branchesByRegion:', branchesByRegion[selectedRegion].length, 'branches');
-      return branchesByRegion[selectedRegion];
+      setFilteredBranches(branchesByRegion[selectedRegion]);
+      return;
     }
     
     // Fallback to city name matching
@@ -69,7 +73,7 @@ export default function BranchesList({ branches, selectedRegion, locale, onClear
       );
     });
     console.log('🔍 [FILTER] Filtered by city names:', filtered.length, 'branches');
-    return filtered;
+    setFilteredBranches(filtered);
   }, [branches, selectedRegion, branchesByRegion]);
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';

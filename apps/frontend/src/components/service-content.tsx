@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { processContentShortcodes, ProcessedContent } from './content-processor';
 
 interface ServiceContentProps {
@@ -17,7 +17,10 @@ interface ServiceContentProps {
  * - Paragraphs
  */
 export default function ServiceContent({ content, locale }: ServiceContentProps) {
-  const renderedContent = useMemo(() => {
+  const [renderedContent, setRenderedContent] = useState<JSX.Element | JSX.Element[] | null>(null);
+  
+  useEffect(() => {
+    const computeRenderedContent = () => {
     if (!content || !content.trim()) {
       return null;
     }
@@ -201,6 +204,10 @@ export default function ServiceContent({ content, locale }: ServiceContentProps)
     flushList();
 
     return elements;
+    };
+    
+    const result = computeRenderedContent();
+    setRenderedContent(result);
   }, [content]);
 
   if (!renderedContent || (Array.isArray(renderedContent) && renderedContent.length === 0)) {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useTooltipManager } from './tooltip-manager';
 
 interface ProductFeaturesListProps {
@@ -40,7 +40,10 @@ function processTooltips(text: string): string {
  * Format: "6 Направленные микрофоны" or "3 Конфигурации" or "+ Подавление обратной связи"
  */
 export default function ProductFeaturesList({ description, locale }: ProductFeaturesListProps) {
-  const features = useMemo(() => {
+  const [features, setFeatures] = useState<Feature[]>([]);
+  
+  useEffect(() => {
+    const computeFeatures = () => {
     if (!description) return [];
 
     // Try to extract features from description HTML tables
@@ -105,6 +108,10 @@ export default function ProductFeaturesList({ description, locale }: ProductFeat
 
     // Limit to first 6-8 features (like sluh.by shows)
     return features.slice(0, 8);
+    };
+    
+    const result = computeFeatures();
+    setFeatures(result);
   }, [description]);
 
   if (features.length === 0) {
