@@ -283,6 +283,9 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
       }, 150);
     };
 
+    // Track which trigger we're currently hovering over to prevent duplicate tooltips
+    let currentHoveredTrigger: HTMLElement | null = null;
+
     // Use event delegation on container - use mouseover/mouseout for better event delegation
     // These events bubble properly unlike mouseenter/mouseleave
     const handleMouseOver = (e: MouseEvent) => {
@@ -291,7 +294,23 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
       
       // Find the closest tooltip trigger element
       const trigger = target.closest('.tooltip-trigger') as HTMLElement;
-      if (!trigger) return;
+      if (!trigger) {
+        currentHoveredTrigger = null;
+        return;
+      }
+      
+      // If we're already hovering over this trigger, don't do anything
+      if (currentHoveredTrigger === trigger) {
+        // Just update position if tooltip exists
+        const existingRef = tooltipRefs.get(trigger);
+        if (existingRef?.tooltipElement && existingRef.updatePosition) {
+          existingRef.updatePosition();
+        }
+        return;
+      }
+      
+      // Set current hovered trigger
+      currentHoveredTrigger = trigger;
       
       // Check if tooltip already exists for this trigger
       const existingRef = tooltipRefs.get(trigger);
@@ -314,7 +333,10 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
       
       // Check if we're leaving a tooltip trigger
       const trigger = target.closest('.tooltip-trigger') as HTMLElement;
-      if (!trigger) return;
+      if (!trigger) {
+        currentHoveredTrigger = null;
+        return;
+      }
       
       // Check if mouse is moving to tooltip popup
       if (relatedTarget) {
@@ -326,6 +348,7 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
         // Check if mouse is moving to another tooltip trigger
         const nextTrigger = relatedTarget.closest('.tooltip-trigger');
         if (nextTrigger && nextTrigger !== trigger) {
+          currentHoveredTrigger = nextTrigger;
           return; // Moving to another trigger, don't hide current
         }
         
@@ -334,6 +357,9 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
           return; // Still within trigger, don't hide
         }
       }
+      
+      // Clear current hovered trigger
+      currentHoveredTrigger = null;
       
       // Hide tooltip
       hideTooltip(trigger);
