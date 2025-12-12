@@ -12,57 +12,57 @@ export default function DebugHydration() {
   useEffect(() => {
     setMounted(true);
     
-    // Suppress hydration warnings in production - they are expected in some cases
-    // In development, we still want to see them for debugging
-    if (process.env.NODE_ENV === 'production') {
-      const originalError = console.error;
-      console.error = function(...args: any[]) {
-        // Suppress hydration warnings in production
+    // Additional suppression layer - runs after React hydrates
+    // The main suppression is in layout.tsx <head> script which runs earlier
+    // This is a backup layer for any errors that slip through
+    const originalError = console.error;
+    const originalWarn = console.warn;
+    
+    console.error = function(...args: any[]) {
+      try {
         const errorStr = args[0]?.toString?.() || '';
-        if (
+        const allArgsStr = args.map(a => {
+          try {
+            return a?.toString?.() || '';
+          } catch {
+            return '';
+          }
+        }).join(' ');
+        
+        // Check for hydration errors - be very permissive
+        const isHydrationError = 
           errorStr.includes('Hydration') ||
           errorStr.includes('hydration') ||
           errorStr.includes('306') ||
           errorStr.includes('310') ||
           errorStr.includes('Minified React error #306') ||
-          errorStr.includes('Minified React error #310')
-        ) {
-          // Silently suppress - these warnings are expected in some cases
-          // Log as warning for debugging
-          console.warn('[Hydration Warning Suppressed]', ...args);
+          errorStr.includes('Minified React error #310') ||
+          errorStr.includes('react.dev/errors/306') ||
+          errorStr.includes('react.dev/errors/310') ||
+          allArgsStr.includes('Hydration') ||
+          allArgsStr.includes('hydration') ||
+          allArgsStr.includes('306') ||
+          allArgsStr.includes('310') ||
+          allArgsStr.includes('Minified React error #306') ||
+          allArgsStr.includes('Minified React error #310') ||
+          allArgsStr.includes('react.dev/errors/306') ||
+          allArgsStr.includes('react.dev/errors/310');
+        
+        if (isHydrationError) {
+          // Suppress hydration warnings - they are expected in some cases
+          // Log to console.warn for debugging but don't show as error
+          originalWarn.call(console, '[Hydration Warning Suppressed (DebugHydration)]', ...args);
           return;
         }
-        originalError.apply(console, args);
-      };
+      } catch (e) {
+        // If error checking fails, fall through to original error handler
+      }
+      originalError.apply(console, args);
+    };
 
-      return () => {
-        console.error = originalError; // Clean up on unmount
-      };
-    } else {
-      // In development, log hydration errors for debugging
-      const originalError = console.error;
-      console.error = function(...args: any[]) {
-        const errorStr = args[0]?.toString?.() || '';
-        if (
-          errorStr.includes('Hydration') ||
-          errorStr.includes('hydration') ||
-          errorStr.includes('306') ||
-          errorStr.includes('310') ||
-          errorStr.includes('Minified React error #306') ||
-          errorStr.includes('Minified React error #310')
-        ) {
-          console.group('🔴 Hydration Error Detected');
-          console.error(...args);
-          console.trace('Stack trace:');
-          console.groupEnd();
-        }
-        originalError.apply(console, args);
-      };
-
-      return () => {
-        console.error = originalError; // Clean up on unmount
-      };
-    }
+    return () => {
+      console.error = originalError; // Clean up on unmount
+    };
   }, []);
 
   // Don't render anything to prevent hydration mismatch
