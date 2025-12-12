@@ -57,10 +57,12 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
 
     // Handle mouse enter with event delegation
     const handleMouseEnter = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      const trigger = target.closest('.tooltip-trigger') as HTMLElement;
-
-      if (!trigger) return;
+      const trigger = (e.target as HTMLElement) || (e.currentTarget as HTMLElement);
+      
+      // Ensure it's a tooltip trigger
+      if (!trigger || !trigger.classList?.contains('tooltip-trigger')) {
+        return;
+      }
 
       const keyword = trigger.getAttribute('data-tooltip-keyword') || '';
       const tooltipContent = trigger.getAttribute('data-tooltip-content') || '';
@@ -236,10 +238,12 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
 
     // Handle mouse leave with event delegation
     const handleMouseLeave = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      const trigger = target.closest('.tooltip-trigger') as HTMLElement;
-
-      if (!trigger) return;
+      const trigger = (e.target as HTMLElement) || (e.currentTarget as HTMLElement);
+      
+      // Ensure it's a tooltip trigger
+      if (!trigger || !trigger.classList?.contains('tooltip-trigger')) {
+        return;
+      }
 
       const ref = tooltipRefs.get(trigger);
       if (!ref) return;
@@ -285,9 +289,60 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
       }, 150);
     };
 
-    // Use event delegation on container - use bubble phase instead of capture for better performance
-    container.addEventListener('mouseenter', handleMouseEnter, false);
-    container.addEventListener('mouseleave', handleMouseLeave, false);
+    // Use event delegation on container - use mouseover/mouseout for better event delegation
+    // These events bubble properly unlike mouseenter/mouseleave
+    const handleMouseOver = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target) return;
+      
+      const trigger = target.closest('.tooltip-trigger') as HTMLElement;
+      if (!trigger) return;
+      
+      // Check if tooltip already exists for this trigger
+      const existingRef = tooltipRefs.get(trigger);
+      if (existingRef?.tooltipElement) {
+        return; // Tooltip already showing
+      }
+      
+      // Call handleMouseEnter with trigger as target
+      const syntheticEvent = {
+        target: trigger,
+        currentTarget: container,
+      } as MouseEvent;
+      handleMouseEnter(syntheticEvent);
+    };
+
+    const handleMouseOut = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const relatedTarget = e.relatedTarget as HTMLElement;
+      if (!target) return;
+      
+      // Check if we're leaving a tooltip trigger
+      const trigger = target.closest('.tooltip-trigger') as HTMLElement;
+      if (!trigger) return;
+      
+      // Check if mouse is moving to tooltip popup
+      const tooltipPopup = relatedTarget?.closest('.tooltip-popup-element');
+      if (tooltipPopup) {
+        return; // Don't hide if moving to tooltip
+      }
+      
+      // Check if mouse is moving to another tooltip trigger
+      const nextTrigger = relatedTarget?.closest('.tooltip-trigger');
+      if (nextTrigger && nextTrigger !== trigger) {
+        return; // Moving to another trigger, don't hide current
+      }
+      
+      // Call handleMouseLeave
+      const syntheticEvent = {
+        target: trigger,
+        currentTarget: container,
+      } as MouseEvent;
+      handleMouseLeave(syntheticEvent);
+    };
+
+    container.addEventListener('mouseover', handleMouseOver, false);
+    container.addEventListener('mouseout', handleMouseOut, false);
 
     // Ensure all existing triggers have correct classes
     const ensureClasses = () => {
@@ -325,8 +380,8 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
 
     return () => {
       observer.disconnect();
-      container.removeEventListener('mouseenter', handleMouseEnter, true);
-      container.removeEventListener('mouseleave', handleMouseLeave, true);
+      container.removeEventListener('mouseover', handleMouseOver, false);
+      container.removeEventListener('mouseout', handleMouseOut, false);
       cleanup();
     };
   }, [containerRef]);
