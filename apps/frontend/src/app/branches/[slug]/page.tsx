@@ -156,11 +156,11 @@ export default async function BranchPage({ params }: BranchPageProps) {
       />
 
       {/* Main Content */}
-      <section className="bg-white py-4 sm:py-8 overflow-x-hidden">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 w-full">
-          <div className="grid gap-4 sm:gap-6 lg:gap-8 lg:grid-cols-[2fr_1fr]">
+      <section className="bg-white py-4 sm:py-8 overflow-x-hidden" suppressHydrationWarning>
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 w-full" suppressHydrationWarning>
+          <div className="grid gap-4 sm:gap-6 lg:gap-8 lg:grid-cols-[2fr_1fr]" suppressHydrationWarning>
             {/* Left Column - Main Content */}
-            <div className="space-y-6 sm:space-y-8 min-w-0 w-full">
+            <div className="space-y-6 sm:space-y-8 min-w-0 w-full" suppressHydrationWarning>
               {/* Title and Description */}
               <div>
                 <h1 className="mb-3 text-2xl sm:text-3xl font-bold text-foreground" suppressHydrationWarning>
@@ -342,8 +342,8 @@ export default async function BranchPage({ params }: BranchPageProps) {
             </div>
 
             {/* Right Sidebar */}
-            <aside className="lg:sticky lg:top-4 lg:self-start order-first lg:order-last">
-              <div className="rounded-lg border border-border bg-white p-4 sm:p-6 shadow-sm space-y-4 sm:space-y-6">
+            <aside className="lg:sticky lg:top-4 lg:self-start order-first lg:order-last" suppressHydrationWarning>
+              <div className="rounded-lg border border-border bg-white p-4 sm:p-6 shadow-sm space-y-4 sm:space-y-6" suppressHydrationWarning>
                 {/* Table of Contents */}
                 <div>
                   <h3 className="mb-2 sm:mb-3 text-base sm:text-lg font-bold text-foreground" suppressHydrationWarning>

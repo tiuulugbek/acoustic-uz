@@ -123,7 +123,7 @@ export default async function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
         />
       </head>
-      <body className="font-sans">
+      <body className="font-sans" suppressHydrationWarning>
         <Providers>
           {/* Set locale in window before children render - this script runs synchronously */}
           {/* CRITICAL: This value MUST be set before React hydrates to prevent hydration mismatch */}
@@ -135,9 +135,9 @@ export default async function RootLayout({
               `,
             }}
           />
-          <div className="flex min-h-screen flex-col bg-muted/20">
+          <div className="flex min-h-screen flex-col bg-muted/20" suppressHydrationWarning>
             <SiteHeader initialSettings={settings} />
-            <main className="flex-1">{children}</main>
+            <main className="flex-1" suppressHydrationWarning>{children}</main>
             <SiteFooter />
             <TelegramButton />
           </div>
