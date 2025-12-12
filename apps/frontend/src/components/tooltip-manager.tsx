@@ -371,8 +371,12 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
       hideTooltip(trigger);
     };
 
-    container.addEventListener('mouseover', handleMouseOver, false);
-    container.addEventListener('mouseout', handleMouseOut, false);
+    // Add event listeners with capture phase for better event delegation
+    container.addEventListener('mouseover', handleMouseOver, true);
+    container.addEventListener('mouseout', handleMouseOut, true);
+    
+    // Debug: Log when container is ready
+    console.log('[Tooltip] Container ready:', container, 'Triggers found:', container.querySelectorAll('.tooltip-trigger').length);
 
     // Ensure all existing triggers have correct classes
     const ensureClasses = () => {
@@ -410,8 +414,8 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
 
     return () => {
       observer.disconnect();
-      container.removeEventListener('mouseover', handleMouseOver, false);
-      container.removeEventListener('mouseout', handleMouseOut, false);
+      container.removeEventListener('mouseover', handleMouseOver, true);
+      container.removeEventListener('mouseout', handleMouseOut, true);
       cleanup();
     };
   }, [containerRef]);
