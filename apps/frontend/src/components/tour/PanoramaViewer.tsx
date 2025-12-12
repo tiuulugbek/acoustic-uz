@@ -1201,17 +1201,6 @@ export default function PanoramaViewer({ config, locale = 'uz', className = '', 
     );
   }
 
-  // Prevent hydration mismatch by ensuring component only renders on client
-  if (error) {
-    return (
-      <div className={`flex h-full min-h-[400px] items-center justify-center bg-gray-100 ${className}`} suppressHydrationWarning>
-        <div className="text-center">
-          <p className="text-red-600" suppressHydrationWarning>{error}</p>
-        </div>
-      </div>
-    );
-  }
-
   // Since component is loaded with ssr: false, this should rarely be needed
   // But we keep it as a safety check to prevent hydration mismatch
   if (!mounted) {

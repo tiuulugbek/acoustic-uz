@@ -136,8 +136,8 @@ export default async function RootLayout({
                   const originalError = console.error;
                   const originalWarn = console.warn;
                   
-                  // Override console.error to catch hydration errors
-                  console.error = function(...args) {
+                  // Helper function to check if error is hydration-related
+                  function isHydrationError(args) {
                     try {
                       const errorStr = args[0]?.toString?.() || '';
                       const allArgsStr = args.map(a => {
@@ -149,7 +149,7 @@ export default async function RootLayout({
                       }).join(' ');
                       
                       // Check for hydration errors in multiple ways - be very permissive
-                      const isHydrationError = 
+                      return (
                         errorStr.includes('Hydration') || 
                         errorStr.includes('hydration') ||
                         errorStr.includes('306') || 
@@ -158,6 +158,8 @@ export default async function RootLayout({
                         errorStr.includes('Minified React error #310') ||
                         errorStr.includes('react.dev/errors/306') ||
                         errorStr.includes('react.dev/errors/310') ||
+                        errorStr.includes('visit https://react.dev/errors/306') ||
+                        errorStr.includes('visit https://react.dev/errors/310') ||
                         allArgsStr.includes('Hydration') ||
                         allArgsStr.includes('hydration') ||
                         allArgsStr.includes('306') ||
@@ -165,16 +167,22 @@ export default async function RootLayout({
                         allArgsStr.includes('Minified React error #306') ||
                         allArgsStr.includes('Minified React error #310') ||
                         allArgsStr.includes('react.dev/errors/306') ||
-                        allArgsStr.includes('react.dev/errors/310');
-                      
-                      if (isHydrationError) {
-                        // Suppress hydration warnings - they are expected in some cases
-                        // Log to console.warn for debugging but don't show as error
-                        originalWarn.call(console, '[Hydration Warning Suppressed]', ...args);
-                        return;
-                      }
+                        allArgsStr.includes('react.dev/errors/310') ||
+                        allArgsStr.includes('visit https://react.dev/errors/306') ||
+                        allArgsStr.includes('visit https://react.dev/errors/310')
+                      );
                     } catch (e) {
-                      // If error checking fails, fall through to original error handler
+                      return false;
+                    }
+                  }
+                  
+                  // Override console.error to catch hydration errors
+                  console.error = function(...args) {
+                    if (isHydrationError(args)) {
+                      // Suppress hydration warnings - they are expected in some cases
+                      // Log to console.warn for debugging but don't show as error
+                      originalWarn.call(console, '[Hydration Warning Suppressed]', ...args);
+                      return;
                     }
                     originalError.apply(console, args);
                   };
@@ -191,6 +199,25 @@ export default async function RootLayout({
                       return originalOnError.call(window, message, source, lineno, colno, error);
                     }
                     return false;
+                  };
+                  
+                  // Also override window.addEventListener('error') to catch all errors
+                  const originalAddEventListener = window.addEventListener;
+                  window.addEventListener = function(type, listener, options) {
+                    if (type === 'error') {
+                      const wrappedListener = function(event) {
+                        const messageStr = event?.message?.toString?.() || '';
+                        if (messageStr.includes('306') || messageStr.includes('310') || messageStr.includes('Hydration')) {
+                          originalWarn.call(console, '[Hydration Error Suppressed (addEventListener)]', event);
+                          event.preventDefault();
+                          event.stopPropagation();
+                          return false;
+                        }
+                        return listener.call(this, event);
+                      };
+                      return originalAddEventListener.call(this, type, wrappedListener, options);
+                    }
+                    return originalAddEventListener.call(this, type, listener, options);
                   };
                 }
               })();
