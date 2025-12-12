@@ -26,9 +26,12 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
   const cleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
+    // Helper function to get container dynamically
+    const getContainer = () => containerRef.current;
+    
     // Wait a bit for DOM to be ready, especially if HTML is set via dangerouslySetInnerHTML
     const setupTooltips = () => {
-      const container = containerRef.current;
+      const container = getContainer();
       
       if (!container) {
         console.warn('[Tooltip] Container ref is null, retrying in 100ms...');
