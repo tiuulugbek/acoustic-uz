@@ -211,14 +211,36 @@ export default function PanoramaViewer({ config, locale = 'uz', className = '', 
 
   useEffect(() => {
     // Only initialize after component is mounted to prevent hydration mismatch
-    if (!mounted) return;
+    if (!mounted) {
+      console.log('⏳ PanoramaViewer: Waiting for mount...');
+      return;
+    }
     
-    console.log('🎬 PanoramaViewer mounted with config:', config);
+    console.log('🎬 PanoramaViewer mounted with config:', {
+      hasConfig: !!config,
+      scenesCount: config?.scenes ? Object.keys(config.scenes).length : 0,
+      firstScene: config?.default?.firstScene,
+      configKeys: config ? Object.keys(config) : [],
+    });
     
     // Validate config
-    if (!config || !config.scenes || Object.keys(config.scenes).length === 0) {
-      console.error('❌ Invalid config:', config);
-      setError('Tour konfiguratsiyasi noto\'g\'ri');
+    if (!config) {
+      console.error('❌ No config provided');
+      setError('Tour konfiguratsiyasi topilmadi');
+      setIsLoading(false);
+      return;
+    }
+    
+    if (!config.scenes || Object.keys(config.scenes).length === 0) {
+      console.error('❌ Invalid config - no scenes:', config);
+      setError('Tour konfiguratsiyasida sahnalar topilmadi');
+      setIsLoading(false);
+      return;
+    }
+    
+    if (!config.default || !config.default.firstScene) {
+      console.error('❌ Invalid config - no default firstScene:', config);
+      setError('Tour konfiguratsiyasida birinchi sahna topilmadi');
       setIsLoading(false);
       return;
     }
@@ -1180,7 +1202,10 @@ export default function PanoramaViewer({ config, locale = 'uz', className = '', 
     );
   }
 
+  // Since component is loaded with ssr: false, this should rarely be needed
+  // But we keep it as a safety check
   if (!mounted) {
+    console.log('⏳ PanoramaViewer: Not mounted yet, showing placeholder');
     // Return placeholder during SSR to prevent hydration mismatch
     return (
       <div className={`relative w-full ${className}`} style={{ aspectRatio: '16 / 9', minHeight: '400px' }} suppressHydrationWarning>
@@ -1189,6 +1214,22 @@ export default function PanoramaViewer({ config, locale = 'uz', className = '', 
             <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-brand-primary border-t-transparent mx-auto"></div>
             <p className="text-lg text-gray-600" suppressHydrationWarning>
               {locale === 'ru' ? 'Панорама загружается...' : 'Panorama yuklanmoqda...'}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  // Additional safety check - if config is invalid, show error
+  if (!config || !config.scenes || Object.keys(config.scenes).length === 0) {
+    console.error('❌ PanoramaViewer: Invalid config in render:', config);
+    return (
+      <div className={`relative w-full ${className}`} style={{ aspectRatio: '16 / 9', minHeight: '400px' }} suppressHydrationWarning>
+        <div className="flex h-full items-center justify-center bg-gray-100">
+          <div className="text-center">
+            <p className="text-red-600" suppressHydrationWarning>
+              {locale === 'ru' ? 'Ошибка загрузки тура' : 'Tour yuklashda xatolik'}
             </p>
           </div>
         </div>
