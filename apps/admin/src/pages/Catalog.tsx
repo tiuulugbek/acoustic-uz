@@ -1739,6 +1739,16 @@ function ProductManager({ productTypeFilter }: { productTypeFilter?: string }) {
           />
         </Form>
       </Modal>
+
+      {/* Gallery Media Library Modal */}
+      <MediaLibraryModal
+        open={galleryModalOpen}
+        onCancel={() => setGalleryModalOpen(false)}
+        onSelect={handleSelectGalleryMedia}
+        fileType="image"
+        selectedMediaIds={form.getFieldValue('galleryIds') || []}
+        multiple={true}
+      />
     </div>
   );
 }
