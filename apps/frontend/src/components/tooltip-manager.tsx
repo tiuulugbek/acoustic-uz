@@ -478,13 +478,21 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
       attributes: false, // Don't watch attributes - too expensive
     });
 
+      return () => {
+        observer.disconnect();
+        container.removeEventListener('mouseover', handleMouseOver, true);
+        container.removeEventListener('mouseout', handleMouseOut, true);
+        container.removeEventListener('mouseover', handleMouseOver, false);
+        container.removeEventListener('mouseout', handleMouseOut, false);
+        cleanup();
+      };
+    };
+
+    // Start setup with a small delay to ensure DOM is ready
+    const timeoutId = setTimeout(setupTooltips, 0);
+    
     return () => {
-      observer.disconnect();
-      container.removeEventListener('mouseover', handleMouseOver, true);
-      container.removeEventListener('mouseout', handleMouseOut, true);
-      container.removeEventListener('mouseover', handleMouseOver, false);
-      container.removeEventListener('mouseout', handleMouseOut, false);
-      cleanup();
+      clearTimeout(timeoutId);
     };
   }, [containerRef]);
 }
