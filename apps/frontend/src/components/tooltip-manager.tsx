@@ -55,11 +55,8 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
       }
     };
 
-    // Handle mouse enter with event delegation
-    const handleMouseEnter = (e: MouseEvent) => {
-      const trigger = (e.target as HTMLElement) || (e.currentTarget as HTMLElement);
-      
-      // Ensure it's a tooltip trigger
+    // Handle tooltip show for a trigger element
+    const showTooltip = (trigger: HTMLElement) => {
       if (!trigger || !trigger.classList?.contains('tooltip-trigger')) {
         return;
       }
@@ -236,11 +233,8 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
       });
     };
 
-    // Handle mouse leave with event delegation
-    const handleMouseLeave = (e: MouseEvent) => {
-      const trigger = (e.target as HTMLElement) || (e.currentTarget as HTMLElement);
-      
-      // Ensure it's a tooltip trigger
+    // Handle tooltip hide for a trigger element
+    const hideTooltip = (trigger: HTMLElement) => {
       if (!trigger || !trigger.classList?.contains('tooltip-trigger')) {
         return;
       }
@@ -295,6 +289,7 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
       const target = e.target as HTMLElement;
       if (!target) return;
       
+      // Find the closest tooltip trigger element
       const trigger = target.closest('.tooltip-trigger') as HTMLElement;
       if (!trigger) return;
       
@@ -304,12 +299,8 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
         return; // Tooltip already showing
       }
       
-      // Call handleMouseEnter with trigger as target
-      const syntheticEvent = {
-        target: trigger,
-        currentTarget: container,
-      } as MouseEvent;
-      handleMouseEnter(syntheticEvent);
+      // Show tooltip
+      showTooltip(trigger);
     };
 
     const handleMouseOut = (e: MouseEvent) => {
@@ -333,12 +324,8 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
         return; // Moving to another trigger, don't hide current
       }
       
-      // Call handleMouseLeave
-      const syntheticEvent = {
-        target: trigger,
-        currentTarget: container,
-      } as MouseEvent;
-      handleMouseLeave(syntheticEvent);
+      // Hide tooltip
+      hideTooltip(trigger);
     };
 
     container.addEventListener('mouseover', handleMouseOver, false);
