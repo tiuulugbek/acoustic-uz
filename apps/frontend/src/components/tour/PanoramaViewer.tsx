@@ -19,6 +19,9 @@ interface PanoramaViewerProps {
 }
 
 export default function PanoramaViewer({ config, locale = 'uz', className = '', onThumbnailsChange, showThumbnailsExternal }: PanoramaViewerProps) {
+  // Prevent hydration mismatch - mounted state must be first
+  const [mounted, setMounted] = useState(false);
+  
   const viewerRef = useRef<HTMLDivElement>(null);
   const viewerInstanceRef = useRef<any>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -26,7 +29,6 @@ export default function PanoramaViewer({ config, locale = 'uz', className = '', 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentScene, setCurrentScene] = useState<string>(config?.default?.firstScene || '');
-  const [mounted, setMounted] = useState(false);
   const [loadProgress, setLoadProgress] = useState(0);
   const [hotspotModal, setHotspotModal] = useState<{ text: string; description?: string } | null>(null);
   const [currentHotspots, setCurrentHotspots] = useState<HotspotConfig[]>([]);
