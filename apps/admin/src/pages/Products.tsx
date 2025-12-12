@@ -46,11 +46,19 @@ import {
   ArrowUpOutlined,
   DeleteOutlined,
   PlusOutlined,
+  UploadOutlined,
+  FolderOutlined,
 } from '@ant-design/icons';
 import TooltipHelper from '../components/TooltipHelper';
 import ImageSizeHint from '../components/ImageSizeHint';
 import RichTextEditor from '../components/RichTextEditor';
+import MediaLibraryModal from '../components/MediaLibraryModal';
 import { createSlug } from '../utils/slug';
+import { getMedia, uploadMedia, type MediaDto } from '../lib/api';
+import { normalizeImageUrl } from '../utils/image';
+import { compressImage } from '../utils/image-compression';
+import type { UploadProps } from 'antd';
+import { Image } from 'antd';
 
 const statusOptions = [
   { label: 'Nashr etilgan', value: 'published' },
