@@ -296,7 +296,11 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
       // Check if tooltip already exists for this trigger
       const existingRef = tooltipRefs.get(trigger);
       if (existingRef?.tooltipElement) {
-        return; // Tooltip already showing
+        // Tooltip already showing, just update position
+        if (existingRef.updatePosition) {
+          existingRef.updatePosition();
+        }
+        return;
       }
       
       // Show tooltip
@@ -313,15 +317,22 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
       if (!trigger) return;
       
       // Check if mouse is moving to tooltip popup
-      const tooltipPopup = relatedTarget?.closest('.tooltip-popup-element');
-      if (tooltipPopup) {
-        return; // Don't hide if moving to tooltip
-      }
-      
-      // Check if mouse is moving to another tooltip trigger
-      const nextTrigger = relatedTarget?.closest('.tooltip-trigger');
-      if (nextTrigger && nextTrigger !== trigger) {
-        return; // Moving to another trigger, don't hide current
+      if (relatedTarget) {
+        const tooltipPopup = relatedTarget.closest('.tooltip-popup-element');
+        if (tooltipPopup) {
+          return; // Don't hide if moving to tooltip
+        }
+        
+        // Check if mouse is moving to another tooltip trigger
+        const nextTrigger = relatedTarget.closest('.tooltip-trigger');
+        if (nextTrigger && nextTrigger !== trigger) {
+          return; // Moving to another trigger, don't hide current
+        }
+        
+        // Check if mouse is moving to a child element within the same trigger
+        if (trigger.contains(relatedTarget)) {
+          return; // Still within trigger, don't hide
+        }
       }
       
       // Hide tooltip
