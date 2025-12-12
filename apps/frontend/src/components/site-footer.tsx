@@ -345,10 +345,10 @@ export default function SiteFooter() {
   }, [footerMenuItems, displayLocale, settings]);
 
   return (
-    <footer className="border-t bg-white" key={`footer-${displayLocale}-${menuRefreshKey}`}>
+    <footer className="border-t bg-white" key={`footer-${displayLocale}-${menuRefreshKey}`} suppressHydrationWarning>
       {/* Mobile Layout - Two Columns */}
-      <div className="mx-auto max-w-6xl px-4 py-8 md:hidden">
-        <div className="grid grid-cols-2 gap-6">
+      <div className="mx-auto max-w-6xl px-4 py-8 md:hidden" suppressHydrationWarning>
+        <div className="grid grid-cols-2 gap-6" suppressHydrationWarning>
           {/* Left Column - Center Info */}
           <div className="space-y-3">
             <h4 className="text-base font-semibold text-brand-accent" suppressHydrationWarning>
@@ -384,8 +384,8 @@ export default function SiteFooter() {
       </div>
 
       {/* Desktop Layout - Three Columns */}
-      <div className="hidden md:block mx-auto max-w-6xl px-4 py-12 md:px-6">
-        <div className="grid gap-8 md:grid-cols-3">
+      <div className="hidden md:block mx-auto max-w-6xl px-4 py-12 md:px-6" suppressHydrationWarning>
+        <div className="grid gap-8 md:grid-cols-3" suppressHydrationWarning>
           <div className="space-y-3">
             <h4 className="text-lg font-semibold text-brand-accent" suppressHydrationWarning>
               {displayLocale === 'ru' ? 'Центр Acoustic' : 'Acoustic markazi'}
@@ -439,8 +439,8 @@ export default function SiteFooter() {
       </div>
 
       {/* Social Media Links Row */}
-      <div className="border-t bg-muted/30">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-4 py-4 text-xs font-semibold text-brand-accent/80 md:px-6">
+      <div className="border-t bg-muted/30" suppressHydrationWarning>
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-4 py-4 text-xs font-semibold text-brand-accent/80 md:px-6" suppressHydrationWarning>
           {socialRowLinksList.map((item, index) => (
             <React.Fragment key={`${item.href}-${index}`}>
               {index > 0 && <span className="text-border/60">|</span>}

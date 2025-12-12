@@ -459,9 +459,9 @@ export default function SiteHeader({ initialSettings = null }: SiteHeaderProps =
   }, [displayLocale, menuRefreshKey, headerMenu, navItems.length]);
 
   return (
-    <header className="border-b shadow-sm" key={`header-${displayLocale}-${menuRefreshKey}`}>
-      <div className="bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 md:px-6">
+    <header className="border-b shadow-sm" key={`header-${displayLocale}-${menuRefreshKey}`} suppressHydrationWarning>
+      <div className="bg-white" suppressHydrationWarning>
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 md:px-6" suppressHydrationWarning>
           {/* Logo - Left */}
           <div className="flex items-center">
             <Link href="/" className="flex items-center">
@@ -576,9 +576,9 @@ export default function SiteHeader({ initialSettings = null }: SiteHeaderProps =
         </div>
       </div>
 
-      <div className="bg-brand-primary">
-        <div className="mx-auto hidden max-w-6xl items-center px-4 md:px-6 lg:flex">
-          <nav key={`nav-${displayLocale}`} className="flex w-full items-stretch min-h-[52px]">
+      <div className="bg-brand-primary" suppressHydrationWarning>
+        <div className="mx-auto hidden max-w-6xl items-center px-4 md:px-6 lg:flex" suppressHydrationWarning>
+          <nav key={`nav-${displayLocale}`} className="flex w-full items-stretch min-h-[52px]" suppressHydrationWarning>
             {navItems.length === 0 && (isLoadingMenu || isLoadingCatalogs) && !headerMenu ? (
               // Show skeleton menu items while loading to maintain layout (only if no cached data)
               Array.from({ length: 6 }).map((_, index) => (
@@ -651,7 +651,7 @@ export default function SiteHeader({ initialSettings = null }: SiteHeaderProps =
         </div>
 
         {mobileOpen && (
-          <nav key={`mobile-nav-${displayLocale}`} className="space-y-2 border-t border-white/20 bg-brand-primary px-4 py-4 md:px-6 lg:hidden">
+          <nav key={`mobile-nav-${displayLocale}`} className="space-y-2 border-t border-white/20 bg-brand-primary px-4 py-4 md:px-6 lg:hidden" suppressHydrationWarning>
             <Link
               href="tel:+998712021441"
               className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/40 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20"
