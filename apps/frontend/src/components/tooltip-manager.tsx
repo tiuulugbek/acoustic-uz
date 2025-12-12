@@ -292,8 +292,8 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
       const target = e.target as HTMLElement;
       if (!target) return;
       
-      // Find the closest tooltip trigger element
-      const trigger = target.closest('.tooltip-trigger') as HTMLElement;
+      // Find the closest element with tooltip attributes (not class-based)
+      let trigger: HTMLElement | null = target.closest('[data-tooltip-keyword]') as HTMLElement;
       if (!trigger) {
         currentHoveredTrigger = null;
         return;
@@ -373,11 +373,11 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
     container.addEventListener('mouseout', handleMouseOut, true);
     
     // Debug: Log when container is ready
-    console.log('[Tooltip] Container ready:', container, 'Triggers found:', container.querySelectorAll('.tooltip-trigger').length);
+    console.log('[Tooltip] Container ready:', container, 'Triggers found:', container.querySelectorAll('[data-tooltip-keyword]').length);
 
-    // Ensure all existing triggers have correct classes
+    // Ensure all existing triggers have correct classes (add classes dynamically)
     const ensureClasses = () => {
-      const triggers = Array.from(container.querySelectorAll('.tooltip-trigger')) as HTMLElement[];
+      const triggers = Array.from(container.querySelectorAll('[data-tooltip-keyword]')) as HTMLElement[];
       triggers.forEach((trigger) => {
         if (!trigger.classList.contains('tooltip-trigger')) {
           trigger.classList.add(
@@ -385,8 +385,9 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
             'cursor-help',
             'border-b',
             'border-dashed',
-            'border-brand-primary',
-            'text-brand-primary'
+            'border-brand-primary/40',
+            'text-brand-primary',
+            'hover:border-brand-primary'
           );
         }
       });
