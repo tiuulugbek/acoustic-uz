@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTooltipManager } from './tooltip-manager';
 import { processContentShortcodes } from './content-processor';
 
@@ -74,10 +74,15 @@ function TooltipContent({ html, variant }: { html: string; variant: 'primary' | 
 }
 
 export default function ProductTabs({ tabs }: ProductTabsProps) {
-  const availableTabs = useMemo(
-    () => tabs.filter((tab) => (tab.primary && tab.primary.trim().length) || (tab.secondary && tab.secondary.trim().length)),
-    [tabs],
-  );
+  // Use useState and useEffect to prevent hydration mismatch
+  const [availableTabs, setAvailableTabs] = useState<ProductTabItem[]>([]);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const filtered = tabs.filter((tab) => (tab.primary && tab.primary.trim().length) || (tab.secondary && tab.secondary.trim().length));
+    setAvailableTabs(filtered);
+  }, [tabs]);
 
   // Default active tab: "description" (Tavsif) if available, otherwise first tab
   const defaultTab = availableTabs.find((tab) => tab.key === 'description')?.key ?? availableTabs[0]?.key ?? tabs[0]?.key ?? '';
@@ -97,8 +102,8 @@ export default function ProductTabs({ tabs }: ProductTabsProps) {
   const current = availableTabs.find((tab) => tab.key === activeTab) ?? availableTabs[0];
 
   return (
-    <div className="rounded-3xl border border-border/60 bg-white shadow-sm">
-      <div className="flex flex-wrap gap-2 border-b border-border/50 bg-brand-accent/5 p-3">
+    <div className="rounded-3xl border border-border/60 bg-white shadow-sm" suppressHydrationWarning>
+      <div className="flex flex-wrap gap-2 border-b border-border/50 bg-brand-accent/5 p-3" suppressHydrationWarning>
         {availableTabs.map((tab) => {
           const isActive = tab.key === activeTab;
           return (

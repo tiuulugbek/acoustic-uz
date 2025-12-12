@@ -438,7 +438,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const jsonLd = buildJsonLd(product, mainImage, locale);
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-screen bg-background" suppressHydrationWarning>
       {Array.isArray(jsonLd) ? (
         jsonLd.map((schema, index) => (
           <Script
@@ -457,7 +457,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
       )}
       
       {/* Breadcrumbs */}
-      <section className="bg-[hsl(var(--secondary))]">
+      <section className="bg-[hsl(var(--secondary))]" suppressHydrationWarning>
         <div className="mx-auto max-w-6xl px-4 py-2 sm:py-3 text-xs font-semibold uppercase tracking-wide text-white sm:px-6">
           <div className="flex flex-wrap items-center gap-x-2">
             <Link href="/" className="hover:text-white/80 text-white/70" suppressHydrationWarning>
@@ -474,12 +474,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
       </section>
 
       {/* Main Content - Compact layout */}
-      <section className="bg-white py-6">
-        <div className="mx-auto max-w-6xl px-4 md:px-6">
+      <section className="bg-white py-6" suppressHydrationWarning>
+        <div className="mx-auto max-w-6xl px-4 md:px-6" suppressHydrationWarning>
           {/* 2-Column Layout: Main Content | Sidebar */}
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]" suppressHydrationWarning>
             {/* Left Column: Main Content (Title + Image + Info + Tabs) */}
-            <div className="space-y-6">
+            <div className="space-y-6" suppressHydrationWarning>
               {/* Product Title */}
               <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground break-words" suppressHydrationWarning>
                 {getBilingualText(product.name_uz, product.name_ru, locale)}
