@@ -45,6 +45,10 @@ if ! pnpm exec tsc --version > /dev/null 2>&1; then
     exit 1
 fi
 
+# Clean incremental build cache
+echo "🧹 Cleaning incremental build cache..."
+rm -rf .tsbuildinfo tsconfig.tsbuildinfo
+
 # Run TypeScript compiler with verbose output
 echo "📋 Running: pnpm exec tsc"
 pnpm exec tsc 2>&1 | tee /tmp/backend-build.log
@@ -58,10 +62,15 @@ if [ ! -d "dist" ]; then
     echo "📋 tsconfig.json exists: $([ -f tsconfig.json ] && echo 'yes' || echo 'no')"
     echo "📋 src/main.ts exists: $([ -f src/main.ts ] && echo 'yes' || echo 'no')"
     
-    # Try to compile with explicit output
+    # Check for TypeScript errors that might prevent compilation
     echo ""
-    echo "📋 Trying tsc with explicit outDir..."
-    pnpm exec tsc --outDir dist --rootDir src 2>&1 | head -20 || true
+    echo "📋 Checking for TypeScript errors..."
+    pnpm exec tsc --noEmit 2>&1 | head -30 || true
+    
+    # Try to compile with explicit output and without incremental
+    echo ""
+    echo "📋 Trying tsc with explicit outDir and no incremental..."
+    pnpm exec tsc --outDir dist --rootDir src --incremental false 2>&1 | head -30 || true
     
     # Check again
     if [ ! -d "dist" ]; then
