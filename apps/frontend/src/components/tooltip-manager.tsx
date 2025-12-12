@@ -308,17 +308,11 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
     // Track which trigger we're currently hovering over to prevent duplicate tooltips
     let currentHoveredTrigger: HTMLElement | null = null;
 
-    // Use event delegation on container - use mouseover/mouseout for better event delegation
+    // Use event delegation - use mouseover/mouseout for better event delegation
     // These events bubble properly unlike mouseenter/mouseleave
     const handleMouseOver = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (!target) {
-        console.log('[Tooltip] handleMouseOver: No target');
-        return;
-      }
-      
-      // Check if event originated from within our container
-      if (!container.contains(target)) {
         return;
       }
       
@@ -332,6 +326,12 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
           currentHoveredTrigger = null;
           return;
         }
+      }
+      
+      // Check if trigger is within our container (if container exists)
+      const container = getContainer();
+      if (container && !container.contains(trigger)) {
+        return;
       }
       
       // Ensure classes are added (in case they weren't added yet)
@@ -419,6 +419,9 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
 
     // Ensure all existing triggers have correct classes (add classes dynamically)
     const ensureClasses = () => {
+      const container = getContainer();
+      if (!container) return;
+      
       const triggers = Array.from(container.querySelectorAll('[data-tooltip-keyword]')) as HTMLElement[];
       console.log('[Tooltip] ensureClasses: Found', triggers.length, 'triggers');
       triggers.forEach((trigger) => {
@@ -437,104 +440,116 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
       });
     };
 
-    // Initial class setup
-    ensureClasses();
+    // Initial class setup (with retry if container not ready)
+    const setupClasses = () => {
+      const container = getContainer();
+      if (container) {
+        ensureClasses();
+      } else {
+        setTimeout(setupClasses, 100);
+      }
+    };
+    setupClasses();
 
     // Add event listeners to document for global event delegation
     // This ensures tooltips work even if container ref is delayed
     const handleDocumentMouseOver = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target) return;
-      
-      // Check if target is within our container
-      if (container && container.contains(target)) {
-        handleMouseOver(e);
-      }
+      handleMouseOver(e);
     };
 
     const handleDocumentMouseOut = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target) return;
-      
-      // Check if target is within our container
-      if (container && container.contains(target)) {
-        handleMouseOut(e);
-      }
+      handleMouseOut(e);
     };
 
     // Add event listeners to document (more reliable than container)
+    // Use capture phase for better event delegation
     document.addEventListener('mouseover', handleDocumentMouseOver, true);
     document.addEventListener('mouseout', handleDocumentMouseOut, true);
     
-    // Also add to container as backup
-    container.addEventListener('mouseover', handleMouseOver, true);
-    container.addEventListener('mouseout', handleMouseOut, true);
-    container.addEventListener('mouseover', handleMouseOver, false);
-    container.addEventListener('mouseout', handleMouseOut, false);
+    // Also add to container as backup (if container exists)
+    const container = getContainer();
+    if (container) {
+      container.addEventListener('mouseover', handleMouseOver, true);
+      container.addEventListener('mouseout', handleMouseOut, true);
+      container.addEventListener('mouseover', handleMouseOver, false);
+      container.addEventListener('mouseout', handleMouseOut, false);
+    }
     
     // Debug: Log when container is ready
-    const initialTriggers = container.querySelectorAll('[data-tooltip-keyword]');
-    console.log('[Tooltip] ✅ Container ready:', container, 'Triggers found:', initialTriggers.length);
-    if (initialTriggers.length > 0) {
-      console.log('[Tooltip] Sample trigger:', initialTriggers[0]);
-      console.log('[Tooltip] Sample trigger HTML:', initialTriggers[0].outerHTML);
-    }
+    const container = getContainer();
+    if (container) {
+      const initialTriggers = container.querySelectorAll('[data-tooltip-keyword]');
+      console.log('[Tooltip] ✅ Container ready:', container, 'Triggers found:', initialTriggers.length);
+      if (initialTriggers.length > 0) {
+        console.log('[Tooltip] Sample trigger:', initialTriggers[0]);
+        console.log('[Tooltip] Sample trigger HTML:', initialTriggers[0].outerHTML);
+      }
 
-    // Use MutationObserver with throttling to watch for new tooltip triggers
-    let mutationTimeout: NodeJS.Timeout | null = null;
-    const observer = new MutationObserver((mutations) => {
-      // Check if any new tooltip triggers were added
-      let hasNewTriggers = false;
-      mutations.forEach((mutation) => {
-        mutation.addedNodes.forEach((node) => {
-          if (node.nodeType === Node.ELEMENT_NODE) {
-            const element = node as HTMLElement;
-            if (element.hasAttribute('data-tooltip-keyword') || element.querySelector('[data-tooltip-keyword]')) {
-              hasNewTriggers = true;
+      // Use MutationObserver with throttling to watch for new tooltip triggers
+      let mutationTimeout: NodeJS.Timeout | null = null;
+      const observer = new MutationObserver((mutations) => {
+        // Check if any new tooltip triggers were added
+        let hasNewTriggers = false;
+        mutations.forEach((mutation) => {
+          mutation.addedNodes.forEach((node) => {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              const element = node as HTMLElement;
+              if (element.hasAttribute('data-tooltip-keyword') || element.querySelector('[data-tooltip-keyword]')) {
+                hasNewTriggers = true;
+              }
             }
-          }
+          });
         });
+        
+        if (hasNewTriggers) {
+          if (mutationTimeout) clearTimeout(mutationTimeout);
+          mutationTimeout = setTimeout(() => {
+            console.log('[Tooltip] New triggers detected, ensuring classes...');
+            ensureClasses();
+          }, 50); // Faster response for new triggers
+        }
+      });
+
+      observer.observe(container, {
+        childList: true,
+        subtree: true,
+        attributes: false, // Don't watch attributes - too expensive
       });
       
-      if (hasNewTriggers) {
-        if (mutationTimeout) clearTimeout(mutationTimeout);
-        mutationTimeout = setTimeout(() => {
-          console.log('[Tooltip] New triggers detected, ensuring classes...');
-          ensureClasses();
-        }, 50); // Faster response for new triggers
-      }
-    });
-
-    observer.observe(container, {
-      childList: true,
-      subtree: true,
-      attributes: false, // Don't watch attributes - too expensive
-    });
+      // Store observer for cleanup
+      (cleanupRef as any).current.observer = observer;
+    }
 
       const cleanupFn = () => {
-        observer.disconnect();
+        const container = getContainer();
+        if ((cleanupFn as any).observer) {
+          (cleanupFn as any).observer.disconnect();
+        }
         document.removeEventListener('mouseover', handleDocumentMouseOver, true);
         document.removeEventListener('mouseout', handleDocumentMouseOut, true);
-        container.removeEventListener('mouseover', handleMouseOver, true);
-        container.removeEventListener('mouseout', handleMouseOut, true);
-        container.removeEventListener('mouseover', handleMouseOver, false);
-        container.removeEventListener('mouseout', handleMouseOut, false);
+        if (container) {
+          container.removeEventListener('mouseover', handleMouseOver, true);
+          container.removeEventListener('mouseout', handleMouseOut, true);
+          container.removeEventListener('mouseover', handleMouseOver, false);
+          container.removeEventListener('mouseout', handleMouseOut, false);
+        }
         cleanup();
       };
       
       cleanupRef.current = cleanupFn;
+      isSetupRef.current = true;
       return cleanupFn;
     };
 
-    // Start setup with a small delay to ensure DOM is ready
-    const timeoutId = setTimeout(setupTooltips, 0);
+    // Start setup immediately
+    setupTooltips();
     
     return () => {
-      clearTimeout(timeoutId);
       if (cleanupRef.current) {
         cleanupRef.current();
         cleanupRef.current = null;
       }
+      isSetupRef.current = false;
     };
   }, [containerRef]);
 }
