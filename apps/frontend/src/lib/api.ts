@@ -1,4 +1,22 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
+// Get API base URL - use env var if set, otherwise detect from hostname
+function getApiBase(): string {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  
+  // Runtime detection: if running on localhost, use localhost API, otherwise use production
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'http://localhost:3001/api';
+    }
+  }
+  
+  // Default to production API URL
+  return 'https://a.acoustic.uz/api';
+}
+
+const API_BASE = getApiBase();
 
 export class ApiFetchError extends Error {
   status: number;
