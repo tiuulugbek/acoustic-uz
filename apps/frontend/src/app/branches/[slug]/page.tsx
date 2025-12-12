@@ -1,7 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import dynamic from 'next/dynamic';
 import { getBranchBySlug, getDoctors, getServices } from '@/lib/api-server';
 import { detectLocale } from '@/lib/locale-server';
 import { getBilingualText } from '@/lib/locale';
@@ -10,29 +9,7 @@ import type { TourConfig } from '@/types/tour';
 import PageHeader from '@/components/page-header';
 import WorkingHoursDisplay from '@/components/working-hours-display';
 import BranchTOC from '@/components/branch-toc';
-
-// Dynamically import PanoramaViewer for client-side rendering
-// Using dynamic import with ssr: false to prevent hydration mismatch
-// Loading component must match exactly what PanoramaViewer renders when not mounted
-const PanoramaViewer = dynamic(() => import('@/components/tour/PanoramaViewer'), {
-  ssr: false,
-  loading: () => {
-    // Loading placeholder - MUST match PanoramaViewer's placeholder render exactly
-    // This prevents hydration mismatch between loading state and actual component
-    return (
-      <div className="relative w-full" style={{ aspectRatio: '16 / 9', minHeight: '400px' }} suppressHydrationWarning>
-        <div className="flex h-full items-center justify-center bg-gray-100">
-          <div className="text-center">
-            <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-brand-primary border-t-transparent mx-auto"></div>
-            <p className="text-lg text-gray-600" suppressHydrationWarning>
-              3D Tour yuklanmoqda... / Загрузка 3D тура...
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  },
-});
+import PanoramaViewerWrapper from '@/components/tour/PanoramaViewerWrapper';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -275,7 +252,7 @@ export default async function BranchPage({ params }: BranchPageProps) {
                   <div className="rounded-lg overflow-hidden border border-border bg-muted/20 w-full max-w-full" suppressHydrationWarning>
                     {branch.tour3d_config ? (
                       <div className="w-full max-w-full" style={{ aspectRatio: '16 / 9', minHeight: '250px', maxHeight: '500px' }} suppressHydrationWarning>
-                        <PanoramaViewer config={branch.tour3d_config as TourConfig} locale={locale} />
+                        <PanoramaViewerWrapper config={branch.tour3d_config as TourConfig} locale={locale} />
                       </div>
                     ) : branch.tour3d_iframe ? (
                       <div
