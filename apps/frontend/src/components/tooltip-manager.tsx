@@ -24,15 +24,20 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
   const tooltipRefsRef = useRef<Map<HTMLElement, TooltipRef>>(new Map());
 
   useEffect(() => {
-    if (!containerRef.current) {
-      console.warn('[Tooltip] Container ref is null');
-      return;
-    }
+    // Wait a bit for DOM to be ready, especially if HTML is set via dangerouslySetInnerHTML
+    const setupTooltips = () => {
+      if (!containerRef.current) {
+        console.warn('[Tooltip] Container ref is null, retrying...');
+        // Retry after a short delay
+        setTimeout(setupTooltips, 100);
+        return;
+      }
 
-    const container = containerRef.current;
-    const tooltipRefs = tooltipRefsRef.current;
-    
-    console.log('[Tooltip] Setting up tooltip manager for container:', container);
+      const container = containerRef.current;
+      const tooltipRefs = tooltipRefsRef.current;
+      
+      console.log('[Tooltip] Setting up tooltip manager for container:', container);
+      console.log('[Tooltip] Container HTML:', container.innerHTML.substring(0, 200));
 
     // Cleanup function
     const cleanup = () => {
