@@ -1,7 +1,8 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import Script from 'next/script';
 import type { Metadata } from 'next';
-import { getBranchBySlug, getDoctors, getServices } from '@/lib/api-server';
+import { getBranchBySlug, getDoctors, getServices, getSettings } from '@/lib/api-server';
 import { detectLocale } from '@/lib/locale-server';
 import { getBilingualText } from '@/lib/locale';
 import { MapPin, Phone, Clock, Navigation, ExternalLink } from 'lucide-react';
@@ -10,6 +11,7 @@ import PageHeader from '@/components/page-header';
 import WorkingHoursDisplay from '@/components/working-hours-display';
 import BranchTOC from '@/components/branch-toc';
 import PanoramaViewerWrapper from '@/components/tour/PanoramaViewerWrapper';
+import { normalizeImageUrl } from '@/lib/image-utils';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -57,8 +59,11 @@ export default async function BranchPage({ params }: BranchPageProps) {
     branch = branches.find(b => b.id === params.slug) || null;
   }
   
-  const doctors = await getDoctors(locale);
-  const allServices = await getServices(locale);
+  const [doctors, allServices, settings] = await Promise.all([
+    getDoctors(locale),
+    getServices(locale),
+    getSettings(locale),
+  ]);
 
   if (!branch) {
     return (
@@ -123,8 +128,56 @@ export default async function BranchPage({ params }: BranchPageProps) {
     ? allServices.filter(service => branchServiceIds.includes(service.id))
     : allServices.slice(0, 6); // Fallback: show first 6 services if no specific services assigned
 
+  // Build LocalBusiness Structured Data
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
+  const branchUrl = `${baseUrl}/branches/${branch.slug}`;
+  const branchImageUrl = branch.image?.url 
+    ? normalizeImageUrl(branch.image.url)
+    : settings?.logo?.url 
+      ? normalizeImageUrl(settings.logo.url)
+      : `${baseUrl}/logo.png`;
+  
+  const localBusinessJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'LocalBusiness',
+    '@id': branchUrl,
+    name: name,
+    image: branchImageUrl.startsWith('http') ? branchImageUrl : `${baseUrl}${branchImageUrl}`,
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: address,
+      addressLocality: branch.city || 'Tashkent',
+      addressCountry: 'UZ',
+    },
+    geo: branch.latitude && branch.longitude ? {
+      '@type': 'GeoCoordinates',
+      latitude: branch.latitude,
+      longitude: branch.longitude,
+    } : undefined,
+    telephone: branch.phone || settings?.phonePrimary || settings?.phoneSecondary || undefined,
+    url: branchUrl,
+    openingHoursSpecification: branch.workingHours_uz || branch.workingHours_ru ? {
+      '@type': 'OpeningHoursSpecification',
+      dayOfWeek: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+      opens: '09:00',
+      closes: '18:00',
+    } : undefined,
+    priceRange: '$$',
+    servesCuisine: undefined,
+    areaServed: {
+      '@type': 'City',
+      name: branch.city || 'Tashkent',
+    },
+  };
+
   return (
     <main className="min-h-screen bg-background" suppressHydrationWarning>
+      {/* LocalBusiness Structured Data */}
+      <Script
+        id="localbusiness-jsonld"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessJsonLd) }}
+      />
       {/* Breadcrumbs */}
       <PageHeader
         locale={locale}

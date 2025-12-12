@@ -17,12 +17,13 @@ const staticPages = [
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const sitemapEntries: MetadataRoute.Sitemap = [];
 
-  // Helper function to add URL
+  // Helper function to add URL with hreflang support
   const addUrl = (
     url: string,
     lastModified?: Date,
     changeFrequency: 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never' = 'weekly',
     priority: number = 0.8,
+    alternates?: { languages: Record<string, string> },
   ) => {
     const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url.startsWith('/') ? url : `/${url}`}`;
     
@@ -31,13 +32,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified,
       changeFrequency,
       priority,
+      alternates,
     });
   };
 
-  // Add static pages
+  // Add static pages with hreflang
   staticPages.forEach((page) => {
     const priority = page === '' ? 1.0 : page === 'catalog' ? 0.9 : 0.8;
-    addUrl(`/${page}`, new Date(), 'daily', priority);
+    const urlPath = page === '' ? '' : `/${page}`;
+    addUrl(urlPath, new Date(), 'daily', priority, {
+      languages: {
+        uz: `${baseUrl}${urlPath}`,
+        ru: `${baseUrl}/ru${urlPath}`,
+        'x-default': `${baseUrl}${urlPath}`,
+      },
+    });
   });
 
   try {
@@ -47,7 +56,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     
     products.forEach((product) => {
       if (product.status === 'published') {
-        addUrl(`/products/${product.slug}`, product.updatedAt ? new Date(product.updatedAt) : undefined, 'weekly', 0.7);
+        addUrl(`/products/${product.slug}`, product.updatedAt ? new Date(product.updatedAt) : undefined, 'weekly', 0.7, {
+          languages: {
+            uz: `${baseUrl}/products/${product.slug}`,
+            ru: `${baseUrl}/ru/products/${product.slug}`,
+            'x-default': `${baseUrl}/products/${product.slug}`,
+          },
+        });
       }
     });
   } catch (error) {
@@ -61,7 +76,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     
     publishedPosts.forEach((post) => {
       const priority = post.postType === 'news' ? 0.6 : 0.7;
-      addUrl(`/posts/${post.slug}`, post.updatedAt ? new Date(post.updatedAt) : undefined, 'weekly', priority);
+      addUrl(`/posts/${post.slug}`, post.updatedAt ? new Date(post.updatedAt) : undefined, 'weekly', priority, {
+        languages: {
+          uz: `${baseUrl}/posts/${post.slug}`,
+          ru: `${baseUrl}/ru/posts/${post.slug}`,
+          'x-default': `${baseUrl}/posts/${post.slug}`,
+        },
+      });
     });
   } catch (error) {
     console.error('[Sitemap] Failed to fetch posts:', error);
@@ -74,7 +95,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     
     publishedBranches.forEach((branch) => {
       if (branch.slug) {
-        addUrl(`/branches/${branch.slug}`, branch.updatedAt ? new Date(branch.updatedAt) : undefined, 'monthly', 0.6);
+        addUrl(`/branches/${branch.slug}`, branch.updatedAt ? new Date(branch.updatedAt) : undefined, 'monthly', 0.6, {
+          languages: {
+            uz: `${baseUrl}/branches/${branch.slug}`,
+            ru: `${baseUrl}/ru/branches/${branch.slug}`,
+            'x-default': `${baseUrl}/branches/${branch.slug}`,
+          },
+        });
       }
     });
   } catch (error) {
@@ -87,7 +114,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const publishedServices = services.filter((service) => service.status === 'published');
     
     publishedServices.forEach((service) => {
-      addUrl(`/services/${service.slug}`, service.updatedAt ? new Date(service.updatedAt) : undefined, 'weekly', 0.7);
+      addUrl(`/services/${service.slug}`, service.updatedAt ? new Date(service.updatedAt) : undefined, 'weekly', 0.7, {
+        languages: {
+          uz: `${baseUrl}/services/${service.slug}`,
+          ru: `${baseUrl}/ru/services/${service.slug}`,
+          'x-default': `${baseUrl}/services/${service.slug}`,
+        },
+      });
     });
   } catch (error) {
     console.error('[Sitemap] Failed to fetch services:', error);
@@ -100,7 +133,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     
     publishedCategories.forEach((category) => {
       // Only add if not already added as a service
-      addUrl(`/services/${category.slug}`, undefined, 'weekly', 0.6);
+      addUrl(`/services/${category.slug}`, undefined, 'weekly', 0.6, {
+        languages: {
+          uz: `${baseUrl}/services/${category.slug}`,
+          ru: `${baseUrl}/ru/services/${category.slug}`,
+          'x-default': `${baseUrl}/services/${category.slug}`,
+        },
+      });
     });
   } catch (error) {
     console.error('[Sitemap] Failed to fetch service categories:', error);

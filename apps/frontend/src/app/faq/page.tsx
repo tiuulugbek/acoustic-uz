@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import { getPublicFaq } from '@/lib/api-server';
 import { detectLocale } from '@/lib/locale-server';
 import { getBilingualText } from '@/lib/locale';
@@ -24,9 +25,30 @@ export default async function FAQPage() {
   const faqs = await getPublicFaq(locale);
 
   const title = locale === 'ru' ? 'Часто задаваемые вопросы' : 'Tez-tez beriladigan savollar';
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
+
+  // Build FAQPage Structured Data
+  const faqPageJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map((faq) => ({
+      '@type': 'Question',
+      name: getBilingualText(faq.question_uz, faq.question_ru, locale),
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: getBilingualText(faq.answer_uz, faq.answer_ru, locale),
+      },
+    })),
+  };
 
   return (
     <main className="min-h-screen bg-background">
+      {/* FAQPage Structured Data */}
+      <Script
+        id="faqpage-jsonld"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqPageJsonLd) }}
+      />
       <PageHeader
         locale={locale}
         breadcrumbs={[
