@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
 export default function GlobalError({
@@ -10,21 +10,42 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const [mounted, setMounted] = useState(false);
+  
   useEffect(() => {
+    setMounted(true);
     // Log error to console
     console.error('Global Error:', error);
   }, [error]);
+
+  // Prevent hydration mismatch by ensuring consistent render
+  if (!mounted) {
+    return (
+      <html suppressHydrationWarning>
+        <body suppressHydrationWarning>
+          <div className="flex min-h-screen flex-col items-center justify-center px-4">
+            <div className="text-center">
+              <h1 className="text-6xl font-bold text-brand-primary mb-4" suppressHydrationWarning>500</h1>
+              <h2 className="text-2xl font-semibold text-gray-900 mb-2" suppressHydrationWarning>
+                Xatolik yuz berdi
+              </h2>
+            </div>
+          </div>
+        </body>
+      </html>
+    );
+  }
 
   return (
     <html suppressHydrationWarning>
       <body suppressHydrationWarning>
         <div className="flex min-h-screen flex-col items-center justify-center px-4">
           <div className="text-center">
-            <h1 className="text-6xl font-bold text-brand-primary mb-4">500</h1>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+            <h1 className="text-6xl font-bold text-brand-primary mb-4" suppressHydrationWarning>500</h1>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-2" suppressHydrationWarning>
               Xatolik yuz berdi
             </h2>
-            <p className="text-gray-600 mb-8">
+            <p className="text-gray-600 mb-8" suppressHydrationWarning>
               Kechirasiz, serverda xatolik yuz berdi. Iltimos, keyinroq qayta urinib ko'ring.
             </p>
             <div className="flex gap-4 justify-center">
