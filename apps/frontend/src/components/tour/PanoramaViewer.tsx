@@ -1164,7 +1164,7 @@ export default function PanoramaViewer({ config, locale = 'uz', className = '', 
   }
 
   return (
-    <div className={`relative w-full ${className}`} style={{ aspectRatio: '16 / 9', minHeight: '400px' }}>
+    <div className={`relative w-full ${className}`} style={{ aspectRatio: '16 / 9', minHeight: '400px' }} suppressHydrationWarning>
       {/* Loading indicator */}
       {isLoading && (
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-gray-100">

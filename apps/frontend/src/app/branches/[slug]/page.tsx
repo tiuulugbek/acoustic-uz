@@ -261,13 +261,13 @@ export default async function BranchPage({ params }: BranchPageProps) {
 
               {/* 3D Tour Section */}
               {(branch.tour3d_config || branch.tour3d_iframe) && (
-                <section id="tour3d" className="scroll-mt-20 w-full overflow-x-hidden">
+                <section id="tour3d" className="scroll-mt-20 w-full overflow-x-hidden" suppressHydrationWarning>
                   <h2 className="mb-3 text-xl sm:text-2xl font-bold text-foreground" suppressHydrationWarning>
                     {locale === 'ru' ? '3D Тур' : '3D Tour'}
                   </h2>
-                  <div className="rounded-lg overflow-hidden border border-border bg-muted/20 w-full max-w-full">
+                  <div className="rounded-lg overflow-hidden border border-border bg-muted/20 w-full max-w-full" suppressHydrationWarning>
                     {branch.tour3d_config ? (
-                      <div className="w-full max-w-full" style={{ aspectRatio: '16 / 9', minHeight: '250px', maxHeight: '500px' }}>
+                      <div className="w-full max-w-full" style={{ aspectRatio: '16 / 9', minHeight: '250px', maxHeight: '500px' }} suppressHydrationWarning>
                         <PanoramaViewer config={branch.tour3d_config as TourConfig} locale={locale} />
                       </div>
                     ) : (
@@ -280,6 +280,7 @@ export default async function BranchPage({ params }: BranchPageProps) {
                             .replace(/height="[^"]*"/gi, 'height="100%"')
                             .replace(/style="[^"]*"/gi, 'style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0; max-width: 100%;"') || '',
                         }}
+                        suppressHydrationWarning
                       />
                     )}
                   </div>
