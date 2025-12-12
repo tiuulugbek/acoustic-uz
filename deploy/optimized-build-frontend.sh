@@ -147,39 +147,39 @@ cd "$PROJECT_DIR"
 pm2 delete acoustic-frontend 2>/dev/null || true
 sleep 1
 
-# Check if standalone build exists, otherwise use standard next start
-if [ -f "$FRONTEND_DIR/.next/standalone/apps/frontend/server.js" ]; then
-    echo -e "${GREEN}  ✅ Using standalone build${NC}"
-    pm2 start ecosystem.config.js --only acoustic-frontend
-else
-    echo -e "${GREEN}  ✅ Using standard Next.js build (next start)${NC}"
-    # Start with pnpm start directly
+# Start frontend using ecosystem config (works for both standalone and standard builds)
+echo -e "${GREEN}  ✅ Starting frontend with PM2...${NC}"
+pm2 start ecosystem.config.js --only acoustic-frontend || {
+    echo -e "${RED}  ❌ Failed to start frontend${NC}"
+    echo -e "${YELLOW}  → Trying alternative startup method...${NC}"
     cd "$FRONTEND_DIR"
-    pm2 start pnpm --name acoustic-frontend -- start --update-env || {
-        echo -e "${RED}  ❌ Failed to start frontend${NC}"
+    # Fallback: use node_modules/.bin/next directly
+    pm2 start node_modules/.bin/next --name acoustic-frontend -- start --update-env || {
+        echo -e "${RED}  ❌ Alternative startup also failed${NC}"
         exit 1
     }
     cd "$PROJECT_DIR"
-fi
+}
 pm2 save
 
 # Wait for startup
-sleep 3
+sleep 5
 
-# 13. Check PM2 status
-echo -e "${BLUE}📋 Step 13: Checking PM2 status...${NC}"
+# 11. Check PM2 status
+echo -e "${BLUE}📋 Step 11: Checking PM2 status...${NC}"
 pm2 list | grep acoustic-frontend || {
     echo -e "${RED}  ❌ Frontend not found in PM2!${NC}"
     exit 1
 }
 
-# 14. Test connection
-echo -e "${BLUE}📋 Step 14: Testing connection...${NC}"
+# 12. Test connection
+echo -e "${BLUE}📋 Step 12: Testing connection...${NC}"
+sleep 2
 HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 || echo "000")
 if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "304" ]; then
     echo -e "${GREEN}  ✅ Frontend is running (HTTP $HTTP_CODE)${NC}"
 else
-    echo -e "${YELLOW}  ⚠️  HTTP $HTTP_CODE - Check logs: pm2 logs acoustic-frontend${NC}"
+    echo -e "${YELLOW}  ⚠️  HTTP $HTTP_CODE - Check logs: pm2 logs acoustic-frontend --lines 50${NC}"
 fi
 
 echo ""

@@ -20,7 +20,7 @@ module.exports = {
     },
     {
       name: 'acoustic-frontend',
-      script: 'pnpm',
+      script: 'node_modules/.bin/next',
       args: 'start',
       cwd: '/var/www/acoustic.uz/apps/frontend',
       instances: 1,
