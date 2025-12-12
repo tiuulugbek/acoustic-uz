@@ -137,10 +137,10 @@ export default async function BranchPage({ params }: BranchPageProps) {
         description=""
       />
 
-      {/* Main Content */}
-      <section className="bg-white py-4 sm:py-8 overflow-x-hidden" suppressHydrationWarning>
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 w-full" suppressHydrationWarning>
-          <div className="grid gap-4 sm:gap-6 lg:gap-8 lg:grid-cols-[2fr_1fr]" suppressHydrationWarning>
+            {/* Main Content */}
+            <section className="bg-white py-4 sm:py-8" suppressHydrationWarning>
+              <div className="mx-auto max-w-6xl px-4 sm:px-6 w-full" suppressHydrationWarning>
+                <div className="grid gap-4 sm:gap-6 lg:gap-8 lg:grid-cols-[2fr_1fr] lg:items-start" suppressHydrationWarning>
             {/* Left Column - Main Content */}
             <div className="space-y-6 sm:space-y-8 min-w-0 w-full" suppressHydrationWarning>
               {/* Title and Description */}
@@ -326,7 +326,7 @@ export default async function BranchPage({ params }: BranchPageProps) {
             </div>
 
             {/* Right Sidebar */}
-            <aside className="lg:sticky lg:top-4 lg:self-start order-first lg:order-last" suppressHydrationWarning>
+            <aside className="order-first lg:order-last lg:sticky lg:top-20 lg:self-start lg:h-fit" suppressHydrationWarning>
               <div className="rounded-lg border border-border bg-white p-4 sm:p-6 shadow-sm space-y-4 sm:space-y-6" suppressHydrationWarning>
                 {/* Table of Contents */}
                 <BranchTOC locale={locale} hasTour3d={hasTour3d} />
