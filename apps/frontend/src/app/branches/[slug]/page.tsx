@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import dynamicImport from 'next/dynamic';
+import dynamic from 'next/dynamic';
 import { getBranchBySlug, getDoctors, getServices } from '@/lib/api-server';
 import { detectLocale } from '@/lib/locale-server';
 import { getBilingualText } from '@/lib/locale';
@@ -12,13 +12,19 @@ import WorkingHoursDisplay from '@/components/working-hours-display';
 import BranchTOC from '@/components/branch-toc';
 
 // Dynamically import PanoramaViewer for client-side rendering
-const PanoramaViewer = dynamicImport(() => import('@/components/tour/PanoramaViewer'), {
+// Using dynamic import with ssr: false to prevent hydration mismatch
+const PanoramaViewer = dynamic(() => import('@/components/tour/PanoramaViewer'), {
   ssr: false,
   loading: () => {
-    // We can't access locale here in loading component, so use bilingual text
+    // Loading placeholder - consistent between SSR and client
     return (
-      <div className="flex h-[500px] w-full items-center justify-center bg-gray-100 text-lg text-gray-500">
-        <span suppressHydrationWarning>3D Tour yuklanmoqda... / Загрузка 3D тура...</span>
+      <div className="flex h-[500px] w-full items-center justify-center bg-gray-100" suppressHydrationWarning>
+        <div className="text-center">
+          <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-brand-primary border-t-transparent mx-auto"></div>
+          <p className="text-lg text-gray-500" suppressHydrationWarning>
+            3D Tour yuklanmoqda... / Загрузка 3D тура...
+          </p>
+        </div>
       </div>
     );
   },

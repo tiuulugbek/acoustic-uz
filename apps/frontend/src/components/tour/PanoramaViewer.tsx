@@ -20,6 +20,8 @@ interface PanoramaViewerProps {
 
 export default function PanoramaViewer({ config, locale = 'uz', className = '', onThumbnailsChange, showThumbnailsExternal }: PanoramaViewerProps) {
   // Prevent hydration mismatch - mounted state must be first
+  // Since component is loaded with ssr: false, mounted will always be true on client
+  // But we still check to ensure consistency
   const [mounted, setMounted] = useState(false);
   
   const viewerRef = useRef<HTMLDivElement>(null);
