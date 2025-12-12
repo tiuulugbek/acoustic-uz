@@ -42,11 +42,20 @@ async function bootstrap() {
     corsOrigins = [...new Set([...defaultOrigins, ...envOrigins])];
   } else {
     // If no CORS_ORIGIN env var, use callback function to allow all origins
+    // This ensures CORS works even if backend starts before env vars are loaded
     corsOrigins = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-      // Allow requests with no origin (like mobile apps or curl requests)
-      if (!origin) return callback(null, true);
-      // Allow all origins
-      callback(null, true);
+      try {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) {
+          callback(null, true);
+          return;
+        }
+        // Allow all origins - this is safe for public API
+        callback(null, true);
+      } catch (error) {
+        // Fallback: allow all origins if callback fails
+        callback(null, true);
+      }
     };
   }
   

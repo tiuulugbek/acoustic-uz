@@ -1,17 +1,14 @@
 #!/bin/bash
-# Rebuild backend and restart PM2
 
 set -e
 
-PROJECT_DIR="/var/www/news.acoustic.uz"
+echo "🔧 Rebuilding backend..."
 
-echo "🚀 Rebuilding backend..."
+cd /var/www/acoustic.uz || exit 1
 
-cd "$PROJECT_DIR"
-
-# Pull latest code
-echo "📥 Pulling latest code..."
-git pull origin main
+# Pull latest changes
+echo "📥 Pulling latest changes..."
+git pull origin main || echo "⚠️ Git pull failed, continuing..."
 
 # Install dependencies
 echo "📦 Installing dependencies..."
@@ -19,18 +16,30 @@ cd apps/backend
 pnpm install
 
 # Build backend
-echo "🏗️  Building backend..."
+echo "🏗️ Building backend..."
 pnpm build
 
-# Restart PM2
+# Check if build was successful
+if [ ! -f "dist/main.js" ]; then
+    echo "❌ Build failed: dist/main.js not found"
+    exit 1
+fi
+
+echo "✅ Build successful!"
+
+# Restart backend with PM2
 echo "🔄 Restarting backend..."
-cd "$PROJECT_DIR"
-pm2 restart acoustic-backend
+pm2 restart acoustic-backend || pm2 start ecosystem.config.js --only acoustic-backend
 
-# Show status
-echo "✅ Backend rebuild completed!"
-pm2 status acoustic-backend
+# Wait a moment for backend to start
+sleep 3
 
-echo ""
-echo "📋 Check logs with: pm2 logs acoustic-backend --lines 0"
-
+# Check backend status
+if pm2 list | grep -q "acoustic-backend.*online"; then
+    echo "✅ Backend is running!"
+    pm2 logs acoustic-backend --lines 20
+else
+    echo "❌ Backend failed to start!"
+    pm2 logs acoustic-backend --lines 50
+    exit 1
+fi
