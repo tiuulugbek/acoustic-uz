@@ -24,15 +24,20 @@ export default function TelegramButton({ initialLocale }: TelegramButtonProps = 
   const [mounted, setMounted] = useState(false);
   
   useEffect(() => {
+    console.log('[TelegramButton] Setting mounted to true');
     setMounted(true);
     // Only update locale on client-side after hydration
     const domLocale = getLocaleFromDOM();
+    console.log('[TelegramButton] DOM locale:', domLocale, 'current locale:', locale);
     if (domLocale !== locale) {
+      console.log('[TelegramButton] Updating locale from', locale, 'to', domLocale);
       setLocale(domLocale);
     }
   }, []);
 
   useEffect(() => {
+    console.log('[TelegramButton] useEffect triggered - mounted:', mounted, 'locale:', locale);
+    
     // Only fetch settings after component is mounted
     if (!mounted) {
       console.log('[TelegramButton] Not mounted yet, skipping fetch');
