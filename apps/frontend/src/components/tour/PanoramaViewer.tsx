@@ -20,8 +20,8 @@ interface PanoramaViewerProps {
 
 export default function PanoramaViewer({ config, locale = 'uz', className = '', onThumbnailsChange, showThumbnailsExternal }: PanoramaViewerProps) {
   // Since component is loaded with ssr: false, we can assume we're always on client
-  // Set mounted to true immediately to prevent hydration mismatch
-  const [mounted, setMounted] = useState(true); // Changed from false to true - component is always client-side
+  // But we still need to ensure component only renders after mount to prevent hydration mismatch
+  const [mounted, setMounted] = useState(false);
   
   const viewerRef = useRef<HTMLDivElement>(null);
   const viewerInstanceRef = useRef<any>(null);
@@ -203,10 +203,17 @@ export default function PanoramaViewer({ config, locale = 'uz', className = '', 
     }
   }, []);
 
-  // Initialize viewer immediately since component is always client-side (ssr: false)
+  // Prevent hydration mismatch - only initialize on client after mount
   useEffect(() => {
-    // Component is always mounted on client since it's loaded with ssr: false
-    // No need to wait for mount state
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    // Only initialize after component is mounted to prevent hydration mismatch
+    if (!mounted) {
+      console.log('⏳ PanoramaViewer: Waiting for mount...');
+      return;
+    }
     
     console.log('🎬 PanoramaViewer mounted with config:', {
       hasConfig: !!config,
@@ -1194,8 +1201,36 @@ export default function PanoramaViewer({ config, locale = 'uz', className = '', 
     );
   }
 
-  // Since component is loaded with ssr: false, mounted is always true
-  // No need for placeholder check - component is always client-side
+  // Prevent hydration mismatch by ensuring component only renders on client
+  if (error) {
+    return (
+      <div className={`flex h-full min-h-[400px] items-center justify-center bg-gray-100 ${className}`} suppressHydrationWarning>
+        <div className="text-center">
+          <p className="text-red-600" suppressHydrationWarning>{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Since component is loaded with ssr: false, this should rarely be needed
+  // But we keep it as a safety check to prevent hydration mismatch
+  if (!mounted) {
+    console.log('⏳ PanoramaViewer: Not mounted yet, showing placeholder');
+    // Return placeholder during SSR to prevent hydration mismatch
+    // This matches the loading component in dynamic import
+    return (
+      <div className={`relative w-full ${className}`} style={{ aspectRatio: '16 / 9', minHeight: '400px' }} suppressHydrationWarning>
+        <div className="flex h-full items-center justify-center bg-gray-100">
+          <div className="text-center">
+            <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-brand-primary border-t-transparent mx-auto"></div>
+            <p className="text-lg text-gray-600" suppressHydrationWarning>
+              {locale === 'ru' ? 'Панорама загружается...' : 'Panorama yuklanmoqda...'}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
   
   // Additional safety check - if config is invalid, show error
   if (!config || !config.scenes || Object.keys(config.scenes).length === 0) {

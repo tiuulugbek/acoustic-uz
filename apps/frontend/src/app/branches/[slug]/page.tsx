@@ -13,11 +13,11 @@ import BranchTOC from '@/components/branch-toc';
 
 // Dynamically import PanoramaViewer for client-side rendering
 // Using dynamic import with ssr: false to prevent hydration mismatch
-// Loading component must match exactly what PanoramaViewer renders initially
+// Loading component must match exactly what PanoramaViewer renders when not mounted
 const PanoramaViewer = dynamic(() => import('@/components/tour/PanoramaViewer'), {
   ssr: false,
   loading: () => {
-    // Loading placeholder - MUST match PanoramaViewer's initial render exactly
+    // Loading placeholder - MUST match PanoramaViewer's placeholder render exactly
     // This prevents hydration mismatch between loading state and actual component
     return (
       <div className="relative w-full" style={{ aspectRatio: '16 / 9', minHeight: '400px' }} suppressHydrationWarning>
