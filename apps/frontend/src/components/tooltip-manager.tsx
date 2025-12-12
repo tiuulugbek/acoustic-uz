@@ -23,6 +23,7 @@ let resizeTimeout: NodeJS.Timeout | null = null;
 export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
   const tooltipRefsRef = useRef<Map<HTMLElement, TooltipRef>>(new Map());
   const cleanupRef = useRef<(() => void) | null>(null);
+  const cleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     // Wait a bit for DOM to be ready, especially if HTML is set via dangerouslySetInnerHTML
@@ -439,20 +440,44 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
     // Initial class setup
     ensureClasses();
 
-    // Add event listeners - try both capture and bubble phases
-    // Capture phase first to catch events early
+    // Add event listeners to document for global event delegation
+    // This ensures tooltips work even if container ref is delayed
+    const handleDocumentMouseOver = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target) return;
+      
+      // Check if target is within our container
+      if (container && container.contains(target)) {
+        handleMouseOver(e);
+      }
+    };
+
+    const handleDocumentMouseOut = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target) return;
+      
+      // Check if target is within our container
+      if (container && container.contains(target)) {
+        handleMouseOut(e);
+      }
+    };
+
+    // Add event listeners to document (more reliable than container)
+    document.addEventListener('mouseover', handleDocumentMouseOver, true);
+    document.addEventListener('mouseout', handleDocumentMouseOut, true);
+    
+    // Also add to container as backup
     container.addEventListener('mouseover', handleMouseOver, true);
     container.addEventListener('mouseout', handleMouseOut, true);
-    
-    // Also add bubble phase listeners as fallback
     container.addEventListener('mouseover', handleMouseOver, false);
     container.addEventListener('mouseout', handleMouseOut, false);
     
     // Debug: Log when container is ready
     const initialTriggers = container.querySelectorAll('[data-tooltip-keyword]');
-    console.log('[Tooltip] Container ready:', container, 'Triggers found:', initialTriggers.length);
+    console.log('[Tooltip] ✅ Container ready:', container, 'Triggers found:', initialTriggers.length);
     if (initialTriggers.length > 0) {
       console.log('[Tooltip] Sample trigger:', initialTriggers[0]);
+      console.log('[Tooltip] Sample trigger HTML:', initialTriggers[0].outerHTML);
     }
 
     // Use MutationObserver with throttling to watch for new tooltip triggers
