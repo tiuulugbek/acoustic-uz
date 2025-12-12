@@ -168,16 +168,17 @@ export default async function BranchPage({ params }: BranchPageProps) {
 
               {/* Services Section */}
               {services.length > 0 && (
-                <section id="services" className="scroll-mt-20">
+                <section id="services" className="scroll-mt-20" suppressHydrationWarning>
                   <h2 className="mb-3 text-xl sm:text-2xl font-bold text-foreground" suppressHydrationWarning>
                     {locale === 'ru' ? 'Услуги' : 'Xizmatlar'}
                   </h2>
-                  <div className="grid gap-2 sm:gap-3 sm:grid-cols-2">
+                  <div className="grid gap-2 sm:gap-3 sm:grid-cols-2" suppressHydrationWarning>
                     {services.map((service) => (
                       <Link
                         key={service.id}
                         href={`/services/${service.slug}`}
                         className="flex items-start gap-2 group hover:text-brand-primary transition-colors"
+                        suppressHydrationWarning
                       >
                         <span className="mt-1 text-brand-primary flex-shrink-0">•</span>
                         <span className="text-sm sm:text-base text-foreground group-hover:text-brand-primary break-words" suppressHydrationWarning>
@@ -191,11 +192,11 @@ export default async function BranchPage({ params }: BranchPageProps) {
 
               {/* Doctors Section */}
               {doctors && doctors.length > 0 && (
-                <section id="doctors" className="scroll-mt-20">
+                <section id="doctors" className="scroll-mt-20" suppressHydrationWarning>
                   <h2 className="mb-3 text-xl sm:text-2xl font-bold text-foreground" suppressHydrationWarning>
                     {locale === 'ru' ? 'Врачи' : 'Shifokorlar'}
                   </h2>
-                  <div className="grid gap-4 sm:gap-6 sm:grid-cols-2">
+                  <div className="grid gap-4 sm:gap-6 sm:grid-cols-2" suppressHydrationWarning>
                     {doctors.slice(0, 4).map((doctor) => {
                       const doctorName = getBilingualText(doctor.name_uz, doctor.name_ru, locale);
                       const position = getBilingualText(doctor.position_uz, doctor.position_ru, locale);
@@ -212,10 +213,11 @@ export default async function BranchPage({ params }: BranchPageProps) {
                           key={doctor.id}
                           href={`/doctors/${doctor.slug}`}
                           className="group block rounded-lg border border-border bg-white p-3 sm:p-4 shadow-sm transition hover:shadow-md"
+                          suppressHydrationWarning
                         >
-                          <div className="flex gap-3 sm:gap-4">
+                          <div className="flex gap-3 sm:gap-4" suppressHydrationWarning>
                             {doctorImageUrl ? (
-                              <div className="relative h-16 w-16 sm:h-20 sm:w-20 flex-shrink-0 overflow-hidden rounded-lg bg-muted/20">
+                              <div className="relative h-16 w-16 sm:h-20 sm:w-20 flex-shrink-0 overflow-hidden rounded-lg bg-muted/20" suppressHydrationWarning>
                                 <Image
                                   src={doctorImageUrl}
                                   alt={doctorName}
@@ -225,13 +227,13 @@ export default async function BranchPage({ params }: BranchPageProps) {
                                 />
                               </div>
                             ) : (
-                              <div className="h-16 w-16 sm:h-20 sm:w-20 flex-shrink-0 rounded-lg bg-gradient-to-br from-brand-primary to-brand-accent flex items-center justify-center">
-                                <span className="text-xl sm:text-2xl font-bold text-white">
+                              <div className="h-16 w-16 sm:h-20 sm:w-20 flex-shrink-0 rounded-lg bg-gradient-to-br from-brand-primary to-brand-accent flex items-center justify-center" suppressHydrationWarning>
+                                <span className="text-xl sm:text-2xl font-bold text-white" suppressHydrationWarning>
                                   {doctorName.charAt(0).toUpperCase()}
                                 </span>
                               </div>
                             )}
-                            <div className="flex-1 min-w-0">
+                            <div className="flex-1 min-w-0" suppressHydrationWarning>
                               <h3 className="mb-1 text-sm sm:text-base font-semibold text-foreground group-hover:text-brand-primary transition-colors" suppressHydrationWarning>
                                 {doctorName}
                               </h3>
@@ -285,13 +287,13 @@ export default async function BranchPage({ params }: BranchPageProps) {
               )}
 
               {/* Location Section */}
-              <section id="location" className="scroll-mt-20 w-full overflow-x-hidden">
+              <section id="location" className="scroll-mt-20 w-full overflow-x-hidden" suppressHydrationWarning>
                 <h2 className="mb-3 text-xl sm:text-2xl font-bold text-foreground" suppressHydrationWarning>
                   {locale === 'ru' ? 'Как добраться' : 'Qanday yetib borish'}
                 </h2>
                 {branch.map_iframe ? (
                   // Use custom iframe if available (highest priority)
-                  <div className="mb-4 rounded-lg overflow-hidden border border-border bg-gray-100 w-full max-w-full">
+                  <div className="mb-4 rounded-lg overflow-hidden border border-border bg-gray-100 w-full max-w-full" suppressHydrationWarning>
                     <div
                       className="w-full max-w-full"
                       style={{ 
@@ -314,12 +316,13 @@ export default async function BranchPage({ params }: BranchPageProps) {
                             return `maps.google.com/maps?q=${coords}&output=embed`;
                           })
                       }}
+                      suppressHydrationWarning
                     />
                   </div>
                 ) : branch.latitude && branch.longitude ? (
                   // If coordinates are available, use Yandex Maps embed (more reliable than Google Maps)
                   // Note: Yandex Maps doesn't support uz_UZ locale, so we use ru_RU for both locales
-                  <div className="mb-4 rounded-lg overflow-hidden border border-border bg-gray-100 relative w-full max-w-full" style={{ paddingBottom: '56.25%', height: 0, minHeight: '250px', maxHeight: '500px' }}>
+                  <div className="mb-4 rounded-lg overflow-hidden border border-border bg-gray-100 relative w-full max-w-full" style={{ paddingBottom: '56.25%', height: 0, minHeight: '250px', maxHeight: '500px' }} suppressHydrationWarning>
                     <iframe
                       src={`https://yandex.com/map-widget/v1/?ll=${branch.longitude},${branch.latitude}&z=16&pt=${branch.longitude},${branch.latitude}&lang=ru_RU`}
                       width="100%"
@@ -330,6 +333,7 @@ export default async function BranchPage({ params }: BranchPageProps) {
                       loading="lazy"
                       referrerPolicy="no-referrer-when-downgrade"
                       title={locale === 'ru' ? 'Карта' : 'Xarita'}
+                      suppressHydrationWarning
                     />
                   </div>
                 ) : null}
@@ -383,16 +387,17 @@ export default async function BranchPage({ params }: BranchPageProps) {
                 </div>
 
                 {/* Navigation Links */}
-                <div>
+                <div suppressHydrationWarning>
                   <h3 className="mb-2 text-xs sm:text-sm font-semibold text-foreground uppercase" suppressHydrationWarning>
                     {locale === 'ru' ? 'Навигация' : 'Navigatsiya'}
                   </h3>
-                  <div className="space-y-2">
+                  <div className="space-y-2" suppressHydrationWarning>
                     <a
                       href={yandexNavUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 text-xs sm:text-sm text-brand-primary hover:underline"
+                      suppressHydrationWarning
                     >
                       <Navigation className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
                       <span className="break-words" suppressHydrationWarning>
@@ -405,6 +410,7 @@ export default async function BranchPage({ params }: BranchPageProps) {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-2 text-xs sm:text-sm text-brand-primary hover:underline"
+                      suppressHydrationWarning
                     >
                       <Navigation className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
                       <span className="break-words" suppressHydrationWarning>
