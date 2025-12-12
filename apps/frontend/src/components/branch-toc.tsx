@@ -9,14 +9,9 @@ interface BranchTOCProps {
 }
 
 export default function BranchTOC({ locale, hasTour3d }: BranchTOCProps) {
-  const [mounted, setMounted] = useState(false);
-  
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Build TOC sections - ensure consistent order to prevent hydration mismatch
-  // Always include all sections, but conditionally render based on hasTour3d
+  // Build TOC sections consistently - use hasTour3d prop directly
+  // Since this is a client component, hasTour3d prop is already available from server
+  // No need for mounted state - just use the prop directly
   const baseSections = [
     { id: 'services', label: locale === 'ru' ? 'Услуги' : 'Xizmatlar' },
     { id: 'doctors', label: locale === 'ru' ? 'Врачи' : 'Shifokorlar' },
@@ -25,10 +20,13 @@ export default function BranchTOC({ locale, hasTour3d }: BranchTOCProps) {
   const tour3dSection = { id: 'tour3d', label: locale === 'ru' ? '3D Тур' : '3D Tour' };
   const locationSection = { id: 'location', label: locale === 'ru' ? 'Как добраться' : 'Qanday yetib borish' };
   
-  // Build sections array consistently - only add tour3d if hasTour3d is true
-  const tocSections = mounted 
-    ? [...baseSections, ...(hasTour3d ? [tour3dSection] : []), locationSection]
-    : [...baseSections, locationSection]; // SSR: don't include tour3d to prevent mismatch
+  // Build sections array consistently - always use hasTour3d prop
+  // This ensures SSR and client render the same content
+  const tocSections = [
+    ...baseSections,
+    ...(hasTour3d ? [tour3dSection] : []),
+    locationSection
+  ];
 
   return (
     <div suppressHydrationWarning>
