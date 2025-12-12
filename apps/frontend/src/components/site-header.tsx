@@ -562,12 +562,13 @@ export default function SiteHeader({ initialSettings = null, initialLocale }: Si
       <div className="bg-brand-primary" suppressHydrationWarning>
         <div className="mx-auto hidden max-w-6xl items-center px-4 md:px-6 lg:flex" suppressHydrationWarning>
           <nav key={`nav-${displayLocale}`} className="flex w-full items-stretch min-h-[52px]" suppressHydrationWarning>
-            {navItems.length === 0 && (isLoadingMenu || isLoadingCatalogs) && !headerMenu ? (
+            {!mounted || (navItems.length === 0 && (isLoadingMenu || isLoadingCatalogs) && !headerMenu) ? (
               // Show skeleton menu items while loading to maintain layout (only if no cached data)
               Array.from({ length: 6 }).map((_, index) => (
                 <div
                   key={`skeleton-${index}`}
                   className={`flex-1 animate-pulse ${index > 0 ? 'border-l border-white/20' : ''}`}
+                  suppressHydrationWarning
                 >
                   <div className="flex h-full w-full items-center justify-center gap-2 px-4 py-3">
                     <div className="h-4 w-20 rounded bg-white/20"></div>
@@ -639,13 +640,14 @@ export default function SiteHeader({ initialSettings = null, initialLocale }: Si
               href="tel:+998712021441"
               className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/40 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20"
               onClick={() => setMobileOpen(false)}
+              suppressHydrationWarning
             >
               <Phone size={16} /> 1385
             </Link>
-            {navItems.length === 0 && (isLoadingMenu || isLoadingCatalogs) && !headerMenu ? (
+            {!mounted || (navItems.length === 0 && (isLoadingMenu || isLoadingCatalogs) && !headerMenu) ? (
               // Show skeleton menu items while loading for mobile (only if no cached data)
               Array.from({ length: 5 }).map((_, index) => (
-                <div key={`mobile-skeleton-${index}`} className="space-y-2 rounded-lg border border-white/20 p-3 animate-pulse">
+                <div key={`mobile-skeleton-${index}`} className="space-y-2 rounded-lg border border-white/20 p-3 animate-pulse" suppressHydrationWarning>
                   <div className="h-5 w-32 rounded bg-white/20"></div>
                 </div>
               ))
