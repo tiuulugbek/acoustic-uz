@@ -122,8 +122,8 @@ export default async function BranchPage({ params }: BranchPageProps) {
     ? `https://www.google.com/maps/dir/?api=1&destination=${branch.latitude},${branch.longitude}`
     : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 
-  // Check if branch has 3D tour (for TOC component) - Temporarily disabled for testing
-  const hasTour3d = false; // !!(branch.tour3d_config || branch.tour3d_iframe);
+  // Check if branch has 3D tour (for TOC component)
+  const hasTour3d = !!(branch.tour3d_config || branch.tour3d_iframe);
 
   // Services list - fetch from branch.serviceIds if available, otherwise show all services
   const branchServiceIds = (branch.serviceIds && Array.isArray(branch.serviceIds)) ? branch.serviceIds : [];
@@ -256,8 +256,8 @@ export default async function BranchPage({ params }: BranchPageProps) {
                 </section>
               )}
 
-              {/* 3D Tour Section - Temporarily disabled for testing */}
-              {false && (branch.tour3d_config || branch.tour3d_iframe) && (
+              {/* 3D Tour Section */}
+              {hasTour3d && (
                 <section id="tour3d" className="scroll-mt-20 w-full overflow-x-hidden" suppressHydrationWarning>
                   <h2 className="mb-3 text-xl sm:text-2xl font-bold text-foreground" suppressHydrationWarning>
                     {locale === 'ru' ? '3D Тур' : '3D Tour'}
@@ -269,7 +269,7 @@ export default async function BranchPage({ params }: BranchPageProps) {
                           <PanoramaViewer config={branch.tour3d_config as TourConfig} locale={locale} />
                         </div>
                       </div>
-                    ) : (
+                    ) : branch.tour3d_iframe ? (
                       <div
                         className="w-full max-w-full"
                         style={{ aspectRatio: '16 / 9', minHeight: '250px', maxHeight: '500px', position: 'relative', overflow: 'hidden' }}
@@ -281,7 +281,7 @@ export default async function BranchPage({ params }: BranchPageProps) {
                         }}
                         suppressHydrationWarning
                       />
-                    )}
+                    ) : null}
                   </div>
                 </section>
               )}

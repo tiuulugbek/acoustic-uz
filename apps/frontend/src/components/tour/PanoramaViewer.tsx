@@ -1151,13 +1151,36 @@ export default function PanoramaViewer({ config, locale = 'uz', className = '', 
         viewerInstanceRef.current = null;
       }
     };
-  }, [config, normalizePanoramaUrl, prepareHotspots, clearPanoloadTimeout, locale]);
+  }, [config, normalizePanoramaUrl, prepareHotspots, clearPanoloadTimeout, locale, mounted]);
 
   if (error) {
     return (
       <div className={`flex h-full min-h-[400px] items-center justify-center bg-gray-100 ${className}`}>
         <div className="text-center">
           <p className="text-red-600">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Prevent hydration mismatch by ensuring component only renders on client
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    // Return placeholder during SSR to prevent hydration mismatch
+    return (
+      <div className={`relative w-full ${className}`} style={{ aspectRatio: '16 / 9', minHeight: '400px' }} suppressHydrationWarning>
+        <div className="flex h-full items-center justify-center bg-gray-100">
+          <div className="text-center">
+            <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-brand-primary border-t-transparent mx-auto"></div>
+            <p className="text-lg text-gray-600">
+              {locale === 'ru' ? 'Панорама загружается...' : 'Panorama yuklanmoqda...'}
+            </p>
+          </div>
         </div>
       </div>
     );
