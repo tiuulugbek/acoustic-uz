@@ -708,7 +708,7 @@ export default function SiteHeader({ initialSettings = null, initialLocale }: Si
               );
             })
             )}
-            <LanguageSwitcherMobile />
+            <LanguageSwitcherMobile initialLocale={displayLocale} />
           </nav>
         )}
       </div>
