@@ -298,8 +298,26 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
       // Find the closest element with tooltip attributes (not class-based)
       let trigger: HTMLElement | null = target.closest('[data-tooltip-keyword]') as HTMLElement;
       if (!trigger) {
-        currentHoveredTrigger = null;
-        return;
+        // Also check if target itself has the attribute
+        if (target.hasAttribute('data-tooltip-keyword')) {
+          trigger = target;
+        } else {
+          currentHoveredTrigger = null;
+          return;
+        }
+      }
+      
+      // Ensure classes are added (in case they weren't added yet)
+      if (!trigger.classList.contains('tooltip-trigger')) {
+        trigger.classList.add(
+          'tooltip-trigger',
+          'cursor-help',
+          'border-b',
+          'border-dashed',
+          'border-brand-primary/40',
+          'text-brand-primary',
+          'hover:border-brand-primary'
+        );
       }
       
       // Debug log
@@ -371,16 +389,10 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
       hideTooltip(trigger);
     };
 
-    // Add event listeners with capture phase for better event delegation
-    container.addEventListener('mouseover', handleMouseOver, true);
-    container.addEventListener('mouseout', handleMouseOut, true);
-    
-    // Debug: Log when container is ready
-    console.log('[Tooltip] Container ready:', container, 'Triggers found:', container.querySelectorAll('[data-tooltip-keyword]').length);
-
     // Ensure all existing triggers have correct classes (add classes dynamically)
     const ensureClasses = () => {
       const triggers = Array.from(container.querySelectorAll('[data-tooltip-keyword]')) as HTMLElement[];
+      console.log('[Tooltip] ensureClasses: Found', triggers.length, 'triggers');
       triggers.forEach((trigger) => {
         if (!trigger.classList.contains('tooltip-trigger')) {
           trigger.classList.add(
@@ -392,19 +404,44 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
             'text-brand-primary',
             'hover:border-brand-primary'
           );
+          console.log('[Tooltip] Added classes to trigger:', trigger.getAttribute('data-tooltip-keyword'));
         }
       });
     };
 
+    // Initial class setup
     ensureClasses();
+
+    // Add event listeners with capture phase for better event delegation
+    container.addEventListener('mouseover', handleMouseOver, true);
+    container.addEventListener('mouseout', handleMouseOut, true);
+    
+    // Debug: Log when container is ready
+    console.log('[Tooltip] Container ready:', container, 'Triggers found:', container.querySelectorAll('[data-tooltip-keyword]').length);
 
     // Use MutationObserver with throttling to watch for new tooltip triggers
     let mutationTimeout: NodeJS.Timeout | null = null;
-    const observer = new MutationObserver(() => {
-      if (mutationTimeout) clearTimeout(mutationTimeout);
-      mutationTimeout = setTimeout(() => {
-        ensureClasses();
-      }, 100); // Throttle mutations
+    const observer = new MutationObserver((mutations) => {
+      // Check if any new tooltip triggers were added
+      let hasNewTriggers = false;
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            const element = node as HTMLElement;
+            if (element.hasAttribute('data-tooltip-keyword') || element.querySelector('[data-tooltip-keyword]')) {
+              hasNewTriggers = true;
+            }
+          }
+        });
+      });
+      
+      if (hasNewTriggers) {
+        if (mutationTimeout) clearTimeout(mutationTimeout);
+        mutationTimeout = setTimeout(() => {
+          console.log('[Tooltip] New triggers detected, ensuring classes...');
+          ensureClasses();
+        }, 50); // Faster response for new triggers
+      }
     });
 
     observer.observe(container, {
