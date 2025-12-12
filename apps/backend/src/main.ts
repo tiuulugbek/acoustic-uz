@@ -26,41 +26,46 @@ async function bootstrap() {
   }));
   app.use(cookieParser());
 
-  // CORS
+  // CORS - Always include admin.acoustic.uz and acoustic.uz in allowed origins
   const corsOriginsEnv = configService.get<string>('CORS_ORIGIN', '');
   const defaultOrigins = [
     'https://admin.acoustic.uz',
     'https://acoustic.uz',
+    'https://www.acoustic.uz',
     'http://localhost:3000',
     'http://localhost:5173',
+    'http://localhost:3002',
   ];
   
-  let corsOrigins: string[] | boolean | ((origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => void);
+  // Always merge environment origins with defaults to ensure admin.acoustic.uz is always allowed
+  let corsOrigins: string[];
   if (corsOriginsEnv) {
-    // Merge environment origins with defaults
     const envOrigins = corsOriginsEnv.split(',').map(origin => origin.trim()).filter(Boolean);
     corsOrigins = [...new Set([...defaultOrigins, ...envOrigins])];
   } else {
-    // If no CORS_ORIGIN env var, use callback function to allow all origins
-    // This ensures CORS works even if backend starts before env vars are loaded
-    corsOrigins = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-      try {
-        // Allow requests with no origin (like mobile apps or curl requests)
-        if (!origin) {
-          callback(null, true);
-          return;
-        }
-        // Allow all origins - this is safe for public API
-        callback(null, true);
-      } catch (error) {
-        // Fallback: allow all origins if callback fails
-        callback(null, true);
-      }
-    };
+    corsOrigins = defaultOrigins;
   }
   
+  logger.log(`🌐 CORS enabled for origins: ${corsOrigins.join(', ')}`);
+  
   app.enableCors({
-    origin: corsOrigins,
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+      
+      // Check if origin is in allowed list
+      if (corsOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      
+      // Log blocked origin for debugging
+      logger.warn(`🚫 CORS blocked origin: ${origin}`);
+      callback(null, false);
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Locale', 'Accept', 'Origin', 'X-Requested-With'],
@@ -68,8 +73,6 @@ async function bootstrap() {
     preflightContinue: false,
     optionsSuccessStatus: 204,
   });
-  
-  logger.log(`🌐 CORS enabled for origins: ${Array.isArray(corsOrigins) ? corsOrigins.join(', ') : 'all (with callback)'}`);
 
   // Serve static files from uploads directory - BEFORE global prefix
   // This allows /uploads/ to work without /api prefix
