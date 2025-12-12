@@ -15,14 +15,20 @@ export default function BranchTOC({ locale, hasTour3d }: BranchTOCProps) {
     setMounted(true);
   }, []);
 
-  // Build TOC sections - only after mount to prevent hydration mismatch
-  const tocSections = [
+  // Build TOC sections - ensure consistent order to prevent hydration mismatch
+  // Always include all sections, but conditionally render based on hasTour3d
+  const baseSections = [
     { id: 'services', label: locale === 'ru' ? 'Услуги' : 'Xizmatlar' },
     { id: 'doctors', label: locale === 'ru' ? 'Врачи' : 'Shifokorlar' },
-    // Conditionally add 3D Tour to TOC
-    ...(hasTour3d ? [{ id: 'tour3d', label: locale === 'ru' ? '3D Тур' : '3D Tour' }] : []),
-    { id: 'location', label: locale === 'ru' ? 'Как добраться' : 'Qanday yetib borish' },
   ];
+  
+  const tour3dSection = { id: 'tour3d', label: locale === 'ru' ? '3D Тур' : '3D Tour' };
+  const locationSection = { id: 'location', label: locale === 'ru' ? 'Как добраться' : 'Qanday yetib borish' };
+  
+  // Build sections array consistently - only add tour3d if hasTour3d is true
+  const tocSections = mounted 
+    ? [...baseSections, ...(hasTour3d ? [tour3dSection] : []), locationSection]
+    : [...baseSections, locationSection]; // SSR: don't include tour3d to prevent mismatch
 
   return (
     <div suppressHydrationWarning>
@@ -37,7 +43,7 @@ export default function BranchTOC({ locale, hasTour3d }: BranchTOCProps) {
             className="block text-xs sm:text-sm text-brand-primary hover:underline break-words"
             suppressHydrationWarning
           >
-            {section.label}
+            <span suppressHydrationWarning>{section.label}</span>
           </a>
         ))}
       </nav>
