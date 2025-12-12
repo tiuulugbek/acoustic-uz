@@ -47,10 +47,11 @@ export async function generateMetadata(): Promise<Metadata> {
     title: 'Acoustic.uz - Eshitish markazi',
     description: 'Eshitish qobiliyatini tiklash va yaxshilash markazi',
     alternates: {
+      canonical: baseUrl,
       languages: {
-        uz: 'uz',
-        ru: 'ru',
-        'x-default': 'uz',
+        uz: baseUrl,
+        ru: baseUrl, // Same URL since we use cookie-based locale detection
+        'x-default': baseUrl,
       },
     },
     icons: {

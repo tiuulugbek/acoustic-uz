@@ -55,7 +55,7 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
       canonical: postUrl,
       languages: {
         uz: postUrl,
-        ru: postUrl,
+        ru: postUrl, // Same URL since we use cookie-based locale detection
         'x-default': postUrl,
       },
     },

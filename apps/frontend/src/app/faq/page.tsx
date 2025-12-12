@@ -12,11 +12,22 @@ export const revalidate = 0;
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = detectLocale();
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
+  const faqUrl = `${baseUrl}/faq`;
+  
   return {
     title: locale === 'ru' ? 'Часто задаваемые вопросы — Acoustic.uz' : 'Savollar — Acoustic.uz',
     description: locale === 'ru' 
       ? 'Ответы на часто задаваемые вопросы о слухе и слуховых аппаратах'
       : 'Eshitish va eshitish apparatlari haqida tez-tez beriladigan savollarga javoblar',
+    alternates: {
+      canonical: faqUrl,
+      languages: {
+        uz: faqUrl,
+        ru: faqUrl, // Same URL since we use cookie-based locale detection
+        'x-default': faqUrl,
+      },
+    },
   };
 }
 
