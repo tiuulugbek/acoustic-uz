@@ -1238,14 +1238,6 @@ function ProductManager({ productTypeFilter }: { productTypeFilter?: string }) {
         </Button>
       </Space>
 
-      <Alert
-        type="info"
-        showIcon
-        message="Galereya rasmlari"
-        description="Media kutubxonasi tayyor bo'lgunga qadar rasmlar uchun IDlarni qo'lda kiriting. 'Gallery ID' maydoniga vergul bilan ajratilgan ro'yxat kiritsangiz, frontend ular asosida tasvirlarni yuklaydi."
-        style={{ marginBottom: 16 }}
-      />
-
       <Table
         loading={isLoading}
         dataSource={products}
