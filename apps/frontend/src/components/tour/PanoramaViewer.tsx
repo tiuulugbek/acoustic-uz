@@ -25,7 +25,8 @@ export default function PanoramaViewer({ config, locale = 'uz', className = '', 
   const arrowsOverlayRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentScene, setCurrentScene] = useState<string>(config.default.firstScene);
+  const [currentScene, setCurrentScene] = useState<string>(config?.default?.firstScene || '');
+  const [mounted, setMounted] = useState(false);
   const [loadProgress, setLoadProgress] = useState(0);
   const [hotspotModal, setHotspotModal] = useState<{ text: string; description?: string } | null>(null);
   const [currentHotspots, setCurrentHotspots] = useState<HotspotConfig[]>([]);
@@ -47,7 +48,7 @@ export default function PanoramaViewer({ config, locale = 'uz', className = '', 
   const originalPositionRef = useRef<Map<number, { pitch: number; yaw: number }>>(new Map());
   const initializationAttemptedRef = useRef(false);
   const isLoadingRef = useRef(false);
-  const currentSceneRef = useRef<string>(config.default.firstScene);
+  const currentSceneRef = useRef<string>(config?.default?.firstScene || '');
   const panoloadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const panoloadFiredRef = useRef(false);
   const retryCountRef = useRef(0);
@@ -199,8 +200,24 @@ export default function PanoramaViewer({ config, locale = 'uz', className = '', 
     }
   }, []);
 
+  // Prevent hydration mismatch - only initialize on client
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    // Only initialize after component is mounted to prevent hydration mismatch
+    if (!mounted) return;
+    
     console.log('🎬 PanoramaViewer mounted with config:', config);
+    
+    // Validate config
+    if (!config || !config.scenes || Object.keys(config.scenes).length === 0) {
+      console.error('❌ Invalid config:', config);
+      setError('Tour konfiguratsiyasi noto\'g\'ri');
+      setIsLoading(false);
+      return;
+    }
     
     // Load Pannellum CSS and JS
     const loadPannellum = async () => {
