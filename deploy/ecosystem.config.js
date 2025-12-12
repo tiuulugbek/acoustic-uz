@@ -20,11 +20,12 @@ module.exports = {
     },
     {
       name: 'acoustic-frontend',
-      script: 'node_modules/.bin/next',
+      script: '/var/www/acoustic.uz/apps/frontend/node_modules/.bin/next',
       args: 'start',
       cwd: '/var/www/acoustic.uz/apps/frontend',
       instances: 1,
       exec_mode: 'fork',
+      interpreter: 'node',
       env: {
         NODE_ENV: 'production',
         PORT: 3000,

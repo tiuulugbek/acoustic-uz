@@ -147,18 +147,41 @@ cd "$PROJECT_DIR"
 pm2 delete acoustic-frontend 2>/dev/null || true
 sleep 1
 
-# Start frontend using ecosystem config (works for both standalone and standard builds)
+# Start frontend using startup script (most reliable method)
 echo -e "${GREEN}  ✅ Starting frontend with PM2...${NC}"
-pm2 start ecosystem.config.js --only acoustic-frontend || {
-    echo -e "${RED}  ❌ Failed to start frontend${NC}"
-    echo -e "${YELLOW}  → Trying alternative startup method...${NC}"
-    cd "$FRONTEND_DIR"
-    # Fallback: use node_modules/.bin/next directly
-    pm2 start node_modules/.bin/next --name acoustic-frontend -- start --update-env || {
-        echo -e "${RED}  ❌ Alternative startup also failed${NC}"
+
+# Create startup script
+START_SCRIPT="/tmp/start-frontend-$(date +%Y%m%d_%H%M%S).sh"
+cat > "$START_SCRIPT" << 'EOF'
+#!/bin/bash
+cd /var/www/acoustic.uz/apps/frontend
+export NODE_ENV=production
+export PORT=3000
+export NEXT_PUBLIC_API_URL=https://a.acoustic.uz/api
+export NEXT_PUBLIC_SITE_URL=https://acoustic.uz
+exec pnpm start
+EOF
+
+chmod +x "$START_SCRIPT"
+
+# Try startup script first
+pm2 delete acoustic-frontend 2>/dev/null || true
+sleep 1
+
+pm2 start "$START_SCRIPT" \
+    --name acoustic-frontend \
+    --update-env \
+    --log-date-format "YYYY-MM-DD HH:mm:ss Z" \
+    --error /var/log/pm2/acoustic-frontend-error.log \
+    --output /var/log/pm2/acoustic-frontend-out.log \
+    --merge-logs \
+    --max-memory-restart 500M || {
+    echo -e "${RED}  ❌ Failed to start frontend with startup script${NC}"
+    echo -e "${YELLOW}  → Trying ecosystem config...${NC}"
+    pm2 start ecosystem.config.js --only acoustic-frontend || {
+        echo -e "${RED}  ❌ Failed to start frontend${NC}"
         exit 1
     }
-    cd "$PROJECT_DIR"
 }
 pm2 save
 
