@@ -6,20 +6,30 @@ import { getLocaleFromDOM } from '@/lib/locale-client';
 import type { SettingsResponse } from '@/lib/api';
 import type { Locale } from '@/lib/locale';
 import { Phone } from 'lucide-react';
+import { DEFAULT_LOCALE } from '@/lib/locale';
 
-export default function TelegramButton() {
+interface TelegramButtonProps {
+  initialLocale?: Locale;
+}
+
+export default function TelegramButton({ initialLocale }: TelegramButtonProps = {}) {
   const [botUsername, setBotUsername] = useState<string | null>(null);
   const [message, setMessage] = useState<string>('');
   const [phoneNumber, setPhoneNumber] = useState<string>('1385');
   const [isLoading, setIsLoading] = useState(true);
   const [isChatBubbleVisible, setIsChatBubbleVisible] = useState(true);
   
-  // Get locale from DOM - use useState to prevent hydration mismatch
-  const [locale, setLocale] = useState<Locale>('uz');
+  // Use initialLocale from props to match server render, prevent hydration mismatch
+  const [locale, setLocale] = useState<Locale>(initialLocale || DEFAULT_LOCALE);
+  const [mounted, setMounted] = useState(false);
   
   useEffect(() => {
-    // Only compute locale on client-side after hydration
-    setLocale(getLocaleFromDOM());
+    setMounted(true);
+    // Only update locale on client-side after hydration
+    const domLocale = getLocaleFromDOM();
+    if (domLocale !== locale) {
+      setLocale(domLocale);
+    }
   }, []);
 
   useEffect(() => {

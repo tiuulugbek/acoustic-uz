@@ -159,7 +159,7 @@ export default async function RootLayout({
             <SiteHeader initialSettings={settings} initialLocale={locale as 'uz' | 'ru'} />
             <main className="flex-1" suppressHydrationWarning>{children}</main>
             <SiteFooter initialLocale={locale as 'uz' | 'ru'} />
-            <TelegramButton />
+            <TelegramButton initialLocale={locale as 'uz' | 'ru'} />
           </div>
         </Providers>
       </body>

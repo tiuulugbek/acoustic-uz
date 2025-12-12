@@ -80,20 +80,25 @@ function changeLanguage(
   }
 }
 
-export default function LanguageSwitcher() {
+interface LanguageSwitcherProps {
+  initialLocale?: Locale;
+}
+
+export default function LanguageSwitcher({ initialLocale }: LanguageSwitcherProps = {}) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const router = useRouter();
   
-  // CRITICAL: Read initial locale synchronously from DOM to match server render
-  // This prevents hydration mismatches
+  // CRITICAL: Use initialLocale from props to match server render, prevent hydration mismatches
+  // Fallback to DOM read only if initialLocale is not provided
   const getInitialLocale = (): Locale => {
+    if (initialLocale) return initialLocale;
     if (typeof document === 'undefined') return DEFAULT_LOCALE;
     return getLocaleFromDOM();
   };
   
-  const [currentLocale, setCurrentLocale] = useState<Locale>(getInitialLocale);
+  const [currentLocale, setCurrentLocale] = useState<Locale>(getInitialLocale());
   const [isHydrated, setIsHydrated] = useState(false);
 
   // After mount, read actual locale from DOM and update if changed
@@ -188,19 +193,21 @@ export default function LanguageSwitcher() {
 }
 
 // Mobile version for header - same simple design
-export function LanguageSwitcherMobile() {
+export function LanguageSwitcherMobile({ initialLocale }: LanguageSwitcherProps = {}) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const router = useRouter();
   
-  // CRITICAL: Read initial locale synchronously from DOM to match server render
+  // CRITICAL: Use initialLocale from props to match server render, prevent hydration mismatches
+  // Fallback to DOM read only if initialLocale is not provided
   const getInitialLocale = (): Locale => {
+    if (initialLocale) return initialLocale;
     if (typeof document === 'undefined') return DEFAULT_LOCALE;
     return getLocaleFromDOM();
   };
   
-  const [currentLocale, setCurrentLocale] = useState<Locale>(getInitialLocale);
+  const [currentLocale, setCurrentLocale] = useState<Locale>(getInitialLocale());
   const [isHydrated, setIsHydrated] = useState(false);
 
   // After mount, read actual locale from DOM and update if changed

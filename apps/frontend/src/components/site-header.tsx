@@ -515,7 +515,7 @@ export default function SiteHeader({ initialSettings = null, initialLocale }: Si
               <Phone size={16} /> {settings?.phonePrimary || '1385'}
             </Link>
             
-            <LanguageSwitcher />
+            <LanguageSwitcher initialLocale={displayLocale} />
             
             {/* Mobile Menu Button */}
             <button
