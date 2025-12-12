@@ -57,16 +57,12 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
 
     // Handle tooltip show for a trigger element
     const showTooltip = (trigger: HTMLElement) => {
-      if (!trigger || !trigger.classList?.contains('tooltip-trigger')) {
-        return;
-      }
-
+      // Check if element has tooltip attributes (not class-based anymore)
       const keyword = trigger.getAttribute('data-tooltip-keyword') || '';
       const tooltipContent = trigger.getAttribute('data-tooltip-content') || '';
 
       if (!keyword || !tooltipContent) {
-        console.warn('[Tooltip] Missing keyword or content:', { keyword, tooltipContent, trigger });
-        return;
+        return; // Not a tooltip trigger
       }
 
       // Debug log
@@ -103,15 +99,16 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
         .replace(/&quot;/g, '"')
         .replace(/&#39;/g, "'");
 
-      // Ensure trigger classes are preserved
+      // Add tooltip trigger classes and styles dynamically
       if (trigger.isConnected) {
         trigger.classList.add(
           'tooltip-trigger',
           'cursor-help',
           'border-b',
           'border-dashed',
-          'border-brand-primary',
-          'text-brand-primary'
+          'border-brand-primary/40',
+          'text-brand-primary',
+          'hover:border-brand-primary'
         );
       }
 
@@ -337,8 +334,8 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
       const relatedTarget = e.relatedTarget as HTMLElement;
       if (!target) return;
       
-      // Check if we're leaving a tooltip trigger
-      const trigger = target.closest('.tooltip-trigger') as HTMLElement;
+      // Check if we're leaving a tooltip trigger (by attribute, not class)
+      const trigger = target.closest('[data-tooltip-keyword]') as HTMLElement;
       if (!trigger) {
         currentHoveredTrigger = null;
         return;
@@ -352,9 +349,9 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
         }
         
         // Check if mouse is moving to another tooltip trigger
-        const nextTrigger = relatedTarget.closest('.tooltip-trigger');
+        const nextTrigger = relatedTarget.closest('[data-tooltip-keyword]');
         if (nextTrigger && nextTrigger !== trigger) {
-          currentHoveredTrigger = nextTrigger;
+          currentHoveredTrigger = nextTrigger as HTMLElement;
           return; // Moving to another trigger, don't hide current
         }
         

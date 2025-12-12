@@ -30,7 +30,7 @@ function processTooltips(text: string): string {
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
     
-    return `<span class="tooltip-trigger cursor-help border-b border-dashed border-brand-primary/40 text-brand-primary hover:border-brand-primary" data-tooltip-keyword="${keyword.replace(/"/g, '&quot;')}" data-tooltip-content="${escapedContent}">${keyword}</span>`;
+    return `<span data-tooltip-keyword="${keyword.replace(/"/g, '&quot;')}" data-tooltip-content="${escapedContent}">${keyword}</span>`;
   });
 }
 
