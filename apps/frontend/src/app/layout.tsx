@@ -21,11 +21,22 @@ export async function generateMetadata(): Promise<Metadata> {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
   
   // Get favicon from settings
-  let faviconUrl = '/favicon.ico';
+  let faviconUrl = `${baseUrl}/favicon.ico`;
   try {
     const settings = await getSettings(locale);
     if (settings?.favicon?.url) {
-      faviconUrl = normalizeImageUrl(settings.favicon.url) || '/favicon.ico';
+      const normalizedUrl = normalizeImageUrl(settings.favicon.url);
+      if (normalizedUrl) {
+        // If normalized URL is absolute, use it directly
+        if (normalizedUrl.startsWith('http://') || normalizedUrl.startsWith('https://')) {
+          faviconUrl = normalizedUrl;
+        } else if (normalizedUrl.startsWith('/')) {
+          // If relative URL, make it absolute
+          faviconUrl = `${baseUrl}${normalizedUrl}`;
+        } else {
+          faviconUrl = normalizedUrl;
+        }
+      }
     }
   } catch (error) {
     // Use default favicon if settings fetch fails
@@ -43,7 +54,10 @@ export async function generateMetadata(): Promise<Metadata> {
       },
     },
     icons: {
-      icon: faviconUrl,
+      icon: [
+        { url: faviconUrl, sizes: 'any' },
+        { url: faviconUrl, type: 'image/x-icon' },
+      ],
       shortcut: faviconUrl,
       apple: faviconUrl,
     },
