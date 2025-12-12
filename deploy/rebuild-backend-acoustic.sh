@@ -35,22 +35,43 @@ rm -rf dist
 echo "🔨 Running build..."
 cd "$PROJECT_DIR/apps/backend"
 
-# Try NestJS build first (handles NestJS-specific compilation better)
-echo "Using NestJS build..."
+# Try TypeScript compiler directly first (more reliable with TS 5.3+)
+echo "Using TypeScript compiler directly..."
 set +e  # Don't exit on error so we can check the result
-pnpm exec nest build 2>&1
-BUILD_EXIT_CODE=$?
-set -e  # Re-enable exit on error
 
-# If NestJS build fails, try TypeScript compiler directly
-if [ $BUILD_EXIT_CODE -ne 0 ] || [ ! -d "dist" ] || [ ! -f "dist/main.js" ]; then
-    echo ""
-    echo "⚠️  NestJS build failed or incomplete, trying TypeScript compiler directly..."
-    set +e
-    pnpm exec tsc --build 2>&1
-    BUILD_EXIT_CODE=$?
-    set -e
+# Check if tsc exists and works
+if ! pnpm exec tsc --version > /dev/null 2>&1; then
+    echo "❌ TypeScript compiler not found!"
+    exit 1
 fi
+
+# Run TypeScript compiler with verbose output
+echo "📋 Running: pnpm exec tsc"
+pnpm exec tsc 2>&1 | tee /tmp/backend-build.log
+BUILD_EXIT_CODE=$?
+
+# Check if dist directory was created
+if [ ! -d "dist" ]; then
+    echo ""
+    echo "⚠️  dist directory not created, checking TypeScript configuration..."
+    echo "📋 Current directory: $(pwd)"
+    echo "📋 tsconfig.json exists: $([ -f tsconfig.json ] && echo 'yes' || echo 'no')"
+    echo "📋 src/main.ts exists: $([ -f src/main.ts ] && echo 'yes' || echo 'no')"
+    
+    # Try to compile with explicit output
+    echo ""
+    echo "📋 Trying tsc with explicit outDir..."
+    pnpm exec tsc --outDir dist --rootDir src 2>&1 | head -20 || true
+    
+    # Check again
+    if [ ! -d "dist" ]; then
+        echo ""
+        echo "❌ dist directory still not created after explicit compilation"
+        BUILD_EXIT_CODE=1
+    fi
+fi
+
+set -e  # Re-enable exit on error
 
 if [ $BUILD_EXIT_CODE -ne 0 ] || [ ! -d "dist" ]; then
     echo ""
@@ -94,7 +115,9 @@ if [ $BUILD_EXIT_CODE -ne 0 ] || [ ! -d "dist" ]; then
     
     echo ""
     echo "📋 Trying to run nest build directly with explicit path..."
-    pnpm exec nest build --path apps/backend 2>&1 || pnpm exec nest build 2>&1 || true
+    # Skip nest build if it has known compatibility issues
+    echo "⚠️  Skipping nest build due to TypeScript compatibility issues"
+    echo "   Using tsc directly instead"
     
     echo ""
     echo "📋 Checking current directory and files..."
