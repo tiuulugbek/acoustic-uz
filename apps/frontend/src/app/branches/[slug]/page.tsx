@@ -40,10 +40,20 @@ export async function generateMetadata({ params }: BranchPageProps): Promise<Met
 
   const name = getBilingualText(branch.name_uz, branch.name_ru, locale);
   const address = getBilingualText(branch.address_uz, branch.address_ru, locale);
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
+  const branchUrl = `${baseUrl}/branches/${params.slug}`;
 
   return {
     title: `${name} — Acoustic.uz`,
     description: address,
+    alternates: {
+      canonical: branchUrl,
+      languages: {
+        uz: branchUrl,
+        ru: branchUrl, // Same URL since we use cookie-based locale detection
+        'x-default': branchUrl,
+      },
+    },
   };
 }
 
