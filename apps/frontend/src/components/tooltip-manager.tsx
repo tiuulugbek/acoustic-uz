@@ -69,6 +69,9 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
         return;
       }
 
+      // Debug log
+      console.log('[Tooltip] Showing tooltip for:', keyword);
+
       // Get or create ref for this trigger
       let ref = tooltipRefs.get(trigger);
       if (!ref) {
@@ -298,6 +301,9 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
         currentHoveredTrigger = null;
         return;
       }
+      
+      // Debug log
+      console.log('[Tooltip] Mouse over trigger:', trigger.getAttribute('data-tooltip-keyword'));
       
       // If we're already hovering over this trigger, don't do anything
       if (currentHoveredTrigger === trigger) {
