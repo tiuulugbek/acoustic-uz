@@ -321,9 +321,10 @@ export default async function BranchPage({ params }: BranchPageProps) {
                   </div>
                 ) : branch.latitude && branch.longitude ? (
                   // If coordinates are available, use Yandex Maps embed (more reliable than Google Maps)
+                  // Note: Yandex Maps doesn't support uz_UZ locale, so we use ru_RU for both locales
                   <div className="mb-4 rounded-lg overflow-hidden border border-border bg-gray-100 relative w-full max-w-full" style={{ paddingBottom: '56.25%', height: 0, minHeight: '250px', maxHeight: '500px' }}>
                     <iframe
-                      src={`https://yandex.com/map-widget/v1/?ll=${branch.longitude},${branch.latitude}&z=16&pt=${branch.longitude},${branch.latitude}&lang=${locale === 'ru' ? 'ru_RU' : 'uz_UZ'}`}
+                      src={`https://yandex.com/map-widget/v1/?ll=${branch.longitude},${branch.latitude}&z=16&pt=${branch.longitude},${branch.latitude}&lang=ru_RU`}
                       width="100%"
                       height="100%"
                       className="absolute top-0 left-0 w-full h-full max-w-full"
