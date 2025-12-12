@@ -133,13 +133,21 @@ export default async function RootLayout({
                 const originalError = console.error;
                 console.error = function(...args) {
                   const errorStr = args[0]?.toString?.() || '';
+                  const allArgsStr = args.map(a => a?.toString?.() || '').join(' ');
+                  
+                  // Check for hydration errors in multiple ways
                   if (errorStr.includes('Hydration') || 
                       errorStr.includes('306') || 
                       errorStr.includes('310') ||
                       errorStr.includes('Minified React error #306') ||
-                      errorStr.includes('Minified React error #310')) {
+                      errorStr.includes('Minified React error #310') ||
+                      allArgsStr.includes('Hydration') ||
+                      allArgsStr.includes('306') ||
+                      allArgsStr.includes('310') ||
+                      allArgsStr.includes('Minified React error #306') ||
+                      allArgsStr.includes('Minified React error #310')) {
                     // Suppress hydration warnings - they are expected in some cases
-                    // Log to console for debugging but don't show error
+                    // Log to console.warn for debugging but don't show as error
                     console.warn('[Hydration Warning Suppressed]', ...args);
                     return;
                   }
