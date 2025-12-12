@@ -1243,11 +1243,12 @@ export type CreateProductPayload = {
 
 export type UpdateProductPayload = Partial<CreateProductPayload>;
 
-export const getProductsAdmin = (filters?: { limit?: number; offset?: number; status?: string }) => {
+export const getProductsAdmin = (filters?: { limit?: number; offset?: number; status?: string; productType?: string }) => {
   const params = new URLSearchParams();
   if (filters?.limit) params.append('limit', String(filters.limit));
   if (filters?.offset) params.append('offset', String(filters.offset));
   if (filters?.status) params.append('status', filters.status);
+  if (filters?.productType) params.append('productType', filters.productType);
   const query = params.toString();
   return request<{ items: ProductDto[]; total: number; page: number; pageSize: number }>(`/products/admin${query ? `?${query}` : ''}`);
 };
