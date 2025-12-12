@@ -122,8 +122,8 @@ export default async function BranchPage({ params }: BranchPageProps) {
     ? `https://www.google.com/maps/dir/?api=1&destination=${branch.latitude},${branch.longitude}`
     : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 
-  // Check if branch has 3D tour (for TOC component)
-  const hasTour3d = !!(branch.tour3d_config || branch.tour3d_iframe);
+  // Check if branch has 3D tour (for TOC component) - Temporarily disabled for testing
+  const hasTour3d = false; // !!(branch.tour3d_config || branch.tour3d_iframe);
 
   // Services list - fetch from branch.serviceIds if available, otherwise show all services
   const branchServiceIds = (branch.serviceIds && Array.isArray(branch.serviceIds)) ? branch.serviceIds : [];
