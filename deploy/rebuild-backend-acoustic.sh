@@ -31,22 +31,32 @@ cd apps/backend
 echo "🧹 Cleaning dist directory..."
 rm -rf dist
 
-# Build with verbose error output
-echo "🔨 Running build with verbose output..."
-if ! pnpm exec nest build --verbose 2>&1 | tee /tmp/backend-build.log; then
+# Build with error output
+echo "🔨 Running build..."
+BUILD_OUTPUT=$(pnpm build 2>&1)
+BUILD_EXIT_CODE=$?
+
+if [ $BUILD_EXIT_CODE -ne 0 ]; then
+    echo "$BUILD_OUTPUT"
     echo ""
-    echo "❌ Build failed! Check errors above and /tmp/backend-build.log"
+    echo "❌ Build failed! Exit code: $BUILD_EXIT_CODE"
     echo ""
     echo "📋 Checking for TypeScript errors..."
+    cd "$PROJECT_DIR/apps/backend"
     pnpm exec tsc --noEmit 2>&1 | head -50 || echo "TypeScript check failed"
+    echo ""
+    echo "📋 Checking if shared package is built..."
+    ls -la "$PROJECT_DIR/packages/shared/dist" 2>/dev/null || echo "  Shared package dist not found - need to build it first"
     echo ""
     echo "📋 Common issues:"
     echo "  - Missing dependencies: pnpm install"
     echo "  - TypeScript errors: Check tsconfig.json"
     echo "  - Missing shared package: pnpm --filter @acoustic/shared build"
-    echo "  - Check /tmp/backend-build.log for full error details"
     exit 1
 fi
+
+# Show build output
+echo "$BUILD_OUTPUT"
 
 # 6. Check if build was successful
 if [ ! -f "dist/main.js" ]; then
