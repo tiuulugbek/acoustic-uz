@@ -88,6 +88,10 @@ export default function SiteHeader({ initialSettings = null, initialLocale }: Si
   // Use initialLocale from props (server-provided) to match SSR, then update from DOM if needed
   const [displayLocale, setDisplayLocale] = useState<Locale>(initialLocale || DEFAULT_LOCALE);
   const [mounted, setMounted] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [menuRefreshKey, setMenuRefreshKey] = useState(0);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [mobileOpenDropdown, setMobileOpenDropdown] = useState<string | null>(null);
   
   // Update locale from DOM after mount if it differs from server-provided locale
   useEffect(() => {
@@ -99,10 +103,6 @@ export default function SiteHeader({ initialSettings = null, initialLocale }: Si
       }
     }
   }, []); // Only run once on mount
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [menuRefreshKey, setMenuRefreshKey] = useState(0);
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  const [mobileOpenDropdown, setMobileOpenDropdown] = useState<string | null>(null);
 
   // Track if we've successfully switched locale to prevent reverting
   const [localeChangeInProgress, setLocaleChangeInProgress] = useState(false);
@@ -395,13 +395,8 @@ export default function SiteHeader({ initialSettings = null, initialLocale }: Si
     return <IconComponent className="h-4 w-4" />;
   };
 
-  // Track if component is mounted to prevent hydration mismatch
-  const [mounted, setMounted] = useState(false);
+  // Track navItems state - mounted state already declared above
   const [navItems, setNavItems] = useState<NavItem[]>([]);
-  
-  useEffect(() => {
-    setMounted(true);
-  }, []);
   
   useEffect(() => {
     // Don't build navItems until mounted to prevent hydration mismatch
