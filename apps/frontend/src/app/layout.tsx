@@ -5,6 +5,7 @@ import { Providers } from './providers';
 import SiteHeader from '@/components/site-header';
 import SiteFooter from '@/components/site-footer';
 import TelegramButton from '@/components/telegram-button';
+import DebugHydration from '@/app/debug-hydration';
 import { detectLocale } from '@/lib/locale-server';
 import { getSettings } from '@/lib/api-server';
 import type { SettingsResponse } from '@/lib/api';
@@ -136,6 +137,7 @@ export default async function RootLayout({
             }}
           />
           <div className="flex min-h-screen flex-col bg-muted/20" suppressHydrationWarning>
+            <DebugHydration />
             <SiteHeader initialSettings={settings} />
             <main className="flex-1" suppressHydrationWarning>{children}</main>
             <SiteFooter />

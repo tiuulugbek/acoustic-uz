@@ -14,6 +14,9 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  // Enable source maps in production for debugging hydration errors
+  productionBrowserSourceMaps: true,
+  
   // Webpack configuration for path resolution
   webpack: (config, { isServer }) => {
     // Add alias for @ path
