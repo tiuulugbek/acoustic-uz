@@ -76,24 +76,36 @@ function TooltipContent({ html, variant }: { html: string; variant: 'primary' | 
 export default function ProductTabs({ tabs }: ProductTabsProps) {
   // Use useState and useEffect to prevent hydration mismatch
   const [availableTabs, setAvailableTabs] = useState<ProductTabItem[]>([]);
+  const [activeTab, setActiveTab] = useState<string>('');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
     const filtered = tabs.filter((tab) => (tab.primary && tab.primary.trim().length) || (tab.secondary && tab.secondary.trim().length));
     setAvailableTabs(filtered);
+    
+    // Set active tab after filtering to prevent hydration mismatch
+    const defaultTab = filtered.find((tab) => tab.key === 'description')?.key ?? filtered[0]?.key ?? tabs[0]?.key ?? '';
+    setActiveTab(defaultTab);
   }, [tabs]);
 
-  // Default active tab: "description" (Tavsif) if available, otherwise first tab
-  const defaultTab = availableTabs.find((tab) => tab.key === 'description')?.key ?? availableTabs[0]?.key ?? tabs[0]?.key ?? '';
-  const [activeTab, setActiveTab] = useState<string>(defaultTab);
+  // If not mounted yet, return empty div to prevent hydration mismatch
+  if (!mounted) {
+    return (
+      <div className="rounded-3xl border border-border/60 bg-white shadow-sm" suppressHydrationWarning>
+        <div className="p-6 text-center text-sm text-muted-foreground" suppressHydrationWarning>
+          <p suppressHydrationWarning>Ma'lumot qo'shilmagan</p>
+        </div>
+      </div>
+    );
+  }
 
   // If no tabs have content, show placeholder message
   if (!availableTabs.length) {
     return (
-      <div className="rounded-3xl border border-border/60 bg-white shadow-sm">
-        <div className="p-6 text-center text-sm text-muted-foreground">
-          <p>Ma'lumot qo'shilmagan</p>
+      <div className="rounded-3xl border border-border/60 bg-white shadow-sm" suppressHydrationWarning>
+        <div className="p-6 text-center text-sm text-muted-foreground" suppressHydrationWarning>
+          <p suppressHydrationWarning>Ma'lumot qo'shilmagan</p>
         </div>
       </div>
     );
