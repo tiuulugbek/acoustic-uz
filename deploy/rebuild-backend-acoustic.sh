@@ -33,20 +33,54 @@ rm -rf dist
 
 # Build with error output
 echo "🔨 Running build..."
-BUILD_OUTPUT=$(pnpm build 2>&1)
-BUILD_EXIT_CODE=$?
+cd "$PROJECT_DIR/apps/backend"
 
-if [ $BUILD_EXIT_CODE -ne 0 ]; then
-    echo "$BUILD_OUTPUT"
+# Run build and capture output
+set +e  # Don't exit on error so we can check the result
+pnpm build 2>&1
+BUILD_EXIT_CODE=$?
+set -e  # Re-enable exit on error
+
+if [ $BUILD_EXIT_CODE -ne 0 ] || [ ! -d "dist" ]; then
     echo ""
     echo "❌ Build failed! Exit code: $BUILD_EXIT_CODE"
     echo ""
+    
+    # Check if dist directory exists
+    if [ ! -d "dist" ]; then
+        echo "📋 dist directory does not exist"
+    else
+        echo "📋 dist directory exists but may be incomplete"
+        ls -la dist/ | head -20
+    fi
+    
+    echo ""
     echo "📋 Checking for TypeScript errors..."
-    cd "$PROJECT_DIR/apps/backend"
-    pnpm exec tsc --noEmit 2>&1 | head -50 || echo "TypeScript check failed"
+    pnpm exec tsc --noEmit 2>&1 | head -50 || echo "TypeScript check failed or no errors found"
+    
     echo ""
     echo "📋 Checking if shared package is built..."
-    ls -la "$PROJECT_DIR/packages/shared/dist" 2>/dev/null || echo "  Shared package dist not found - need to build it first"
+    if [ -d "$PROJECT_DIR/packages/shared/dist" ]; then
+        echo "✅ Shared package dist exists"
+        ls -la "$PROJECT_DIR/packages/shared/dist" | head -10
+    else
+        echo "❌ Shared package dist not found - need to build it first"
+        echo "   Run: pnpm --filter @acoustic/shared build"
+    fi
+    
+    echo ""
+    echo "📋 Checking node_modules..."
+    if [ -d "node_modules/@acoustic/shared" ]; then
+        echo "✅ @acoustic/shared found in node_modules"
+    else
+        echo "❌ @acoustic/shared not found in node_modules"
+        echo "   Run: pnpm install"
+    fi
+    
+    echo ""
+    echo "📋 Trying to run nest build directly..."
+    pnpm exec nest build 2>&1 || true
+    
     echo ""
     echo "📋 Common issues:"
     echo "  - Missing dependencies: pnpm install"
@@ -54,9 +88,6 @@ if [ $BUILD_EXIT_CODE -ne 0 ]; then
     echo "  - Missing shared package: pnpm --filter @acoustic/shared build"
     exit 1
 fi
-
-# Show build output
-echo "$BUILD_OUTPUT"
 
 # 6. Check if build was successful
 if [ ! -f "dist/main.js" ]; then
