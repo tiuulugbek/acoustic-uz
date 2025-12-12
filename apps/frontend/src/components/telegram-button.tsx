@@ -34,12 +34,18 @@ export default function TelegramButton({ initialLocale }: TelegramButtonProps = 
 
   useEffect(() => {
     // Only fetch settings after component is mounted
-    if (!mounted) return;
+    if (!mounted) {
+      console.log('[TelegramButton] Not mounted yet, skipping fetch');
+      return;
+    }
+    
+    console.log('[TelegramButton] Starting fetchSettings with locale:', locale, 'mounted:', mounted);
     
     const fetchSettings = async () => {
       try {
-        console.log('[TelegramButton] Fetching settings...');
+        console.log('[TelegramButton] Fetching settings with locale:', locale);
         const settings = await getSettings(locale);
+        console.log('[TelegramButton] Settings received:', settings ? 'success' : 'null');
         console.log('[TelegramButton] Settings received:', {
           hasBotUsername: !!settings?.telegramButtonBotUsername,
           botUsername: settings?.telegramButtonBotUsername,
@@ -76,7 +82,7 @@ export default function TelegramButton({ initialLocale }: TelegramButtonProps = 
         setIsLoading(false);
       } finally {
         setIsLoading(false);
-        console.log('[TelegramButton] Loading complete. isLoading:', false);
+        console.log('[TelegramButton] Loading complete. isLoading:', false, 'botUsername:', botUsername);
       }
     };
 
