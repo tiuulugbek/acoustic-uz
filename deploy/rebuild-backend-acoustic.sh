@@ -35,9 +35,10 @@ rm -rf dist
 echo "🔨 Running build..."
 cd "$PROJECT_DIR/apps/backend"
 
-# Run build and capture output
+# Try TypeScript compiler directly (more reliable than nest build with TS 5.3+)
+echo "Using TypeScript compiler directly..."
 set +e  # Don't exit on error so we can check the result
-pnpm build 2>&1
+pnpm exec tsc 2>&1
 BUILD_EXIT_CODE=$?
 set -e  # Re-enable exit on error
 
