@@ -78,8 +78,19 @@ if [ $BUILD_EXIT_CODE -ne 0 ] || [ ! -d "dist" ]; then
     fi
     
     echo ""
-    echo "📋 Trying to run nest build directly..."
-    pnpm exec nest build 2>&1 || true
+    echo "📋 Checking NestJS CLI..."
+    pnpm exec nest --version 2>&1 || echo "NestJS CLI not found!"
+    
+    echo ""
+    echo "📋 Trying to run nest build directly with explicit path..."
+    pnpm exec nest build --path apps/backend 2>&1 || pnpm exec nest build 2>&1 || true
+    
+    echo ""
+    echo "📋 Checking current directory and files..."
+    pwd
+    ls -la src/main.ts 2>/dev/null || echo "src/main.ts not found!"
+    ls -la tsconfig.json 2>/dev/null || echo "tsconfig.json not found!"
+    ls -la nest-cli.json 2>/dev/null || echo "nest-cli.json not found!"
     
     echo ""
     echo "📋 Common issues:"
