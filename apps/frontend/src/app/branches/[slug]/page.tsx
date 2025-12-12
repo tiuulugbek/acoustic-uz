@@ -256,8 +256,8 @@ export default async function BranchPage({ params }: BranchPageProps) {
                 </section>
               )}
 
-              {/* 3D Tour Section */}
-              {(branch.tour3d_config || branch.tour3d_iframe) && (
+              {/* 3D Tour Section - Temporarily disabled for testing */}
+              {false && (branch.tour3d_config || branch.tour3d_iframe) && (
                 <section id="tour3d" className="scroll-mt-20 w-full overflow-x-hidden" suppressHydrationWarning>
                   <h2 className="mb-3 text-xl sm:text-2xl font-bold text-foreground" suppressHydrationWarning>
                     {locale === 'ru' ? '3D Тур' : '3D Tour'}
