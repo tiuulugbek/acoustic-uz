@@ -9,6 +9,7 @@ import { MapPin, Phone, Clock, Navigation, ExternalLink } from 'lucide-react';
 import type { TourConfig } from '@/types/tour';
 import PageHeader from '@/components/page-header';
 import WorkingHoursDisplay from '@/components/working-hours-display';
+import BranchTOC from '@/components/branch-toc';
 
 // Dynamically import PanoramaViewer for client-side rendering
 const PanoramaViewer = dynamicImport(() => import('@/components/tour/PanoramaViewer'), {
@@ -121,14 +122,8 @@ export default async function BranchPage({ params }: BranchPageProps) {
     ? `https://www.google.com/maps/dir/?api=1&destination=${branch.latitude},${branch.longitude}`
     : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 
-  // Table of contents sections
-  const tocSections = [
-    { id: 'services', label: locale === 'ru' ? 'Услуги' : 'Xizmatlar' },
-    { id: 'doctors', label: locale === 'ru' ? 'Врачи' : 'Shifokorlar' },
-    // Conditionally add 3D Tour to TOC
-    ...(branch.tour3d_config || branch.tour3d_iframe ? [{ id: 'tour3d', label: locale === 'ru' ? '3D Тур' : '3D Tour' }] : []),
-    { id: 'location', label: locale === 'ru' ? 'Как добраться' : 'Qanday yetib borish' },
-  ];
+  // Check if branch has 3D tour (for TOC component)
+  const hasTour3d = !!(branch.tour3d_config || branch.tour3d_iframe);
 
   // Services list - fetch from branch.serviceIds if available, otherwise show all services
   const branchServiceIds = (branch.serviceIds && Array.isArray(branch.serviceIds)) ? branch.serviceIds : [];
@@ -345,23 +340,7 @@ export default async function BranchPage({ params }: BranchPageProps) {
             <aside className="lg:sticky lg:top-4 lg:self-start order-first lg:order-last" suppressHydrationWarning>
               <div className="rounded-lg border border-border bg-white p-4 sm:p-6 shadow-sm space-y-4 sm:space-y-6" suppressHydrationWarning>
                 {/* Table of Contents */}
-                <div>
-                  <h3 className="mb-2 sm:mb-3 text-base sm:text-lg font-bold text-foreground" suppressHydrationWarning>
-                    {locale === 'ru' ? 'В этой статье' : 'Bu maqolada'}
-                  </h3>
-                  <nav className="space-y-1.5 sm:space-y-2">
-                    {tocSections.map((section) => (
-                      <a
-                        key={section.id}
-                        href={`#${section.id}`}
-                        className="block text-xs sm:text-sm text-brand-primary hover:underline break-words"
-                        suppressHydrationWarning
-                      >
-                        {section.label}
-                      </a>
-                    ))}
-                  </nav>
-                </div>
+                <BranchTOC locale={locale} hasTour3d={hasTour3d} />
 
                 {/* Address */}
                 <div>
