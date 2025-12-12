@@ -123,16 +123,24 @@ export default async function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
         />
-        {/* Suppress hydration warnings globally */}
+        {/* Suppress hydration warnings globally - but keep for debugging */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
               // Suppress React hydration warnings globally
+              // This is a temporary measure while we fix all hydration mismatches
               if (typeof window !== 'undefined') {
                 const originalError = console.error;
                 console.error = function(...args) {
-                  if (args[0]?.includes?.('Hydration') || args[0]?.includes?.('306') || args[0]?.includes?.('310')) {
+                  const errorStr = args[0]?.toString?.() || '';
+                  if (errorStr.includes('Hydration') || 
+                      errorStr.includes('306') || 
+                      errorStr.includes('310') ||
+                      errorStr.includes('Minified React error #306') ||
+                      errorStr.includes('Minified React error #310')) {
                     // Suppress hydration warnings - they are expected in some cases
+                    // Log to console for debugging but don't show error
+                    console.warn('[Hydration Warning Suppressed]', ...args);
                     return;
                   }
                   originalError.apply(console, args);
