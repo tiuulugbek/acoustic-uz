@@ -5,7 +5,7 @@ import { useTooltipManager } from './tooltip-manager';
 
 /**
  * Processes HTML content to add support for:
- * - Tooltips: [tooltips keyword="..." content="..."]
+ * - Tooltips: [tooltip keyword="..." content="..."]
  * - Table positions: [table position="left|center|right|full"]...[/table]
  * - Image layouts: [images layout="grid-2|grid-3|left-right|right-left"]...[/images]
  */
