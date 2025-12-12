@@ -68,6 +68,7 @@ export class ProductsController {
       status?: string;
       brandId?: string;
       categoryId?: string;
+      productType?: string;
       search?: string;
       audience?: string;
       formFactor?: string;
@@ -77,9 +78,17 @@ export class ProductsController {
       smartphoneCompatibility?: string;
       paymentOption?: string;
       availabilityStatus?: string;
+      limit?: string;
+      offset?: string;
     },
   ) {
-    return this.productsService.findAll(filters);
+    const limit = filters.limit ? parseInt(filters.limit, 10) : undefined;
+    const offset = filters.offset ? parseInt(filters.offset, 10) : undefined;
+    return this.productsService.findAll({
+      ...filters,
+      limit,
+      offset,
+    });
   }
 
   @UseGuards(JwtAuthGuard, RbacGuard)
