@@ -71,8 +71,15 @@
   * {
     @apply border-border;
   }
+  html {
+    background-color: #ffffff;
+  }
   body {
     @apply bg-background text-foreground antialiased;
+    background-color: #ffffff !important;
+    color: #111827 !important;
+    margin: 0;
+    padding: 0;
   }
 }
 
