@@ -33,15 +33,40 @@ rm -rf .next
 echo "🏗️  Building frontend..."
 cd "$FRONTEND_DIR"
 
-# Export environment variables for build
+# Load environment variables from .env.production or .env file if they exist
+if [ -f "$PROJECT_DIR/.env.production" ]; then
+    echo "📋 Loading environment variables from .env.production..."
+    set -a
+    source "$PROJECT_DIR/.env.production"
+    set +a
+elif [ -f "$PROJECT_DIR/.env" ]; then
+    echo "📋 Loading environment variables from .env..."
+    set -a
+    source "$PROJECT_DIR/.env"
+    set +a
+elif [ -f "$FRONTEND_DIR/.env.production" ]; then
+    echo "📋 Loading environment variables from apps/frontend/.env.production..."
+    set -a
+    source "$FRONTEND_DIR/.env.production"
+    set +a
+elif [ -f "$FRONTEND_DIR/.env" ]; then
+    echo "📋 Loading environment variables from apps/frontend/.env..."
+    set -a
+    source "$FRONTEND_DIR/.env"
+    set +a
+fi
+
+# Export environment variables for build (with fallbacks)
 export NODE_ENV=production
 export NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://a.acoustic.uz/api}
 export NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL:-https://acoustic.uz}
+export NEXT_TELEMETRY_DISABLED=${NEXT_TELEMETRY_DISABLED:-1}
 
-echo "📋 Environment variables:"
+echo "📋 Environment variables for build:"
 echo "  NODE_ENV=$NODE_ENV"
 echo "  NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL"
 echo "  NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL"
+echo "  NEXT_TELEMETRY_DISABLED=$NEXT_TELEMETRY_DISABLED"
 
 # Build frontend
 BUILD_OUTPUT=$(pnpm build 2>&1)
