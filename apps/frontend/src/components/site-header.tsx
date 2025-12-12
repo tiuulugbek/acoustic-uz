@@ -238,6 +238,12 @@ export default function SiteHeader({ initialSettings = null, initialLocale }: Si
   const [catalogMenuItems, setCatalogMenuItems] = useState<Array<{ href: string; label: string }>>([]);
   
   useEffect(() => {
+    // Only update catalog menu items after component is mounted to prevent hydration mismatch
+    if (!mounted) {
+      setCatalogMenuItems([]);
+      return;
+    }
+    
     const mainSections = [
       {
         href: '/catalog?productType=hearing-aids',
@@ -277,7 +283,7 @@ export default function SiteHeader({ initialSettings = null, initialLocale }: Si
     ];
 
     setCatalogMenuItems([...mainSections, ...otherSections]);
-  }, [displayLocale]);
+  }, [displayLocale, mounted]);
 
   const { data: headerMenu, refetch: refetchMenu, isLoading: isLoadingMenu } = useQuery({
     queryKey: ['menu', 'header', displayLocale, menuRefreshKey],
