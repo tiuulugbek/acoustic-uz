@@ -35,12 +35,22 @@ rm -rf dist
 echo "🔨 Running build..."
 cd "$PROJECT_DIR/apps/backend"
 
-# Try TypeScript compiler directly (more reliable than nest build with TS 5.3+)
-echo "Using TypeScript compiler directly..."
+# Try NestJS build first (handles NestJS-specific compilation better)
+echo "Using NestJS build..."
 set +e  # Don't exit on error so we can check the result
-pnpm exec tsc 2>&1
+pnpm exec nest build 2>&1
 BUILD_EXIT_CODE=$?
 set -e  # Re-enable exit on error
+
+# If NestJS build fails, try TypeScript compiler directly
+if [ $BUILD_EXIT_CODE -ne 0 ] || [ ! -d "dist" ] || [ ! -f "dist/main.js" ]; then
+    echo ""
+    echo "⚠️  NestJS build failed or incomplete, trying TypeScript compiler directly..."
+    set +e
+    pnpm exec tsc --build 2>&1
+    BUILD_EXIT_CODE=$?
+    set -e
+fi
 
 if [ $BUILD_EXIT_CODE -ne 0 ] || [ ! -d "dist" ]; then
     echo ""
