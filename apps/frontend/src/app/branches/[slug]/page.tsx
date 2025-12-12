@@ -265,9 +265,7 @@ export default async function BranchPage({ params }: BranchPageProps) {
                   <div className="rounded-lg overflow-hidden border border-border bg-muted/20 w-full max-w-full" suppressHydrationWarning>
                     {branch.tour3d_config ? (
                       <div className="w-full max-w-full" style={{ aspectRatio: '16 / 9', minHeight: '250px', maxHeight: '500px' }} suppressHydrationWarning>
-                        <div suppressHydrationWarning>
-                          <PanoramaViewer config={branch.tour3d_config as TourConfig} locale={locale} />
-                        </div>
+                        <PanoramaViewer config={branch.tour3d_config as TourConfig} locale={locale} />
                       </div>
                     ) : branch.tour3d_iframe ? (
                       <div

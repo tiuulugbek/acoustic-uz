@@ -337,12 +337,7 @@ export default function PanoramaViewer({ config, locale = 'uz', className = '', 
           viewerInstanceRef.current = null;
         }
 
-        if (!config || !config.scenes || Object.keys(config.scenes).length === 0) {
-          console.error('❌ No scenes in config');
-          setError('Tour konfiguratsiyasi topilmadi yoki sahnalar yo\'q');
-          setIsLoading(false);
-          return;
-        }
+        // Config validation already done above
 
         const firstScene = config.scenes[config.default?.firstScene];
         if (!firstScene) {
@@ -1170,22 +1165,16 @@ export default function PanoramaViewer({ config, locale = 'uz', className = '', 
     };
   }, [config, normalizePanoramaUrl, prepareHotspots, clearPanoloadTimeout, locale, mounted]);
 
+  // Prevent hydration mismatch by ensuring component only renders on client
   if (error) {
     return (
-      <div className={`flex h-full min-h-[400px] items-center justify-center bg-gray-100 ${className}`}>
+      <div className={`flex h-full min-h-[400px] items-center justify-center bg-gray-100 ${className}`} suppressHydrationWarning>
         <div className="text-center">
-          <p className="text-red-600">{error}</p>
+          <p className="text-red-600" suppressHydrationWarning>{error}</p>
         </div>
       </div>
     );
   }
-
-  // Prevent hydration mismatch by ensuring component only renders on client
-  const [mounted, setMounted] = useState(false);
-  
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   if (!mounted) {
     // Return placeholder during SSR to prevent hydration mismatch
@@ -1194,7 +1183,7 @@ export default function PanoramaViewer({ config, locale = 'uz', className = '', 
         <div className="flex h-full items-center justify-center bg-gray-100">
           <div className="text-center">
             <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-brand-primary border-t-transparent mx-auto"></div>
-            <p className="text-lg text-gray-600">
+            <p className="text-lg text-gray-600" suppressHydrationWarning>
               {locale === 'ru' ? 'Панорама загружается...' : 'Panorama yuklanmoqda...'}
             </p>
           </div>
