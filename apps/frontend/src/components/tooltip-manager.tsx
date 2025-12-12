@@ -235,8 +235,10 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
 
     // Handle tooltip hide for a trigger element
     const hideTooltip = (trigger: HTMLElement) => {
-      if (!trigger || !trigger.classList?.contains('tooltip-trigger')) {
-        return;
+      // Check if element has tooltip attributes
+      const keyword = trigger.getAttribute('data-tooltip-keyword');
+      if (!keyword) {
+        return; // Not a tooltip trigger
       }
 
       const ref = tooltipRefs.get(trigger);
@@ -275,8 +277,9 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
               'cursor-help',
               'border-b',
               'border-dashed',
-              'border-brand-primary',
-              'text-brand-primary'
+              'border-brand-primary/40',
+              'text-brand-primary',
+              'hover:border-brand-primary'
             );
           }
         }
