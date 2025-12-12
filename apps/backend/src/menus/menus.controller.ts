@@ -25,3 +25,17 @@ export class MenusController {
   }
 }
 
+// Legacy route support: /api/menu -> /api/menus/header
+@ApiTags('public', 'admin')
+@Controller('menu')
+export class MenuLegacyController {
+  constructor(private readonly service: MenusService) {}
+
+  @Public()
+  @Get()
+  findOne(@Query('name') name?: string) {
+    // Default to 'header' if no name provided
+    return this.service.findOne(name || 'header');
+  }
+}
+
