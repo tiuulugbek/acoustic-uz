@@ -59,6 +59,8 @@ import { normalizeImageUrl } from '../utils/image';
 import { compressImage } from '../utils/image-compression';
 import type { UploadProps } from 'antd';
 import { Image } from 'antd';
+import { Upload } from 'antd';
+import { Image } from 'antd';
 
 const statusOptions = [
   { label: 'Nashr etilgan', value: 'published' },
@@ -237,6 +239,12 @@ export default function ProductsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<ProductDto | null>(null);
   const [form] = Form.useForm();
+  const [galleryModalOpen, setGalleryModalOpen] = useState(false);
+  const [uploadingGallery, setUploadingGallery] = useState(false);
+  const { data: mediaList } = useQuery<MediaDto[], ApiError>({
+    queryKey: ['media'],
+    queryFn: getMedia,
+  });
 
   const { mutateAsync: createMutation, isPending: isCreating } = useMutation<ProductDto, ApiError, CreateProductPayload>({
     mutationFn: createProduct,
@@ -300,8 +308,46 @@ export default function ProductsPage() {
       paymentOptions: [],
       tinnitusSupport: false,
       catalogIds: [],
+      galleryIds: [],
     });
     setIsModalOpen(true);
+  };
+
+  const handleGalleryUpload: UploadProps['customRequest'] = async (options) => {
+    const { file, onSuccess, onError } = options;
+    setUploadingGallery(true);
+    try {
+      const compressedFile = await compressImage(file as File);
+      const media = await uploadMedia(compressedFile);
+      const currentGalleryIds = form.getFieldValue('galleryIds') || [];
+      form.setFieldsValue({ galleryIds: [...currentGalleryIds, media.id] });
+      message.success('Rasm galereyaga qo\'shildi');
+      queryClient.invalidateQueries({ queryKey: ['media'] });
+      onSuccess?.(media);
+    } catch (error) {
+      const apiError = error as ApiError;
+      message.error(apiError.message || 'Rasm yuklashda xatolik');
+      onError?.(error as Error);
+    } finally {
+      setUploadingGallery(false);
+    }
+  };
+
+  const handleSelectGalleryMedia = (media: MediaDto) => {
+    const currentGalleryIds = form.getFieldValue('galleryIds') || [];
+    if (!currentGalleryIds.includes(media.id)) {
+      form.setFieldsValue({ galleryIds: [...currentGalleryIds, media.id] });
+      message.success('Rasm galereyaga qo\'shildi');
+    } else {
+      message.info('Bu rasm allaqachon galereyada');
+    }
+    setGalleryModalOpen(false);
+  };
+
+  const handleRemoveGalleryImage = (mediaId: string) => {
+    const currentGalleryIds = form.getFieldValue('galleryIds') || [];
+    form.setFieldsValue({ galleryIds: currentGalleryIds.filter((id: string) => id !== mediaId) });
+    message.success('Rasm galereyadan olib tashlandi');
   };
 
   const openEditModal = (product: ProductDto) => {
@@ -319,7 +365,7 @@ export default function ProductsPage() {
       categoryId: product.categoryId ?? product.category?.id ?? undefined,
       status: product.status,
       specsText: product.specsText ?? undefined,
-      galleryIds: product.galleryIds?.length ? product.galleryIds.join(', ') : undefined,
+      galleryIds: product.galleryIds ?? [],
       audience: product.audience ?? [],
       formFactors: product.formFactors ?? [],
       signalProcessing: product.signalProcessing ?? undefined,
@@ -346,11 +392,8 @@ export default function ProductsPage() {
     try {
       const values = await form.validateFields();
 
-      const galleryIds = values.galleryIds
-        ? String(values.galleryIds)
-            .split(',')
-            .map((item: string) => item.trim())
-            .filter((item: string) => item.length > 0)
+      const galleryIds = Array.isArray(values.galleryIds) 
+        ? values.galleryIds.filter((id: string) => id && id.trim().length > 0)
         : undefined;
 
       const payload: CreateProductPayload = {
@@ -756,8 +799,98 @@ export default function ProductsPage() {
             </Col>
           </Row>
 
+          <Divider orientation="left">Galereya rasmlari</Divider>
+
+          <Form.Item
+            label="Galereya rasmlari"
+            name="galleryIds"
+            extra="Mahsulot sahifasida ko'rsatiladigan rasmlar galereyasi"
+          >
+            <div>
+              {/* Selected gallery images preview */}
+              {(() => {
+                const selectedIds = form.getFieldValue('galleryIds') || [];
+                if (selectedIds.length === 0) {
+                  return (
+                    <div style={{ marginBottom: 16, padding: 16, background: '#f5f5f5', borderRadius: 4, textAlign: 'center', color: '#999' }}>
+                      Galereyada rasmlar yo'q. Media kutubxonasidan rasmlarni tanlang yoki yangi rasm yuklang.
+                    </div>
+                  );
+                }
+                return (
+                  <div style={{ marginBottom: 16 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 12 }}>
+                      {selectedIds.map((mediaId: string) => {
+                        const media = mediaList?.find(m => m.id === mediaId);
+                        if (!media) return null;
+                        return (
+                          <div key={mediaId} style={{ position: 'relative', border: '1px solid #d9d9d9', borderRadius: 4, overflow: 'hidden' }}>
+                            <Image
+                              src={normalizeImageUrl(media.url)}
+                              alt={media.filename}
+                              style={{ width: '100%', height: 120, objectFit: 'cover' }}
+                              preview={true}
+                            />
+                            <Button
+                              type="text"
+                              danger
+                              icon={<DeleteOutlined />}
+                              size="small"
+                              onClick={() => handleRemoveGalleryImage(mediaId)}
+                              style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(255, 255, 255, 0.9)' }}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Upload
+                    customRequest={handleGalleryUpload}
+                    showUploadList={false}
+                    accept="image/*"
+                    multiple
+                  >
+                    <Button icon={<UploadOutlined />} loading={uploadingGallery} block>
+                      Yangi rasm yuklash
+                    </Button>
+                  </Upload>
+                </Col>
+                <Col span={12}>
+                  <Button
+                    icon={<FolderOutlined />}
+                    onClick={() => setGalleryModalOpen(true)}
+                    block
+                  >
+                    Media kutubxonasidan tanlash
+                  </Button>
+                </Col>
+              </Row>
+
+              {form.getFieldValue('galleryIds')?.length > 0 && (
+                <div style={{ marginTop: 8, fontSize: 12, color: '#666' }}>
+                  Tanlangan: {form.getFieldValue('galleryIds')?.length || 0} ta rasm
+                </div>
+              )}
+            </div>
+          </Form.Item>
+
         </Form>
       </Modal>
+
+      {/* Gallery Media Library Modal */}
+      <MediaLibraryModal
+        open={galleryModalOpen}
+        onCancel={() => setGalleryModalOpen(false)}
+        onSelect={handleSelectGalleryMedia}
+        fileType="image"
+        selectedMediaIds={form.getFieldValue('galleryIds') || []}
+        multiple={true}
+      />
     </div>
   );
 }
