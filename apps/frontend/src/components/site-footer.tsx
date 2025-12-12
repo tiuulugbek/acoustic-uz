@@ -36,42 +36,26 @@ function getLocaleFromDOMHelper(): Locale {
   return DEFAULT_LOCALE;
 }
 
-export default function SiteFooter() {
+interface SiteFooterProps {
+  initialLocale?: Locale;
+}
+
+export default function SiteFooter({ initialLocale }: SiteFooterProps = {}) {
   const queryClient = useQueryClient();
   
-  // Get initial locale from DOM synchronously - this must match server render
-  const getInitialLocale = (): Locale => {
-    if (typeof window === 'undefined' || typeof document === 'undefined') {
-      return DEFAULT_LOCALE; // SSR fallback
-    }
-    
-    // Read from data-locale attribute (set by server) - this is the source of truth
-    const htmlLocale = document.documentElement.getAttribute('data-locale');
-    if (htmlLocale === 'ru' || htmlLocale === 'uz') {
-      return htmlLocale as Locale;
-    }
-    
-    // Fallback to window.__NEXT_LOCALE__ (set by inline script)
-    if ((window as any).__NEXT_LOCALE__) {
-      const windowLocale = (window as any).__NEXT_LOCALE__;
-      if (windowLocale === 'ru' || windowLocale === 'uz') {
-        return windowLocale as Locale;
-      }
-    }
-    
-    // Last resort: cookie
-    return getLocaleFromCookie();
-  };
-  
-  // Use DEFAULT_LOCALE as initial value to match SSR, then update in useEffect
-  const [displayLocale, setDisplayLocale] = useState<Locale>(DEFAULT_LOCALE);
+  // Use initialLocale from props (server-provided) to match SSR, then update from DOM if needed
+  const [displayLocale, setDisplayLocale] = useState<Locale>(initialLocale || DEFAULT_LOCALE);
   const [mounted, setMounted] = useState(false);
   
-  // Set initial locale from DOM after mount to prevent hydration mismatch
+  // Update locale from DOM after mount if it differs from server-provided locale
   useEffect(() => {
     setMounted(true);
-    const initialLocale = getInitialLocale();
-    setDisplayLocale(initialLocale);
+    if (typeof document !== 'undefined') {
+      const htmlLocale = document.documentElement.getAttribute('data-locale');
+      if ((htmlLocale === 'ru' || htmlLocale === 'uz') && htmlLocale !== displayLocale) {
+        setDisplayLocale(htmlLocale as Locale);
+      }
+    }
   }, []); // Only run once on mount
   const [menuRefreshKey, setMenuRefreshKey] = useState(0);
   

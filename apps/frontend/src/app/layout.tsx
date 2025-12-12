@@ -138,9 +138,9 @@ export default async function RootLayout({
           />
           <div className="flex min-h-screen flex-col bg-muted/20" suppressHydrationWarning>
             <DebugHydration />
-            <SiteHeader initialSettings={settings} />
+            <SiteHeader initialSettings={settings} initialLocale={locale as 'uz' | 'ru'} />
             <main className="flex-1" suppressHydrationWarning>{children}</main>
-            <SiteFooter />
+            <SiteFooter initialLocale={locale as 'uz' | 'ru'} />
             <TelegramButton />
           </div>
         </Providers>
