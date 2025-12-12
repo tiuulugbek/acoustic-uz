@@ -31,16 +31,20 @@ cd apps/backend
 echo "🧹 Cleaning dist directory..."
 rm -rf dist
 
-# Build with error output
-echo "🔨 Running build..."
-if ! pnpm build 2>&1; then
+# Build with verbose error output
+echo "🔨 Running build with verbose output..."
+if ! pnpm exec nest build --verbose 2>&1 | tee /tmp/backend-build.log; then
     echo ""
-    echo "❌ Build failed! Check errors above."
+    echo "❌ Build failed! Check errors above and /tmp/backend-build.log"
+    echo ""
+    echo "📋 Checking for TypeScript errors..."
+    pnpm exec tsc --noEmit 2>&1 | head -50 || echo "TypeScript check failed"
     echo ""
     echo "📋 Common issues:"
     echo "  - Missing dependencies: pnpm install"
     echo "  - TypeScript errors: Check tsconfig.json"
     echo "  - Missing shared package: pnpm --filter @acoustic/shared build"
+    echo "  - Check /tmp/backend-build.log for full error details"
     exit 1
 fi
 
@@ -49,13 +53,18 @@ if [ ! -f "dist/main.js" ]; then
     echo "❌ Build failed: dist/main.js not found"
     echo "📋 Checking dist directory contents:"
     ls -la dist/ 2>/dev/null || echo "  dist directory does not exist"
+    echo "📋 Checking build log:"
+    tail -50 /tmp/backend-build.log 2>/dev/null || echo "  Build log not found"
     exit 1
 fi
 
 if [ ! -f "dist/app.module.js" ]; then
-    echo "⚠️  Warning: dist/app.module.js not found"
+    echo "❌ Build failed: dist/app.module.js not found"
     echo "📋 Checking dist directory contents:"
     ls -la dist/ | head -20
+    echo "📋 Checking build log:"
+    tail -50 /tmp/backend-build.log 2>/dev/null || echo "  Build log not found"
+    exit 1
 fi
 
 echo "✅ Build successful!"
