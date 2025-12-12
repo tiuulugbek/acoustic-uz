@@ -1,4 +1,5 @@
 // Get API base URL - use env var if set, otherwise detect from hostname
+// This function is called at runtime to ensure correct URL detection
 function getApiBase(): string {
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL;
@@ -12,11 +13,12 @@ function getApiBase(): string {
     }
   }
   
-  // Default to production API URL
+  // Default to production API URL (for SSR and production)
   return 'https://a.acoustic.uz/api';
 }
 
-const API_BASE = getApiBase();
+// Use a getter function instead of a constant to ensure runtime detection
+const getApiBaseUrl = () => getApiBase();
 
 export class ApiFetchError extends Error {
   status: number;
@@ -46,10 +48,12 @@ async function fetchJson<T>(
     // Parse the path to handle existing query parameters
     const [pathname, existingQuery] = path.split('?');
     // Fix: Remove leading slash if present to avoid absolute path replacement
-    // Then properly append to API_BASE
+    // Then properly append to API base URL
     const cleanPath = pathname.startsWith('/') ? pathname.slice(1) : pathname;
-    // Ensure API_BASE ends with / for proper URL construction
-    const baseUrl = API_BASE.endsWith('/') ? API_BASE : `${API_BASE}/`;
+    // Get API base URL at runtime to ensure correct detection
+    const apiBase = getApiBaseUrl();
+    // Ensure API base URL ends with / for proper URL construction
+    const baseUrl = apiBase.endsWith('/') ? apiBase : `${apiBase}/`;
     const url = new URL(cleanPath, baseUrl);
     
     // Add existing query parameters if any
@@ -154,17 +158,18 @@ async function fetchJson<T>(
     const errorName = error instanceof Error ? error.name : 'Unknown';
     
     // Enhanced error logging for debugging
+    const apiBase = getApiBaseUrl();
     console.error(`[API] ❌ Failed to fetch ${path}:`, {
       error: errorMessage,
       errorType: errorName,
-      apiBase: API_BASE,
-      fullUrl: `${API_BASE}/${path}`,
+      apiBase: apiBase,
+      fullUrl: `${apiBase}/${path}`,
       locale: locale || 'not provided',
     });
     
     // Check if it's a network error (backend not running)
     if (errorName === 'AbortError' || errorMessage.includes('timeout') || errorMessage.includes('Failed to fetch')) {
-      console.error(`[API] ⚠️ Backend appears to be unavailable or unreachable at ${API_BASE}`);
+      console.error(`[API] ⚠️ Backend appears to be unavailable or unreachable at ${apiBase}`);
       throw new Error(`Backend unavailable: ${errorMessage}`);
     }
     
@@ -846,7 +851,7 @@ export interface LeadResponse {
 }
 
 export const createLead = async (data: CreateLeadRequest, locale?: string): Promise<LeadResponse> => {
-  const response = await fetch(`${API_BASE}/leads`, {
+  const response = await fetch(`${getApiBaseUrl()}/leads`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -894,7 +899,7 @@ export interface HearingTestResponse {
 }
 
 export const submitHearingTest = async (data: HearingTestRequest, locale?: string): Promise<HearingTestResponse> => {
-  const response = await fetch(`${API_BASE}/hearing-test`, {
+  const response = await fetch(`${getApiBaseUrl()}/hearing-test`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
