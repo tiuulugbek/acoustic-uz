@@ -389,7 +389,11 @@ export default function SiteHeader({ initialSettings = null, initialLocale }: Si
   }, []);
   
   useEffect(() => {
-    if (!mounted) return;
+    // Don't build navItems until mounted to prevent hydration mismatch
+    if (!mounted) {
+      setNavItems([]);
+      return;
+    }
     
     console.log('[SiteHeader] Building navItems with locale:', displayLocale);
     const items = headerMenuItems.map((item) => {
