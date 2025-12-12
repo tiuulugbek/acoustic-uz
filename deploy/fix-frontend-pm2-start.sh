@@ -70,11 +70,12 @@ pm2 start "$START_SCRIPT" \
     --error /var/log/pm2/acoustic-frontend-error.log \
     --output /var/log/pm2/acoustic-frontend-out.log \
     --merge-logs \
-    --max-memory-restart 500M \
-    --autorestart
+    --max-memory-restart 500M
 
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}  ✅ Frontend started${NC}"
+    # Enable autorestart using PM2 command
+    pm2 set acoustic-frontend autorestart true 2>/dev/null || true
 else
     echo -e "${RED}  ❌ Failed to start frontend${NC}"
     exit 1
