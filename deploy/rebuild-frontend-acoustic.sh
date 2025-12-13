@@ -38,7 +38,15 @@ sudo -u acoustic pnpm --filter @acoustic/shared build
 # 6. Clean Next.js build cache
 echo "🧹 Cleaning Next.js build cache..."
 cd "$FRONTEND_DIR"
-sudo -u acoustic rm -rf .next
+# Fix permissions first
+sudo chown -R acoustic:acoustic .next 2>/dev/null || true
+# Remove cache with proper permissions
+sudo -u acoustic rm -rf .next/cache 2>/dev/null || true
+# Remove entire .next directory if cache removal fails
+if [ -d ".next" ]; then
+  sudo chown -R acoustic:acoustic .next
+  sudo -u acoustic rm -rf .next
+fi
 
 # 7. Build frontend
 echo "🏗️  Building frontend..."
