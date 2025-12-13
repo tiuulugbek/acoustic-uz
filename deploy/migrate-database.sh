@@ -1,58 +1,116 @@
 #!/bin/bash
 
-# Local bazani serverga ko'chirish
+# Database Migration Script
+# Bu script eski serverdan yangi serverga database'ni migrate qiladi
 
 set -e
 
-echo "🗄️ Local bazani serverga ko'chirish..."
+# Colors
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
 
-# 1. Local database dump olish
-echo "📋 Local database dump olish..."
-LOCAL_DB_NAME="acoustic"
-LOCAL_DB_USER="acoustic"
-LOCAL_DB_PASSWORD="${LOCAL_DB_PASSWORD:-acoustic123}"
-LOCAL_DB_HOST="${LOCAL_DB_HOST:-localhost}"
-LOCAL_DB_PORT="${LOCAL_DB_PORT:-5432}"
+echo -e "${BLUE}🔄 Database Migration${NC}"
+echo "====================="
+echo ""
 
-DUMP_FILE="acoustic-dump-$(date +%Y%m%d-%H%M%S).sql"
+# Get source server information
+read -p "Enter OLD server IP or hostname: " OLD_SERVER
+read -p "Enter OLD server SSH user (default: root): " OLD_USER
+OLD_USER=${OLD_USER:-root}
 
-echo "📦 Database dump yaratilmoqda..."
-PGPASSWORD="$LOCAL_DB_PASSWORD" pg_dump -h "$LOCAL_DB_HOST" -p "$LOCAL_DB_PORT" -U "$LOCAL_DB_USER" -d "$LOCAL_DB_NAME" --clean --if-exists --no-owner --no-acl -f "$DUMP_FILE" || {
-    echo "❌ Database dump xatosi!"
+read -p "Enter OLD database name (default: acoustic_db): " OLD_DB
+OLD_DB=${OLD_DB:-acoustic_db}
+
+read -p "Enter OLD database user (default: acoustic): " OLD_DB_USER
+OLD_DB_USER=${OLD_DB_USER:-acoustic}
+
+read -p "Enter OLD database password: " -s OLD_DB_PASSWORD
+echo ""
+
+# Get destination information
+read -p "Enter NEW database name (default: acoustic_db): " NEW_DB
+read -p "Enter NEW database user (default: acoustic): " NEW_DB_USER
+read -p "Enter NEW database password: " -s NEW_DB_PASSWORD
+echo ""
+
+# Set defaults
+NEW_DB=${NEW_DB:-acoustic_db}
+NEW_DB_USER=${NEW_DB_USER:-acoustic}
+
+APP_DIR="/var/www/acoustic.uz"
+BACKUP_DIR="/tmp/acoustic-migration"
+mkdir -p "$BACKUP_DIR"
+
+echo ""
+echo -e "${BLUE}📋 Migration Configuration:${NC}"
+echo "  Source: $OLD_SERVER ($OLD_DB)"
+echo "  Destination: localhost ($NEW_DB)"
+echo ""
+
+# Step 1: Create backup on old server
+echo -e "${BLUE}1️⃣ Creating backup on old server...${NC}"
+BACKUP_FILE="acoustic_backup_$(date +%Y%m%d_%H%M%S).sql"
+ssh "$OLD_USER@$OLD_SERVER" "PGPASSWORD='$OLD_DB_PASSWORD' pg_dump -h localhost -U $OLD_DB_USER -d $OLD_DB -F c -f /tmp/$BACKUP_FILE" || {
+    echo -e "${RED}❌ Failed to create backup on old server${NC}"
     exit 1
 }
+echo -e "${GREEN}✅ Backup created on old server${NC}"
 
-echo "✅ Database dump yaratildi: $DUMP_FILE"
-ls -lh "$DUMP_FILE"
-
-# 2. Serverga yuborish
+# Step 2: Download backup
 echo ""
-echo "📤 Serverga yuborish..."
-read -p "Server IP yoki hostname: " SERVER_HOST
-read -p "Server user (default: root): " SERVER_USER
-SERVER_USER=${SERVER_USER:-root}
-read -p "Server path (default: /var/www/news.acoustic.uz): " SERVER_PATH
-SERVER_PATH=${SERVER_PATH:-/var/www/news.acoustic.uz}
+echo -e "${BLUE}2️⃣ Downloading backup...${NC}"
+scp "$OLD_USER@$OLD_SERVER:/tmp/$BACKUP_FILE" "$BACKUP_DIR/"
+echo -e "${GREEN}✅ Backup downloaded${NC}"
 
-echo "📤 Faylni serverga ko'chirish..."
-scp "$DUMP_FILE" "${SERVER_USER}@${SERVER_HOST}:${SERVER_PATH}/" || {
-    echo "❌ Serverga yuborish xatosi!"
+# Step 3: Restore to new database
+echo ""
+echo -e "${BLUE}3️⃣ Restoring to new database...${NC}"
+export PGPASSWORD="$NEW_DB_PASSWORD"
+pg_restore -h localhost -U "$NEW_DB_USER" -d "$NEW_DB" --clean --if-exists "$BACKUP_DIR/$BACKUP_FILE" || {
+    echo -e "${RED}❌ Failed to restore database${NC}"
     exit 1
 }
+unset PGPASSWORD
+echo -e "${GREEN}✅ Database restored${NC}"
 
-echo "✅ Fayl serverga yuborildi!"
+# Step 4: Run migrations
+echo ""
+echo -e "${BLUE}4️⃣ Running migrations...${NC}"
+cd "$APP_DIR"
+sudo -u acoustic pnpm exec prisma migrate deploy || {
+    echo -e "${YELLOW}⚠️  Migrations may have failed, but database is restored${NC}"
+}
+echo -e "${GREEN}✅ Migrations completed${NC}"
 
-# 3. Serverda restore qilish
+# Step 5: Verify data
 echo ""
-echo "🔄 Serverda restore qilish..."
-echo "Serverda quyidagi buyruqlarni bajaring:"
-echo ""
-echo "cd $SERVER_PATH"
-echo "sudo -u postgres psql -d acoustic < $DUMP_FILE"
-echo ""
-echo "Yoki:"
-echo "export PGPASSWORD='SERVER_DB_PASSWORD'"
-echo "psql -h localhost -U acoustic -d acoustic < $DUMP_FILE"
-echo ""
-echo "⚠️ Eslatma: Serverda database parolini bilishingiz kerak!"
+echo -e "${BLUE}5️⃣ Verifying data...${NC}"
+export PGPASSWORD="$NEW_DB_PASSWORD"
+TABLES=$(psql -h localhost -U "$NEW_DB_USER" -d "$NEW_DB" -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public';")
+echo "  Tables found: $TABLES"
+unset PGPASSWORD
 
+# Cleanup
+echo ""
+echo -e "${BLUE}6️⃣ Cleaning up...${NC}"
+rm -f "$BACKUP_DIR/$BACKUP_FILE"
+ssh "$OLD_USER@$OLD_SERVER" "rm -f /tmp/$BACKUP_FILE" || true
+echo -e "${GREEN}✅ Cleanup complete${NC}"
+
+echo ""
+echo "=========================================="
+echo -e "${GREEN}✅ Database migration complete!${NC}"
+echo ""
+echo "📋 Next steps:"
+echo ""
+echo "1. Verify data:"
+echo "   psql -h localhost -U $NEW_DB_USER -d $NEW_DB -c 'SELECT COUNT(*) FROM \"Product\";'"
+echo ""
+echo "2. Update application .env file if needed"
+echo ""
+echo "3. Restart backend:"
+echo "   pm2 restart acoustic-backend"
+echo ""
