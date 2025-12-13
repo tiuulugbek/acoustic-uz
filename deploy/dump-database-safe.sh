@@ -52,13 +52,21 @@ case $AUTH_METHOD in
         ;;
 esac
 
-# Backup directory
+# Backup directory - use /tmp directly or create with proper permissions
 BACKUP_DIR="/tmp/acoustic-backups"
 mkdir -p "$BACKUP_DIR"
+# Ensure postgres user can write to this directory
+chmod 1777 "$BACKUP_DIR" 2>/dev/null || true
 
 # Backup file name
 BACKUP_FILE="acoustic_backup_$(date +%Y%m%d_%H%M%S).sql"
-BACKUP_PATH="$BACKUP_DIR/$BACKUP_FILE"
+# Use /tmp directly if postgres user, or create in a writable location
+if [ "$AUTH_METHOD" = "2" ]; then
+    # For postgres user, use /var/tmp or create file first
+    BACKUP_PATH="/var/tmp/$BACKUP_FILE"
+else
+    BACKUP_PATH="$BACKUP_DIR/$BACKUP_FILE"
+fi
 
 echo ""
 echo -e "${BLUE}📋 Dump Configuration:${NC}"
@@ -107,12 +115,18 @@ if [ "$AUTH_METHOD" = "1" ]; then
     }
     unset PGPASSWORD
 elif [ "$AUTH_METHOD" = "2" ]; then
+    # Create dump in /var/tmp (writable by postgres)
     sudo -u postgres pg_dump -d "$DB_NAME" -F c -f "$BACKUP_PATH" || {
         echo -e "${RED}❌ Failed to create dump${NC}"
         exit 1
     }
-    # Change ownership to current user
+    # Change ownership to current user and move to backup directory
     sudo chown $(whoami):$(whoami) "$BACKUP_PATH"
+    # Copy to backup directory if different
+    if [ "$BACKUP_PATH" != "$BACKUP_DIR/$BACKUP_FILE" ]; then
+        cp "$BACKUP_PATH" "$BACKUP_DIR/$BACKUP_FILE"
+        BACKUP_PATH="$BACKUP_DIR/$BACKUP_FILE"
+    fi
 else
     pg_dump -d "$DB_NAME" -F c -f "$BACKUP_PATH" || {
         echo -e "${RED}❌ Failed to create dump${NC}"
