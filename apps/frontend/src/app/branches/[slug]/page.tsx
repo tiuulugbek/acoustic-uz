@@ -182,10 +182,9 @@ export default async function BranchPage({ params }: BranchPageProps) {
   };
 
   return (
-    <>
+    <main className="min-h-screen bg-background" suppressHydrationWarning>
       <BranchViewTracker slug={branch.slug || branch.id} name={name} />
-      <main className="min-h-screen bg-background" suppressHydrationWarning>
-        {/* LocalBusiness Structured Data */}
+      {/* LocalBusiness Structured Data */}
       <Script
         id="localbusiness-jsonld"
         type="application/ld+json"
