@@ -264,6 +264,42 @@ export default async function ProductPage({ params }: ProductPageProps) {
     getSettings(locale),
   ]);
 
+  // Get related products (same brand or same category)
+  let relatedProducts: ProductResponse[] = [];
+  if (product) {
+    const { getProducts } = await import('@/lib/api-server');
+    const relatedParams: Parameters<typeof getProducts>[0] = {
+      page: 1,
+      limit: 4,
+      status: 'published',
+    };
+    
+    // Try to get products from same brand first
+    if (product.brandId) {
+      const brandProducts = await getProducts(
+        { ...relatedParams, brandId: product.brandId },
+        locale
+      );
+      relatedProducts = brandProducts.items
+        .filter(p => p.id !== product.id && p.status === 'published')
+        .slice(0, 4);
+    }
+    
+    // If not enough, add products from same category
+    if (relatedProducts.length < 4 && product.categoryId) {
+      const categoryProducts = await getProducts(
+        { ...relatedParams, categoryId: product.categoryId },
+        locale
+      );
+      const additionalProducts = categoryProducts.items
+        .filter(p => p.id !== product.id && 
+                     p.status === 'published' &&
+                     !relatedProducts.some(rp => rp.id === p.id))
+        .slice(0, 4 - relatedProducts.length);
+      relatedProducts = [...relatedProducts, ...additionalProducts];
+    }
+  }
+
   // If product is null, show fallback UI (backend down or product not found)
   // Never crash - always show UI structure
   if (!product) {
@@ -684,6 +720,55 @@ export default async function ProductPage({ params }: ProductPageProps) {
                       </Link>
                     ))}
                   </div>
+              </div>
+            )}
+
+            {/* Related Products */}
+            {relatedProducts.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-foreground border-b border-border/60 pb-2">
+                  {isRu ? 'Похожие товары' : 'O\'xshash mahsulotlar'}
+                </h3>
+                <div className="space-y-2">
+                  {relatedProducts.map((relatedProduct) => {
+                    const relatedProductName = getBilingualText(relatedProduct.name_uz, relatedProduct.name_ru, locale);
+                    const relatedImage = relatedProduct.galleryUrls?.[0] || relatedProduct.brand?.logo?.url || '';
+                    return (
+                      <Link
+                        key={relatedProduct.id}
+                        href={`/products/${relatedProduct.slug}`}
+                        className="group flex items-center gap-3 rounded-lg border border-border/60 bg-muted/30 p-3 transition hover:border-brand-primary/50 hover:bg-white"
+                      >
+                        {relatedImage ? (
+                          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded bg-white">
+                            <Image
+                              src={normalizeImageUrl(relatedImage)}
+                              alt={relatedProductName}
+                              fill
+                              sizes="48px"
+                              className="object-contain p-1"
+                              unoptimized
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded bg-white border border-border/40">
+                            <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-foreground group-hover:text-brand-primary line-clamp-2">
+                            {relatedProductName}
+                          </p>
+                          {relatedProduct.price && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {formatPrice(relatedProduct.price)}
+                            </p>
+                          )}
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
