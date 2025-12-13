@@ -6,7 +6,6 @@
     "deleteOutDir": true,
     "webpack": false,
     "tsConfigPath": "tsconfig.json"
-  },
-  "entryFile": "main"
+  }
 }
 
