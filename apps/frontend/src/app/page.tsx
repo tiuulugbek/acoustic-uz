@@ -234,7 +234,9 @@ export default async function HomePage() {
                     {service.image ? (
                       <Image
                         src={service.image}
-                        alt={service.title}
+                        alt={locale === 'ru' 
+                          ? `Услуга: ${service.title}`
+                          : `Xizmat: ${service.title}`}
                         fill
                         className="object-cover object-center transition-transform duration-300 group-hover:scale-105"
                         sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 25vw"
@@ -302,7 +304,9 @@ export default async function HomePage() {
                     {item.hasImage && item.image ? (
                       <Image 
                         src={item.image} 
-                        alt={item.title} 
+                        alt={locale === 'ru' 
+                          ? `Слуховой аппарат ${item.title}`
+                          : `Eshitish moslamasi ${item.title}`} 
                         fill 
                         sizes="(max-width: 768px) 64px, 96px"
                         className="object-cover transition-transform duration-300 group-hover:scale-105"
@@ -389,7 +393,9 @@ export default async function HomePage() {
                       {hasImage ? (
                         <Image 
                           src={product.image} 
-                          alt={product.title} 
+                          alt={locale === 'ru' 
+                            ? `Диагностическое оборудование Interacoustics ${product.title}`
+                            : `Interacoustics diagnostika uskunasi ${product.title}`} 
                           fill 
                           sizes="(max-width: 768px) 64px, (max-width: 1024px) 50vw, 25vw" 
                           className="object-cover transition-transform duration-300 group-hover:scale-105"

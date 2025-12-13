@@ -493,7 +493,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-white border border-border/40">
                     <Image
                       src={mainImage}
-                      alt={getBilingualText(product.name_uz, product.name_ru, locale)}
+                      alt={locale === 'ru' 
+                        ? `${getBilingualText(product.name_uz, product.name_ru, locale)} — Слуховой аппарат`
+                        : `${getBilingualText(product.name_uz, product.name_ru, locale)} — Eshitish moslamasi`}
                       fill
                       sizes="280px"
                       className="object-contain p-4"
@@ -505,18 +507,24 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   {/* Gallery - Compact */}
                   {gallery.length > 1 && (
                     <div className="grid grid-cols-4 gap-1.5">
-                      {gallery.slice(1, 5).map((image, index) => (
-                        <div key={index} className="relative aspect-square w-full overflow-hidden rounded bg-white border border-border/40">
-                          <Image
-                            src={image}
-                            alt={`${getBilingualText(product.name_uz, product.name_ru, locale)} ${index + 2}`}
-                            fill
-                            sizes="(max-width: 1024px) 25vw, 60px"
-                            className="object-contain p-1"
-                            unoptimized
-                          />
-                        </div>
-                      ))}
+                      {gallery.slice(1, 5).map((image, index) => {
+                        const productName = getBilingualText(product.name_uz, product.name_ru, locale);
+                        const galleryImageAlt = locale === 'ru' 
+                          ? `${productName} — Дополнительное изображение ${index + 2}`
+                          : `${productName} — Qo'shimcha rasm ${index + 2}`;
+                        return (
+                          <div key={index} className="relative aspect-square w-full overflow-hidden rounded bg-white border border-border/40">
+                            <Image
+                              src={image}
+                              alt={galleryImageAlt}
+                              fill
+                              sizes="(max-width: 1024px) 25vw, 60px"
+                              className="object-contain p-1"
+                              unoptimized
+                            />
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -590,7 +598,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
                         <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded bg-white">
                           <Image
                             src={category.image.url}
-                            alt={getBilingualText(category.name_uz, category.name_ru, locale)}
+                            alt={locale === 'ru' 
+                              ? `Категория: ${getBilingualText(category.name_uz, category.name_ru, locale)}`
+                              : `Kategoriya: ${getBilingualText(category.name_uz, category.name_ru, locale)}`}
                             fill
                             sizes="40px"
                             className="object-contain p-1"
@@ -660,7 +670,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
                           <div className="relative h-10 w-full">
                             <Image
                               src={brand.logo.url}
-                              alt={brand.name}
+                              alt={locale === 'ru' 
+                                ? `Логотип ${brand.name}`
+                                : `${brand.name} logotipi`}
                               fill
                               sizes="200px"
                               className="object-contain"
