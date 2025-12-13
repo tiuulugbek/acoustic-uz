@@ -519,8 +519,8 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
         attributes: false, // Don't watch attributes - too expensive
       });
       
-      // Store observer for cleanup
-      (cleanupRef as any).current.observer = observer;
+      // Store observer for cleanup - will be stored in cleanupFn below
+      // We'll store it after cleanupFn is created
     }
 
       const cleanupFn = () => {
@@ -537,7 +537,12 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
           cleanupContainer.removeEventListener('mouseout', handleMouseOut, false);
         }
         cleanup();
-      };
+      }) as (() => void) & { observer?: MutationObserver };
+      
+      // Store observer on cleanupFn before assigning to cleanupRef
+      if (debugContainer) {
+        (cleanupFn as any).observer = observer;
+      }
       
       cleanupRef.current = cleanupFn;
       isSetupRef.current = true;
