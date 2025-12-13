@@ -134,7 +134,7 @@ export default async function RootLayout({
   const apiDomain = apiUrl.replace(/^https?:\/\//, '').split('/')[0];
 
   return (
-    <html lang={locale} suppressHydrationWarning data-locale={locale}>
+    <html lang={locale} xmlLang={locale} suppressHydrationWarning data-locale={locale}>
       <head>
         {/* DNS Prefetch and Preconnect for API and external resources */}
         <link rel="dns-prefetch" href={`https://${apiDomain}`} />
@@ -267,8 +267,16 @@ export default async function RootLayout({
           />
           <div className="flex min-h-screen flex-col bg-gray-50" suppressHydrationWarning style={{ backgroundColor: '#f9fafb', minHeight: '100vh' }}>
             <DebugHydration />
+            {/* Skip to main content link for accessibility */}
+            <a 
+              href="#main-content" 
+              className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-brand-primary focus:text-white focus:rounded-md focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2"
+              suppressHydrationWarning
+            >
+              {locale === 'ru' ? 'Перейти к основному содержимому' : 'Asosiy kontentga o\'tish'}
+            </a>
             <SiteHeader initialSettings={settings} initialLocale={locale as 'uz' | 'ru'} />
-            <main className="flex-1" suppressHydrationWarning>{children}</main>
+            <main id="main-content" className="flex-1" suppressHydrationWarning role="main">{children}</main>
             <SiteFooter initialLocale={locale as 'uz' | 'ru'} />
             <TelegramButton initialLocale={locale as 'uz' | 'ru'} />
           </div>
