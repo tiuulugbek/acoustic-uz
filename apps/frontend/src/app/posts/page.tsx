@@ -87,11 +87,20 @@ export default async function PostsPage({ searchParams }: PostsPageProps) {
   let categoryId: string | undefined = undefined;
   
   if (categorySlug) {
-    selectedCategory = await getPostCategoryBySlug(categorySlug, locale);
-    if (!selectedCategory) {
-      notFound();
+    try {
+      selectedCategory = await getPostCategoryBySlug(categorySlug, locale);
+      if (!selectedCategory) {
+        // Category not found - show all posts instead of 404
+        // This provides better UX - users can still see posts even if category slug is wrong
+        console.warn(`[PostsPage] Category not found: ${categorySlug}, showing all posts`);
+      } else {
+        categoryId = selectedCategory.id;
+      }
+    } catch (error) {
+      // Error fetching category - show all posts instead of crashing
+      console.error(`[PostsPage] Error fetching category ${categorySlug}:`, error);
+      selectedCategory = null;
     }
-    categoryId = selectedCategory.id;
   }
   
   // Get posts - filtered by category if provided
