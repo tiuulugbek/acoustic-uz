@@ -478,50 +478,49 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
       eventContainer.addEventListener('mouseout', handleMouseOut, false);
     }
     
-    // Debug: Log when container is ready
-    const debugContainer = getContainer();
-    if (debugContainer) {
-      const initialTriggers = debugContainer.querySelectorAll('[data-tooltip-keyword]');
-      console.log('[Tooltip] ✅ Container ready:', debugContainer, 'Triggers found:', initialTriggers.length);
-      if (initialTriggers.length > 0) {
-        console.log('[Tooltip] Sample trigger:', initialTriggers[0]);
-        console.log('[Tooltip] Sample trigger HTML:', initialTriggers[0].outerHTML);
-      }
-
-      // Use MutationObserver with throttling to watch for new tooltip triggers
-      let mutationTimeout: NodeJS.Timeout | null = null;
-      const observer = new MutationObserver((mutations) => {
-        // Check if any new tooltip triggers were added
-        let hasNewTriggers = false;
-        mutations.forEach((mutation) => {
-          mutation.addedNodes.forEach((node) => {
-            if (node.nodeType === Node.ELEMENT_NODE) {
-              const element = node as HTMLElement;
-              if (element.hasAttribute('data-tooltip-keyword') || element.querySelector('[data-tooltip-keyword]')) {
-                hasNewTriggers = true;
-              }
-            }
-          });
-        });
-        
-        if (hasNewTriggers) {
-          if (mutationTimeout) clearTimeout(mutationTimeout);
-          mutationTimeout = setTimeout(() => {
-            console.log('[Tooltip] New triggers detected, ensuring classes...');
-            ensureClasses();
-          }, 50); // Faster response for new triggers
-        }
-      });
-
-      observer.observe(debugContainer, {
-        childList: true,
-        subtree: true,
-        attributes: false, // Don't watch attributes - too expensive
-      });
+      // Debug: Log when container is ready
+      const debugContainer = getContainer();
+      let observer: MutationObserver | null = null;
       
-      // Store observer for cleanup - will be stored in cleanupFn below
-      // We'll store it after cleanupFn is created
-    }
+      if (debugContainer) {
+        const initialTriggers = debugContainer.querySelectorAll('[data-tooltip-keyword]');
+        console.log('[Tooltip] ✅ Container ready:', debugContainer, 'Triggers found:', initialTriggers.length);
+        if (initialTriggers.length > 0) {
+          console.log('[Tooltip] Sample trigger:', initialTriggers[0]);
+          console.log('[Tooltip] Sample trigger HTML:', initialTriggers[0].outerHTML);
+        }
+
+        // Use MutationObserver with throttling to watch for new tooltip triggers
+        let mutationTimeout: NodeJS.Timeout | null = null;
+        observer = new MutationObserver((mutations) => {
+          // Check if any new tooltip triggers were added
+          let hasNewTriggers = false;
+          mutations.forEach((mutation) => {
+            mutation.addedNodes.forEach((node) => {
+              if (node.nodeType === Node.ELEMENT_NODE) {
+                const element = node as HTMLElement;
+                if (element.hasAttribute('data-tooltip-keyword') || element.querySelector('[data-tooltip-keyword]')) {
+                  hasNewTriggers = true;
+                }
+              }
+            });
+          });
+          
+          if (hasNewTriggers) {
+            if (mutationTimeout) clearTimeout(mutationTimeout);
+            mutationTimeout = setTimeout(() => {
+              console.log('[Tooltip] New triggers detected, ensuring classes...');
+              ensureClasses();
+            }, 50); // Faster response for new triggers
+          }
+        });
+
+        observer.observe(debugContainer, {
+          childList: true,
+          subtree: true,
+          attributes: false, // Don't watch attributes - too expensive
+        });
+      }
 
       // Create cleanup function that can store observer
       const cleanupFn = (() => {
@@ -543,7 +542,7 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
       }) as (() => void) & { observer?: MutationObserver };
       
       // Store observer on cleanupFn before assigning to cleanupRef
-      if (debugContainer) {
+      if (observer) {
         (cleanupFn as any).observer = observer;
       }
       

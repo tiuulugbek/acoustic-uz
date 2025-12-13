@@ -484,6 +484,24 @@ export default function SettingsPage() {
     }
   };
 
+  // Handle Analytics settings save
+  const handleAnalyticsSave = async () => {
+    try {
+      const values = await form.validateFields(['analyticsEnabled', 'googleAnalyticsId', 'yandexMetrikaId']);
+      const payload: UpdateSettingsPayload = {
+        analyticsEnabled: values.analyticsEnabled || false,
+        googleAnalyticsId: values.googleAnalyticsId?.trim() || undefined,
+        yandexMetrikaId: values.yandexMetrikaId?.trim() || undefined,
+      };
+      await updateMutation.mutateAsync(payload);
+      message.success('Analytics sozlamalari saqlandi');
+    } catch (error) {
+      console.error('[Settings] Analytics save error:', error);
+      const apiError = error as ApiError;
+      message.error(apiError.message || 'Saqlashda xatolik yuz berdi');
+    }
+  };
+
   // Handle Telegram settings save
   const handleTelegramSettingsSave = async () => {
     console.log('🔵 [Settings] ========== Telegram Save Started ==========');
