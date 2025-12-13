@@ -500,6 +500,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const techTables = techTablesParts.length > 0 ? techTablesParts.join('\n\n') : null;
 
   // Tabs - description, tech, and fitting range
+  // FIX: Ensure correct language is shown based on locale
   const productTabs = [
     // Description tab (first, if available)
     ...(hasDescription ? [{
@@ -508,21 +509,21 @@ export default async function ProductPage({ params }: ProductPageProps) {
       primary: descriptionPrimary,
       secondary: descriptionSecondary,
     }] : []),
-    // Technologies tab
+    // Technologies tab - FIX: Correct language mapping
     {
       key: 'tech',
       title: tabTitles.tech,
-      primary: isRu
+      primary: locale === 'ru'
         ? product.tech_ru ?? techTables ?? null
         : product.tech_uz ?? techTables ?? null,
-      secondary: isRu ? product.tech_uz ?? null : product.tech_ru ?? null,
+      secondary: locale === 'ru' ? product.tech_uz ?? null : product.tech_ru ?? null,
     },
-    // Fitting range tab
+    // Fitting range tab - FIX: Correct language mapping
     {
       key: 'fitting',
       title: tabTitles.fitting,
-      primary: isRu ? product.fittingRange_ru ?? null : product.fittingRange_uz ?? null,
-      secondary: isRu ? product.fittingRange_uz ?? null : product.fittingRange_ru ?? null,
+      primary: locale === 'ru' ? product.fittingRange_ru ?? null : product.fittingRange_uz ?? null,
+      secondary: locale === 'ru' ? product.fittingRange_uz ?? null : product.fittingRange_ru ?? null,
     },
   ];
 

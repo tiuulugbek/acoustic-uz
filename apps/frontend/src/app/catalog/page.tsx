@@ -882,12 +882,14 @@ export default async function CatalogPage({
     );
   }
   
-  // Fetch catalogs, posts, brands, and settings from backend
-  const [catalogsData, postsData, brandsData, settingsData] = await Promise.all([
+  // Fetch catalogs, posts, brands, settings, and homepage hearing aid items from backend
+  const { getHomepageHearingAidItems } = await import('@/lib/api-server');
+  const [catalogsData, postsData, brandsData, settingsData, hearingAidItemsData] = await Promise.all([
     getCatalogs(locale),
     getPosts(locale, true),
     getBrands(locale),
     getSettings(locale),
+    getHomepageHearingAidItems(locale),
   ]);
 
   // Filter brands based on settings.sidebarBrandIds, or fallback to Oticon, ReSound, Signia
@@ -982,39 +984,61 @@ export default async function CatalogPage({
     },
   ];
 
-  // Transform catalogs for display
-  const catalogItems = (catalogsData && catalogsData.length > 0 ? catalogsData : []).map((catalog) => {
-    const title = locale === 'ru' ? (catalog.name_ru || '') : (catalog.name_uz || '');
-    const description = locale === 'ru' ? (catalog.description_ru || '') : (catalog.description_uz || '');
-    
-    // Build image URL
-    let image = catalog.image?.url || '';
-    if (image && image.startsWith('/') && !image.startsWith('//')) {
-      // Properly extract base URL by removing /api from the end
-      let baseUrl = API_BASE_URL;
-      if (baseUrl.endsWith('/api')) {
-        baseUrl = baseUrl.slice(0, -4); // Remove '/api'
-      } else if (baseUrl.endsWith('/api/')) {
-        baseUrl = baseUrl.slice(0, -5); // Remove '/api/'
-      }
-      // Ensure baseUrl doesn't end with /
-      if (baseUrl.endsWith('/')) {
-        baseUrl = baseUrl.slice(0, -1);
-      }
-      image = `${baseUrl}${image}`;
-    }
-    
-    // Use catalog slug for link
-    const link = catalog.slug ? `/catalog/${catalog.slug}` : '/catalog';
-
+  // Transform catalogs for display - use homepage hearing aid items if available
+  // This ensures catalog page shows the same images as homepage
+  const hearingAidItemsWithImages = (hearingAidItemsData || []).map((item) => {
+    const title = locale === 'ru' ? (item.name_ru || '') : (item.name_uz || '');
+    const description = locale === 'ru' ? (item.description_ru || '') : (item.description_uz || '');
+    let image = item.image?.url || '';
+    image = normalizeImageUrl(image);
+    const link = item.slug ? `/catalog/${item.slug}` : '/catalog';
     return {
-      id: catalog.id,
+      id: item.id,
       title: title || '',
       description: description || '',
       image: image || '',
       link,
+      hasImage: !!item.image?.url,
     };
   });
+
+  // Use homepage hearing aid items if available, otherwise fallback to catalogs
+  const catalogItems = (hearingAidItemsWithImages.length > 0)
+    ? hearingAidItemsWithImages
+    : (catalogsData && catalogsData.length > 0 ? catalogsData : []).map((catalog) => {
+        const title = locale === 'ru' ? (catalog.name_ru || '') : (catalog.name_uz || '');
+        const description = locale === 'ru' ? (catalog.description_ru || '') : (catalog.description_uz || '');
+        
+        // Build image URL
+        let image = catalog.image?.url || '';
+        if (image && image.startsWith('/') && !image.startsWith('//')) {
+          // Properly extract base URL by removing /api from the end
+          let baseUrl = API_BASE_URL;
+          if (baseUrl.endsWith('/api')) {
+            baseUrl = baseUrl.slice(0, -4); // Remove '/api'
+          } else if (baseUrl.endsWith('/api/')) {
+            baseUrl = baseUrl.slice(0, -5); // Remove '/api/'
+          }
+          // Ensure baseUrl doesn't end with /
+          if (baseUrl.endsWith('/')) {
+            baseUrl = baseUrl.slice(0, -1);
+          }
+          image = `${baseUrl}${image}`;
+        }
+        image = normalizeImageUrl(image);
+        
+        // Use catalog slug for link
+        const link = catalog.slug ? `/catalog/${catalog.slug}` : '/catalog';
+
+        return {
+          id: catalog.id,
+          title: title || '',
+          description: description || '',
+          image: image || '',
+          link,
+          hasImage: !!catalog.image?.url,
+        };
+      });
 
   return (
     <main className="min-h-screen bg-background">
@@ -1062,7 +1086,7 @@ export default async function CatalogPage({
                     >
                       {/* Rasm - chapda */}
                       <div className="relative h-16 w-16 md:h-24 md:w-24 shrink-0 overflow-hidden rounded-lg bg-brand-primary/10">
-                        {item.image ? (
+                        {(item as any).hasImage && item.image ? (
                           <Image 
                             src={item.image} 
                             alt={item.title} 
