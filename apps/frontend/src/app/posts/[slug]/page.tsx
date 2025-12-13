@@ -14,6 +14,7 @@ import Sidebar from '@/components/sidebar';
 import { notFound } from 'next/navigation';
 import dayjs from 'dayjs';
 import { normalizeImageUrl } from '@/lib/image-utils';
+import { optimizeMetaDescription, optimizeTitle, generateSeoDescription } from '@/lib/seo-utils';
 
 // ISR: Revalidate every 2 hours
 export const revalidate = 7200;
@@ -38,8 +39,12 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
   }
 
   const title = getBilingualText(post.title_uz, post.title_ru, locale);
-  const description = getBilingualText(post.excerpt_uz, post.excerpt_ru, locale) || 
-                     getBilingualText(post.body_uz, post.body_ru, locale)?.replace(/<[^>]*>/g, '').substring(0, 160);
+  const rawDescription = getBilingualText(post.excerpt_uz, post.excerpt_ru, locale) || 
+                         getBilingualText(post.body_uz, post.body_ru, locale)?.replace(/<[^>]*>/g, '');
+  
+  const optimizedTitle = optimizeTitle(title);
+  const optimizedDescription = optimizeMetaDescription(rawDescription);
+  
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
   const postUrl = `${baseUrl}/posts/${params.slug}`;
   const imageUrl = post.cover?.url 
@@ -49,8 +54,8 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
     : `${baseUrl}/logo.png`;
 
   return {
-    title: `${title} — Acoustic.uz`,
-    description: description || undefined,
+    title: optimizedTitle,
+    description: optimizedDescription,
     alternates: {
       canonical: postUrl,
       languages: {
@@ -60,8 +65,8 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
       },
     },
     openGraph: {
-      title: `${title} — Acoustic.uz`,
-      description: description || undefined,
+      title: optimizedTitle,
+      description: optimizedDescription,
       url: postUrl,
       siteName: 'Acoustic.uz',
       images: [
@@ -80,8 +85,8 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${title} — Acoustic.uz`,
-      description: description || undefined,
+      title: optimizedTitle,
+      description: optimizedDescription,
       images: [imageUrl],
     },
   };
@@ -185,6 +190,7 @@ export default async function PostPage({ params }: PostPageProps) {
       <Script
         id="article-jsonld"
         type="application/ld+json"
+        strategy="afterInteractive"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
       />
       
@@ -192,6 +198,7 @@ export default async function PostPage({ params }: PostPageProps) {
       <Script
         id="breadcrumb-jsonld"
         type="application/ld+json"
+        strategy="afterInteractive"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
       <PageHeader

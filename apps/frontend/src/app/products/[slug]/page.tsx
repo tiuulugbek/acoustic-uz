@@ -19,6 +19,7 @@ import { detectLocale } from '@/lib/locale-server';
 import { getBilingualText } from '@/lib/locale';
 import Sidebar from '@/components/sidebar';
 import { normalizeImageUrl } from '@/lib/image-utils';
+import { optimizeMetaDescription, optimizeTitle, generateSeoDescription } from '@/lib/seo-utils';
 
 // ISR: Revalidate every hour
 export const revalidate = 3600;
@@ -100,12 +101,41 @@ async function getProductMetadata(slug: string): Promise<{ title: string; descri
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   const locale = detectLocale();
-  const { title, description } = await getProductMetadata(params.slug);
+  const product = await getProductBySlug(params.slug, locale);
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
   const productUrl = `${baseUrl}/products/${params.slug}`;
   
-  // Get product for image
-  const product = await getProductBySlug(params.slug, locale);
+  if (!product) {
+    const fallbackTitle = optimizeTitle(
+      locale === 'ru' ? 'Продукт не найден' : 'Mahsulot topilmadi'
+    );
+    return {
+      title: fallbackTitle,
+      description: generateSeoDescription(null, [], locale),
+    };
+  }
+  
+  const productName = getBilingualText(product.name_uz, product.name_ru, locale);
+  const productDescription = getBilingualText(
+    product.description_uz ?? product.intro_uz,
+    product.description_ru ?? product.intro_ru,
+    locale
+  );
+  
+  // Generate SEO-optimized title and description
+  const optimizedTitle = optimizeTitle(productName);
+  const keywords = [
+    product.brand?.name,
+    product.category?.name_uz || product.category?.name_ru,
+    locale === 'ru' ? 'слуховой аппарат' : 'eshitish moslamasi',
+  ].filter(Boolean) as string[];
+  
+  const optimizedDescription = generateSeoDescription(
+    productDescription,
+    keywords,
+    locale
+  );
+  
   const mainImage = product?.galleryUrls?.[0] || product?.brand?.logo?.url || '';
   const imageUrl = mainImage && mainImage.startsWith('http') 
     ? mainImage 
@@ -116,8 +146,8 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
     : `${baseUrl}/logo.png`;
   
   return {
-    title,
-    description,
+    title: optimizedTitle,
+    description: optimizedDescription,
     alternates: {
       canonical: productUrl,
       languages: {
@@ -481,6 +511,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             key={index}
             id={`product-jsonld-${index}`}
             type="application/ld+json"
+            strategy="afterInteractive"
             dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
           />
         ))
@@ -488,6 +519,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
         <Script
           id="product-jsonld"
           type="application/ld+json"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       )}

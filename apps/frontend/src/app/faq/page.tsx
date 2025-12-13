@@ -58,6 +58,7 @@ export default async function FAQPage() {
       <Script
         id="faqpage-jsonld"
         type="application/ld+json"
+        strategy="afterInteractive"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqPageJsonLd) }}
       />
       <PageHeader

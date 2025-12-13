@@ -5,6 +5,7 @@ import { getServiceBySlug, getServiceCategoryBySlug, getBrands, getSettings } fr
 import { detectLocale } from '@/lib/locale-server';
 import { getBilingualText } from '@/lib/locale';
 import { normalizeImageUrl } from '@/lib/image-utils';
+import { optimizeMetaDescription, optimizeTitle, generateSeoDescription } from '@/lib/seo-utils';
 import ServiceContent from '@/components/service-content';
 import ServiceTableOfContents from '@/components/service-table-of-contents';
 import PageHeader from '@/components/page-header';
@@ -29,25 +30,33 @@ export async function generateMetadata({ params }: ServicePageProps): Promise<Me
   const category = await getServiceCategoryBySlug(params.slug, locale);
   if (category) {
     const title = getBilingualText(category.name_uz, category.name_ru, locale);
+    const rawDescription = getBilingualText(category.description_uz, category.description_ru, locale);
     return {
-      title: `${title} — Acoustic.uz`,
-      description: getBilingualText(category.description_uz, category.description_ru, locale) || undefined,
+      title: optimizeTitle(title),
+      description: optimizeMetaDescription(rawDescription),
     };
   }
   
   // Try to get service
   const service = await getServiceBySlug(params.slug, locale);
   if (!service) {
+    const fallbackTitle = optimizeTitle(
+      locale === 'ru' ? 'Услуга' : 'Xizmat'
+    );
     return {
-      title: locale === 'ru' ? 'Услуга — Acoustic.uz' : 'Xizmat — Acoustic.uz',
-      description: locale === 'ru' 
-        ? 'Услуги по диагностике и подбору слуховых аппаратов'
-        : 'Eshitish diagnostikasi va apparatlarni tanlash xizmatlari',
+      title: fallbackTitle,
+      description: generateSeoDescription(
+        null,
+        [locale === 'ru' ? 'слуховые аппараты' : 'eshitish apparatlari'],
+        locale
+      ),
     };
   }
 
   const title = getBilingualText(service.title_uz, service.title_ru, locale);
-  const description = getBilingualText(service.excerpt_uz, service.excerpt_ru, locale) || undefined;
+  const rawDescription = getBilingualText(service.excerpt_uz, service.excerpt_ru, locale);
+  const optimizedTitle = optimizeTitle(title);
+  const optimizedDescription = optimizeMetaDescription(rawDescription);
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
   const serviceUrl = `${baseUrl}/services/${params.slug}`;
   const imageUrl = service.cover?.url 
@@ -55,8 +64,8 @@ export async function generateMetadata({ params }: ServicePageProps): Promise<Me
     : `${baseUrl}/logo.png`;
 
   return {
-    title: `${title} — Acoustic.uz`,
-    description,
+    title: optimizedTitle,
+    description: optimizedDescription,
     alternates: {
       canonical: serviceUrl,
       languages: {
@@ -66,8 +75,8 @@ export async function generateMetadata({ params }: ServicePageProps): Promise<Me
       },
     },
     openGraph: {
-      title: `${title} — Acoustic.uz`,
-      description,
+      title: optimizedTitle,
+      description: optimizedDescription,
       url: serviceUrl,
       siteName: 'Acoustic.uz',
       images: [
@@ -83,8 +92,8 @@ export async function generateMetadata({ params }: ServicePageProps): Promise<Me
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${title} — Acoustic.uz`,
-      description,
+      title: optimizedTitle,
+      description: optimizedDescription,
       images: [imageUrl],
     },
   };

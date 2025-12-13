@@ -130,12 +130,25 @@ export default async function RootLayout({
     ],
   };
 
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://a.acoustic.uz';
+  const apiDomain = apiUrl.replace(/^https?:\/\//, '').split('/')[0];
+
   return (
     <html lang={locale} suppressHydrationWarning data-locale={locale}>
       <head>
+        {/* DNS Prefetch and Preconnect for API and external resources */}
+        <link rel="dns-prefetch" href={`https://${apiDomain}`} />
+        <link rel="preconnect" href={`https://${apiDomain}`} crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+        <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+        
+        {/* Preload critical resources */}
+        <link rel="preload" href="/favicon.ico" as="image" />
+        
         <Script
           id="organization-jsonld"
           type="application/ld+json"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
         />
         {/* Suppress hydration warnings globally - but keep for debugging */}

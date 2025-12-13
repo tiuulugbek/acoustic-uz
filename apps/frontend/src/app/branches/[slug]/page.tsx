@@ -186,6 +186,7 @@ export default async function BranchPage({ params }: BranchPageProps) {
       <Script
         id="localbusiness-jsonld"
         type="application/ld+json"
+        strategy="afterInteractive"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessJsonLd) }}
       />
       {/* Breadcrumbs */}
