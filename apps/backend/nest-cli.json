@@ -7,6 +7,6 @@
     "webpack": false,
     "tsConfigPath": "tsconfig.json"
   },
-  "entryFile": "src/main"
+  "entryFile": "main"
 }
 
