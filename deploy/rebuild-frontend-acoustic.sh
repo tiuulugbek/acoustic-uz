@@ -12,24 +12,35 @@ echo ""
 # 1. Navigate to project directory
 cd "$PROJECT_DIR"
 
-# 2. Pull latest code
+# 2. Fix git ownership if needed
+echo "🔧 Fixing git ownership..."
+sudo -u acoustic git config --global --add safe.directory "$PROJECT_DIR" 2>/dev/null || true
+
+# 3. Pull latest code
 echo "📥 Pulling latest code..."
-git pull origin main
+cd "$PROJECT_DIR"
+sudo -u acoustic git pull origin main || {
+    echo "⚠️  Git pull failed, trying as root..."
+    git pull origin main || {
+        echo "⚠️  Git pull failed, continuing with existing code..."
+    }
+}
 
-# 3. Install dependencies
+# 4. Install dependencies
 echo "📦 Installing dependencies..."
-pnpm install
+cd "$PROJECT_DIR"
+sudo -u acoustic pnpm install
 
-# 4. Build shared package first (required by frontend)
+# 5. Build shared package first (required by frontend)
 echo "🏗️  Building shared package..."
-pnpm --filter @acoustic/shared build
+sudo -u acoustic pnpm --filter @acoustic/shared build
 
-# 5. Clean Next.js build cache
+# 6. Clean Next.js build cache
 echo "🧹 Cleaning Next.js build cache..."
 cd "$FRONTEND_DIR"
-rm -rf .next
+sudo -u acoustic rm -rf .next
 
-# 6. Build frontend
+# 7. Build frontend
 echo "🏗️  Building frontend..."
 cd "$FRONTEND_DIR"
 
@@ -69,7 +80,7 @@ echo "  NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL"
 echo "  NEXT_TELEMETRY_DISABLED=$NEXT_TELEMETRY_DISABLED"
 
 # Build frontend
-BUILD_OUTPUT=$(pnpm build 2>&1)
+BUILD_OUTPUT=$(sudo -u acoustic pnpm build 2>&1)
 BUILD_EXIT_CODE=$?
 
 if [ $BUILD_EXIT_CODE -ne 0 ]; then
