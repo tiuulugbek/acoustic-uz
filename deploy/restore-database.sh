@@ -1,130 +1,119 @@
 #!/bin/bash
 
-# Serverda database restore qilish
+# Database Restore Script
+# Bu script database dump'ni restore qiladi (yangi serverga)
 
 set -e
 
-cd /var/www/news.acoustic.uz
+# Colors
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
 
-echo "🗄️ Database restore qilish..."
+echo -e "${BLUE}📥 Database Restore${NC}"
+echo "=================="
+echo ""
 
-# 1. Dump faylini topish
-echo "📋 Dump faylini topish..."
-DUMP_FILE="${1:-acoustic-dump-*.sql}"
-
-if [ ! -f "$DUMP_FILE" ] && [ -f acoustic-dump-*.sql ]; then
-    DUMP_FILE=$(ls -t acoustic-dump-*.sql | head -1)
-fi
+# Get database information
+read -p "Enter dump file path (e.g., /tmp/acoustic_backup_*.sql): " DUMP_FILE
 
 if [ ! -f "$DUMP_FILE" ]; then
-    echo "❌ Dump fayli topilmadi!"
-    echo "📋 Mavjud dump fayllar:"
-    ls -lh acoustic-dump-*.sql 2>/dev/null || echo "   Hech qanday dump fayli topilmadi!"
+    echo -e "${RED}❌ Dump file not found: $DUMP_FILE${NC}"
     exit 1
 fi
 
-echo "✅ Dump fayli topildi: $DUMP_FILE"
-ls -lh "$DUMP_FILE"
+read -p "Enter database name (default: acousticwebdb): " DB_NAME
+DB_NAME=${DB_NAME:-acousticwebdb}
 
-# 2. Database ma'lumotlarini olish
+read -p "Enter database user (default: acoustic): " DB_USER
+DB_USER=${DB_USER:-acoustic}
+
+read -p "Enter database password: " -s DB_PASSWORD
 echo ""
-echo "📋 Database ma'lumotlarini olish..."
-if [ -f ".env" ]; then
-    DB_URL=$(grep "^DATABASE_URL=" .env | cut -d '=' -f2- | tr -d '"' | tr -d "'")
-    if [ -n "$DB_URL" ]; then
-        echo "✅ DATABASE_URL topildi!"
-        # PostgreSQL URL ni parse qilish
-        # Format: postgresql://user:password@host:port/database
-        DB_USER=$(echo "$DB_URL" | sed -n 's|.*://\([^:]*\):.*|\1|p')
-        DB_PASS=$(echo "$DB_URL" | sed -n 's|.*://[^:]*:\([^@]*\)@.*|\1|p')
-        DB_HOST=$(echo "$DB_URL" | sed -n 's|.*@\([^:]*\):.*|\1|p')
-        DB_PORT=$(echo "$DB_URL" | sed -n 's|.*@[^:]*:\([^/]*\)/.*|\1|p')
-        DB_NAME=$(echo "$DB_URL" | sed -n 's|.*/\([^?]*\).*|\1|p')
-        
-        echo "   Database: $DB_NAME"
-        echo "   Host: $DB_HOST"
-        echo "   Port: ${DB_PORT:-5432}"
-        echo "   User: $DB_USER"
-    else
-        echo "⚠️ DATABASE_URL topilmadi!"
-        read -p "Database nomi (default: acoustic): " DB_NAME
-        DB_NAME=${DB_NAME:-acoustic}
-        read -p "Database user (default: acoustic): " DB_USER
-        DB_USER=${DB_USER:-acoustic}
-        read -sp "Database parol: " DB_PASS
-        echo ""
-        DB_HOST="localhost"
-        DB_PORT="5432"
-    fi
-else
-    echo "⚠️ .env fayli topilmadi!"
-    read -p "Database nomi (default: acoustic): " DB_NAME
-    DB_NAME=${DB_NAME:-acoustic}
-    read -p "Database user (default: acoustic): " DB_USER
-    DB_USER=${DB_USER:-acoustic}
-    read -sp "Database parol: " DB_PASS
-    echo ""
-    DB_HOST="localhost"
-    DB_PORT="5432"
+
+echo ""
+echo -e "${BLUE}📋 Restore Configuration:${NC}"
+echo "  Dump file: $DUMP_FILE"
+echo "  Database: $DB_NAME"
+echo "  User: $DB_USER"
+echo ""
+
+# Confirm
+read -p "⚠️  This will DROP existing data in $DB_NAME. Continue? (yes/no): " CONFIRM
+if [ "$CONFIRM" != "yes" ]; then
+    echo -e "${YELLOW}❌ Restore cancelled${NC}"
+    exit 0
 fi
 
-# 3. Backup olish (agar mavjud bo'lsa)
+# Step 1: Drop and recreate database (optional - comment out if you want to keep existing data)
+echo -e "${BLUE}1️⃣ Preparing database...${NC}"
+export PGPASSWORD="$DB_PASSWORD"
+psql -h localhost -U "$DB_USER" -d postgres -c "DROP DATABASE IF EXISTS \"$DB_NAME\";" || true
+psql -h localhost -U "$DB_USER" -d postgres -c "CREATE DATABASE \"$DB_NAME\" OWNER \"$DB_USER\";" || {
+    echo -e "${YELLOW}⚠️  Database already exists, continuing...${NC}"
+}
+echo -e "${GREEN}✅ Database prepared${NC}"
+
+# Step 2: Restore dump
 echo ""
-echo "📋 Mavjud bazani backup qilish..."
-BACKUP_FILE="acoustic-backup-$(date +%Y%m%d-%H%M%S).sql"
-if PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "${DB_PORT:-5432}" -U "$DB_USER" -d "$DB_NAME" -c "\q" 2>/dev/null; then
-    echo "📦 Mavjud bazani backup qilish..."
-    PGPASSWORD="$DB_PASS" pg_dump -h "$DB_HOST" -p "${DB_PORT:-5432}" -U "$DB_USER" -d "$DB_NAME" --clean --if-exists --no-owner --no-acl -f "$BACKUP_FILE" || {
-        echo "⚠️ Backup xatosi, lekin davom etamiz..."
+echo -e "${BLUE}2️⃣ Restoring database dump...${NC}"
+pg_restore -h localhost -U "$DB_USER" -d "$DB_NAME" --clean --if-exists "$DUMP_FILE" || {
+    echo -e "${RED}❌ Failed to restore database${NC}"
+    unset PGPASSWORD
+    exit 1
+}
+unset PGPASSWORD
+echo -e "${GREEN}✅ Database restored${NC}"
+
+# Step 3: Run migrations (to ensure schema is up to date)
+echo ""
+echo -e "${BLUE}3️⃣ Running migrations...${NC}"
+APP_DIR="/var/www/acoustic.uz"
+if [ -d "$APP_DIR" ]; then
+    cd "$APP_DIR"
+    sudo -u acoustic pnpm exec prisma migrate deploy || {
+        echo -e "${YELLOW}⚠️  Migrations may have warnings, but database is restored${NC}"
     }
-    if [ -f "$BACKUP_FILE" ]; then
-        echo "✅ Backup yaratildi: $BACKUP_FILE"
-    fi
+    echo -e "${GREEN}✅ Migrations completed${NC}"
+else
+    echo -e "${YELLOW}⚠️  Application directory not found, skipping migrations${NC}"
 fi
 
-# 4. Database ni restore qilish
+# Step 4: Verify data
 echo ""
-echo "🔄 Database ni restore qilish..."
-echo "⚠️ Bu mavjud ma'lumotlarni o'chirib tashlaydi!"
-read -p "Davom etasizmi? (y/n): " CONFIRM
-if [ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ]; then
-    echo "❌ Bekor qilindi!"
-    exit 1
+echo -e "${BLUE}4️⃣ Verifying data...${NC}"
+export PGPASSWORD="$DB_PASSWORD"
+TABLES=$(psql -h localhost -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public';" | xargs)
+echo "  Tables found: $TABLES"
+
+# Count some key tables
+if psql -h localhost -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT 1 FROM information_schema.tables WHERE table_name = 'Product';" | grep -q 1; then
+    PRODUCT_COUNT=$(psql -h localhost -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT COUNT(*) FROM \"Product\";" | xargs)
+    echo "  Products: $PRODUCT_COUNT"
 fi
 
-echo "📦 Database restore qilinmoqda..."
-PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "${DB_PORT:-5432}" -U "$DB_USER" -d "$DB_NAME" < "$DUMP_FILE" || {
-    echo "❌ Database restore xatosi!"
-    exit 1
-}
-
-echo "✅ Database restore qilindi!"
-
-# 5. Prisma client ni yangilash
-echo ""
-echo "🔄 Prisma client ni yangilash..."
-cd apps/backend
-npx prisma@5.22.0 generate --schema=../../prisma/schema.prisma || {
-    echo "⚠️ Prisma generate xatosi!"
-}
-
-# 6. Backend ni restart qilish
-echo ""
-echo "🔄 Backend ni restart qilish..."
-pm2 restart acoustic-backend || {
-    echo "⚠️ Backend restart xatosi!"
-}
-
-echo ""
-echo "✅ Database restore yakunlandi!"
-echo ""
-echo "📋 Xulosa:"
-echo "- Dump fayl: $DUMP_FILE"
-if [ -f "$BACKUP_FILE" ]; then
-    echo "- Backup fayl: $BACKUP_FILE"
+if psql -h localhost -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT 1 FROM information_schema.tables WHERE table_name = 'Branch';" | grep -q 1; then
+    BRANCH_COUNT=$(psql -h localhost -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT COUNT(*) FROM \"Branch\";" | xargs)
+    echo "  Branches: $BRANCH_COUNT"
 fi
-echo "- Database: $DB_NAME"
+
+unset PGPASSWORD
+echo -e "${GREEN}✅ Verification complete${NC}"
+
 echo ""
-echo "💡 Backend restart qilindi va yangi ma'lumotlar bilan ishlayapti!"
-
-
+echo "=========================================="
+echo -e "${GREEN}✅ Database restore complete!${NC}"
+echo ""
+echo "📋 Next steps:"
+echo ""
+echo "1. Update .env file if needed:"
+echo "   DATABASE_URL=\"postgresql://$DB_USER:$DB_PASSWORD@localhost:5432/$DB_NAME?schema=public\""
+echo ""
+echo "2. Restart backend:"
+echo "   pm2 restart acoustic-backend"
+echo ""
+echo "3. Test backend:"
+echo "   curl http://localhost:3001/api/settings?lang=uz"
+echo ""
