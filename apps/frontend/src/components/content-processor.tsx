@@ -5,15 +5,15 @@ import { useTooltipManager } from './tooltip-manager';
 
 /**
  * Processes HTML content to add support for:
- * - Tooltips: [tooltip keyword="..." content="..."]
+ * - Tooltips: [tooltip keyword="..." content="..."] or [tooltips keyword="..." content="..."]
  * - Table positions: [table position="left|center|right|full"]...[/table]
  * - Image layouts: [images layout="grid-2|grid-3|left-right|right-left"]...[/images]
  */
 export function processContentShortcodes(content: string): string {
   let processed = content;
 
-  // Process tooltips: [tooltip keyword="..." content="..."]
-  const tooltipRegex = /\[tooltip\s+keyword\s*=\s*["']([^"']+)["']\s+content\s*=\s*["']([^"']+)["']\]/gi;
+  // Process tooltips: [tooltip keyword="..." content="..."] or [tooltips keyword="..." content="..."]
+  const tooltipRegex = /\[tooltips?\s+keyword\s*=\s*["']([^"']+)["']\s+content\s*=\s*["']([^"']+)["']\]/gi;
   processed = processed.replace(tooltipRegex, (match, keyword, tooltipContent) => {
     const escapedContent = tooltipContent
       .replace(/&/g, '&amp;')

@@ -17,10 +17,11 @@ interface Feature {
 
 /**
  * Processes tooltip shortcodes and converts them to HTML spans
- * Supports both formats: [tooltip keyword="..." content="..."] and [tooltip keyword = "..." content = "..."]
+ * Supports both formats: [tooltip keyword="..." content="..."] and [tooltips keyword="..." content="..."]
+ * Also supports spaces around equals: [tooltip keyword = "..." content = "..."]
  */
 function processTooltips(text: string): string {
-  const tooltipRegex = /\[tooltip\s+keyword\s*=\s*["']([^"']+)["']\s+content\s*=\s*["']([^"']+)["']\]/gi;
+  const tooltipRegex = /\[tooltips?\s+keyword\s*=\s*["']([^"']+)["']\s+content\s*=\s*["']([^"']+)["']\]/gi;
   
   return text.replace(tooltipRegex, (match, keyword, content) => {
     const escapedContent = content
@@ -62,7 +63,7 @@ export default function ProductFeaturesList({ description, locale }: ProductFeat
       
       // Extract plain text for filtering
       let name = nameHtml
-        .replace(/\[tooltip\s+keyword\s*=\s*["']([^"']+)["']\s+content\s*=\s*["'][^"']+["']\]/gi, '$1')
+        .replace(/\[tooltips?\s+keyword\s*=\s*["']([^"']+)["']\s+content\s*=\s*["'][^"']+["']\]/gi, '$1')
         .replace(/<[^>]+>/g, '')
         .replace(/&nbsp;/g, ' ')
         .replace(/&amp;/g, '&')
