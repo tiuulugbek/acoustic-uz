@@ -62,6 +62,23 @@ export async function generateMetadata(): Promise<Metadata> {
       shortcut: faviconUrl,
       apple: faviconUrl,
     },
+    viewport: {
+      width: 'device-width',
+      initialScale: 1,
+      maximumScale: 5,
+      userScalable: true,
+      viewportFit: 'cover',
+    },
+    other: {
+      'apple-mobile-web-app-capable': 'yes',
+      'apple-mobile-web-app-status-bar-style': 'default',
+      'apple-mobile-web-app-title': 'Acoustic.uz',
+      'mobile-web-app-capable': 'yes',
+      'format-detection': 'telephone=no',
+      'theme-color': '#F07E22',
+      'msapplication-TileColor': '#F07E22',
+      'msapplication-config': '/browserconfig.xml',
+    },
   };
 }
 
@@ -136,6 +153,16 @@ export default async function RootLayout({
   return (
     <html lang={locale} suppressHydrationWarning data-locale={locale}>
       <head>
+        {/* Mobile optimization meta tags */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="Acoustic.uz" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="format-detection" content="telephone=no" />
+        <meta name="theme-color" content="#F07E22" />
+        <meta name="msapplication-TileColor" content="#F07E22" />
+        <meta name="msapplication-config" content="/browserconfig.xml" />
+        
         {/* DNS Prefetch and Preconnect for API and external resources */}
         <link rel="dns-prefetch" href={`https://${apiDomain}`} />
         <link rel="preconnect" href={`https://${apiDomain}`} crossOrigin="anonymous" />
@@ -144,6 +171,10 @@ export default async function RootLayout({
         
         {/* Preload critical resources */}
         <link rel="preload" href="/favicon.ico" as="image" />
+        
+        {/* Apple Touch Icons for better mobile experience */}
+        <link rel="apple-touch-icon" href={faviconUrl} />
+        <link rel="apple-touch-icon" sizes="180x180" href={faviconUrl} />
         
         <Script
           id="organization-jsonld"
