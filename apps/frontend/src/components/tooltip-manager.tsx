@@ -23,7 +23,7 @@ let resizeTimeout: NodeJS.Timeout | null = null;
 export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
   const tooltipRefsRef = useRef<Map<HTMLElement, TooltipRef>>(new Map());
   const cleanupRef = useRef<(() => void) | null>(null);
-  const cleanupRef = useRef<(() => void) | null>(null);
+  const isSetupRef = useRef<boolean>(false);
 
   useEffect(() => {
     // Helper function to get container dynamically
@@ -332,8 +332,8 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
       }
       
       // Check if trigger is within our container (if container exists)
-      const container = getContainer();
-      if (container && !container.contains(trigger)) {
+      const triggerContainer = getContainer();
+      if (triggerContainer && !triggerContainer.contains(trigger)) {
         return;
       }
       
@@ -470,19 +470,19 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
     document.addEventListener('mouseout', handleDocumentMouseOut, true);
     
     // Also add to container as backup (if container exists)
-    const container = getContainer();
-    if (container) {
-      container.addEventListener('mouseover', handleMouseOver, true);
-      container.addEventListener('mouseout', handleMouseOut, true);
-      container.addEventListener('mouseover', handleMouseOver, false);
-      container.addEventListener('mouseout', handleMouseOut, false);
+    const eventContainer = getContainer();
+    if (eventContainer) {
+      eventContainer.addEventListener('mouseover', handleMouseOver, true);
+      eventContainer.addEventListener('mouseout', handleMouseOut, true);
+      eventContainer.addEventListener('mouseover', handleMouseOver, false);
+      eventContainer.addEventListener('mouseout', handleMouseOut, false);
     }
     
     // Debug: Log when container is ready
-    const container = getContainer();
-    if (container) {
-      const initialTriggers = container.querySelectorAll('[data-tooltip-keyword]');
-      console.log('[Tooltip] ✅ Container ready:', container, 'Triggers found:', initialTriggers.length);
+    const debugContainer = getContainer();
+    if (debugContainer) {
+      const initialTriggers = debugContainer.querySelectorAll('[data-tooltip-keyword]');
+      console.log('[Tooltip] ✅ Container ready:', debugContainer, 'Triggers found:', initialTriggers.length);
       if (initialTriggers.length > 0) {
         console.log('[Tooltip] Sample trigger:', initialTriggers[0]);
         console.log('[Tooltip] Sample trigger HTML:', initialTriggers[0].outerHTML);
@@ -513,7 +513,7 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
         }
       });
 
-      observer.observe(container, {
+      observer.observe(debugContainer, {
         childList: true,
         subtree: true,
         attributes: false, // Don't watch attributes - too expensive
@@ -524,17 +524,17 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
     }
 
       const cleanupFn = () => {
-        const container = getContainer();
-        if ((cleanupFn as any).observer) {
-          (cleanupFn as any).observer.disconnect();
+        const cleanupContainer = getContainer();
+        if ((cleanupRef.current as any)?.observer) {
+          (cleanupRef.current as any).observer.disconnect();
         }
         document.removeEventListener('mouseover', handleDocumentMouseOver, true);
         document.removeEventListener('mouseout', handleDocumentMouseOut, true);
-        if (container) {
-          container.removeEventListener('mouseover', handleMouseOver, true);
-          container.removeEventListener('mouseout', handleMouseOut, true);
-          container.removeEventListener('mouseover', handleMouseOver, false);
-          container.removeEventListener('mouseout', handleMouseOut, false);
+        if (cleanupContainer) {
+          cleanupContainer.removeEventListener('mouseover', handleMouseOver, true);
+          cleanupContainer.removeEventListener('mouseout', handleMouseOut, true);
+          cleanupContainer.removeEventListener('mouseover', handleMouseOver, false);
+          cleanupContainer.removeEventListener('mouseout', handleMouseOut, false);
         }
         cleanup();
       };
