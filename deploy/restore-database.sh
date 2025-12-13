@@ -47,11 +47,22 @@ if [ "$CONFIRM" != "yes" ]; then
     exit 0
 fi
 
-# Step 1: Drop and recreate database (optional - comment out if you want to keep existing data)
+# Step 1: Drop and recreate database using postgres superuser
 echo -e "${BLUE}1️⃣ Preparing database...${NC}"
-export PGPASSWORD="$DB_PASSWORD"
-psql -h localhost -U "$DB_USER" -d postgres -c "DROP DATABASE IF EXISTS \"$DB_NAME\";" || true
-psql -h localhost -U "$DB_USER" -d postgres -c "CREATE DATABASE \"$DB_NAME\" OWNER \"$DB_USER\";" || {
+echo "  Using postgres superuser to drop/create database..."
+
+# Drop database using postgres user
+sudo -u postgres psql -d postgres -c "DROP DATABASE IF EXISTS \"$DB_NAME\";" || true
+
+# Create database using postgres user
+sudo -u postgres psql -d postgres -c "CREATE DATABASE \"$DB_NAME\" OWNER \"$DB_USER\";" || {
+    echo -e "${YELLOW}⚠️  Database creation failed, checking if it exists...${NC}"
+    # Check if database exists
+    DB_EXISTS=$(sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='$DB_NAME';" | xargs)
+    if [ "$DB_EXISTS" != "1" ]; then
+        echo -e "${RED}❌ Database does not exist and could not be created${NC}"
+        exit 1
+    fi
     echo -e "${YELLOW}⚠️  Database already exists, continuing...${NC}"
 }
 echo -e "${GREEN}✅ Database prepared${NC}"
