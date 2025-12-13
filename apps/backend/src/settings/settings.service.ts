@@ -57,6 +57,8 @@ export class SettingsService {
     brandAccent?: string;
     featureFlags?: unknown;
     socialLinks?: unknown;
+    googleAnalyticsId?: string | null; // Google Analytics 4 Measurement ID
+    yandexMetrikaId?: string | null; // Yandex Metrika Counter ID
     catalogHeroImageId?: string | null;
     logoId?: string | null;
     faviconId?: string | null;
@@ -87,6 +89,8 @@ export class SettingsService {
         telegramButtonMessage_ru,
         brandPrimary,
         brandAccent,
+        googleAnalyticsId,
+        yandexMetrikaId,
       } = data;
 
       // Clean sidebarConfigs: ensure proper JSON serialization
@@ -187,6 +191,14 @@ export class SettingsService {
       if (catalogHeroImageId !== undefined) updateData.catalogHeroImageId = catalogHeroImageId || null;
       if (logoId !== undefined) updateData.logoId = logoId || null;
       if (faviconId !== undefined) updateData.faviconId = faviconId || null;
+      if (googleAnalyticsId !== undefined) {
+        const normalized = normalizeString(googleAnalyticsId);
+        updateData.googleAnalyticsId = normalized || null; // Allow clearing
+      }
+      if (yandexMetrikaId !== undefined) {
+        const normalized = normalizeString(yandexMetrikaId);
+        updateData.yandexMetrikaId = normalized || null; // Allow clearing
+      }
       if (sidebarBrandIds !== undefined) updateData.sidebarBrandIds = sidebarBrandIds || [];
 
       console.log('🔵 [Settings] Update data keys:', Object.keys(updateData));

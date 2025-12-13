@@ -15,6 +15,7 @@ import ProductTabs from '@/components/product-tabs';
 import ProductSpecsTable from '@/components/product-specs-table';
 import ProductFeaturesList from '@/components/product-features-list';
 import AppointmentForm from '@/components/appointment-form';
+import ProductViewTracker from '@/components/product-view-tracker';
 import { detectLocale } from '@/lib/locale-server';
 import { getBilingualText } from '@/lib/locale';
 import Sidebar from '@/components/sidebar';
@@ -503,8 +504,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   const jsonLd = buildJsonLd(product, mainImage, locale);
 
+  const productName = getBilingualText(product.name_uz, product.name_ru, locale);
+
   return (
     <main className="min-h-screen bg-background" suppressHydrationWarning>
+      <ProductViewTracker slug={product.slug || product.id} name={productName} />
       {Array.isArray(jsonLd) ? (
         jsonLd.map((schema, index) => (
           <Script

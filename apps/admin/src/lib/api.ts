@@ -1610,6 +1610,8 @@ export type UpdateSettingsPayload = {
   catalogHeroImageId?: string | null;
   logoId?: string | null;
   faviconId?: string | null;
+  googleAnalyticsId?: string | null;
+  yandexMetrikaId?: string | null;
   // Sidebar settings
   sidebarSections?: SidebarSection[];
   sidebarBrandIds?: string[];

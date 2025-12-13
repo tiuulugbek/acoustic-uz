@@ -26,10 +26,10 @@ export default function AnalyticsProvider({ settings, children }: AnalyticsProvi
       return;
     }
 
-    // Get analytics IDs from settings (we'll add these fields to settings)
-    const googleAnalyticsId = (settings as any).googleAnalyticsId || process.env.NEXT_PUBLIC_GA_ID;
-    const yandexMetrikaId = (settings as any).yandexMetrikaId 
-      ? parseInt((settings as any).yandexMetrikaId, 10) 
+    // Get analytics IDs from settings
+    const googleAnalyticsId = settings?.googleAnalyticsId || process.env.NEXT_PUBLIC_GA_ID;
+    const yandexMetrikaId = settings?.yandexMetrikaId 
+      ? parseInt(settings.yandexMetrikaId, 10) 
       : (process.env.NEXT_PUBLIC_YANDEX_METRIKA_ID 
           ? parseInt(process.env.NEXT_PUBLIC_YANDEX_METRIKA_ID, 10) 
           : undefined);

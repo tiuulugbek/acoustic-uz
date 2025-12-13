@@ -10,6 +10,7 @@ import type { TourConfig } from '@/types/tour';
 import PageHeader from '@/components/page-header';
 import WorkingHoursDisplay from '@/components/working-hours-display';
 import BranchTOC from '@/components/branch-toc';
+import BranchViewTracker from '@/components/branch-view-tracker';
 import PanoramaViewerWrapper from '@/components/tour/PanoramaViewerWrapper';
 import { normalizeImageUrl } from '@/lib/image-utils';
 

@@ -16,6 +16,7 @@ import {
   Tag,
   InputNumber,
   Tabs,
+  Switch,
 } from 'antd';
 import { UploadOutlined, DeleteOutlined, SaveOutlined, FolderOutlined } from '@ant-design/icons';
 import type { UploadProps } from 'antd';
@@ -153,7 +154,15 @@ export default function SettingsPage() {
         catalogHeroImageId: settings.catalogHeroImageId || null,
         logoId: settings.logoId || null,
         faviconId: settings.faviconId || null,
+        googleAnalyticsId: settings.googleAnalyticsId || '',
+        yandexMetrikaId: settings.yandexMetrikaId || '',
       });
+      
+      // Initialize analytics settings
+      const featureFlags = settings.featureFlags as any;
+      setAnalyticsEnabled(featureFlags?.integrations?.analytics === true);
+      setGoogleAnalyticsId(settings.googleAnalyticsId || '');
+      setYandexMetrikaId(settings.yandexMetrikaId || '');
       if (settings.catalogHeroImage?.url) {
         setPreviewCatalogHero(normalizeImageUrl(settings.catalogHeroImage.url));
       }
@@ -945,6 +954,123 @@ export default function SettingsPage() {
                       type="primary"
                       icon={<SaveOutlined />}
                       onClick={handleTelegramSettingsSave}
+                      loading={updateMutation.isPending}
+                      size="large"
+                    >
+                      Saqlash
+                    </Button>
+                  </div>
+                </Card>
+              </Form>
+            ),
+          },
+          {
+            key: 'analytics',
+            label: 'Analytics va statistikalar',
+            children: (
+              <Form form={form} layout="vertical">
+                <Card>
+                  <Alert
+                    message="Analytics sozlamalari"
+                    description={
+                      <div>
+                        <p><strong>Google Analytics 4 (GA4):</strong></p>
+                        <ul style={{ marginLeft: 20, marginBottom: 16 }}>
+                          <li>Google Analytics'da property yarating</li>
+                          <li>Measurement ID ni oling (masalan: <code>G-XXXXXXXXXX</code>)</li>
+                          <li>ID ni quyidagi maydonga kiriting</li>
+                        </ul>
+                        <p><strong>Yandex Metrika:</strong></p>
+                        <ul style={{ marginLeft: 20 }}>
+                          <li>Yandex Metrika'da counter yarating</li>
+                          <li>Counter ID ni oling (masalan: <code>12345678</code>)</li>
+                          <li>ID ni quyidagi maydonga kiriting</li>
+                        </ul>
+                        <p style={{ marginTop: 16, color: '#666' }}>
+                          <strong>Eslatma:</strong> Analytics yoqilganda, barcha sahifa ko'rishlar va eventlar avtomatik tracking qilinadi.
+                        </p>
+                      </div>
+                    }
+                    type="info"
+                    showIcon
+                    style={{ marginBottom: 24 }}
+                  />
+
+                  <Form.Item
+                    label="Analytics yoqilgan"
+                    extra="Analytics tracking'ni yoqish/ochirish"
+                  >
+                    <Switch
+                      checked={analyticsEnabled}
+                      onChange={(checked) => {
+                        setAnalyticsEnabled(checked);
+                        // Update feature flags immediately
+                        const currentFeatureFlags = settings?.featureFlags as any || {};
+                        const updatedFeatureFlags = {
+                          ...currentFeatureFlags,
+                          integrations: {
+                            ...currentFeatureFlags.integrations,
+                            analytics: checked,
+                          },
+                        };
+                        // Auto-save feature flag change
+                        updateMutation.mutate({
+                          featureFlags: updatedFeatureFlags,
+                        });
+                      }}
+                    />
+                  </Form.Item>
+
+                  <Divider />
+
+                  <Form.Item
+                    label="Google Analytics ID"
+                    name="googleAnalyticsId"
+                    extra="Google Analytics 4 Measurement ID (masalan: G-XXXXXXXXXX)"
+                  >
+                    <Input 
+                      placeholder="G-XXXXXXXXXX" 
+                      value={googleAnalyticsId}
+                      onChange={(e) => setGoogleAnalyticsId(e.target.value)}
+                    />
+                  </Form.Item>
+
+                  <Form.Item
+                    label="Yandex Metrika ID"
+                    name="yandexMetrikaId"
+                    extra="Yandex Metrika Counter ID (masalan: 12345678)"
+                  >
+                    <Input 
+                      placeholder="12345678" 
+                      value={yandexMetrikaId}
+                      onChange={(e) => setYandexMetrikaId(e.target.value)}
+                    />
+                  </Form.Item>
+
+                  <Alert
+                    message="Tracking qilinadigan ma'lumotlar"
+                    description={
+                      <div>
+                        <ul style={{ marginLeft: 20, marginBottom: 0 }}>
+                          <li>Sahifa ko'rishlar (Page Views)</li>
+                          <li>Qurilma turi (Desktop, Tablet, Mobile)</li>
+                          <li>Operatsion tizim va brauzer</li>
+                          <li>Geografik ma'lumotlar (mamlakat, shahar)</li>
+                          <li>Trafik manbalari (Organic, Direct, Referral, Social)</li>
+                          <li>Maxsus eventlar (button clicks, form submissions, phone clicks)</li>
+                        </ul>
+                      </div>
+                    }
+                    type="success"
+                    showIcon
+                    style={{ marginBottom: 24 }}
+                  />
+
+                  <div style={{ marginTop: 24, textAlign: 'right' }}>
+                    <Button
+                      type="primary"
+                      icon={<SaveOutlined />}
+                      onClick={handleAnalyticsSave}
                       loading={updateMutation.isPending}
                       size="large"
                     >

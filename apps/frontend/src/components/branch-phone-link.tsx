@@ -1,6 +1,7 @@
 'use client';
 
 import { Phone } from 'lucide-react';
+import { trackPhoneClick } from '@/lib/analytics';
 
 interface BranchPhoneLinkProps {
   phone: string;
@@ -11,6 +12,7 @@ export default function BranchPhoneLink({ phone, phones }: BranchPhoneLinkProps)
   const handlePhoneClick = (e: React.MouseEvent, phoneNum: string) => {
     e.preventDefault();
     e.stopPropagation();
+    trackPhoneClick(phoneNum, window.location.pathname);
     window.location.href = `tel:${phoneNum}`;
   };
 
