@@ -11,6 +11,7 @@ import ServiceContent from '@/components/service-content';
 import AppointmentForm from '@/components/appointment-form';
 import AuthorCard from '@/components/author-card';
 import Sidebar from '@/components/sidebar';
+import ArticleTableOfContents from '@/components/article-table-of-contents';
 import { notFound } from 'next/navigation';
 import dayjs from 'dayjs';
 import { normalizeImageUrl } from '@/lib/image-utils';
@@ -111,6 +112,46 @@ export default async function PostPage({ params }: PostPageProps) {
     ? getBilingualText(post.category.name_uz, post.category.name_ru, locale)
     : null;
   const coverUrl = post.cover?.url ? normalizeImageUrl(post.cover.url) : null;
+
+  // Extract table of contents from HTML content
+  // This matches the ID generation logic in ServiceContent component
+  const extractTableOfContents = (content: string) => {
+    if (!content) return [];
+    
+    const headings: Array<{ id: string; text: string; level: number }> = [];
+    let headingIndex = 0;
+    
+    // Extract headings in order (H2 and H3) - matching ServiceContent logic
+    const headingRegex = /<(h[23])([^>]*)>(.*?)<\/h[23]>/gi;
+    
+    let match;
+    while ((match = headingRegex.exec(content)) !== null) {
+      const tag = match[1]; // h2 or h3
+      const attrs = match[2] || '';
+      const text = match[3]
+        .replace(/<[^>]+>/g, '') // Remove HTML tags
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .trim();
+      
+      if (text) {
+        const level = tag === 'h2' ? 2 : 3;
+        
+        // Check if ID already exists in attributes
+        const idMatch = attrs.match(/id=["']([^"']+)["']/i);
+        const id = idMatch ? idMatch[1] : `section-${headingIndex++}`;
+        
+        headings.push({ id, text, level });
+      }
+    }
+    
+    return headings;
+  };
+
+  const tableOfContents = extractTableOfContents(body);
 
   // Get related posts from the same category (only articles, not news)
   const relatedPosts = post.categoryId 
@@ -279,6 +320,13 @@ export default async function PostPage({ params }: PostPageProps) {
                 <p className="mb-8 text-lg leading-relaxed text-muted-foreground">
                   {excerpt}
                 </p>
+              )}
+
+              {/* Table of Contents - Show if headings exist */}
+              {tableOfContents.length > 0 && (
+                <div className="mb-8">
+                  <ArticleTableOfContents items={tableOfContents} locale={locale} />
+                </div>
               )}
 
               {/* Content */}
