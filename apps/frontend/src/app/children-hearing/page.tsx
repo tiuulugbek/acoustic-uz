@@ -182,20 +182,21 @@ export default async function ChildrenHearingPage() {
           <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
             {/* Main Content */}
             <div className="min-w-0">
-              {/* Categories Grid */}
-              {categories && categories.length > 0 && (
-                <div className="mb-8">
-                  <CategoryGrid categories={categories} locale={locale} />
-                </div>
-              )}
-              
               {/* Posts List with Pagination */}
-              {posts && posts.length > 0 && (
+              {posts && posts.length > 0 ? (
                 <div>
                   <h2 className="mb-6 text-2xl font-bold text-foreground">
                     {locale === 'ru' ? 'Статьи' : 'Maqolalar'}
                   </h2>
                   <PostsListPaginated posts={posts} locale={locale} postsPerPage={6} />
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground">
+                    {locale === 'ru'
+                      ? 'Статьи скоро будут добавлены.'
+                      : "Maqolalar tez orada qo'shiladi."}
+                  </p>
                 </div>
               )}
             </div>
