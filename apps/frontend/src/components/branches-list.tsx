@@ -1,12 +1,37 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { MapPin } from 'lucide-react';
 import type { BranchResponse } from '@/lib/api';
 import { getBilingualText } from '@/lib/locale';
 import BranchPhoneLink from '@/components/branch-phone-link';
+
+interface UserLocation {
+  latitude: number;
+  longitude: number;
+}
+
+// Haversine formula to calculate distance between two coordinates (in km)
+function calculateDistance(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
+  const R = 6371; // Earth's radius in kilometers
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
 
 interface BranchesListProps {
   branches: BranchResponse[];
@@ -38,6 +63,64 @@ const REGION_TO_CITIES: Record<string, string[]> = {
 export default function BranchesList({ branches, selectedRegion, locale, onClearFilter, branchesByRegion, regionNames }: BranchesListProps) {
   // Filter branches by selected region - use useState + useEffect to prevent hydration mismatch
   const [filteredBranches, setFilteredBranches] = useState<BranchResponse[]>(branches);
+  const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
+  const [isLoadingLocation, setIsLoadingLocation] = useState(true);
+  
+  // Get user's location
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    // Check if geolocation is supported
+    if (!navigator.geolocation) {
+      setIsLoadingLocation(false);
+      return;
+    }
+
+    // Try to get cached location from localStorage
+    const cachedLocation = localStorage.getItem('user_location');
+    const cachedTimestamp = localStorage.getItem('user_location_timestamp');
+    
+    if (cachedLocation && cachedTimestamp) {
+      const timestamp = parseInt(cachedTimestamp, 10);
+      const now = Date.now();
+      // Use cached location if it's less than 1 hour old
+      if (now - timestamp < 60 * 60 * 1000) {
+        try {
+          const location = JSON.parse(cachedLocation);
+          setUserLocation(location);
+          setIsLoadingLocation(false);
+        } catch (e) {
+          // Invalid cache, continue to get fresh location
+        }
+      }
+    }
+
+    // Get fresh location
+    setIsLoadingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const location = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        };
+        setUserLocation(location);
+        setIsLoadingLocation(false);
+        
+        // Cache location
+        localStorage.setItem('user_location', JSON.stringify(location));
+        localStorage.setItem('user_location_timestamp', Date.now().toString());
+      },
+      (error) => {
+        console.warn('[BranchesList] Failed to get location:', error.message);
+        setIsLoadingLocation(false);
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 10000,
+        maximumAge: 60 * 60 * 1000, // Cache for 1 hour
+      }
+    );
+  }, []);
   
   useEffect(() => {
     console.log('🔍 [FILTER] Filtering branches:', {
@@ -47,58 +130,96 @@ export default function BranchesList({ branches, selectedRegion, locale, onClear
       branchesByRegionForSelected: selectedRegion && branchesByRegion ? branchesByRegion[selectedRegion] : null,
     });
     
+    let branchesToFilter = branches;
+    
     if (!selectedRegion) {
-      console.log('🔍 [FILTER] No region selected, returning all branches');
-      setFilteredBranches(branches);
-      return;
+      console.log('🔍 [FILTER] No region selected, using all branches');
+      // If no region selected, use all branches
+    } else {
+      // First, try to use branchesByRegion (coordinate-based, more accurate)
+      if (branchesByRegion && branchesByRegion[selectedRegion]) {
+        console.log('🔍 [FILTER] Using branchesByRegion:', branchesByRegion[selectedRegion].length, 'branches');
+        branchesToFilter = branchesByRegion[selectedRegion];
+      } else {
+        // Fallback to city name matching
+        console.log('🔍 [FILTER] Falling back to city name matching');
+        const cityNames = REGION_TO_CITIES[selectedRegion] || [];
+        branchesToFilter = branches.filter((branch) => {
+          const branchNameUz = branch.name_uz.toLowerCase();
+          const branchNameRu = branch.name_ru.toLowerCase();
+          
+          return cityNames.some(cityName => 
+            branchNameUz.includes(cityName.toLowerCase()) || 
+            branchNameRu.includes(cityName.toLowerCase())
+          );
+        });
+        console.log('🔍 [FILTER] Filtered by city names:', branchesToFilter.length, 'branches');
+      }
     }
     
-    // First, try to use branchesByRegion (coordinate-based, more accurate)
-    if (branchesByRegion && branchesByRegion[selectedRegion]) {
-      console.log('🔍 [FILTER] Using branchesByRegion:', branchesByRegion[selectedRegion].length, 'branches');
-      setFilteredBranches(branchesByRegion[selectedRegion]);
-      return;
-    }
-    
-    // Fallback to city name matching
-    console.log('🔍 [FILTER] Falling back to city name matching');
-    const cityNames = REGION_TO_CITIES[selectedRegion] || [];
-    const filtered = branches.filter((branch) => {
-      const branchNameUz = branch.name_uz.toLowerCase();
-      const branchNameRu = branch.name_ru.toLowerCase();
-      
-      return cityNames.some(cityName => 
-        branchNameUz.includes(cityName.toLowerCase()) || 
-        branchNameRu.includes(cityName.toLowerCase())
+    // Sort by distance if user location is available
+    if (userLocation && !selectedRegion) {
+      // Only sort by distance when no region filter is applied
+      const branchesWithDistance = branchesToFilter
+        .filter((branch) => branch.latitude != null && branch.longitude != null)
+        .map((branch) => ({
+          branch,
+          distance: calculateDistance(
+            userLocation.latitude,
+            userLocation.longitude,
+            branch.latitude!,
+            branch.longitude!
+          ),
+        }))
+        .sort((a, b) => a.distance - b.distance);
+
+      // If some branches don't have coordinates, add them at the end
+      const branchesWithoutCoords = branchesToFilter.filter(
+        (branch) => branch.latitude == null || branch.longitude == null
       );
-    });
-    console.log('🔍 [FILTER] Filtered by city names:', filtered.length, 'branches');
-    setFilteredBranches(filtered);
-  }, [branches, selectedRegion, branchesByRegion]);
+
+      setFilteredBranches([
+        ...branchesWithDistance.map((item) => item.branch),
+        ...branchesWithoutCoords,
+      ]);
+    } else {
+      // If no location or region filter is applied, use original order
+      setFilteredBranches(branchesToFilter);
+    }
+  }, [branches, selectedRegion, branchesByRegion, userLocation]);
 
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-foreground" suppressHydrationWarning>
-          {selectedRegion && regionNames?.[selectedRegion]
-            ? (locale === 'ru' 
-                ? (() => {
-                    const regionName = regionNames[selectedRegion].ru;
-                    // Handle different region name formats for proper Russian grammar
-                    if (regionName.includes('область')) {
-                      return `Филиалы в ${regionName.replace('область', 'области')}`;
-                    } else if (regionName.includes('Город')) {
-                      return `Филиалы в ${regionName.replace('Город', 'городе')}`;
-                    } else {
-                      // For city names, use "в [city]"
-                      return `Филиалы в ${regionName}`;
-                    }
-                  })()
-                : `${regionNames[selectedRegion].uz}dagi filiallar`)
-            : (locale === 'ru' ? 'Все филиалы' : 'Barcha filiallar')}
-        </h2>
+      <div className="mb-6 flex items-center justify-between flex-wrap gap-2">
+        <div className="flex-1">
+          <h2 className="text-2xl font-bold text-foreground" suppressHydrationWarning>
+            {selectedRegion && regionNames?.[selectedRegion]
+              ? (locale === 'ru' 
+                  ? (() => {
+                      const regionName = regionNames[selectedRegion].ru;
+                      // Handle different region name formats for proper Russian grammar
+                      if (regionName.includes('область')) {
+                        return `Филиалы в ${regionName.replace('область', 'области')}`;
+                      } else if (regionName.includes('Город')) {
+                        return `Филиалы в ${regionName.replace('Город', 'городе')}`;
+                      } else {
+                        // For city names, use "в [city]"
+                        return `Филиалы в ${regionName}`;
+                      }
+                    })()
+                  : `${regionNames[selectedRegion].uz}dagi filiallar`)
+              : (locale === 'ru' ? 'Все филиалы' : 'Barcha filiallar')}
+          </h2>
+          {!selectedRegion && userLocation && !isLoadingLocation && (
+            <p className="text-sm text-muted-foreground mt-1" suppressHydrationWarning>
+              {locale === 'ru' 
+                ? 'Отсортировано по расстоянию от вас'
+                : 'Sizga eng yaqin filiallar bo\'yicha tartiblangan'}
+            </p>
+          )}
+        </div>
         {selectedRegion && (
           <button
             onClick={onClearFilter}
@@ -117,6 +238,17 @@ export default function BranchesList({ branches, selectedRegion, locale, onClear
             if (imageUrl && imageUrl.startsWith('/') && !imageUrl.startsWith('//')) {
               const baseUrl = API_BASE_URL.replace('/api', '');
               imageUrl = `${baseUrl}${imageUrl}`;
+            }
+
+            // Calculate distance if user location is available
+            let distance: number | null = null;
+            if (userLocation && branch.latitude != null && branch.longitude != null && !selectedRegion) {
+              distance = calculateDistance(
+                userLocation.latitude,
+                userLocation.longitude,
+                branch.latitude,
+                branch.longitude
+              );
             }
 
             return (
@@ -144,9 +276,18 @@ export default function BranchesList({ branches, selectedRegion, locale, onClear
                 
                 {/* Content - Mobile: Center, Desktop: Right */}
                 <div className="flex-1 min-w-0 text-center md:text-left">
-                  <h3 className="text-sm md:text-lg font-semibold text-foreground group-hover:text-brand-primary transition-colors" suppressHydrationWarning>
-                    {name}
-                  </h3>
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="text-sm md:text-lg font-semibold text-foreground group-hover:text-brand-primary transition-colors flex-1" suppressHydrationWarning>
+                      {name}
+                    </h3>
+                    {distance !== null && (
+                      <div className="flex-shrink-0 text-xs font-medium text-brand-primary bg-brand-primary/10 px-2 py-1 rounded-md">
+                        {distance < 1 
+                          ? `${Math.round(distance * 1000)} ${locale === 'ru' ? 'м' : 'm'}`
+                          : `${distance.toFixed(1)} ${locale === 'ru' ? 'км' : 'km'}`}
+                      </div>
+                    )}
+                  </div>
                   {/* Address and phone - hidden on mobile, shown on desktop */}
                   <div className="hidden md:block space-y-2 mt-2">
                     <div className="flex items-start gap-2 text-sm text-muted-foreground">

@@ -4,6 +4,7 @@ import { getSettings, getBranches } from '@/lib/api-server';
 import { detectLocale } from '@/lib/locale-server';
 import { getBilingualText } from '@/lib/locale';
 import PageHeader from '@/components/page-header';
+import NearbyBranches from '@/components/nearby-branches';
 import { Phone, Mail, MapPin, MessageSquare, Send, CheckCircle2 } from 'lucide-react';
 import ContactForm from '@/components/contact-form';
 
@@ -216,43 +217,9 @@ export default async function ContactPage() {
               </div>
             </div>
 
-            {/* Branches Card */}
+            {/* Branches Card - Show nearby branches */}
             {branches && branches.length > 0 && (
-              <div className="bg-white rounded-xl p-6 shadow-sm border border-border/50">
-                <h3 className="mb-4 text-lg font-semibold text-brand-accent" suppressHydrationWarning>
-                  {isRu ? 'Наши филиалы' : 'Bizning filiallarimiz'}
-                </h3>
-                <div className="space-y-3">
-                  {branches.slice(0, 3).map((branch) => {
-                    const branchName = getBilingualText(branch.name_uz, branch.name_ru, locale);
-                    return (
-                      <Link
-                        key={branch.id}
-                        href={`/branches/${branch.slug || branch.id}`}
-                        className="block p-3 rounded-lg border border-border/60 bg-muted/30 hover:border-brand-primary/50 hover:bg-white transition-colors group"
-                      >
-                        <p className="font-medium text-foreground group-hover:text-brand-primary transition-colors" suppressHydrationWarning>
-                          {branchName}
-                        </p>
-                        {branch.phone && (
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {branch.phone}
-                          </p>
-                        )}
-                      </Link>
-                    );
-                  })}
-                  {branches.length > 3 && (
-                    <Link
-                      href="/branches"
-                      className="block text-center text-sm text-brand-primary hover:text-brand-accent transition-colors font-medium pt-2"
-                      suppressHydrationWarning
-                    >
-                      {isRu ? `Все филиалы (${branches.length})` : `Barcha filiallar (${branches.length})`} →
-                    </Link>
-                  )}
-                </div>
-              </div>
+              <NearbyBranches branches={branches} locale={locale} limit={3} />
             )}
           </aside>
         </div>

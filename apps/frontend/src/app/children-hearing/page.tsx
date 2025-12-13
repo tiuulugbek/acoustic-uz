@@ -6,6 +6,7 @@ import { getBilingualText } from '@/lib/locale';
 import PageHeader from '@/components/page-header';
 import PostsListPaginated from '@/components/posts-list-paginated';
 import CategoryGrid from '@/components/category-grid';
+import NearbyBranches from '@/components/nearby-branches';
 import Link from 'next/link';
 import { MapPin, Phone } from 'lucide-react';
 import { normalizeImageUrl } from '@/lib/image-utils';
@@ -203,61 +204,9 @@ export default async function ChildrenHearingPage() {
 
             {/* Sidebar */}
             <aside className="sticky top-6 h-fit space-y-6">
-              {/* Branches Card */}
+              {/* Branches Card - Show nearby branches */}
               {branches && branches.length > 0 && (
-                <div className="rounded-lg border border-border bg-white p-6 shadow-sm">
-                  <h3 className="mb-4 text-lg font-semibold text-foreground">
-                    {locale === 'ru' ? 'Наши филиалы' : 'Bizning filiallarimiz'}
-                  </h3>
-                  <div className="space-y-4">
-                    {branches.slice(0, 3).map((branch) => {
-                      const branchName = getBilingualText(branch.name_uz, branch.name_ru, locale);
-                      const branchAddress = getBilingualText(branch.address_uz, branch.address_ru, locale);
-                      const imageUrl = branch.image?.url ? normalizeImageUrl(branch.image.url) : null;
-                      
-                      return (
-                        <Link
-                          key={branch.id}
-                          href={`/branches/${branch.slug}`}
-                          className="group block rounded-lg border border-border bg-white p-3 transition-shadow hover:shadow-md"
-                        >
-                          {imageUrl && (
-                            <div className="relative mb-2 aspect-video w-full overflow-hidden rounded-md bg-muted">
-                              <Image
-                                src={imageUrl}
-                                alt={branchName}
-                                fill
-                                className="object-cover transition-transform group-hover:scale-105"
-                                sizes="(max-width: 1024px) 100vw, 320px"
-                              />
-                            </div>
-                          )}
-                          <h4 className="mb-1 text-sm font-semibold text-foreground group-hover:text-brand-primary transition-colors">
-                            {branchName}
-                          </h4>
-                          {branchAddress && (
-                            <div className="flex items-start gap-2 text-xs text-muted-foreground">
-                              <MapPin className="h-3 w-3 mt-0.5 flex-shrink-0 text-brand-primary" />
-                              <span className="line-clamp-2">{branchAddress}</span>
-                            </div>
-                          )}
-                          {branch.phone && (
-                            <div className="mt-2 flex items-center gap-2 text-xs text-brand-primary">
-                              <Phone className="h-3 w-3" />
-                              <span>{branch.phone}</span>
-                            </div>
-                          )}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                  <Link
-                    href="/branches"
-                    className="mt-4 block text-center text-sm font-medium text-brand-primary hover:text-brand-accent transition-colors"
-                  >
-                    {locale === 'ru' ? 'Все филиалы →' : 'Barcha filiallar →'}
-                  </Link>
-                </div>
+                <NearbyBranches branches={branches} locale={locale} limit={3} />
               )}
 
               {/* Contact Card */}

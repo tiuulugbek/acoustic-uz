@@ -1,5 +1,5 @@
 import { MetadataRoute } from 'next';
-import { getProducts, getPosts, getBranches, getServices, getServiceCategories } from '@/lib/api-server';
+import { getProducts, getPosts, getBranches, getServices, getServiceCategories, getPostCategories } from '@/lib/api-server';
 
 const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
 
@@ -12,6 +12,7 @@ const staticPages = [
   'branches',
   'patients',
   'children-hearing',
+  'posts',
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -70,6 +71,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   try {
+    // Add posts listing page
+    addUrl('/posts', new Date(), 'daily', 0.8, {
+      languages: {
+        uz: `${baseUrl}/posts`,
+        ru: `${baseUrl}/ru/posts`,
+        'x-default': `${baseUrl}/posts`,
+      },
+    });
+    
+    // Add post category pages
+    const postCategories = await getPostCategories('uz');
+    postCategories.forEach((category) => {
+      if (category.status === 'published') {
+        addUrl(`/posts?category=${category.slug}`, undefined, 'weekly', 0.7, {
+          languages: {
+            uz: `${baseUrl}/posts?category=${category.slug}`,
+            ru: `${baseUrl}/ru/posts?category=${category.slug}`,
+            'x-default': `${baseUrl}/posts?category=${category.slug}`,
+          },
+        });
+      }
+    });
+    
     // Add posts (articles and news)
     const posts = await getPosts('uz', true);
     const publishedPosts = posts.filter((post) => post.status === 'published');

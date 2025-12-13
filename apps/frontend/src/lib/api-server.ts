@@ -21,6 +21,7 @@ import {
   getPosts as getPostsApi,
   getPostBySlug as getPostBySlugApi,
   getPostCategories as getPostCategoriesApi,
+  getPostCategoryBySlug as getPostCategoryBySlugApi,
   getPublicFaq as getPublicFaqApi,
   getHomepageJourney as getHomepageJourneyApi,
   getServiceCategories as getServiceCategoriesApi,
@@ -292,6 +293,20 @@ export async function getPostCategories(
     () => getPostCategoriesApi(locale, section),
     [],
     'Failed to fetch post categories',
+  );
+}
+
+/**
+ * Get post category by slug - returns null if not found or backend is down
+ */
+export async function getPostCategoryBySlug(
+  slug: string,
+  locale?: string,
+): Promise<PostCategoryResponse | null> {
+  return safeApiCall(
+    () => getPostCategoryBySlugApi(slug, locale),
+    null,
+    `Failed to fetch post category: ${slug}`,
   );
 }
 

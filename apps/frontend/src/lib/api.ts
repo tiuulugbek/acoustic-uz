@@ -637,6 +637,15 @@ export const getPostCategories = (locale?: string, section?: string) => {
   return fetchJson<PostCategoryResponse[]>(`/post-categories${query}`, locale);
 };
 
+export const getPostCategoryBySlug = async (slug: string, locale?: string): Promise<PostCategoryResponse | null> => {
+  try {
+    return await fetchJson<PostCategoryResponse>(`/post-categories/slug/${slug}`, locale);
+  } catch (error) {
+    console.error(`Failed to fetch post category by slug: ${slug}`, error);
+    return null;
+  }
+};
+
 export const getPosts = (locale?: string, publicOnly = true, categoryId?: string, postType?: string) => {
   const params = new URLSearchParams();
   if (publicOnly) params.append('public', 'true');
