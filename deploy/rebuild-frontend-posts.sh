@@ -85,11 +85,21 @@ echo ""
 
 # 8. Test /posts endpoint
 echo -e "${BLUE}📋 Step 7: Testing /posts endpoint...${NC}"
+sleep 3
 HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" https://acoustic.uz/posts 2>&1 || echo "000")
 if [ "$HTTP_CODE" = "200" ]; then
     echo -e "${GREEN}  ✅ /posts endpoint is working (HTTP $HTTP_CODE)${NC}"
 else
     echo -e "${YELLOW}  ⚠️  HTTP $HTTP_CODE - Check logs: pm2 logs acoustic-frontend --lines 50${NC}"
+fi
+
+# Test with category parameter if available
+echo -e "${BLUE}📋 Step 8: Testing /posts?category endpoint...${NC}"
+CATEGORY_CODE=$(curl -s -o /dev/null -w "%{http_code}" "https://acoustic.uz/posts?category=test-kategoriya" 2>&1 || echo "000")
+if [ "$CATEGORY_CODE" = "200" ] || [ "$CATEGORY_CODE" = "404" ]; then
+    echo -e "${GREEN}  ✅ /posts?category endpoint is responding (HTTP $CATEGORY_CODE)${NC}"
+else
+    echo -e "${YELLOW}  ⚠️  HTTP $CATEGORY_CODE - This is expected if category doesn't exist${NC}"
 fi
 echo ""
 
