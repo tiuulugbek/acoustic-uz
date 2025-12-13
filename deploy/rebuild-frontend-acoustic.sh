@@ -38,6 +38,11 @@ sudo -u acoustic pnpm --filter @acoustic/shared build
 # 6. Clean Next.js build cache
 echo "🧹 Cleaning Next.js build cache..."
 cd "$FRONTEND_DIR"
+
+# Stop PM2 process first to avoid permission conflicts
+echo "⏸️  Stopping PM2 process..."
+pm2 stop acoustic-frontend 2>/dev/null || true
+
 # Fix permissions first
 sudo chown -R acoustic:acoustic .next 2>/dev/null || true
 # Remove cache with proper permissions
@@ -109,7 +114,17 @@ fi
 
 echo "✅ Build successful!"
 
-# 8. Restart PM2
+# 8. Fix permissions after build
+echo "🔧 Fixing permissions after build..."
+cd "$FRONTEND_DIR"
+chown -R acoustic:acoustic .next
+chmod -R 755 .next
+# Ensure trace file can be written
+sudo -u acoustic touch .next/trace 2>/dev/null || true
+chown acoustic:acoustic .next/trace 2>/dev/null || true
+chmod 644 .next/trace 2>/dev/null || true
+
+# 9. Restart PM2
 echo "🔄 Restarting frontend..."
 cd "$PROJECT_DIR"
 pm2 restart acoustic-frontend || pm2 start acoustic-frontend
