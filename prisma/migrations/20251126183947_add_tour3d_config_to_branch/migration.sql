@@ -4,8 +4,14 @@ ADD COLUMN     "tour3d_config" JSONB,
 ADD COLUMN     "workingHours_ru" TEXT,
 ADD COLUMN     "workingHours_uz" TEXT;
 
--- AlterTable
-ALTER TABLE "CatalogPageConfig" ALTER COLUMN "updatedAt" DROP DEFAULT;
+-- AlterTable - Skip CatalogPageConfig if it doesn't exist yet (it will be created in a later migration)
+-- This migration runs before CatalogPageConfig table is created, so we skip this alteration
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'CatalogPageConfig') THEN
+        ALTER TABLE "CatalogPageConfig" ALTER COLUMN "updatedAt" DROP DEFAULT;
+    END IF;
+END $$;
 
 -- AlterTable - Add categoryId if not exists
 DO $$ 
