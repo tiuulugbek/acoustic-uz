@@ -72,6 +72,17 @@ export default function BranchesList({ branches, selectedRegion, locale, onClear
 
     // Check if geolocation is supported
     if (!navigator.geolocation) {
+      console.warn('[BranchesList] Geolocation is not supported by your browser');
+      setIsLoadingLocation(false);
+      return;
+    }
+
+    // Check if HTTPS (required for geolocation, except localhost)
+    const isSecure = window.location.protocol === 'https:' || 
+                     window.location.hostname === 'localhost' || 
+                     window.location.hostname === '127.0.0.1';
+    if (!isSecure) {
+      console.warn('[BranchesList] Geolocation requires HTTPS (except localhost)');
       setIsLoadingLocation(false);
       return;
     }
@@ -87,15 +98,21 @@ export default function BranchesList({ branches, selectedRegion, locale, onClear
       if (now - timestamp < 60 * 60 * 1000) {
         try {
           const location = JSON.parse(cachedLocation);
+          console.log('[BranchesList] Using cached location:', location);
           setUserLocation(location);
           setIsLoadingLocation(false);
+          return;
         } catch (e) {
+          console.warn('[BranchesList] Invalid cached location, getting fresh location');
           // Invalid cache, continue to get fresh location
         }
+      } else {
+        console.log('[BranchesList] Cached location expired, getting fresh location');
       }
     }
 
     // Get fresh location
+    console.log('[BranchesList] Requesting geolocation...');
     setIsLoadingLocation(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -103,6 +120,7 @@ export default function BranchesList({ branches, selectedRegion, locale, onClear
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
         };
+        console.log('[BranchesList] Location obtained:', location);
         setUserLocation(location);
         setIsLoadingLocation(false);
         
@@ -111,7 +129,13 @@ export default function BranchesList({ branches, selectedRegion, locale, onClear
         localStorage.setItem('user_location_timestamp', Date.now().toString());
       },
       (error) => {
-        console.warn('[BranchesList] Failed to get location:', error.message);
+        console.error('[BranchesList] Failed to get location:', {
+          code: error.code,
+          message: error.message,
+          PERMISSION_DENIED: error.code === 1,
+          POSITION_UNAVAILABLE: error.code === 2,
+          TIMEOUT: error.code === 3,
+        });
         setIsLoadingLocation(false);
       },
       {
@@ -158,8 +182,8 @@ export default function BranchesList({ branches, selectedRegion, locale, onClear
     }
     
     // Sort by distance if user location is available
-    if (userLocation && !selectedRegion) {
-      // Only sort by distance when no region filter is applied
+    if (userLocation) {
+      // Sort by distance even when region filter is applied (within filtered branches)
       const branchesWithDistance = branchesToFilter
         .filter((branch) => branch.latitude != null && branch.longitude != null)
         .map((branch) => ({
@@ -183,7 +207,7 @@ export default function BranchesList({ branches, selectedRegion, locale, onClear
         ...branchesWithoutCoords,
       ]);
     } else {
-      // If no location or region filter is applied, use original order
+      // If no location, use original order
       setFilteredBranches(branchesToFilter);
     }
   }, [branches, selectedRegion, branchesByRegion, userLocation]);
@@ -212,11 +236,15 @@ export default function BranchesList({ branches, selectedRegion, locale, onClear
                   : `${regionNames[selectedRegion].uz}dagi filiallar`)
               : (locale === 'ru' ? 'Все филиалы' : 'Barcha filiallar')}
           </h2>
-          {!selectedRegion && userLocation && !isLoadingLocation && (
+          {userLocation && !isLoadingLocation && (
             <p className="text-sm text-muted-foreground mt-1" suppressHydrationWarning>
-              {locale === 'ru' 
-                ? 'Отсортировано по расстоянию от вас'
-                : 'Sizga eng yaqin filiallar bo\'yicha tartiblangan'}
+              {selectedRegion
+                ? (locale === 'ru' 
+                    ? 'Отсортировано по расстоянию от вас'
+                    : 'Sizga eng yaqin filiallar bo\'yicha tartiblangan')
+                : (locale === 'ru' 
+                    ? 'Отсортировано по расстоянию от вас'
+                    : 'Sizga eng yaqin filiallar bo\'yicha tartiblangan')}
             </p>
           )}
         </div>
@@ -242,7 +270,8 @@ export default function BranchesList({ branches, selectedRegion, locale, onClear
 
             // Calculate distance if user location is available
             let distance: number | null = null;
-            if (userLocation && branch.latitude != null && branch.longitude != null && !selectedRegion) {
+            if (userLocation && branch.latitude != null && branch.longitude != null) {
+              // Show distance even when region filter is applied
               distance = calculateDistance(
                 userLocation.latitude,
                 userLocation.longitude,
