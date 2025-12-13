@@ -254,7 +254,7 @@ export default async function RootLayout({
         />
       </head>
       <body className="font-sans bg-white text-gray-900" suppressHydrationWarning style={{ backgroundColor: '#ffffff', color: '#111827' }}>
-        <Providers>
+        <Providers settings={settings}>
           {/* Set locale in window before children render - this script runs synchronously */}
           {/* CRITICAL: This value MUST be set before React hydrates to prevent hydration mismatch */}
           <script

@@ -70,6 +70,11 @@ export default function SettingsPage() {
     telegram?: string;
   }>({});
 
+  // Analytics settings state
+  const [analyticsEnabled, setAnalyticsEnabled] = useState(false);
+  const [googleAnalyticsId, setGoogleAnalyticsId] = useState('');
+  const [yandexMetrikaId, setYandexMetrikaId] = useState('');
+
 
   const { data: settings, isLoading } = useQuery<SettingsDto, ApiError>({
     queryKey: ['settings'],
