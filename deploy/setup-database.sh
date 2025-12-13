@@ -72,6 +72,15 @@ echo -e "${BLUE}4️⃣ Creating .env file template...${NC}"
 APP_DIR="/var/www/acoustic.uz"
 ENV_FILE="$APP_DIR/.env"
 
+# Get domain names
+read -p "Enter main domain (default: acoustic.uz): " DOMAIN_NAME
+read -p "Enter admin domain (default: admin.acoustic.uz): " ADMIN_DOMAIN
+read -p "Enter API domain (default: a.acoustic.uz): " API_DOMAIN
+
+DOMAIN_NAME=${DOMAIN_NAME:-acoustic.uz}
+ADMIN_DOMAIN=${ADMIN_DOMAIN:-admin.acoustic.uz}
+API_DOMAIN=${API_DOMAIN:-a.acoustic.uz}
+
 if [ -f "$ENV_FILE" ]; then
     echo -e "${YELLOW}⚠️  .env file already exists, backing up...${NC}"
     cp "$ENV_FILE" "$ENV_FILE.backup.$(date +%Y%m%d%H%M%S)"
