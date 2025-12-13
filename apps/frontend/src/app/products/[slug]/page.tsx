@@ -101,85 +101,105 @@ async function getProductMetadata(slug: string): Promise<{ title: string; descri
 }
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
-  const locale = detectLocale();
-  const product = await getProductBySlug(params.slug, locale);
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
-  const productUrl = `${baseUrl}/products/${params.slug}`;
-  
-  if (!product) {
+  try {
+    const locale = detectLocale();
+    const product = await getProductBySlug(params.slug, locale);
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
+    const productUrl = `${baseUrl}/products/${params.slug}`;
+    
+    if (!product) {
+      const fallbackTitle = optimizeTitle(
+        locale === 'ru' ? 'Продукт не найден' : 'Mahsulot topilmadi'
+      );
+      return {
+        title: fallbackTitle,
+        description: generateSeoDescription(null, [], locale),
+      };
+    }
+    
+    const productName = getBilingualText(product.name_uz, product.name_ru, locale);
+    const productDescription = getBilingualText(
+      product.description_uz ?? product.intro_uz,
+      product.description_ru ?? product.intro_ru,
+      locale
+    );
+    
+    // Generate SEO-optimized title and description
+    const optimizedTitle = optimizeTitle(productName);
+    const keywords = [
+      product.brand?.name,
+      product.category?.name_uz || product.category?.name_ru,
+      locale === 'ru' ? 'слуховой аппарат' : 'eshitish moslamasi',
+    ].filter(Boolean) as string[];
+    
+    const optimizedDescription = generateSeoDescription(
+      productDescription,
+      keywords,
+      locale
+    );
+    
+    const mainImage = product?.galleryUrls?.[0] || product?.brand?.logo?.url || '';
+    const imageUrl = mainImage && mainImage.startsWith('http') 
+      ? mainImage 
+      : mainImage && mainImage.startsWith('/')
+      ? `${baseUrl}${mainImage}`
+      : mainImage
+      ? `${baseUrl}${mainImage}`
+      : `${baseUrl}/logo.png`;
+    
+    return {
+      title: optimizedTitle,
+      description: optimizedDescription,
+      alternates: {
+        canonical: productUrl,
+        languages: {
+          uz: productUrl,
+          ru: productUrl,
+          'x-default': productUrl,
+        },
+      },
+      openGraph: {
+        title: optimizedTitle,
+        description: optimizedDescription,
+        url: productUrl,
+        siteName: 'Acoustic.uz',
+        images: [
+          {
+            url: imageUrl,
+            width: 1200,
+            height: 630,
+            alt: productName,
+          },
+        ],
+        locale: locale === 'ru' ? 'ru_RU' : 'uz_UZ',
+        type: 'website',
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: optimizedTitle,
+        description: optimizedDescription,
+        images: [imageUrl],
+      },
+    };
+  } catch (error) {
+    // Fallback metadata if anything fails
+    const locale = detectLocale();
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
+    const productUrl = `${baseUrl}/products/${params.slug}`;
     const fallbackTitle = optimizeTitle(
       locale === 'ru' ? 'Продукт не найден' : 'Mahsulot topilmadi'
     );
+    
+    console.error(`[ProductPage] Error generating metadata for ${params.slug}:`, error);
+    
     return {
       title: fallbackTitle,
       description: generateSeoDescription(null, [], locale),
+      alternates: {
+        canonical: productUrl,
+      },
     };
   }
-  
-  const productName = getBilingualText(product.name_uz, product.name_ru, locale);
-  const productDescription = getBilingualText(
-    product.description_uz ?? product.intro_uz,
-    product.description_ru ?? product.intro_ru,
-    locale
-  );
-  
-  // Generate SEO-optimized title and description
-  const optimizedTitle = optimizeTitle(productName);
-  const keywords = [
-    product.brand?.name,
-    product.category?.name_uz || product.category?.name_ru,
-    locale === 'ru' ? 'слуховой аппарат' : 'eshitish moslamasi',
-  ].filter(Boolean) as string[];
-  
-  const optimizedDescription = generateSeoDescription(
-    productDescription,
-    keywords,
-    locale
-  );
-  
-  const mainImage = product?.galleryUrls?.[0] || product?.brand?.logo?.url || '';
-  const imageUrl = mainImage && mainImage.startsWith('http') 
-    ? mainImage 
-    : mainImage && mainImage.startsWith('/')
-    ? `${baseUrl}${mainImage}`
-    : mainImage
-    ? `${baseUrl}${mainImage}`
-    : `${baseUrl}/logo.png`;
-  
-  return {
-    title: optimizedTitle,
-    description: optimizedDescription,
-    alternates: {
-      canonical: productUrl,
-      languages: {
-        uz: productUrl,
-        ru: productUrl,
-        'x-default': productUrl,
-      },
-    },
-    openGraph: {
-      title,
-      description: description || undefined,
-      url: productUrl,
-      siteName: 'Acoustic.uz',
-      images: [
-        {
-          url: imageUrl,
-          width: 1200,
-          height: 630,
-          alt: title,
-        },
-      ],
-      locale: locale === 'ru' ? 'ru_RU' : 'uz_UZ',
-      type: 'website',
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title,
-      description: description || undefined,
-      images: [imageUrl],
-    },
-  };
 }
 
 function buildJsonLd(product: ProductResponse | null, mainImage: string, locale: 'uz' | 'ru') {
@@ -506,30 +526,32 @@ export default async function ProductPage({ params }: ProductPageProps) {
     },
   ];
 
-  const jsonLd = buildJsonLd(product, mainImage, locale);
-
-  const productName = getBilingualText(product.name_uz, product.name_ru, locale);
+  // Safety check - ensure product exists before building JSON-LD
+  const jsonLd = product ? buildJsonLd(product, mainImage, locale) : [];
+  const productName = product ? getBilingualText(product.name_uz, product.name_ru, locale) : '';
 
   return (
     <main className="min-h-screen bg-background" suppressHydrationWarning>
-      <ProductViewTracker slug={product.slug || product.id} name={productName} />
-      {Array.isArray(jsonLd) ? (
-        jsonLd.map((schema, index) => (
+      {product && <ProductViewTracker slug={product.slug || product.id} name={productName} />}
+      {jsonLd && jsonLd.length > 0 && (
+        Array.isArray(jsonLd) ? (
+          jsonLd.map((schema, index) => (
+            <Script
+              key={index}
+              id={`product-jsonld-${index}`}
+              type="application/ld+json"
+              strategy="afterInteractive"
+              dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+            />
+          ))
+        ) : (
           <Script
-            key={index}
-            id={`product-jsonld-${index}`}
+            id="product-jsonld"
             type="application/ld+json"
             strategy="afterInteractive"
-            dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
           />
-        ))
-      ) : (
-        <Script
-          id="product-jsonld"
-          type="application/ld+json"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
+        )
       )}
       
       {/* Breadcrumbs */}
