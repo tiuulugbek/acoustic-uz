@@ -523,10 +523,13 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
       // We'll store it after cleanupFn is created
     }
 
-      const cleanupFn = () => {
+      // Create cleanup function that can store observer
+      const cleanupFn = (() => {
         const cleanupContainer = getContainer();
-        if ((cleanupRef.current as any)?.observer) {
-          (cleanupRef.current as any).observer.disconnect();
+        // Get observer from cleanupFn itself (stored below)
+        const storedObserver = (cleanupFn as any).observer;
+        if (storedObserver) {
+          storedObserver.disconnect();
         }
         document.removeEventListener('mouseover', handleDocumentMouseOver, true);
         document.removeEventListener('mouseout', handleDocumentMouseOut, true);
