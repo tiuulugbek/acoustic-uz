@@ -135,8 +135,8 @@ export default function ProductTabs({ tabs }: ProductTabsProps) {
         })}
       </div>
       <div className="space-y-4 p-6 text-sm leading-relaxed text-muted-foreground">
-        {renderContent(current?.primary, 'primary')}
-        {renderContent(current?.secondary, 'secondary')}
+        {/* Only show primary content (correct language), fallback to secondary if primary is empty */}
+        {renderContent(current?.primary || current?.secondary, 'primary')}
         {!current?.primary && !current?.secondary && (
           <p className="text-center text-muted-foreground italic">
             Ma'lumot qo'shilmagan
