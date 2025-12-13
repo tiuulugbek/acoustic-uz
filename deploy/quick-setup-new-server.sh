@@ -157,9 +157,11 @@ cd ../..
 
 # Start frontend
 cd apps/frontend
-pm2 start node_modules/.bin/next --name acoustic-frontend --cwd "$APP_DIR/apps/frontend" \
-    start \
+pm2 start "node_modules/.bin/next start" --name acoustic-frontend --cwd "$APP_DIR/apps/frontend" \
     --env production \
+    --env PORT=3000 \
+    --env NEXT_PUBLIC_API_URL="https://a.acoustic.uz/api" \
+    --env NEXT_PUBLIC_SITE_URL="https://acoustic.uz" \
     --log-date-format "YYYY-MM-DD HH:mm:ss Z" \
     --merge-logs \
     --error "$APP_DIR/logs/frontend-error.log" \
