@@ -182,7 +182,11 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   };
 }
 
-function buildJsonLd(product: ProductResponse, mainImage: string, locale: 'uz' | 'ru') {
+function buildJsonLd(product: ProductResponse | null, mainImage: string, locale: 'uz' | 'ru') {
+  // Safety check - return empty array if product is null
+  if (!product) {
+    return [];
+  }
   const baseUrl = 'https://acoustic.uz';
   const offers = product.price
     ? {
