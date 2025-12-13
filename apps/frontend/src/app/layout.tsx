@@ -134,7 +134,7 @@ export default async function RootLayout({
   const apiDomain = apiUrl.replace(/^https?:\/\//, '').split('/')[0];
 
   return (
-    <html lang={locale} xmlLang={locale} suppressHydrationWarning data-locale={locale}>
+    <html lang={locale} suppressHydrationWarning data-locale={locale}>
       <head>
         {/* DNS Prefetch and Preconnect for API and external resources */}
         <link rel="dns-prefetch" href={`https://${apiDomain}`} />
