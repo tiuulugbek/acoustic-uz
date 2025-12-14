@@ -220,6 +220,8 @@ export const homepageServiceSchema = z.object({
 });
 
 export const doctorSchema = z.object({
+  branchIds: z.array(z.string().cuid()).default([]),
+  patientTypes: z.array(z.string()).default([]),
   name_uz: z.string().min(1),
   name_ru: z.string().min(1),
   position_uz: z.string().optional().nullable(),
