@@ -24,12 +24,38 @@ export class ShowcasesService {
       include: { 
         brand: { include: { logo: true } },
         category: true,
-        image: true, // Include product image
-        gallery: true, // Include gallery images
       },
     });
 
-    return { ...showcase, products };
+    // Fetch thumbnail and gallery images for each product
+    const productsWithImages = await Promise.all(
+      products.map(async (product) => {
+        let thumbnail = null;
+        let gallery = [];
+
+        // Fetch thumbnail if thumbnailId exists
+        if (product.thumbnailId) {
+          thumbnail = await this.prisma.media.findUnique({
+            where: { id: product.thumbnailId },
+          });
+        }
+
+        // Fetch gallery images if galleryIds exist
+        if (product.galleryIds && product.galleryIds.length > 0) {
+          gallery = await this.prisma.media.findMany({
+            where: { id: { in: product.galleryIds } },
+          });
+        }
+
+        return {
+          ...product,
+          thumbnail,
+          gallery,
+        };
+      })
+    );
+
+    return { ...showcase, products: productsWithImages };
   }
 
   async update(type: 'interacoustics' | 'cochlear', productIds: string[]) {
