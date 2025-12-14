@@ -549,6 +549,17 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
               </p>
             </div>
           )}
+          {categoryOptions.length > 0 && (!data || data.length === 0) && !isLoading && (
+            <div style={{ marginBottom: '16px', padding: '16px', background: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: '4px' }}>
+              <p style={{ margin: 0 }}>
+                <strong>Ma'lumot:</strong> Bu bo'limda hozircha maqolalar yo'q. Faqat bu bo'lim kategoriyalariga biriktirilgan maqolalar shu yerda ko'rsatiladi.
+                <br />
+                <span style={{ fontSize: '12px', color: '#666', marginTop: '8px', display: 'block' }}>
+                  💡 Eslatma: Kategoriyaga biriktirilmagan maqolalar bu bo'limda ko'rsatilmaydi. Maqolani kategoriyaga biriktirish uchun "Yangiliklar" bo'limiga o'ting va u yerda maqolani tahrirlang.
+                </span>
+              </p>
+            </div>
+          )}
           <Table
             columns={columns}
             dataSource={data || []}
