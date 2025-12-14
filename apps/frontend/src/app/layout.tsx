@@ -132,11 +132,17 @@ export default async function RootLayout({
         ? settings.logo.url 
         : `${baseUrl}${settings.logo.url}`)
     : `${baseUrl}/logo.png`;
+  // Normalize favicon URL using normalizeImageUrl utility
   const faviconUrl = settings?.favicon?.url 
-    ? (settings.favicon.url.startsWith('http') 
-        ? settings.favicon.url 
-        : `${baseUrl}${settings.favicon.url}`)
+    ? normalizeImageUrl(settings.favicon.url) || `${baseUrl}/favicon.ico`
     : `${baseUrl}/favicon.ico`;
+  
+  // Ensure faviconUrl is always absolute
+  const finalFaviconUrl = faviconUrl.startsWith('http') 
+    ? faviconUrl 
+    : faviconUrl.startsWith('/')
+    ? `${baseUrl}${faviconUrl}`
+    : `${baseUrl}/${faviconUrl}`;
 
   // Organization structured data
   const organizationSchema = {
@@ -186,12 +192,12 @@ export default async function RootLayout({
         
         {/* Preload critical resources */}
         {/* Favicon link - use faviconUrl from settings or fallback to /favicon.ico */}
-        <link rel="icon" href={faviconUrl} type="image/x-icon" />
-        <link rel="shortcut icon" href={faviconUrl} type="image/x-icon" />
+        <link rel="icon" href={finalFaviconUrl} type="image/x-icon" />
+        <link rel="shortcut icon" href={finalFaviconUrl} type="image/x-icon" />
         
         {/* Apple Touch Icons for better mobile experience */}
-        <link rel="apple-touch-icon" href={faviconUrl} />
-        <link rel="apple-touch-icon" sizes="180x180" href={faviconUrl} />
+        <link rel="apple-touch-icon" href={finalFaviconUrl} />
+        <link rel="apple-touch-icon" sizes="180x180" href={finalFaviconUrl} />
         
         <Script
           id="organization-jsonld"

@@ -78,13 +78,14 @@ export default async function BranchPage({ params }: BranchPageProps) {
 
   // Filter doctors by branch ID - only show doctors assigned to this branch
   const doctors = allDoctors.filter((doctor) => {
-    // Debug: Log doctor data to check branchIds
+    // Debug logging in development
     if (process.env.NODE_ENV === 'development') {
-      console.log('[Branch] Doctor:', {
-        id: doctor.id,
-        name: doctor.name_uz,
-        branchIds: doctor.branchIds,
+      console.log('[Branch] Filtering doctor:', {
+        doctorId: doctor.id,
+        doctorName: doctor.name_uz,
+        doctorBranchIds: doctor.branchIds,
         branchId: branch.id,
+        branchSlug: branch.slug,
         includes: doctor.branchIds?.includes(branch.id),
       });
     }
