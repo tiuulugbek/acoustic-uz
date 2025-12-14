@@ -83,24 +83,30 @@ if [ ! -d "$ADMIN_DIST" ]; then
     fi
 fi
 
-# Remove old Nginx root
-echo -e "${BLUE}   Removing old Nginx root: $NGINX_ROOT${NC}"
-sudo rm -rf "$NGINX_ROOT"
-sudo mkdir -p "$(dirname "$NGINX_ROOT")"
+# Check if source and destination are the same
+if [ "$ADMIN_DIST" = "$NGINX_ROOT" ]; then
+    echo -e "${YELLOW}   Source and destination are the same - no copy needed${NC}"
+    echo -e "${GREEN}✅ Dist is already in the correct location${NC}"
+else
+    # Remove old Nginx root (only if different from source)
+    echo -e "${BLUE}   Removing old Nginx root: $NGINX_ROOT${NC}"
+    sudo rm -rf "$NGINX_ROOT"
+    sudo mkdir -p "$(dirname "$NGINX_ROOT")"
 
-# Copy dist to Nginx root
-echo -e "${BLUE}   Copying from $ADMIN_DIST to $(dirname "$NGINX_ROOT")...${NC}"
-sudo cp -r "$ADMIN_DIST" "$(dirname "$NGINX_ROOT")/"
+    # Copy dist to Nginx root
+    echo -e "${BLUE}   Copying from $ADMIN_DIST to $(dirname "$NGINX_ROOT")...${NC}"
+    sudo cp -r "$ADMIN_DIST" "$(dirname "$NGINX_ROOT")/"
 
-# Verify copy succeeded
-if [ ! -d "$NGINX_ROOT" ]; then
-    echo -e "${RED}❌ Error: Copy failed - $NGINX_ROOT not found${NC}"
-    echo -e "${YELLOW}   Source: $ADMIN_DIST${NC}"
-    echo -e "${YELLOW}   Destination parent: $(dirname "$NGINX_ROOT")${NC}"
-    exit 1
+    # Verify copy succeeded
+    if [ ! -d "$NGINX_ROOT" ]; then
+        echo -e "${RED}❌ Error: Copy failed - $NGINX_ROOT not found${NC}"
+        echo -e "${YELLOW}   Source: $ADMIN_DIST${NC}"
+        echo -e "${YELLOW}   Destination parent: $(dirname "$NGINX_ROOT")${NC}"
+        exit 1
+    fi
+
+    echo -e "${GREEN}✅ Copy completed${NC}"
 fi
-
-echo -e "${GREEN}✅ Copy completed${NC}"
 
 # 3. Fix permissions
 echo ""
