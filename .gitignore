@@ -69,6 +69,10 @@ docker-compose.override.yml
 uploads/
 storage/
 public/uploads/
+# But allow source code storage modules
+!apps/**/storage/*.ts
+!apps/**/storage/*.tsx
+!apps/**/storage/*.js
 
 # Temporary files
 tmp/

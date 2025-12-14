@@ -789,6 +789,9 @@ export interface DoctorResponse {
   description_ru?: string | null;
   slug: string;
   image?: MediaResponse | null;
+  imageId?: string | null;
+  branchIds?: string[];
+  patientTypes?: string[];
   order: number;
   status: string;
 }
