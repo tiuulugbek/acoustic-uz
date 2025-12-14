@@ -91,19 +91,20 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
 
   const categoryIds = useMemo(() => categories?.map(cat => cat.id) || [], [categories]);
 
-  // Fetch posts ONLY from categories in this section
-  // Each section is isolated - only shows posts that belong to its own categories
-  // Posts without category are NOT shown in section pages (they should be assigned to a category)
+  // Fetch posts from categories in this section
+  // Show posts that belong to this section's categories
+  // Also show posts without category (for backward compatibility and easy assignment)
   const { data, isLoading } = useQuery<PostDto[], ApiError>({
     queryKey: ['posts', section],
     queryFn: async () => {
       const allPosts = await getPosts();
-      // Filter posts: ONLY include posts that belong to this section's categories
-      return allPosts.filter(post => {
+      // Filter posts: include posts that belong to this section's categories OR don't have any category
+      const filteredPosts = allPosts.filter(post => {
         // Only show articles
         if (post.postType !== 'article') return false;
-        // Post MUST have a category AND belong to this section
-        if (!post.categoryId) return false;
+        // Include posts without category (they can be assigned to this section)
+        if (!post.categoryId) return true;
+        // Include posts that belong to this section's categories
         return categoryIds.includes(post.categoryId);
       }).sort((a, b) => {
         // Sort by publishAt descending (newest first)
@@ -111,8 +112,14 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
         const dateB = new Date(b.publishAt).getTime();
         return dateB - dateA;
       });
+      
+      // Separate posts with and without categories for better display
+      const postsWithCategory = filteredPosts.filter(p => p.categoryId && categoryIds.includes(p.categoryId));
+      const postsWithoutCategory = filteredPosts.filter(p => !p.categoryId);
+      
+      // Show posts with category first, then posts without category
+      return [...postsWithCategory, ...postsWithoutCategory];
     },
-    enabled: categoryIds.length > 0, // Only enabled if there are categories
     retry: false,
   });
 
