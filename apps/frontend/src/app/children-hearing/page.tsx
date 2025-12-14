@@ -110,39 +110,31 @@ export default async function ChildrenHearingPage() {
     getSettings(locale),
   ]);
   
-  // Get posts from categories in this section
-  // Show posts that belong to this section's categories
+  // Get all published posts (both with and without categories)
+  // Then filter by section categories
   const categoryIds = categories?.map(cat => cat.id) || [];
-  let posts: any[] = [];
   
-  if (categoryIds.length > 0) {
-    // Get posts from categories in this section (both article and news types)
-    const allPosts = await Promise.all(
-      categoryIds.map(categoryId => getPosts(locale, true, categoryId, undefined))
-    );
-    posts = allPosts.flat().filter((post, index, self) => 
-      index === self.findIndex(p => p.id === post.id)
-    );
-    
+  // Get ALL published posts (no category filter)
+  const allPublishedPosts = await getPosts(locale, true, undefined, undefined);
+  
+  // Filter posts: include posts that either:
+  // 1. Belong to this section's categories, OR
+  // 2. Don't have any category (for backward compatibility)
+  let posts = allPublishedPosts.filter(post => {
+    if (!post.categoryId) {
+      // Include posts without category
+      return true;
+    }
     // Include posts that belong to this section's categories
-    posts = posts.filter(post => {
-      // Include posts that have a category AND belong to this section
-      return post.categoryId && categoryIds.includes(post.categoryId);
-    });
-  }
-  
-  // Also get posts without category (for backward compatibility)
-  // These are posts that were created before category system was implemented
-  const postsWithoutCategory = await getPosts(locale, true, undefined, undefined);
-  const postsWithoutCategoryFiltered = postsWithoutCategory.filter(post => {
-    // Only include posts that don't have a category
-    return !post.categoryId;
+    return categoryIds.includes(post.categoryId);
   });
   
-  // Combine both: posts with categories and posts without categories
-  posts = [...posts, ...postsWithoutCategoryFiltered].filter((post, index, self) => 
-    index === self.findIndex(p => p.id === post.id)
-  );
+  // Sort by publishAt descending (newest first)
+  posts = posts.sort((a, b) => {
+    const dateA = new Date(a.publishAt).getTime();
+    const dateB = new Date(b.publishAt).getTime();
+    return dateB - dateA;
+  });
 
   // Use fallback if page doesn't exist or is not published
   const title = page && page.status === 'published' 
