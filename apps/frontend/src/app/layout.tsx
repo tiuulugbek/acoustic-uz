@@ -170,7 +170,9 @@ export default async function RootLayout({
         <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
         
         {/* Preload critical resources */}
-        <link rel="preload" href="/favicon.ico" as="image" />
+        {/* Favicon link - use faviconUrl from settings or fallback to /favicon.ico */}
+        <link rel="icon" href={faviconUrl} type="image/x-icon" />
+        <link rel="shortcut icon" href={faviconUrl} type="image/x-icon" />
         
         {/* Apple Touch Icons for better mobile experience */}
         <link rel="apple-touch-icon" href={faviconUrl} />
