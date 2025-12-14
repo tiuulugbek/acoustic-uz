@@ -54,16 +54,18 @@ echo ""
 # Generate migration SQL using prisma migrate diff
 echo -e "${BLUE}Generating migration SQL...${NC}"
 
-# Create temporary file first, then move it
-TEMP_FILE=$(mktemp)
+# Ensure migration directory exists and has correct permissions
+sudo -u acoustic mkdir -p "$MIGRATION_DIR"
+sudo chown -R acoustic:acoustic "$MIGRATION_DIR"
+
+# Generate migration SQL directly to the migration file
 sudo -u acoustic bash << EOF
 export DATABASE_URL='$DATABASE_URL'
 cd '$BACKEND_DIR'
-npx prisma migrate diff --from-schema-datamodel prisma/schema.prisma --to-schema-datamodel prisma/schema.prisma --script > '$TEMP_FILE'
+npx prisma migrate diff --from-schema-datamodel prisma/schema.prisma --to-schema-datamodel prisma/schema.prisma --script > '$MIGRATION_FILE'
 EOF
 
-# Move temp file to migration file with correct permissions
-sudo -u acoustic mv "$TEMP_FILE" "$MIGRATION_FILE"
+# Ensure correct permissions
 sudo chown acoustic:acoustic "$MIGRATION_FILE"
 
 if [ ! -f "$MIGRATION_FILE" ] || [ ! -s "$MIGRATION_FILE" ]; then
