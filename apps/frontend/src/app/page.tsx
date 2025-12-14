@@ -170,10 +170,12 @@ export default async function HomePage() {
     const description = locale === 'ru' 
       ? ((product as any).homepageDescription_ru || product.description_ru || '')
       : ((product as any).homepageDescription_uz || product.description_uz || '');
-    // Use homepageImage if available, otherwise fallback to brand logo
+    // Use product image if available, otherwise fallback to first gallery image, then brand logo
     let image = '';
-    if ((product as any).homepageImage?.url) {
-      image = (product as any).homepageImage.url;
+    if ((product as any).image?.url) {
+      image = (product as any).image.url;
+    } else if ((product as any).gallery && (product as any).gallery.length > 0 && (product as any).gallery[0]?.url) {
+      image = (product as any).gallery[0].url;
     } else {
       image = product.brand?.logo?.url || '';
     }
