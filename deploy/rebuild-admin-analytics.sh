@@ -124,9 +124,18 @@ if [ -d "$NGINX_DIR/dist" ]; then
     echo -e "${GREEN}✅ Old build backed up to: $BACKUP_DIR${NC}"
 fi
 
-# Copy new build
-echo "Copying dist to $NGINX_DIR/dist..."
-sudo cp -r dist "$NGINX_DIR/"
+# Copy new build (ensure we're in admin directory and dist exists)
+cd "$ADMIN_DIR"
+if [ ! -d "dist" ]; then
+    echo -e "${RED}❌ Error: dist directory not found in $ADMIN_DIR${NC}"
+    echo -e "${RED}   Current directory: $(pwd)${NC}"
+    echo -e "${RED}   Listing files:${NC}"
+    ls -la
+    exit 1
+fi
+
+echo "Copying dist from $ADMIN_DIR/dist to $NGINX_DIR/dist..."
+sudo cp -r "$ADMIN_DIR/dist" "$NGINX_DIR/"
 echo -e "${GREEN}✅ Build copied to $NGINX_DIR/dist${NC}"
 
 # Set permissions
