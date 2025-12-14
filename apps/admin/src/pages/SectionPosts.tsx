@@ -481,11 +481,17 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
       title: 'Kategoriya',
       dataIndex: 'category',
       key: 'category',
-      render: (category: any) => {
-        const categoryId = category?.id || (category as any)?.categoryId;
-        if (!categoryId) return <Tag>Kategoriyasiz</Tag>;
+      render: (category: any, record: PostDto) => {
+        const categoryId = record.categoryId || category?.id || (category as any)?.categoryId;
+        if (!categoryId) {
+          return <Tag color="orange">⚠️ Kategoriyasiz - kategoriyaga biriktiring</Tag>;
+        }
         const cat = categories?.find(c => c.id === categoryId);
-        return <Tag color="blue">{cat?.name_uz || 'Noma\'lum'}</Tag>;
+        if (cat && categoryIds.includes(categoryId)) {
+          return <Tag color="green">{cat.name_uz}</Tag>;
+        }
+        // Post belongs to another section's category
+        return <Tag color="red">❌ Boshqa bo'lim kategoriyasi</Tag>;
       },
     },
     {
