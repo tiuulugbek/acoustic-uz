@@ -83,19 +83,27 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
   const [categoryImagePreview, setCategoryImagePreview] = useState<string | null>(null);
 
   // Fetch categories for this section
-  const { data: categories } = useQuery<PostCategoryDto[], ApiError>({
+  const { data: categories, isLoading: isLoadingCategories } = useQuery<PostCategoryDto[], ApiError>({
     queryKey: ['post-categories', section],
-    queryFn: () => getPostCategories(section),
+    queryFn: () => {
+      console.log(`[SectionPosts-${section}] Fetching categories for section:`, section);
+      return getPostCategories(section);
+    },
     retry: false,
   });
 
-  const categoryIds = useMemo(() => categories?.map(cat => cat.id) || [], [categories]);
+  const categoryIds = useMemo(() => {
+    const ids = categories?.map(cat => cat.id) || [];
+    console.log(`[SectionPosts-${section}] Category IDs:`, ids);
+    return ids;
+  }, [categories, section]);
 
   // Fetch posts from categories in this section
   // Show posts that belong to this section's categories
   // Also show posts without category (for backward compatibility and easy assignment)
   const { data, isLoading, error } = useQuery<PostDto[], ApiError>({
     queryKey: ['posts', section],
+    enabled: true, // Always enable the query
     queryFn: async () => {
       try {
         console.log(`[SectionPosts-${section}] Fetching posts...`);
