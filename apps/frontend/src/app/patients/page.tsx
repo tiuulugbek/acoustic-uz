@@ -116,9 +116,9 @@ export default async function PatientsPage() {
   let posts: any[] = [];
   
   if (categoryIds.length > 0) {
-    // Get posts from categories in this section only
+    // Get posts from categories in this section only (both article and news types)
     const allPosts = await Promise.all(
-      categoryIds.map(categoryId => getPosts(locale, true, categoryId, 'article'))
+      categoryIds.map(categoryId => getPosts(locale, true, categoryId, undefined))
     );
     posts = allPosts.flat().filter((post, index, self) => 
       index === self.findIndex(p => p.id === post.id)
