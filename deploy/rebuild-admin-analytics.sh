@@ -40,17 +40,22 @@ echo -e "${GREEN}✅ Dependencies installed${NC}"
 
 echo ""
 echo "3️⃣ Building admin panel..."
-# Get current git hash and timestamp for version
+# Get current git hash and timestamp for version (from project root)
+cd "$PROJECT_DIR" 2>/dev/null || cd "$(dirname "$0")/.." || cd /var/www/acoustic.uz
 GIT_HASH=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_TIME=$(date +"%Y%m%d%H%M%S")
 echo "Git hash: $GIT_HASH"
 echo "Build time: $BUILD_TIME"
 
-# Build with production API URL
+# Build with production API URL (ensure we're in admin directory)
+cd "$ADMIN_DIR"
 VITE_API_URL="https://a.acoustic.uz/api" pnpm build
 
 if [ ! -d "dist" ]; then
-    echo -e "${RED}❌ Build failed: dist directory not found${NC}"
+    echo -e "${RED}❌ Build failed: dist directory not found in $(pwd)${NC}"
+    echo -e "${RED}   Current directory: $(pwd)${NC}"
+    echo -e "${RED}   Listing files:${NC}"
+    ls -la
     exit 1
 fi
 
