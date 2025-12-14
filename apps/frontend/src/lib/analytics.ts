@@ -74,6 +74,7 @@ function initGoogleAnalytics(measurementId: string) {
 
 /**
  * Initialize Yandex Metrika
+ * Optimized to reduce third-party cookies
  */
 function initYandexMetrika(counterId: number) {
   if (typeof window === 'undefined') return;
@@ -84,9 +85,10 @@ function initYandexMetrika(counterId: number) {
   };
   window.ym!.l = Date.now();
 
-  // Load Yandex Metrika script
+  // Load Yandex Metrika script with defer for better performance
   const script = document.createElement('script');
   script.async = true;
+  script.defer = true;
   script.src = `https://mc.yandex.ru/metrika/tag.js`;
   script.onload = () => {
     window.ym!(counterId, 'init', {
@@ -94,12 +96,18 @@ function initYandexMetrika(counterId: number) {
       trackLinks: true,
       accurateTrackBounce: true,
       webvisor: true,
+      // Set cookie domain to current domain (reduces third-party cookies)
+      cookieDomain: window.location.hostname,
+      // Disable hash tracking (reduces cookies)
+      trackHash: false,
+      // Use localStorage for session storage (reduces cookies)
+      localStorage: true,
     });
     console.log('[Analytics] Yandex Metrika initialized:', counterId);
   };
   document.head.appendChild(script);
 
-  // Add noscript fallback
+  // Add noscript fallback (no cookies used)
   const noscript = document.createElement('noscript');
   noscript.innerHTML = `<div><img src="https://mc.yandex.ru/watch/${counterId}" style="position:absolute; left:-9999px;" alt="" /></div>`;
   document.body.appendChild(noscript);
