@@ -64,10 +64,11 @@ export default function MediaPage() {
   // Debug: Log media data when it loads
   useEffect(() => {
     if (mediaList) {
-      console.log('Media loaded:', mediaList.length, 'items');
+      console.log('📚 Media loaded:', mediaList.length, 'items');
       if (mediaList.length > 0) {
-        console.log('First media item:', mediaList[0]);
-        console.log('First media URL:', mediaList[0].url);
+        console.log('📸 First media item:', mediaList[0]);
+        console.log('🔗 First media URL:', mediaList[0].url);
+        console.log('🔗 First media normalized URL:', normalizeImageUrl(mediaList[0].url));
       }
     }
   }, [mediaList]);
@@ -111,10 +112,12 @@ export default function MediaPage() {
         throw new ApiError(apiError.message || 'Rasm yuklashda xatolik yuz berdi', apiError.status || 500);
       }
     },
-    onSuccess: async () => {
+    onSuccess: async (data) => {
+      console.log('✅ Upload successful, new media:', data);
       // Invalidate and refetch media list to show the newly uploaded image
       await queryClient.invalidateQueries({ queryKey: ['media'] });
-      await refetchMedia();
+      const refetchResult = await refetchMedia();
+      console.log('✅ Media refetched, new count:', refetchResult.data?.length);
       message.success('Rasm yuklandi');
       setUploading(false);
     },
