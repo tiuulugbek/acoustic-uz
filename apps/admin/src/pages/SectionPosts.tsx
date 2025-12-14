@@ -295,9 +295,12 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
       const media = await uploadMedia(compressedFile);
       form.setFieldsValue({ coverId: media.id });
       setCoverPreview(normalizeImageUrl(media.url));
+      // Invalidate media query to refresh media library
+      queryClient.invalidateQueries({ queryKey: ['media'] });
       message.success('Rasm yuklandi');
     } catch (error) {
-      message.error('Rasm yuklashda xatolik');
+      const apiError = error as ApiError;
+      message.error(apiError.message || 'Rasm yuklashda xatolik');
     } finally {
       setUploadingCover(false);
     }
@@ -318,9 +321,12 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
       const media = await uploadMedia(compressedFile);
       categoryForm.setFieldsValue({ imageId: media.id });
       setCategoryImagePreview(normalizeImageUrl(media.url));
+      // Invalidate media query to refresh media library
+      queryClient.invalidateQueries({ queryKey: ['media'] });
       message.success('Rasm yuklandi');
     } catch (error) {
-      message.error('Rasm yuklashda xatolik');
+      const apiError = error as ApiError;
+      message.error(apiError.message || 'Rasm yuklashda xatolik');
     } finally {
       setUploadingCategoryImage(false);
     }
