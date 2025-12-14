@@ -36,10 +36,15 @@ const nextConfig = {
     return config;
   },
   images: {
-    unoptimized: true, // Disable Next.js Image Optimization to avoid /_next/image endpoint issues
+    // Enable image optimization for better performance
+    // Note: Requires Next.js image optimization server to be running
+    unoptimized: false,
     formats: ['image/webp', 'image/avif'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    minimumCacheTTL: 60, // Cache optimized images for 60 seconds
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     remotePatterns: [
       {
         protocol: 'https',
@@ -61,6 +66,14 @@ const nextConfig = {
         pathname: '/uploads/**',
       },
     ],
+  },
+  // Optimize output for better performance
+  compress: true,
+  poweredByHeader: false,
+  // Enable experimental features for better performance
+  experimental: {
+    optimizeCss: true,
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
   // Removed i18n config - using cookie-based locale detection instead
   // i18n: {

@@ -196,7 +196,7 @@ export default async function RootLayout({
         <Script
           id="organization-jsonld"
           type="application/ld+json"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
         />
         {/* Suppress hydration warnings globally - but keep for debugging */}
