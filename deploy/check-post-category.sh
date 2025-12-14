@@ -37,20 +37,33 @@ fi
 if [[ $DATABASE_URL == postgresql://* ]]; then
     # Remove postgresql:// prefix
     DB_URL=${DATABASE_URL#postgresql://}
-    # Extract user and password
+    
+    # Extract user:password part (everything before @)
     DB_USER_PASS=${DB_URL%%@*}
     DB_USER=${DB_USER_PASS%%:*}
     DB_PASS=${DB_USER_PASS#*:}
-    # Extract host, port and database
+    
+    # Extract host:port/database part (everything after @)
     DB_HOST_PORT_DB=${DB_URL#*@}
+    
+    # Extract host (everything before :)
     DB_HOST=${DB_HOST_PORT_DB%%:*}
+    
+    # Extract port/database part (everything after :)
     DB_PORT_DB=${DB_HOST_PORT_DB#*:}
+    
+    # Extract port (everything before /)
     DB_PORT=${DB_PORT_DB%%/*}
+    
+    # Extract database (everything after /, remove query params)
     DB_NAME=${DB_PORT_DB#*/}
-    # Remove query parameters if any
     DB_NAME=${DB_NAME%%\?*}
+    
+    # URL decode password if it contains encoded characters
+    DB_PASS=$(printf '%b\n' "${DB_PASS//%/\\x}")
 else
     echo -e "${RED}❌ Invalid DATABASE_URL format${NC}"
+    echo -e "${YELLOW}DATABASE_URL: ${DATABASE_URL:0:50}...${NC}"
     exit 1
 fi
 
