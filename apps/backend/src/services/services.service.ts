@@ -14,7 +14,14 @@ export class ServicesService {
     }
     return this.prisma.service.findMany({
       where,
-      include: { cover: true, category: true },
+      include: { 
+        cover: true, 
+        category: {
+          include: {
+            image: true,
+          },
+        },
+      },
       orderBy: { order: 'asc' },
     });
   }
