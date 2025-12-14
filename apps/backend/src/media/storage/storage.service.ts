@@ -42,15 +42,23 @@ export class StorageService {
       console.log(`[StorageService] Using UPLOADS_DIR from env: ${this.uploadDir}`);
     } else {
       // Use explicit uploads directory path to avoid symlink issues
-      // Try to use backend/uploads if we're in a monorepo structure
-      const backendUploads = path.join(process.cwd(), 'apps', 'backend', 'uploads');
-      const rootUploads = path.join(process.cwd(), 'uploads');
+      const cwd = process.cwd();
+      console.log(`[StorageService] Current working directory: ${cwd}`);
       
-      // Prefer backend/uploads if it exists or if we're in apps/backend directory
-      if (process.cwd().includes('apps/backend') || fsSync.existsSync(path.join(process.cwd(), 'apps', 'backend'))) {
-        this.uploadDir = backendUploads;
+      // Check if we're already in apps/backend directory
+      if (cwd.endsWith('apps/backend') || cwd.endsWith('apps/backend/')) {
+        // We're in apps/backend, so uploads is just ./uploads
+        this.uploadDir = path.join(cwd, 'uploads');
+      } else if (cwd.includes('apps/backend')) {
+        // We're somewhere in apps/backend subdirectory, go up to apps/backend/uploads
+        const backendDir = cwd.substring(0, cwd.indexOf('apps/backend') + 'apps/backend'.length);
+        this.uploadDir = path.join(backendDir, 'uploads');
+      } else if (fsSync.existsSync(path.join(cwd, 'apps', 'backend'))) {
+        // We're in project root, use apps/backend/uploads
+        this.uploadDir = path.join(cwd, 'apps', 'backend', 'uploads');
       } else {
-        this.uploadDir = rootUploads;
+        // Fallback to root uploads
+        this.uploadDir = path.join(cwd, 'uploads');
       }
       console.log(`[StorageService] Using calculated uploads dir: ${this.uploadDir}`);
     }
