@@ -322,13 +322,6 @@ export default async function PostPage({ params }: PostPageProps) {
                 </p>
               )}
 
-              {/* Table of Contents - Show if headings exist */}
-              {tableOfContents.length > 0 && (
-                <div className="mb-8">
-                  <ArticleTableOfContents items={tableOfContents} locale={locale} />
-                </div>
-              )}
-
               {/* Content */}
               <article className="prose prose-lg max-w-none prose-headings:font-bold prose-headings:text-foreground prose-headings:mt-8 prose-headings:mb-4 prose-p:text-muted-foreground prose-p:leading-relaxed prose-p:text-base prose-a:text-brand-primary prose-a:no-underline hover:prose-a:underline prose-strong:text-foreground prose-strong:font-semibold prose-img:rounded-lg prose-img:shadow-md prose-img:my-6 prose-img:w-full prose-ul:list-disc prose-ol:list-decimal prose-li:my-2 prose-blockquote:border-l-4 prose-blockquote:border-brand-primary prose-blockquote:pl-4 prose-blockquote:italic">
                 <ServiceContent content={body} locale={locale} />
@@ -376,6 +369,10 @@ export default async function PostPage({ params }: PostPageProps) {
             {/* Sidebar - 1 column */}
             <div className="lg:col-span-1">
               <div className="sticky top-24 space-y-6">
+                {/* Table of Contents - Show if headings exist */}
+                {tableOfContents.length > 0 && (
+                  <ArticleTableOfContents items={tableOfContents} locale={locale} />
+                )}
                 <Sidebar locale={locale} settingsData={settings} brandsData={brands} pageType="posts" />
               </div>
             </div>
