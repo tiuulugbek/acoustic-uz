@@ -393,7 +393,7 @@ export default async function PostPage({ params }: PostPageProps) {
                 const relatedTitle = getBilingualText(relatedPost.title_uz, relatedPost.title_ru, locale);
                 const relatedExcerpt = getBilingualText(relatedPost.excerpt_uz, relatedPost.excerpt_ru, locale) || 
                                      getBilingualText(relatedPost.body_uz, relatedPost.body_ru, locale)?.replace(/<[^>]*>/g, '').substring(0, 100) + '...';
-                const relatedCoverUrl = relatedPost.cover?.url;
+                const relatedCoverUrl = relatedPost.cover?.url ? normalizeImageUrl(relatedPost.cover.url) : null;
 
                 return (
                   <Link
