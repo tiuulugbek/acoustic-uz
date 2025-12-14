@@ -30,18 +30,32 @@ echo ""
 echo -e "${BLUE}1️⃣ Building admin panel...${NC}"
 cd "$ADMIN_DIR"
 
-# Set environment variable for API URL
-export VITE_API_URL="https://a.acoustic.uz/api"
-
-# Build
-pnpm build
-
-if [ ! -d "$ADMIN_DIR/dist" ]; then
-    echo -e "${RED}❌ Error: Build failed - dist directory not found${NC}"
+# Check if we're in the right directory
+if [ ! -f "package.json" ]; then
+    echo -e "${RED}❌ Error: package.json not found. Current directory: $(pwd)${NC}"
     exit 1
 fi
 
-echo -e "${GREEN}✅ Build completed${NC}"
+# Set environment variable for API URL
+export VITE_API_URL="https://a.acoustic.uz/api"
+
+# Remove old dist if exists
+if [ -d "dist" ]; then
+    echo -e "${YELLOW}   Removing old dist directory...${NC}"
+    rm -rf dist
+fi
+
+# Build
+echo -e "${BLUE}   Running pnpm build...${NC}"
+pnpm build
+
+if [ ! -d "dist" ]; then
+    echo -e "${RED}❌ Error: Build failed - dist directory not found in $(pwd)${NC}"
+    echo -e "${YELLOW}   Checking if build process completed...${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}✅ Build completed - dist directory created${NC}"
 
 # 2. Copy dist to Nginx root
 echo ""
