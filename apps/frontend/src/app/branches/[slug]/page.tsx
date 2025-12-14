@@ -70,11 +70,21 @@ export default async function BranchPage({ params }: BranchPageProps) {
     branch = branches.find(b => b.id === params.slug) || null;
   }
   
-  const [doctors, allServices, settings] = await Promise.all([
+  const [allDoctors, allServices, settings] = await Promise.all([
     getDoctors(locale),
     getServices(locale),
     getSettings(locale),
   ]);
+
+  // Filter doctors by branch ID - only show doctors assigned to this branch
+  const doctors = allDoctors.filter((doctor) => {
+    // If doctor has branchIds and it includes this branch, show it
+    if (doctor.branchIds && Array.isArray(doctor.branchIds) && doctor.branchIds.length > 0) {
+      return doctor.branchIds.includes(branch.id);
+    }
+    // If doctor has no branchIds assigned, don't show it (only show assigned doctors)
+    return false;
+  });
 
   if (!branch) {
     return (
