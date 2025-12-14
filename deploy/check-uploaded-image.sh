@@ -72,7 +72,37 @@ fi
 echo ""
 echo -e "${BLUE}4️⃣ Checking backend logs...${NC}"
 echo "Recent upload-related logs:"
-pm2 logs acoustic-backend --lines 20 --nostream | grep -i "upload\|storage\|$FILENAME" | tail -10 || echo "No upload logs found"
+pm2 logs acoustic-backend --lines 50 --nostream 2>/dev/null | grep -i "upload\|storage\|$FILENAME\|StorageService" | tail -20 || echo "No upload logs found"
+
+# 5. Check if file was created recently
+echo ""
+echo -e "${BLUE}5️⃣ Checking file creation time...${NC}"
+if [ -f "$FILEPATH" ]; then
+    FILE_TIME=$(stat -c %Y "$FILEPATH" 2>/dev/null || echo "0")
+    CURRENT_TIME=$(date +%s)
+    AGE_SECONDS=$((CURRENT_TIME - FILE_TIME))
+    AGE_MINUTES=$((AGE_SECONDS / 60))
+    
+    if [ "$AGE_SECONDS" -lt 300 ]; then
+        echo -e "${GREEN}✅ File was created $AGE_SECONDS seconds ago ($AGE_MINUTES minutes)${NC}"
+    else
+        echo -e "${YELLOW}⚠️  File was created $AGE_MINUTES minutes ago${NC}"
+    fi
+fi
+
+# 6. Test direct file access
+echo ""
+echo -e "${BLUE}6️⃣ Testing direct file access...${NC}"
+if [ -f "$FILEPATH" ]; then
+    FILE_SIZE=$(stat -c %s "$FILEPATH" 2>/dev/null || echo "0")
+    if [ "$FILE_SIZE" -gt 0 ]; then
+        echo -e "${GREEN}✅ File size: $FILE_SIZE bytes${NC}"
+        echo "   First 100 bytes (should be WebP header):"
+        head -c 100 "$FILEPATH" | od -An -tx1 | head -3
+    else
+        echo -e "${RED}❌ File exists but is empty (0 bytes)${NC}"
+    fi
+fi
 
 echo ""
 echo -e "${BLUE}=======================================${NC}"
