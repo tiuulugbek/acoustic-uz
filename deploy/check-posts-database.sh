@@ -29,12 +29,27 @@ if [ -z "$DATABASE_URL" ]; then
     exit 1
 fi
 
-# Extract database connection details
-DB_HOST=$(echo $DATABASE_URL | sed -n 's/.*@\([^:]*\):.*/\1/p')
-DB_PORT=$(echo $DATABASE_URL | sed -n 's/.*:\([0-9]*\)\/.*/\1/p')
-DB_NAME=$(echo $DATABASE_URL | sed -n 's/.*\/\([^?]*\).*/\1/p')
-DB_USER=$(echo $DATABASE_URL | sed -n 's/.*:\/\/\([^:]*\):.*/\1/p')
-DB_PASS=$(echo $DATABASE_URL | sed -n 's/.*:\/\/[^:]*:\([^@]*\)@.*/\1/p')
+# Extract database connection details from DATABASE_URL
+# Format: postgresql://user:password@host:port/database
+if [[ $DATABASE_URL == postgresql://* ]]; then
+    # Remove postgresql:// prefix
+    DB_URL=${DATABASE_URL#postgresql://}
+    # Extract user and password
+    DB_USER_PASS=${DB_URL%%@*}
+    DB_USER=${DB_USER_PASS%%:*}
+    DB_PASS=${DB_USER_PASS#*:}
+    # Extract host, port and database
+    DB_HOST_PORT_DB=${DB_URL#*@}
+    DB_HOST=${DB_HOST_PORT_DB%%:*}
+    DB_PORT_DB=${DB_HOST_PORT_DB#*:}
+    DB_PORT=${DB_PORT_DB%%/*}
+    DB_NAME=${DB_PORT_DB#*/}
+    # Remove query parameters if any
+    DB_NAME=${DB_NAME%%\?*}
+else
+    echo -e "${RED}❌ Invalid DATABASE_URL format${NC}"
+    exit 1
+fi
 
 echo ""
 echo -e "${BLUE}1️⃣ Database Connection Info:${NC}"
@@ -43,27 +58,58 @@ echo "  Port: $DB_PORT"
 echo "  Database: $DB_NAME"
 echo "  User: $DB_USER"
 
+# Test connection first
 echo ""
-echo -e "${BLUE}2️⃣ Total Posts Count:${NC}"
-TOTAL_POSTS=$(PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT COUNT(*) FROM \"Post\";")
+echo -e "${BLUE}2️⃣ Testing Database Connection:${NC}"
+if PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "SELECT 1;" > /dev/null 2>&1; then
+    echo -e "${GREEN}  ✅ Connection successful${NC}"
+else
+    echo -e "${RED}  ❌ Connection failed. Trying alternative method...${NC}"
+    # Try using DATABASE_URL directly
+    if psql "$DATABASE_URL" -c "SELECT 1;" > /dev/null 2>&1; then
+        echo -e "${GREEN}  ✅ Connection successful using DATABASE_URL${NC}"
+        USE_DATABASE_URL=true
+    else
+        echo -e "${RED}  ❌ Connection failed. Please check DATABASE_URL in .env${NC}"
+        exit 1
+    fi
+fi
+
+echo ""
+echo -e "${BLUE}3️⃣ Total Posts Count:${NC}"
+if [ "$USE_DATABASE_URL" = true ]; then
+    TOTAL_POSTS=$(psql "$DATABASE_URL" -t -c "SELECT COUNT(*) FROM \"Post\";" 2>/dev/null | xargs)
+else
+    TOTAL_POSTS=$(PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT COUNT(*) FROM \"Post\";" 2>/dev/null | xargs)
+fi
 echo "  Total posts: $TOTAL_POSTS"
 
-echo ""
-echo -e "${BLUE}3️⃣ Posts by Status:${NC}"
-PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "SELECT status, COUNT(*) as count FROM \"Post\" GROUP BY status ORDER BY count DESC;"
+# Function to run psql command
+run_psql() {
+    local query="$1"
+    if [ "$USE_DATABASE_URL" = true ]; then
+        psql "$DATABASE_URL" -c "$query" 2>/dev/null
+    else
+        PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "$query" 2>/dev/null
+    fi
+}
 
 echo ""
-echo -e "${BLUE}4️⃣ Posts by Type:${NC}"
-PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "SELECT \"postType\", COUNT(*) as count FROM \"Post\" GROUP BY \"postType\" ORDER BY count DESC;"
+echo -e "${BLUE}4️⃣ Posts by Status:${NC}"
+run_psql "SELECT status, COUNT(*) as count FROM \"Post\" GROUP BY status ORDER BY count DESC;"
 
 echo ""
-echo -e "${BLUE}5️⃣ Posts with Categories:${NC}"
-PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "SELECT COUNT(*) as posts_with_category FROM \"Post\" WHERE \"categoryId\" IS NOT NULL;"
-PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "SELECT COUNT(*) as posts_without_category FROM \"Post\" WHERE \"categoryId\" IS NULL;"
+echo -e "${BLUE}5️⃣ Posts by Type:${NC}"
+run_psql "SELECT \"postType\", COUNT(*) as count FROM \"Post\" GROUP BY \"postType\" ORDER BY count DESC;"
 
 echo ""
-echo -e "${BLUE}6️⃣ Posts by Category (Top 10):${NC}"
-PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "
+echo -e "${BLUE}6️⃣ Posts with Categories:${NC}"
+run_psql "SELECT COUNT(*) as posts_with_category FROM \"Post\" WHERE \"categoryId\" IS NOT NULL;"
+run_psql "SELECT COUNT(*) as posts_without_category FROM \"Post\" WHERE \"categoryId\" IS NULL;"
+
+echo ""
+echo -e "${BLUE}7️⃣ Posts by Category (Top 10):${NC}"
+run_psql "
 SELECT 
     pc.\"name_uz\" as category_name,
     pc.\"section\" as section,
@@ -77,8 +123,8 @@ LIMIT 10;
 "
 
 echo ""
-echo -e "${BLUE}7️⃣ Recent Published Posts (Last 10):${NC}"
-PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "
+echo -e "${BLUE}8️⃣ Recent Published Posts (Last 10):${NC}"
+run_psql "
 SELECT 
     p.id,
     p.\"title_uz\",
@@ -96,8 +142,8 @@ LIMIT 10;
 "
 
 echo ""
-echo -e "${BLUE}8️⃣ Posts for 'patients' section:${NC}"
-PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "
+echo -e "${BLUE}9️⃣ Posts for 'patients' section:${NC}"
+run_psql "
 SELECT 
     p.id,
     p.\"title_uz\",
@@ -113,8 +159,8 @@ ORDER BY p.\"publishAt\" DESC;
 "
 
 echo ""
-echo -e "${BLUE}9️⃣ Posts for 'children' section:${NC}"
-PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "
+echo -e "${BLUE}🔟 Posts for 'children' section:${NC}"
+run_psql "
 SELECT 
     p.id,
     p.\"title_uz\",
@@ -130,8 +176,8 @@ ORDER BY p.\"publishAt\" DESC;
 "
 
 echo ""
-echo -e "${BLUE}🔟 Post Categories:${NC}"
-PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "
+echo -e "${BLUE}1️⃣1️⃣ Post Categories:${NC}"
+run_psql "
 SELECT 
     id,
     \"name_uz\",
