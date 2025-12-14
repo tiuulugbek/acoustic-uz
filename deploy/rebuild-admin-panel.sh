@@ -60,9 +60,38 @@ echo -e "${GREEN}✅ Build completed - dist directory created${NC}"
 # 2. Copy dist to Nginx root
 echo ""
 echo -e "${BLUE}2️⃣ Copying dist to Nginx root...${NC}"
+
+# Check if dist exists in admin directory
+if [ ! -d "$ADMIN_DIR/dist" ]; then
+    echo -e "${RED}❌ Error: dist directory not found in $ADMIN_DIR${NC}"
+    echo -e "${YELLOW}   Current directory: $(pwd)${NC}"
+    echo -e "${YELLOW}   Checking if dist exists in current directory...${NC}"
+    if [ -d "dist" ]; then
+        echo -e "${GREEN}   Found dist in current directory, using it...${NC}"
+        ADMIN_DIST="$(pwd)/dist"
+    else
+        echo -e "${RED}❌ dist directory not found anywhere${NC}"
+        exit 1
+    fi
+else
+    ADMIN_DIST="$ADMIN_DIR/dist"
+fi
+
+# Remove old Nginx root
 sudo rm -rf "$NGINX_ROOT"
 sudo mkdir -p "$(dirname "$NGINX_ROOT")"
-sudo cp -r "$ADMIN_DIR/dist" "$NGINX_ROOT"
+
+# Copy dist to Nginx root
+echo -e "${BLUE}   Copying from $ADMIN_DIST to $NGINX_ROOT...${NC}"
+sudo cp -r "$ADMIN_DIST" "$NGINX_ROOT"
+
+# Verify copy succeeded
+if [ ! -d "$NGINX_ROOT" ]; then
+    echo -e "${RED}❌ Error: Copy failed - $NGINX_ROOT not found${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}✅ Copy completed${NC}"
 
 # 3. Fix permissions
 echo ""
