@@ -36,13 +36,16 @@ export function normalizeImageUrl(url: string | null | undefined): string {
         urlObj.pathname = urlObj.pathname.replace(/\/api\//, '/');
       }
       
-      // Only encode the filename part, not the entire path
+      // Only encode the filename part if it contains spaces or special characters
       const pathParts = urlObj.pathname.split('/');
       const filename = pathParts.pop();
       if (filename) {
-        // Encode only the filename to handle spaces
-        const encodedFilename = encodeURIComponent(filename);
-        urlObj.pathname = [...pathParts, encodedFilename].join('/');
+        // Only encode if filename has spaces or special characters that need encoding
+        if (filename.includes(' ') || filename.includes('%') || /[^a-zA-Z0-9._-]/.test(filename)) {
+          const encodedFilename = encodeURIComponent(filename);
+          urlObj.pathname = [...pathParts, encodedFilename].join('/');
+        }
+        // Otherwise keep filename as is
       }
       return urlObj.toString();
     } catch {
