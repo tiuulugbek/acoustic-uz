@@ -14,7 +14,7 @@ export default function BranchTOC({ locale, hasTour3d }: BranchTOCProps) {
   // No need for mounted state - just use the prop directly
   const baseSections = [
     { id: 'services', label: locale === 'ru' ? 'Услуги' : 'Xizmatlar' },
-    { id: 'doctors', label: locale === 'ru' ? 'Врачи' : 'Shifokorlar' },
+    { id: 'doctors', label: locale === 'ru' ? 'Врачи' : 'Mutahassislar' },
   ];
   
   const tour3dSection = { id: 'tour3d', label: locale === 'ru' ? '3D Тур' : '3D Tour' };

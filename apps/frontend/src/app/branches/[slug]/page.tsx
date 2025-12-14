@@ -269,7 +269,7 @@ export default async function BranchPage({ params }: BranchPageProps) {
               {doctors && doctors.length > 0 && (
                 <section id="doctors" className="scroll-mt-20" suppressHydrationWarning>
                   <h2 className="mb-3 text-xl sm:text-2xl font-bold text-foreground" suppressHydrationWarning>
-                    {locale === 'ru' ? 'Врачи' : 'Shifokorlar'}
+                    {locale === 'ru' ? 'Врачи' : 'Mutahassislar'}
                   </h2>
                   <div className="grid gap-4 sm:gap-6 sm:grid-cols-2" suppressHydrationWarning>
                     {doctors.slice(0, 4).map((doctor) => {

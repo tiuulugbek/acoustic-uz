@@ -131,7 +131,7 @@ export default async function DoctorsPage() {
                 <p className="mb-4 text-sm text-muted-foreground" suppressHydrationWarning>
                   {locale === 'ru'
                     ? 'Реальные отзывы о работе Центров, врачах и слуховых аппаратах'
-                    : 'Markazlar, shifokorlar va eshitish apparatlari haqida haqiqiy fikrlar'}
+                    : 'Markazlar, mutahassislar va eshitish apparatlari haqida haqiqiy fikrlar'}
                 </p>
                 <Link
                   href="/feedback"
