@@ -32,22 +32,34 @@ if [ -z "$DATABASE_URL" ]; then
     exit 1
 fi
 
-# Extract database connection details, removing any query parameters
-DB_HOST=$(echo "$DATABASE_URL" | sed -n 's/.*@\([^:]*\):.*/\1/p')
-DB_PORT=$(echo "$DATABASE_URL" | sed -n 's/.*:\([0-9]*\)\/.*/\1/p')
-DB_NAME=$(echo "$DATABASE_URL" | sed -n 's/.*\/\([^?]*\).*/\1/p')
-DB_USER=$(echo "$DATABASE_URL" | sed -n 's/.*:\/\/\([^:]*\):.*/\1/p')
-DB_PASS=$(echo "$DATABASE_URL" | sed -n 's/.*:\/\/[^:]*:\([^@]*\)@.*/\1/p')
-
-# URL decode password if needed
-DB_PASS=$(printf '%b\n' "${DB_PASS//%/\\x}")
-
-# Construct a clean DATABASE_URL without query parameters for psql
-CLEAN_DB_URL="postgresql://$DB_USER:$DB_PASS@$DB_HOST:$DB_PORT/$DB_NAME"
+# Extract database connection details from DATABASE_URL
+# Format: postgresql://user:password@host:port/database?query_params
+if [[ $DATABASE_URL == postgresql://* ]]; then
+    # Remove postgresql:// prefix
+    DB_URL=${DATABASE_URL#postgresql://}
+    # Extract user and password
+    DB_USER_PASS=${DB_URL%%@*}
+    DB_USER=${DB_USER_PASS%%:*}
+    DB_PASS=${DB_USER_PASS#*:}
+    # Extract host, port and database
+    DB_HOST_PORT_DB=${DB_URL#*@}
+    DB_HOST=${DB_HOST_PORT_DB%%:*}
+    DB_PORT_DB=${DB_HOST_PORT_DB#*:}
+    DB_PORT=${DB_PORT_DB%%/*}
+    DB_NAME=${DB_PORT_DB#*/}
+    # Remove query parameters if any
+    DB_NAME=${DB_NAME%%\?*}
+else
+    echo -e "${RED}❌ Invalid DATABASE_URL format${NC}"
+    exit 1
+fi
 
 echo -e "${BLUE}Database: ${DB_NAME}@${DB_HOST}:${DB_PORT}${NC}"
 echo -e "${BLUE}User: ${DB_USER}${NC}"
 echo ""
+
+# Use PGPASSWORD for authentication
+export PGPASSWORD="$DB_PASS"
 
 echo -e "${BLUE}Checking post: inson-eshitish-organi-qanday-tuzilgan${NC}"
 echo ""
