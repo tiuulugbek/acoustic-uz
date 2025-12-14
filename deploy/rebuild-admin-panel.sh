@@ -36,6 +36,8 @@ if [ ! -f "package.json" ]; then
     exit 1
 fi
 
+echo -e "${BLUE}   Current directory: $(pwd)${NC}"
+
 # Set environment variable for API URL
 export VITE_API_URL="https://a.acoustic.uz/api"
 
@@ -49,45 +51,52 @@ fi
 echo -e "${BLUE}   Running pnpm build...${NC}"
 pnpm build
 
-if [ ! -d "dist" ]; then
-    echo -e "${RED}❌ Error: Build failed - dist directory not found in $(pwd)${NC}"
-    echo -e "${YELLOW}   Checking if build process completed...${NC}"
+# Check if build succeeded - use current directory
+BUILD_DIR="$(pwd)/dist"
+if [ ! -d "$BUILD_DIR" ]; then
+    echo -e "${RED}❌ Error: Build failed - dist directory not found${NC}"
+    echo -e "${YELLOW}   Expected: $BUILD_DIR${NC}"
+    echo -e "${YELLOW}   Current directory: $(pwd)${NC}"
     exit 1
 fi
 
-echo -e "${GREEN}✅ Build completed - dist directory created${NC}"
+echo -e "${GREEN}✅ Build completed - dist directory created at $BUILD_DIR${NC}"
 
 # 2. Copy dist to Nginx root
 echo ""
 echo -e "${BLUE}2️⃣ Copying dist to Nginx root...${NC}"
 
-# Check if dist exists in admin directory
-if [ ! -d "$ADMIN_DIR/dist" ]; then
-    echo -e "${RED}❌ Error: dist directory not found in $ADMIN_DIR${NC}"
+# Use BUILD_DIR from previous step (current directory/dist)
+ADMIN_DIST="$BUILD_DIR"
+
+# Verify dist exists
+if [ ! -d "$ADMIN_DIST" ]; then
+    echo -e "${RED}❌ Error: dist directory not found at $ADMIN_DIST${NC}"
     echo -e "${YELLOW}   Current directory: $(pwd)${NC}"
     echo -e "${YELLOW}   Checking if dist exists in current directory...${NC}"
     if [ -d "dist" ]; then
-        echo -e "${GREEN}   Found dist in current directory, using it...${NC}"
         ADMIN_DIST="$(pwd)/dist"
+        echo -e "${GREEN}   Found dist in current directory: $ADMIN_DIST${NC}"
     else
         echo -e "${RED}❌ dist directory not found anywhere${NC}"
         exit 1
     fi
-else
-    ADMIN_DIST="$ADMIN_DIR/dist"
 fi
 
 # Remove old Nginx root
+echo -e "${BLUE}   Removing old Nginx root: $NGINX_ROOT${NC}"
 sudo rm -rf "$NGINX_ROOT"
 sudo mkdir -p "$(dirname "$NGINX_ROOT")"
 
 # Copy dist to Nginx root
-echo -e "${BLUE}   Copying from $ADMIN_DIST to $NGINX_ROOT...${NC}"
-sudo cp -r "$ADMIN_DIST" "$NGINX_ROOT"
+echo -e "${BLUE}   Copying from $ADMIN_DIST to $(dirname "$NGINX_ROOT")...${NC}"
+sudo cp -r "$ADMIN_DIST" "$(dirname "$NGINX_ROOT")/"
 
 # Verify copy succeeded
 if [ ! -d "$NGINX_ROOT" ]; then
     echo -e "${RED}❌ Error: Copy failed - $NGINX_ROOT not found${NC}"
+    echo -e "${YELLOW}   Source: $ADMIN_DIST${NC}"
+    echo -e "${YELLOW}   Destination parent: $(dirname "$NGINX_ROOT")${NC}"
     exit 1
 fi
 
