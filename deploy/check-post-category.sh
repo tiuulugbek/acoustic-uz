@@ -39,13 +39,23 @@ DB_NAME=$(echo "$DATABASE_URL" | sed -n 's/.*\/\([^?]*\).*/\1/p')
 DB_USER=$(echo "$DATABASE_URL" | sed -n 's/.*:\/\/\([^:]*\):.*/\1/p')
 DB_PASS=$(echo "$DATABASE_URL" | sed -n 's/.*:\/\/[^:]*:\([^@]*\)@.*/\1/p')
 
+# URL decode password if needed
+DB_PASS=$(printf '%b\n' "${DB_PASS//%/\\x}")
+
 # Construct a clean DATABASE_URL without query parameters for psql
 CLEAN_DB_URL="postgresql://$DB_USER:$DB_PASS@$DB_HOST:$DB_PORT/$DB_NAME"
+
+echo -e "${BLUE}Database: ${DB_NAME}@${DB_HOST}:${DB_PORT}${NC}"
+echo -e "${BLUE}User: ${DB_USER}${NC}"
+echo ""
 
 echo -e "${BLUE}Checking post: inson-eshitish-organi-qanday-tuzilgan${NC}"
 echo ""
 
-psql "$CLEAN_DB_URL" << SQL
+# Try using PGPASSWORD environment variable instead
+export PGPASSWORD="$DB_PASS"
+
+psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" << SQL
 SELECT 
     p.id,
     p."title_uz",
@@ -62,7 +72,7 @@ SQL
 
 echo ""
 echo -e "${BLUE}Checking all categories for 'patients' section:${NC}"
-psql "$CLEAN_DB_URL" << SQL
+psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" << SQL
 SELECT id, "name_uz", slug, section
 FROM "PostCategory"
 WHERE section = 'patients';
@@ -70,7 +80,7 @@ SQL
 
 echo ""
 echo -e "${BLUE}Checking all categories for 'children' section:${NC}"
-psql "$CLEAN_DB_URL" << SQL
+psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" << SQL
 SELECT id, "name_uz", slug, section
 FROM "PostCategory"
 WHERE section = 'children';
