@@ -11,9 +11,18 @@ echo ""
 # 1. Navigate to project directory
 cd "$PROJECT_DIR"
 
-# 2. Pull latest code
+# 2. Fix Git ownership issue
+echo "🔧 Fixing Git ownership..."
+sudo -u acoustic git config --global --add safe.directory "$PROJECT_DIR" 2>/dev/null || true
+# Also fix for root user if running as root
+if [ "$EUID" -eq 0 ]; then
+  git config --global --add safe.directory "$PROJECT_DIR" 2>/dev/null || true
+fi
+
+# 3. Pull latest code
 echo "📥 Pulling latest code..."
-git pull origin main
+# Try as acoustic user first, fallback to current user
+sudo -u acoustic git pull origin main 2>/dev/null || git pull origin main
 
 # 3. Install dependencies (including shared)
 echo "📦 Installing dependencies..."
