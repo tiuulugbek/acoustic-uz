@@ -55,9 +55,10 @@ export default function MediaPage() {
   const [form] = Form.useForm();
   const [uploading, setUploading] = useState(false);
 
-  const { data: mediaList, isLoading } = useQuery<MediaDto[], ApiError>({
+  const { data: mediaList, isLoading, refetch: refetchMedia } = useQuery<MediaDto[], ApiError>({
     queryKey: ['media'],
     queryFn: getMedia,
+    refetchOnWindowFocus: false,
   });
 
   // Debug: Log media data when it loads
@@ -110,8 +111,10 @@ export default function MediaPage() {
         throw new ApiError(apiError.message || 'Rasm yuklashda xatolik yuz berdi', apiError.status || 500);
       }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['media'] });
+    onSuccess: async () => {
+      // Invalidate and refetch media list to show the newly uploaded image
+      await queryClient.invalidateQueries({ queryKey: ['media'] });
+      await refetchMedia();
       message.success('Rasm yuklandi');
       setUploading(false);
     },
@@ -125,8 +128,9 @@ export default function MediaPage() {
 
   const { mutateAsync: deleteMutation } = useMutation<void, ApiError, string>({
     mutationFn: deleteMedia,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['media'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['media'] });
+      await refetchMedia();
       message.success('Rasm o\'chirildi');
     },
     onError: (error) => {
@@ -136,8 +140,9 @@ export default function MediaPage() {
 
   const { mutateAsync: updateMutation } = useMutation<MediaDto, ApiError, { id: string; alt_uz?: string; alt_ru?: string }>({
     mutationFn: ({ id, alt_uz, alt_ru }) => updateMedia(id, alt_uz, alt_ru),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['media'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['media'] });
+      await refetchMedia();
       message.success('Rasm yangilandi');
       setEditingMedia(null);
       form.resetFields();
