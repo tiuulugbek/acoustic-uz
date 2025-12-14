@@ -51,11 +51,21 @@ export default function MediaLibraryModal({
   const [searchQuery, setSearchQuery] = useState('');
   const [fileTypeFilter, setFileTypeFilter] = useState<FileType>(fileType);
 
-  const { data: mediaList, isLoading } = useQuery<MediaDto[], ApiError>({
+  const { data: mediaList, isLoading, refetch } = useQuery<MediaDto[], ApiError>({
     queryKey: ['media'],
     queryFn: getMedia,
     enabled: open,
+    refetchOnMount: true, // Always refetch when modal opens
+    refetchOnWindowFocus: false,
+    staleTime: 0, // Always consider data stale to ensure fresh data
   });
+
+  // Refetch when modal opens to ensure fresh data
+  useEffect(() => {
+    if (open) {
+      refetch();
+    }
+  }, [open, refetch]);
 
   const filteredMedia = useMemo(() => {
     if (!mediaList) return [];

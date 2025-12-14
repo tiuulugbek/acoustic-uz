@@ -6,18 +6,37 @@ export class PostsService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(publicOnly = false, category?: string, postType?: string) {
-    const where: any = publicOnly ? { status: 'published' } : {};
-    if (category) {
-      where.categoryId = category;
+    try {
+      const where: any = publicOnly ? { status: 'published' } : {};
+      if (category) {
+        where.categoryId = category;
+      }
+      if (postType) {
+        where.postType = postType;
+      }
+      const posts = await this.prisma.post.findMany({
+        where,
+        include: { 
+          cover: true, 
+          category: true, 
+          author: { 
+            include: { image: true } 
+          } 
+        },
+        orderBy: { publishAt: 'desc' },
+      });
+      return posts;
+    } catch (error) {
+      console.error('Error in findAll:', error);
+      console.error('Error details:', {
+        publicOnly,
+        category,
+        postType,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      throw error;
     }
-    if (postType) {
-      where.postType = postType;
-    }
-    return this.prisma.post.findMany({
-      where,
-      include: { cover: true, category: true, author: { include: { image: true } } },
-      orderBy: { publishAt: 'desc' },
-    });
   }
 
   async findOne(id: string) {
