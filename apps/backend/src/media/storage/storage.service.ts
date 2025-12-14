@@ -35,23 +35,28 @@ export class StorageService {
   constructor(private configService: ConfigService) {
     this.driver = this.configService.get<'local' | 's3'>('STORAGE_DRIVER', 'local');
     
-    // Use explicit uploads directory path to avoid symlink issues
-    // Try to use backend/uploads if we're in a monorepo structure
-    const backendUploads = path.join(process.cwd(), 'apps', 'backend', 'uploads');
-    const rootUploads = path.join(process.cwd(), 'uploads');
-    
-    // Prefer backend/uploads if it exists or if we're in apps/backend directory
-    if (process.cwd().includes('apps/backend') || fsSync.existsSync(path.join(process.cwd(), 'apps', 'backend'))) {
-      this.uploadDir = backendUploads;
-    } else {
-      this.uploadDir = rootUploads;
-    }
-    
-    // Allow override via environment variable
+    // Allow override via environment variable first (highest priority)
     const envUploadDir = this.configService.get<string>('UPLOADS_DIR');
     if (envUploadDir) {
       this.uploadDir = envUploadDir;
+      console.log(`[StorageService] Using UPLOADS_DIR from env: ${this.uploadDir}`);
+    } else {
+      // Use explicit uploads directory path to avoid symlink issues
+      // Try to use backend/uploads if we're in a monorepo structure
+      const backendUploads = path.join(process.cwd(), 'apps', 'backend', 'uploads');
+      const rootUploads = path.join(process.cwd(), 'uploads');
+      
+      // Prefer backend/uploads if it exists or if we're in apps/backend directory
+      if (process.cwd().includes('apps/backend') || fsSync.existsSync(path.join(process.cwd(), 'apps', 'backend'))) {
+        this.uploadDir = backendUploads;
+      } else {
+        this.uploadDir = rootUploads;
+      }
+      console.log(`[StorageService] Using calculated uploads dir: ${this.uploadDir}`);
     }
+    
+    console.log(`[StorageService] Final uploads directory: ${this.uploadDir}`);
+    console.log(`[StorageService] Current working directory: ${process.cwd()}`);
 
     if (this.driver === 's3') {
       this.s3Bucket = this.configService.get<string>('S3_BUCKET', 'acoustic');
@@ -203,7 +208,18 @@ export class StorageService {
     }
 
     const filepath = path.join(this.uploadDir, filename);
+    
+    // Ensure directory exists
+    await fs.mkdir(this.uploadDir, { recursive: true });
+    
+    console.log(`[StorageService] Writing file to: ${filepath}`);
+    console.log(`[StorageService] File size: ${processedBuffer.length} bytes`);
+    
     await fs.writeFile(filepath, processedBuffer);
+    
+    // Verify file was written
+    const stats = await fs.stat(filepath);
+    console.log(`[StorageService] File written successfully. Size: ${stats.size} bytes`);
 
     // Set file permissions so Nginx (www-data) can read it
     // Try to set ownership to deploy:deploy or www-data:www-data if possible
@@ -216,14 +232,17 @@ export class StorageService {
       const util = require('util');
       const execAsync = util.promisify(exec);
       
-      // Try deploy:deploy first (common deployment user), fallback to www-data:www-data
+      // Try acoustic:acoustic first (our deployment user), then www-data:www-data
       try {
-        await execAsync(`chown deploy:deploy "${filepath}"`);
+        await execAsync(`chown acoustic:acoustic "${filepath}"`);
+        console.log(`[StorageService] Ownership set to acoustic:acoustic`);
       } catch {
         try {
           await execAsync(`chown www-data:www-data "${filepath}"`);
+          console.log(`[StorageService] Ownership set to www-data:www-data`);
         } catch {
           // Ignore if chown fails (not running as root or user doesn't exist)
+          console.warn(`[StorageService] Failed to set ownership (this is OK if not running as root)`);
         }
       }
     } catch (error) {
@@ -231,12 +250,16 @@ export class StorageService {
       console.warn('[StorageService] Failed to set file permissions:', error);
     }
 
-    return {
+    const result = {
       url: `/uploads/${filename}`,
       filename,
       mimeType,
       size,
     };
+    
+    console.log(`[StorageService] Upload complete. URL: ${result.url}`);
+    
+    return result;
   }
 
   private async uploadToS3(file: UploadedFile, skipWebp: boolean = false): Promise<UploadResult> {
