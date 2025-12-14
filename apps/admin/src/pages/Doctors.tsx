@@ -33,7 +33,9 @@ import {
   ApiError,
   getMedia,
   uploadMedia,
+  getBranches,
   type MediaDto,
+  type BranchDto,
 } from '../lib/api';
 import { createSlug } from '../utils/slug';
 import ImageSizeHint from '../components/ImageSizeHint';
@@ -58,6 +60,13 @@ export default function DoctorsPage() {
   const { data: mediaList } = useQuery<MediaDto[], ApiError>({
     queryKey: ['media'],
     queryFn: getMedia,
+    retry: false,
+  });
+
+  // Fetch branches list for branch selection
+  const { data: branches } = useQuery<BranchDto[], ApiError>({
+    queryKey: ['branches'],
+    queryFn: getBranches,
     retry: false,
   });
 
@@ -121,6 +130,7 @@ export default function DoctorsPage() {
       status: doctor.status,
       order: doctor.order,
       imageId: doctor.image?.id,
+      branchIds: doctor.branchIds || [],
     });
     setIsModalOpen(true);
   };
@@ -178,6 +188,7 @@ export default function DoctorsPage() {
         order: typeof values.order === 'number' ? values.order : Number(values.order ?? 0),
         status: values.status,
         imageId: values.imageId || undefined,
+        branchIds: values.branchIds || [],
       };
 
       if (editingDoctor) {
@@ -431,6 +442,21 @@ export default function DoctorsPage() {
           </Form.Item>
           <Form.Item label="Holat" name="status" initialValue="published">
             <Select options={statusOptions} />
+          </Form.Item>
+          <Form.Item 
+            label="Filiallar" 
+            name="branchIds"
+            extra="Mutaxassis qaysi filiallarda ishlashini tanlang (bir nechta tanlash mumkin)"
+          >
+            <Select
+              mode="multiple"
+              placeholder="Filiallarni tanlang"
+              options={branches?.map((branch) => ({
+                value: branch.id,
+                label: branch.name_uz || branch.name_ru || branch.id,
+              })) || []}
+              allowClear
+            />
           </Form.Item>
         </Form>
       </Modal>
