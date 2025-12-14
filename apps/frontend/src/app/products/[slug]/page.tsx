@@ -599,7 +599,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
                       sizes="280px"
                       className="object-contain p-4"
                       priority
-                      unoptimized
                     />
                   </div>
 
@@ -619,7 +618,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
                               fill
                               sizes="(max-width: 1024px) 25vw, 60px"
                               className="object-contain p-1"
-                              unoptimized
                             />
                           </div>
                         );
@@ -810,7 +808,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
                               fill
                               sizes="48px"
                               className="object-contain p-1"
-                              unoptimized
                             />
                           </div>
                         ) : (
