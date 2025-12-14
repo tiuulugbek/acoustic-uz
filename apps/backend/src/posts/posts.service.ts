@@ -67,8 +67,25 @@ export class PostsService {
       if (!postData.body_uz || !postData.body_ru) {
         throw new Error('Body (uz and ru) is required');
       }
-      if (!postData.slug) {
-        throw new Error('Slug is required');
+      
+      // Generate or validate slug
+      let slug = postData.slug;
+      if (!slug) {
+        // Generate slug from title_uz if not provided
+        slug = postData.title_uz
+          .toLowerCase()
+          .trim()
+          .replace(/[^\w\s-]/g, '')
+          .replace(/[\s_-]+/g, '-')
+          .replace(/^-+|-+$/g, '');
+      }
+      
+      // Ensure slug is unique - if duplicate exists, append a number
+      let uniqueSlug = slug;
+      let counter = 1;
+      while (await this.prisma.post.findUnique({ where: { slug: uniqueSlug } })) {
+        uniqueSlug = `${slug}-${counter}`;
+        counter++;
       }
       
       // Normalize optional fields
@@ -77,7 +94,7 @@ export class PostsService {
         title_ru: postData.title_ru,
         body_uz: postData.body_uz,
         body_ru: postData.body_ru,
-        slug: postData.slug,
+        slug: uniqueSlug,
         postType: postData.postType || 'article',
         excerpt_uz: postData.excerpt_uz || null,
         excerpt_ru: postData.excerpt_ru || null,
@@ -95,6 +112,10 @@ export class PostsService {
       });
     } catch (error) {
       console.error('Error creating post:', error);
+      // If it's a unique constraint error, provide a more helpful message
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+        throw new Error(`Post with this slug already exists. Please use a different slug.`);
+      }
       throw error;
     }
   }
