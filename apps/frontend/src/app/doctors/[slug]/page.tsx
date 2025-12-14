@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { getDoctorBySlug } from '@/lib/api-server';
 import PageHeader from '@/components/page-header';
+import { normalizeImageUrl } from '@/lib/image-utils';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -51,12 +52,7 @@ export default async function DoctorSlugPage({ params }: DoctorPageProps) {
   const experience = getBilingualText(specialist.experience_uz, specialist.experience_ru, locale);
   const description = getBilingualText(specialist.description_uz, specialist.description_ru, locale);
   
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-  let imageUrl = specialist.image?.url || '';
-  if (imageUrl && imageUrl.startsWith('/') && !imageUrl.startsWith('//')) {
-    const baseUrl = API_BASE_URL.replace('/api', '');
-    imageUrl = `${baseUrl}${imageUrl}`;
-  }
+  const imageUrl = normalizeImageUrl(specialist.image?.url);
 
   return (
     <main className="min-h-screen bg-background">
@@ -84,6 +80,7 @@ export default async function DoctorSlugPage({ params }: DoctorPageProps) {
                   fill
                   className="object-cover"
                   sizes="300px"
+                  unoptimized
                 />
               ) : (
                 <div className="flex h-full items-center justify-center bg-brand-primary">

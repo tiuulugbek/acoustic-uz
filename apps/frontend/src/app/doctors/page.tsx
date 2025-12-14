@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { getDoctors, getBranches, type DoctorResponse } from '@/lib/api-server';
 import BranchesSidebar from '@/components/branches-sidebar';
 import PageHeader from '@/components/page-header';
+import { normalizeImageUrl } from '@/lib/image-utils';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -61,23 +62,14 @@ export default async function DoctorsPage() {
                       >
                         <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-lg bg-muted/20">
                           {specialist.image?.url ? (
-                            (() => {
-                              const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-                              let imageUrl = specialist.image.url;
-                              if (imageUrl && imageUrl.startsWith('/') && !imageUrl.startsWith('//')) {
-                                const baseUrl = API_BASE_URL.replace('/api', '');
-                                imageUrl = `${baseUrl}${imageUrl}`;
-                              }
-                              return (
-                                <Image
-                                  src={imageUrl}
-                                  alt={name}
-                                  fill
-                                  className="object-cover transition-transform duration-300 group-hover:scale-105"
-                                  sizes="96px"
-                                />
-                              );
-                            })()
+                            <Image
+                              src={normalizeImageUrl(specialist.image.url)}
+                              alt={name}
+                              fill
+                              className="object-cover transition-transform duration-300 group-hover:scale-105"
+                              sizes="96px"
+                              unoptimized
+                            />
                           ) : (
                             <div className="flex h-full items-center justify-center bg-brand-primary">
                               <span className="text-white text-2xl font-bold">
