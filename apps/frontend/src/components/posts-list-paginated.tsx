@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getBilingualText } from '@/lib/locale';
@@ -16,6 +16,12 @@ interface PostsListPaginatedProps {
 
 export default function PostsListPaginated({ posts, locale, postsPerPage = 6 }: PostsListPaginatedProps) {
   const [currentPage, setCurrentPage] = useState(1);
+  const [mounted, setMounted] = useState(false);
+
+  // Ensure component is mounted before rendering pagination
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   if (!posts || posts.length === 0) {
     return (
@@ -95,10 +101,12 @@ export default function PostsListPaginated({ posts, locale, postsPerPage = 6 }: 
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
+      {mounted && totalPages > 1 && (
         <div className="mt-8 flex justify-center items-center gap-2">
           <button
-            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            onClick={() => {
+              setCurrentPage(prev => Math.max(1, prev - 1));
+            }}
             disabled={currentPage === 1}
             className="px-3 py-2 text-sm font-medium text-foreground bg-white border border-border rounded-md hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
@@ -116,7 +124,9 @@ export default function PostsListPaginated({ posts, locale, postsPerPage = 6 }: 
                 return (
                   <button
                     key={page}
-                    onClick={() => setCurrentPage(page)}
+                    onClick={() => {
+                      setCurrentPage(page);
+                    }}
                     className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                       currentPage === page
                         ? 'bg-brand-primary text-white'
@@ -137,7 +147,9 @@ export default function PostsListPaginated({ posts, locale, postsPerPage = 6 }: 
           </div>
 
           <button
-            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+            onClick={() => {
+              setCurrentPage(prev => Math.min(totalPages, prev + 1));
+            }}
             disabled={currentPage === totalPages}
             className="px-3 py-2 text-sm font-medium text-foreground bg-white border border-border rounded-md hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
