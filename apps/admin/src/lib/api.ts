@@ -160,7 +160,26 @@ export const logout = () =>
 
 export const getCurrentUser = () => request<UserDto>('/auth/me');
 
-export const getPosts = () => request<PostDto[]>('/posts');
+export const getPosts = async (): Promise<PostDto[]> => {
+  console.log('[API] Fetching posts from:', `${API_BASE}/posts`);
+  try {
+    const result = await request<PostDto[]>('/posts');
+    console.log('[API] Posts fetched:', result?.length || 0);
+    if (result && result.length > 0) {
+      console.log('[API] Sample post:', {
+        id: result[0].id,
+        title_uz: result[0].title_uz,
+        postType: result[0].postType,
+        categoryId: result[0].categoryId,
+        status: result[0].status,
+      });
+    }
+    return result || [];
+  } catch (error) {
+    console.error('[API] Error fetching posts:', error);
+    throw error;
+  }
+};
 export const createPost = (payload: CreatePostPayload) =>
   request<PostDto>('/posts', {
     method: 'POST',
