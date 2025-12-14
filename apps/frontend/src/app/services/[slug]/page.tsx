@@ -329,8 +329,25 @@ export default async function ServiceSlugPage({ params }: ServicePageProps) {
     }
   }
 
-  // Build cover image URL (normalize it)
-  const coverImageUrl = normalizeImageUrl(service.cover?.url || '');
+  // Build cover image URL - prioritize category image, fallback to service cover
+  let coverImageUrl = '';
+  let coverImageAlt = coverAlt;
+  
+  // Get category image if available
+  if (service.category) {
+    const category = await getServiceCategoryBySlug(service.category.slug, locale);
+    if (category?.image?.url) {
+      coverImageUrl = normalizeImageUrl(category.image.url);
+      const categoryTitle = getBilingualText(category.name_uz, category.name_ru, locale);
+      coverImageAlt = getBilingualText(category.image.alt_uz, category.image.alt_ru, locale) || categoryTitle;
+    }
+  }
+  
+  // Fallback to service cover if category image is not available
+  if (!coverImageUrl && service.cover?.url) {
+    coverImageUrl = normalizeImageUrl(service.cover.url);
+    coverImageAlt = coverAlt;
+  }
 
   return (
     <main className="min-h-screen bg-background">
@@ -361,7 +378,7 @@ export default async function ServiceSlugPage({ params }: ServicePageProps) {
                 <div className="relative aspect-[21/9] w-full">
                   <Image 
                     src={coverImageUrl} 
-                    alt={coverAlt} 
+                    alt={coverImageAlt} 
                     fill 
                     className="object-cover" 
                     priority
