@@ -29,7 +29,14 @@ export class ServicesService {
   async findOne(id: string) {
     const service = await this.prisma.service.findUnique({
       where: { id },
-      include: { cover: true, category: true },
+      include: { 
+        cover: true, 
+        category: {
+          include: {
+            image: true,
+          },
+        },
+      },
     });
 
     if (!service) {
@@ -42,7 +49,14 @@ export class ServicesService {
   async findBySlug(slug: string) {
     const service = await this.prisma.service.findUnique({
       where: { slug, status: 'published' },
-      include: { cover: true, category: true },
+      include: { 
+        cover: true, 
+        category: {
+          include: {
+            image: true,
+          },
+        },
+      },
     });
 
     if (!service) {
@@ -60,7 +74,14 @@ export class ServicesService {
         coverId: validated.coverId ?? undefined,
         categoryId: validated.categoryId ?? undefined,
       } as Prisma.ServiceUncheckedCreateInput,
-      include: { cover: true, category: true },
+      include: { 
+        cover: true, 
+        category: {
+          include: {
+            image: true,
+          },
+        },
+      },
     });
   }
 
@@ -75,7 +96,14 @@ export class ServicesService {
     return this.prisma.service.update({
       where: { id },
       data: updateData,
-      include: { cover: true, category: true },
+      include: { 
+        cover: true, 
+        category: {
+          include: {
+            image: true,
+          },
+        },
+      },
     });
   }
 

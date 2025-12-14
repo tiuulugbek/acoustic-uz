@@ -333,14 +333,11 @@ export default async function ServiceSlugPage({ params }: ServicePageProps) {
   let coverImageUrl = '';
   let coverImageAlt = coverAlt;
   
-  // Get category image if available
-  if (service.category) {
-    const category = await getServiceCategoryBySlug(service.category.slug, locale);
-    if (category?.image?.url) {
-      coverImageUrl = normalizeImageUrl(category.image.url);
-      const categoryTitle = getBilingualText(category.name_uz, category.name_ru, locale);
-      coverImageAlt = getBilingualText(category.image.alt_uz, category.image.alt_ru, locale) || categoryTitle;
-    }
+  // Get category image if available (category.image is already included in service response)
+  if (service.category?.image?.url) {
+    coverImageUrl = normalizeImageUrl(service.category.image.url);
+    const categoryTitle = getBilingualText(service.category.name_uz, service.category.name_ru, locale);
+    coverImageAlt = getBilingualText(service.category.image.alt_uz, service.category.image.alt_ru, locale) || categoryTitle;
   }
   
   // Fallback to service cover if category image is not available
