@@ -54,16 +54,25 @@ export default function MediaLibraryModal({
   const { data: mediaList, isLoading, refetch } = useQuery<MediaDto[], ApiError>({
     queryKey: ['media'],
     queryFn: getMedia,
-    enabled: open,
-    refetchOnMount: true, // Always refetch when modal opens
+    enabled: open, // Only fetch when modal is open
+    refetchOnMount: 'always', // Always refetch when component mounts (modal opens)
     refetchOnWindowFocus: false,
     staleTime: 0, // Always consider data stale to ensure fresh data
+    cacheTime: 0, // Don't cache data when modal is closed
   });
 
-  // Refetch when modal opens to ensure fresh data
+  // Refetch when modal opens to ensure fresh data (including after upload)
   useEffect(() => {
     if (open) {
-      refetch();
+      console.log('[MediaLibraryModal] Modal opened, refetching media...');
+      // Small delay to ensure invalidateQueries has completed
+      setTimeout(() => {
+        refetch().then(() => {
+          console.log('[MediaLibraryModal] Media refetched successfully');
+        }).catch((error) => {
+          console.error('[MediaLibraryModal] Error refetching media:', error);
+        });
+      }, 100);
     }
   }, [open, refetch]);
 
