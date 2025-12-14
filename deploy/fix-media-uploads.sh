@@ -85,9 +85,43 @@ fi
 # 7. Verify Nginx config
 echo ""
 echo -e "${BLUE}6️⃣ Verifying Nginx config...${NC}"
-if grep -q "location /uploads/" /etc/nginx/sites-available/a.acoustic.uz.conf; then
+# Check multiple possible config file locations
+NGINX_CONFIGS=(
+    "/etc/nginx/sites-available/a.acoustic.uz.conf"
+    "/etc/nginx/sites-available/a.acoustic.uz"
+    "/etc/nginx/conf.d/a.acoustic.uz.conf"
+)
+
+NGINX_CONFIG=""
+for config in "${NGINX_CONFIGS[@]}"; do
+    if [ -f "$config" ]; then
+        NGINX_CONFIG="$config"
+        echo -e "${GREEN}✅ Found Nginx config: $config${NC}"
+        break
+    fi
+done
+
+if [ -z "$NGINX_CONFIG" ]; then
+    echo -e "${YELLOW}⚠️  Nginx config file not found in standard locations${NC}"
+    echo "   Searching for any acoustic config files..."
+    find /etc/nginx -name "*acoustic*" -type f 2>/dev/null | head -5
+    echo ""
+    echo -e "${YELLOW}⚠️  Attempting to apply Nginx configs...${NC}"
+    if [ -f "$PROJECT_DIR/deploy/apply-nginx-configs.sh" ]; then
+        sudo bash "$PROJECT_DIR/deploy/apply-nginx-configs.sh"
+        # Try to find config again
+        for config in "${NGINX_CONFIGS[@]}"; do
+            if [ -f "$config" ]; then
+                NGINX_CONFIG="$config"
+                break
+            fi
+        done
+    fi
+fi
+
+if [ -n "$NGINX_CONFIG" ] && grep -q "location /uploads/" "$NGINX_CONFIG"; then
     echo -e "${GREEN}✅ Nginx config includes /uploads/ location${NC}"
-    UPLOADS_ALIAS=$(grep -A 1 "location /uploads/" /etc/nginx/sites-available/a.acoustic.uz.conf | grep "alias" | awk '{print $2}' | tr -d ';')
+    UPLOADS_ALIAS=$(grep -A 1 "location /uploads/" "$NGINX_CONFIG" | grep "alias" | awk '{print $2}' | tr -d ';')
     if [ -n "$UPLOADS_ALIAS" ]; then
         echo "   Alias: $UPLOADS_ALIAS"
         if [ "$UPLOADS_ALIAS" = "$UPLOADS_DIR/" ] || [ "$UPLOADS_ALIAS" = "$UPLOADS_DIR" ]; then
@@ -100,6 +134,7 @@ if grep -q "location /uploads/" /etc/nginx/sites-available/a.acoustic.uz.conf; t
     fi
 else
     echo -e "${RED}❌ Nginx config does NOT include /uploads/ location${NC}"
+    echo "   Please run: sudo bash $PROJECT_DIR/deploy/apply-nginx-configs.sh"
 fi
 
 # 8. Reload Nginx
