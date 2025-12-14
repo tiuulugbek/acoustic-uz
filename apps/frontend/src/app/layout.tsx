@@ -21,7 +21,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
   
   // Get favicon from settings
-  let faviconUrl = `${baseUrl}/favicon.ico`;
+  let faviconUrl: string | null = null;
   try {
     const settings = await getSettings(locale);
     if (settings?.favicon?.url) {
@@ -34,13 +34,28 @@ export async function generateMetadata(): Promise<Metadata> {
           // If relative URL, make it absolute
           faviconUrl = `${baseUrl}${normalizedUrl}`;
         } else {
-          faviconUrl = normalizedUrl;
+          // If relative URL without leading slash, add it
+          faviconUrl = `${baseUrl}/${normalizedUrl}`;
         }
       }
     }
   } catch (error) {
     // Use default favicon if settings fetch fails
     console.error('[Layout] Failed to fetch favicon:', error);
+  }
+  
+  // Fallback to default favicon if no favicon from settings
+  if (!faviconUrl) {
+    faviconUrl = `${baseUrl}/favicon.ico`;
+  }
+  
+  // Ensure faviconUrl is always absolute
+  if (faviconUrl && !faviconUrl.startsWith('http://') && !faviconUrl.startsWith('https://')) {
+    if (faviconUrl.startsWith('/')) {
+      faviconUrl = `${baseUrl}${faviconUrl}`;
+    } else {
+      faviconUrl = `${baseUrl}/${faviconUrl}`;
+    }
   }
 
   return {
