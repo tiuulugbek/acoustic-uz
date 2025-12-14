@@ -91,22 +91,27 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
 
   const categoryIds = useMemo(() => categories?.map(cat => cat.id) || [], [categories]);
 
-  // Fetch posts ONLY from categories in this section
-  // Each section shows only posts that belong to its own categories
+  // Fetch posts from categories in this section AND posts without category
+  // Show posts that belong to this section's categories OR don't have any category
   const { data, isLoading } = useQuery<PostDto[], ApiError>({
     queryKey: ['posts', section],
     queryFn: async () => {
       const allPosts = await getPosts();
-      // Filter posts: only include posts that belong to this section's categories
+      // Filter posts: include posts that belong to this section's categories OR don't have any category
       return allPosts.filter(post => {
         // Only show articles
         if (post.postType !== 'article') return false;
-        // Post must have a category AND belong to this section
-        if (!post.categoryId) return false;
+        // Include posts without category (for backward compatibility)
+        if (!post.categoryId) return true;
+        // Include posts that belong to this section's categories
         return categoryIds.includes(post.categoryId);
+      }).sort((a, b) => {
+        // Sort by publishAt descending (newest first)
+        const dateA = new Date(a.publishAt).getTime();
+        const dateB = new Date(b.publishAt).getTime();
+        return dateB - dateA;
       });
     },
-    enabled: categoryIds.length > 0, // Only enabled if there are categories
     retry: false,
   });
 
