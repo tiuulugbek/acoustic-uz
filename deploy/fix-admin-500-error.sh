@@ -50,19 +50,32 @@ if [ -d "$NGINX_ROOT" ]; then
             echo -e "${RED}❌ Build failed${NC}"
             exit 1
         fi
-        sudo cp -r dist/* "$NGINX_ROOT/"
+        # Remove old dist and copy new one
+        if [ -d "$NGINX_ROOT" ]; then
+            echo "Removing old dist directory..."
+            sudo rm -rf "$NGINX_ROOT"
+        fi
+        echo "Copying dist to nginx root..."
+        sudo cp -r "$ADMIN_DIR/dist" "$(dirname "$NGINX_ROOT")/"
+        echo -e "${GREEN}✅ Build copied to $NGINX_ROOT${NC}"
     fi
 else
     echo -e "${RED}❌ Dist directory does NOT exist: $NGINX_ROOT${NC}"
-    echo -e "${YELLOW}   Creating directory and rebuilding...${NC}"
-    sudo mkdir -p "$NGINX_ROOT"
+    echo -e "${YELLOW}   Rebuilding admin panel...${NC}"
     cd "$ADMIN_DIR"
     VITE_API_URL="https://a.acoustic.uz/api" pnpm build
     if [ ! -d "dist" ]; then
         echo -e "${RED}❌ Build failed${NC}"
         exit 1
     fi
-    sudo cp -r dist/* "$NGINX_ROOT/"
+    # Copy dist to nginx root (remove old if exists)
+    if [ -d "$NGINX_ROOT" ]; then
+        echo "Removing old dist directory..."
+        sudo rm -rf "$NGINX_ROOT"
+    fi
+    echo "Copying dist to nginx root..."
+    sudo cp -r "$ADMIN_DIR/dist" "$(dirname "$NGINX_ROOT")/"
+    echo -e "${GREEN}✅ Build copied to $NGINX_ROOT${NC}"
 fi
 
 # 3. Fix permissions
