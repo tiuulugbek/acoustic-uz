@@ -26,16 +26,28 @@ sudo -u acoustic git pull origin main || {
     }
 }
 
-# 4. Install dependencies
+# 4. Fix node_modules permissions before installing
+echo "🔧 Fixing node_modules permissions..."
+cd "$PROJECT_DIR"
+# Remove node_modules with sudo if they exist and have wrong permissions
+sudo rm -rf "$PROJECT_DIR/node_modules" 2>/dev/null || true
+sudo rm -rf "$PROJECT_DIR/apps/frontend/node_modules" 2>/dev/null || true
+sudo rm -rf "$PROJECT_DIR/apps/backend/node_modules" 2>/dev/null || true
+sudo rm -rf "$PROJECT_DIR/apps/admin/node_modules" 2>/dev/null || true
+sudo rm -rf "$PROJECT_DIR/packages/shared/node_modules" 2>/dev/null || true
+# Fix ownership of project directory
+sudo chown -R acoustic:acoustic "$PROJECT_DIR" 2>/dev/null || true
+
+# 5. Install dependencies
 echo "📦 Installing dependencies..."
 cd "$PROJECT_DIR"
 sudo -u acoustic pnpm install
 
-# 5. Build shared package first (required by frontend)
+# 6. Build shared package first (required by frontend)
 echo "🏗️  Building shared package..."
 sudo -u acoustic pnpm --filter @acoustic/shared build
 
-# 6. Clean Next.js build cache
+# 7. Clean Next.js build cache
 echo "🧹 Cleaning Next.js build cache..."
 cd "$FRONTEND_DIR"
 
@@ -53,7 +65,7 @@ if [ -d ".next" ]; then
   sudo -u acoustic rm -rf .next
 fi
 
-# 7. Build frontend
+# 8. Build frontend
 echo "🏗️  Building frontend..."
 cd "$FRONTEND_DIR"
 
@@ -106,7 +118,7 @@ fi
 # Show build output
 echo "$BUILD_OUTPUT"
 
-# 7. Check if build was successful
+# 9. Check if build was successful
 if [ ! -d ".next" ]; then
     echo "❌ Build failed: .next directory not found"
     exit 1
@@ -114,7 +126,7 @@ fi
 
 echo "✅ Build successful!"
 
-# 8. Fix permissions after build
+# 10. Fix permissions after build
 echo "🔧 Fixing permissions after build..."
 cd "$FRONTEND_DIR"
 chown -R acoustic:acoustic .next
@@ -124,7 +136,7 @@ sudo -u acoustic touch .next/trace 2>/dev/null || true
 chown acoustic:acoustic .next/trace 2>/dev/null || true
 chmod 644 .next/trace 2>/dev/null || true
 
-# 9. Restart PM2
+# 11. Restart PM2
 echo "🔄 Restarting frontend..."
 cd "$PROJECT_DIR"
 pm2 restart acoustic-frontend || pm2 start acoustic-frontend
@@ -132,7 +144,7 @@ pm2 restart acoustic-frontend || pm2 start acoustic-frontend
 # Wait a moment for restart
 sleep 2
 
-# 9. Show status
+# 12. Show status
 echo ""
 echo "✅ Frontend rebuild completed!"
 echo ""
