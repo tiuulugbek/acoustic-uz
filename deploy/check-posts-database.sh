@@ -30,7 +30,7 @@ if [ -z "$DATABASE_URL" ]; then
 fi
 
 # Extract database connection details from DATABASE_URL
-# Format: postgresql://user:password@host:port/database
+# Format: postgresql://user:password@host:port/database?query_params
 if [[ $DATABASE_URL == postgresql://* ]]; then
     # Remove postgresql:// prefix
     DB_URL=${DATABASE_URL#postgresql://}
@@ -46,6 +46,9 @@ if [[ $DATABASE_URL == postgresql://* ]]; then
     DB_NAME=${DB_PORT_DB#*/}
     # Remove query parameters if any
     DB_NAME=${DB_NAME%%\?*}
+    
+    # Create clean DATABASE_URL without query parameters for psql
+    CLEAN_DATABASE_URL="postgresql://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
 else
     echo -e "${RED}❌ Invalid DATABASE_URL format${NC}"
     exit 1
@@ -63,15 +66,25 @@ echo ""
 echo -e "${BLUE}2️⃣ Testing Database Connection:${NC}"
 if PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "SELECT 1;" > /dev/null 2>&1; then
     echo -e "${GREEN}  ✅ Connection successful${NC}"
+    USE_DATABASE_URL=false
 else
-    echo -e "${RED}  ❌ Connection failed. Trying alternative method...${NC}"
-    # Try using DATABASE_URL directly
-    if psql "$DATABASE_URL" -c "SELECT 1;" > /dev/null 2>&1; then
-        echo -e "${GREEN}  ✅ Connection successful using DATABASE_URL${NC}"
+    echo -e "${YELLOW}  ⚠️  Direct connection failed. Trying clean DATABASE_URL...${NC}"
+    # Try using clean DATABASE_URL (without query parameters)
+    if psql "$CLEAN_DATABASE_URL" -c "SELECT 1;" > /dev/null 2>&1; then
+        echo -e "${GREEN}  ✅ Connection successful using clean DATABASE_URL${NC}"
         USE_DATABASE_URL=true
+        USE_CLEAN_URL=true
     else
         echo -e "${RED}  ❌ Connection failed. Please check DATABASE_URL in .env${NC}"
-        exit 1
+        echo -e "${YELLOW}  Trying to connect as postgres user...${NC}"
+        # Last resort: try as postgres user
+        if sudo -u postgres psql -d "$DB_NAME" -c "SELECT 1;" > /dev/null 2>&1; then
+            echo -e "${GREEN}  ✅ Connection successful as postgres user${NC}"
+            USE_POSTGRES_USER=true
+        else
+            echo -e "${RED}  ❌ All connection methods failed${NC}"
+            exit 1
+        fi
     fi
 fi
 
@@ -87,7 +100,11 @@ echo "  Total posts: $TOTAL_POSTS"
 # Function to run psql command
 run_psql() {
     local query="$1"
-    if [ "$USE_DATABASE_URL" = true ]; then
+    if [ "$USE_POSTGRES_USER" = true ]; then
+        sudo -u postgres psql -d "$DB_NAME" -c "$query" 2>/dev/null
+    elif [ "$USE_CLEAN_URL" = true ]; then
+        psql "$CLEAN_DATABASE_URL" -c "$query" 2>/dev/null
+    elif [ "$USE_DATABASE_URL" = true ]; then
         psql "$DATABASE_URL" -c "$query" 2>/dev/null
     else
         PGPASSWORD="$DB_PASS" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "$query" 2>/dev/null
