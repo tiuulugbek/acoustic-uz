@@ -23,15 +23,19 @@ if [ -f .env ]; then
     set -a
     source .env
     set +a
+    echo -e "${GREEN}✅ Environment variables loaded${NC}"
 else
     echo -e "${RED}❌ Error: .env file not found${NC}"
     exit 1
 fi
 
 if [ -z "$DATABASE_URL" ]; then
-    echo -e "${RED}❌ Error: DATABASE_URL not set${NC}"
+    echo -e "${RED}❌ Error: DATABASE_URL not set in .env file${NC}"
     exit 1
 fi
+
+# Export DATABASE_URL for Prisma
+export DATABASE_URL
 
 cd "$BACKEND_DIR"
 
@@ -52,7 +56,8 @@ fi
 
 # Create migration using Prisma
 echo -e "${BLUE}Creating migration...${NC}"
-sudo -u acoustic npx prisma migrate dev --name change_ids_to_int --create-only
+echo -e "${BLUE}DATABASE_URL: ${DATABASE_URL:0:30}...${NC}"
+sudo -u acoustic bash -c "export DATABASE_URL='$DATABASE_URL' && cd '$BACKEND_DIR' && npx prisma migrate dev --name change_ids_to_int --create-only"
 
 MIGRATION_DIR=$(ls -td prisma/migrations/*change_ids_to_int* | head -1)
 MIGRATION_FILE="$MIGRATION_DIR/migration.sql"
