@@ -65,17 +65,11 @@ else
     cd "$ADMIN_DIR"
     VITE_API_URL="https://a.acoustic.uz/api" pnpm build
     if [ ! -d "dist" ]; then
-        echo -e "${RED}❌ Build failed${NC}"
+        echo -e "${RED}❌ Build failed - dist directory not created${NC}"
         exit 1
     fi
-    # Copy dist to nginx root (remove old if exists)
-    if [ -d "$NGINX_ROOT" ]; then
-        echo "Removing old dist directory..."
-        sudo rm -rf "$NGINX_ROOT"
-    fi
-    echo "Copying dist to nginx root..."
-    sudo cp -r "$ADMIN_DIR/dist" "$(dirname "$NGINX_ROOT")/"
-    echo -e "${GREEN}✅ Build copied to $NGINX_ROOT${NC}"
+    echo -e "${GREEN}✅ Build completed - dist directory is at: $ADMIN_DIR/dist${NC}"
+    echo -e "${BLUE}   Note: dist directory is already in the correct location for nginx${NC}"
 fi
 
 # 3. Fix permissions
