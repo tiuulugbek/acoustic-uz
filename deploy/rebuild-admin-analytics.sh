@@ -82,26 +82,58 @@ fi
 
 echo ""
 echo "5️⃣ Copying build to nginx directory..."
-NGINX_DIR="/var/www/admin.acoustic.uz"
-if [ -d "$NGINX_DIR" ]; then
-    # Backup old build
-    if [ -d "$NGINX_DIR/dist" ]; then
-        BACKUP_DIR="$NGINX_DIR/dist.backup.$(date +%Y%m%d%H%M%S)"
-        mv "$NGINX_DIR/dist" "$BACKUP_DIR"
-        echo -e "${GREEN}✅ Old build backed up to: $BACKUP_DIR${NC}"
+# Check nginx config to find the correct root directory
+NGINX_CONFIG="/etc/nginx/sites-available/admin.acoustic.uz"
+NGINX_DIR=""
+
+# Try to extract root directory from nginx config
+if [ -f "$NGINX_CONFIG" ]; then
+    NGINX_ROOT=$(grep -E "^\s*root\s+" "$NGINX_CONFIG" | head -1 | awk '{print $2}' | tr -d ';' || echo "")
+    if [ -n "$NGINX_ROOT" ]; then
+        # Extract directory path (remove /dist if present)
+        NGINX_DIR=$(dirname "$NGINX_ROOT" 2>/dev/null || echo "$NGINX_ROOT")
+        echo -e "${GREEN}✅ Found nginx root directory: $NGINX_DIR${NC}"
     fi
-    
-    # Copy new build
-    cp -r dist "$NGINX_DIR/"
-    echo -e "${GREEN}✅ Build copied to $NGINX_DIR${NC}"
-    
-    # Set permissions
-    chown -R www-data:www-data "$NGINX_DIR/dist"
-    chmod -R 755 "$NGINX_DIR/dist"
-    echo -e "${GREEN}✅ Permissions set${NC}"
+fi
+
+# Fallback to default locations
+if [ -z "$NGINX_DIR" ] || [ ! -d "$NGINX_DIR" ]; then
+    # Try common locations
+    if [ -d "/var/www/acoustic.uz/apps/admin" ]; then
+        NGINX_DIR="/var/www/acoustic.uz/apps/admin"
+        echo -e "${GREEN}✅ Using default directory: $NGINX_DIR${NC}"
+    elif [ -d "/var/www/admin.acoustic.uz" ]; then
+        NGINX_DIR="/var/www/admin.acoustic.uz"
+        echo -e "${GREEN}✅ Using alternative directory: $NGINX_DIR${NC}"
+    else
+        echo -e "${YELLOW}⚠️  Nginx directory not found. Creating /var/www/acoustic.uz/apps/admin...${NC}"
+        sudo mkdir -p /var/www/acoustic.uz/apps/admin
+        NGINX_DIR="/var/www/acoustic.uz/apps/admin"
+    fi
+fi
+
+# Backup old build if exists
+if [ -d "$NGINX_DIR/dist" ]; then
+    BACKUP_DIR="$NGINX_DIR/dist.backup.$(date +%Y%m%d%H%M%S)"
+    sudo mv "$NGINX_DIR/dist" "$BACKUP_DIR"
+    echo -e "${GREEN}✅ Old build backed up to: $BACKUP_DIR${NC}"
+fi
+
+# Copy new build
+echo "Copying dist to $NGINX_DIR/dist..."
+sudo cp -r dist "$NGINX_DIR/"
+echo -e "${GREEN}✅ Build copied to $NGINX_DIR/dist${NC}"
+
+# Set permissions
+sudo chown -R www-data:www-data "$NGINX_DIR/dist" 2>/dev/null || sudo chown -R nginx:nginx "$NGINX_DIR/dist" 2>/dev/null || true
+sudo chmod -R 755 "$NGINX_DIR/dist"
+echo -e "${GREEN}✅ Permissions set${NC}"
+
+# Verify files
+if [ -f "$NGINX_DIR/dist/index.html" ]; then
+    echo -e "${GREEN}✅ index.html found in $NGINX_DIR/dist${NC}"
 else
-    echo -e "${YELLOW}⚠️  Nginx directory not found: $NGINX_DIR${NC}"
-    echo -e "${YELLOW}⚠️  Please copy dist directory manually to nginx directory${NC}"
+    echo -e "${RED}❌ index.html not found in $NGINX_DIR/dist${NC}"
 fi
 
 echo ""
