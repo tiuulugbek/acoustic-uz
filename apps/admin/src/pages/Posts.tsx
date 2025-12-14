@@ -513,43 +513,41 @@ function PostsTab() {
             </Space>
           </Form.Item>
 
-          {postType === 'article' && (
-            <Form.Item 
-              label="Kategoriya" 
-              name="categoryId"
-              help={
+          <Form.Item 
+            label="Kategoriya" 
+            name="categoryId"
+            help={
+              isLoadingCategories 
+                ? 'Kategoriyalar yuklanmoqda...' 
+                : categoriesError 
+                  ? `Xatolik: ${categoriesError.message || 'Kategoriyalarni yuklashda xatolik'}` 
+                  : categoryOptions.length === 0 
+                    ? 'Kategoriyalar mavjud emas. "Kategoriyalar" tabida yangi kategoriya yarating.' 
+                    : undefined
+            }
+            validateStatus={categoriesError ? 'error' : undefined}
+          >
+            <Select 
+              options={categoryOptions} 
+              placeholder={
                 isLoadingCategories 
-                  ? 'Kategoriyalar yuklanmoqda...' 
-                  : categoriesError 
-                    ? `Xatolik: ${categoriesError.message || 'Kategoriyalarni yuklashda xatolik'}` 
+                  ? "Yuklanmoqda..." 
+                  : categoriesError
+                    ? "Xatolik yuz berdi"
                     : categoryOptions.length === 0 
-                      ? 'Kategoriyalar mavjud emas. "Kategoriyalar" tabida yangi kategoriya yarating.' 
-                      : undefined
+                      ? "Kategoriyalar mavjud emas" 
+                      : "Kategoriyani tanlang (ixtiyoriy)"
+              } 
+              allowClear 
+              loading={isLoadingCategories}
+              disabled={isLoadingCategories}
+              showSearch
+              filterOption={(input, option) =>
+                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
               }
-              validateStatus={categoriesError ? 'error' : undefined}
-            >
-              <Select 
-                options={categoryOptions} 
-                placeholder={
-                  isLoadingCategories 
-                    ? "Yuklanmoqda..." 
-                    : categoriesError
-                      ? "Xatolik yuz berdi"
-                      : categoryOptions.length === 0 
-                        ? "Kategoriyalar mavjud emas" 
-                        : "Kategoriyani tanlang"
-                } 
-                allowClear 
-                loading={isLoadingCategories}
-                disabled={isLoadingCategories}
-                showSearch
-                filterOption={(input, option) =>
-                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                }
-                notFoundContent={isLoadingCategories ? 'Yuklanmoqda...' : categoryOptions.length === 0 ? 'Kategoriyalar mavjud emas' : 'Kategoriya topilmadi'}
-              />
-            </Form.Item>
-          )}
+              notFoundContent={isLoadingCategories ? 'Yuklanmoqda...' : categoryOptions.length === 0 ? 'Kategoriyalar mavjud emas' : 'Kategoriya topilmadi'}
+            />
+          </Form.Item>
 
           <Form.Item 
             label="Muallif (ixtiyoriy)" 

@@ -7,7 +7,7 @@ import Underline from '@tiptap/extension-underline';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import { useState, useEffect } from 'react';
-import { Button, Space, message, Modal } from 'antd';
+import { Button, Space, message, Modal, Input } from 'antd';
 import {
   BoldOutlined,
   ItalicOutlined,
