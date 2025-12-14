@@ -94,10 +94,21 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
   // Fetch posts from categories in this section
   // Show posts that belong to this section's categories
   // Also show posts without category (for backward compatibility and easy assignment)
-  const { data, isLoading } = useQuery<PostDto[], ApiError>({
+  const { data, isLoading, error } = useQuery<PostDto[], ApiError>({
     queryKey: ['posts', section],
     queryFn: async () => {
+      console.log(`[SectionPosts-${section}] Fetching posts...`);
+      console.log(`[SectionPosts-${section}] Category IDs:`, categoryIds);
+      
       const allPosts = await getPosts();
+      console.log(`[SectionPosts-${section}] All posts fetched:`, allPosts.length);
+      console.log(`[SectionPosts-${section}] Sample posts:`, allPosts.slice(0, 3).map(p => ({
+        id: p.id,
+        title_uz: p.title_uz,
+        postType: p.postType,
+        categoryId: p.categoryId,
+      })));
+      
       // Filter posts: include posts that belong to this section's categories OR don't have any category
       const filteredPosts = allPosts.filter(post => {
         // Only show articles
@@ -113,15 +124,31 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
         return dateB - dateA;
       });
       
+      console.log(`[SectionPosts-${section}] Filtered posts:`, filteredPosts.length);
+      
       // Separate posts with and without categories for better display
       const postsWithCategory = filteredPosts.filter(p => p.categoryId && categoryIds.includes(p.categoryId));
       const postsWithoutCategory = filteredPosts.filter(p => !p.categoryId);
+      
+      console.log(`[SectionPosts-${section}] Posts with category:`, postsWithCategory.length);
+      console.log(`[SectionPosts-${section}] Posts without category:`, postsWithoutCategory.length);
       
       // Show posts with category first, then posts without category
       return [...postsWithCategory, ...postsWithoutCategory];
     },
     retry: false,
   });
+  
+  // Debug logging
+  useMemo(() => {
+    console.log(`[SectionPosts-${section}] State:`, {
+      categoriesCount: categories?.length || 0,
+      categoryIds: categoryIds,
+      postsCount: data?.length || 0,
+      isLoading,
+      error: error?.message,
+    });
+  }, [section, categories, categoryIds, data, isLoading, error]);
 
   const { data: doctors } = useQuery<DoctorDto[], ApiError>({
     queryKey: ['doctors'],
