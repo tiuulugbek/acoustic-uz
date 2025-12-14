@@ -100,8 +100,6 @@ function initYandexMetrika(counterId: number) {
       cookieDomain: window.location.hostname,
       // Disable hash tracking (reduces cookies)
       trackHash: false,
-      // Use localStorage for session storage (reduces cookies)
-      localStorage: true,
     });
     console.log('[Analytics] Yandex Metrika initialized:', counterId);
   };
