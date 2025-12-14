@@ -97,44 +97,67 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
   const { data, isLoading, error } = useQuery<PostDto[], ApiError>({
     queryKey: ['posts', section],
     queryFn: async () => {
-      console.log(`[SectionPosts-${section}] Fetching posts...`);
-      console.log(`[SectionPosts-${section}] Category IDs:`, categoryIds);
-      
-      const allPosts = await getPosts();
-      console.log(`[SectionPosts-${section}] All posts fetched:`, allPosts.length);
-      console.log(`[SectionPosts-${section}] Sample posts:`, allPosts.slice(0, 3).map(p => ({
-        id: p.id,
-        title_uz: p.title_uz,
-        postType: p.postType,
-        categoryId: p.categoryId,
-      })));
-      
-      // Filter posts: include posts that belong to this section's categories OR don't have any category
-      const filteredPosts = allPosts.filter(post => {
-        // Only show articles
-        if (post.postType !== 'article') return false;
-        // Include posts without category (they can be assigned to this section)
-        if (!post.categoryId) return true;
-        // Include posts that belong to this section's categories
-        return categoryIds.includes(post.categoryId);
-      }).sort((a, b) => {
-        // Sort by publishAt descending (newest first)
-        const dateA = new Date(a.publishAt).getTime();
-        const dateB = new Date(b.publishAt).getTime();
-        return dateB - dateA;
-      });
-      
-      console.log(`[SectionPosts-${section}] Filtered posts:`, filteredPosts.length);
-      
-      // Separate posts with and without categories for better display
-      const postsWithCategory = filteredPosts.filter(p => p.categoryId && categoryIds.includes(p.categoryId));
-      const postsWithoutCategory = filteredPosts.filter(p => !p.categoryId);
-      
-      console.log(`[SectionPosts-${section}] Posts with category:`, postsWithCategory.length);
-      console.log(`[SectionPosts-${section}] Posts without category:`, postsWithoutCategory.length);
-      
-      // Show posts with category first, then posts without category
-      return [...postsWithCategory, ...postsWithoutCategory];
+      try {
+        console.log(`[SectionPosts-${section}] Fetching posts...`);
+        console.log(`[SectionPosts-${section}] Category IDs:`, categoryIds);
+        
+        const allPosts = await getPosts();
+        console.log(`[SectionPosts-${section}] All posts fetched:`, allPosts?.length || 0);
+        
+        if (!allPosts || allPosts.length === 0) {
+          console.warn(`[SectionPosts-${section}] No posts returned from API`);
+          return [];
+        }
+        
+        console.log(`[SectionPosts-${section}] Sample posts:`, allPosts.slice(0, 5).map(p => ({
+          id: p.id,
+          title_uz: p.title_uz,
+          postType: p.postType,
+          categoryId: p.categoryId,
+          status: p.status,
+        })));
+        
+        // Filter posts: include posts that belong to this section's categories OR don't have any category
+        // IMPORTANT: Show ALL articles, regardless of category, so user can assign them
+        const filteredPosts = allPosts.filter(post => {
+          // Only show articles (not news)
+          if (post.postType !== 'article') {
+            console.log(`[SectionPosts-${section}] Skipping non-article post:`, post.id, post.postType);
+            return false;
+          }
+          // Include posts without category (they can be assigned to this section)
+          if (!post.categoryId) {
+            console.log(`[SectionPosts-${section}] Including post without category:`, post.id);
+            return true;
+          }
+          // Include posts that belong to this section's categories
+          const belongsToSection = categoryIds.includes(post.categoryId);
+          if (belongsToSection) {
+            console.log(`[SectionPosts-${section}] Including post with matching category:`, post.id, post.categoryId);
+          }
+          return belongsToSection;
+        }).sort((a, b) => {
+          // Sort by publishAt descending (newest first)
+          const dateA = new Date(a.publishAt).getTime();
+          const dateB = new Date(b.publishAt).getTime();
+          return dateB - dateA;
+        });
+        
+        console.log(`[SectionPosts-${section}] Filtered posts:`, filteredPosts.length);
+        
+        // Separate posts with and without categories for better display
+        const postsWithCategory = filteredPosts.filter(p => p.categoryId && categoryIds.includes(p.categoryId));
+        const postsWithoutCategory = filteredPosts.filter(p => !p.categoryId);
+        
+        console.log(`[SectionPosts-${section}] Posts with category:`, postsWithCategory.length);
+        console.log(`[SectionPosts-${section}] Posts without category:`, postsWithoutCategory.length);
+        
+        // Show posts with category first, then posts without category
+        return [...postsWithCategory, ...postsWithoutCategory];
+      } catch (err) {
+        console.error(`[SectionPosts-${section}] Error fetching posts:`, err);
+        throw err;
+      }
     },
     retry: false,
   });
