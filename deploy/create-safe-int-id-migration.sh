@@ -62,8 +62,29 @@ echo -e "${BLUE}DATABASE_URL: ${DATABASE_URL:0:30}...${NC}"
 cd "$BACKEND_DIR"
 sudo -u acoustic bash << EOF
 export DATABASE_URL='$DATABASE_URL'
+export PRISMA_MIGRATE_SKIP_GENERATE=1
 cd '$BACKEND_DIR'
-npx prisma migrate dev --name change_ids_to_int --create-only
+
+# Try to create migration without shadow database
+# Use prisma migrate diff if available, otherwise use migrate dev with --skip-seed
+if command -v prisma &> /dev/null || npx prisma --version &> /dev/null; then
+    echo "Creating migration using prisma migrate dev..."
+    npx prisma migrate dev --name change_ids_to_int --create-only --skip-seed || {
+        echo -e "${YELLOW}⚠️  Migration creation failed. Creating manual migration...${NC}"
+        # Create migration directory manually
+        MIGRATION_NAME="change_ids_to_int"
+        MIGRATION_TIMESTAMP=\$(date +%Y%m%d%H%M%S)
+        MIGRATION_DIR="prisma/migrations/\${MIGRATION_TIMESTAMP}_\${MIGRATION_NAME}"
+        mkdir -p "\$MIGRATION_DIR"
+        echo "-- Migration: Change String IDs to Int IDs" > "\$MIGRATION_DIR/migration.sql"
+        echo "-- This migration needs to be manually edited to preserve data" >> "\$MIGRATION_DIR/migration.sql"
+        echo "-- See deploy/migrate-string-to-int-ids.sh for template" >> "\$MIGRATION_DIR/migration.sql"
+        echo -e "${GREEN}✅ Manual migration directory created: \$MIGRATION_DIR${NC}"
+    }
+else
+    echo -e "${RED}❌ Prisma CLI not found${NC}"
+    exit 1
+fi
 EOF
 
 MIGRATION_DIR=$(ls -td prisma/migrations/*change_ids_to_int* | head -1)
