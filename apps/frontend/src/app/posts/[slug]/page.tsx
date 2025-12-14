@@ -269,20 +269,10 @@ export default async function PostPage({ params }: PostPageProps) {
                 {locale === 'ru' ? 'Назад к статьям' : 'Maqolalarga qaytish'}
               </Link>
 
-              {/* Cover Image */}
-              {coverUrl && (
-                <div className="relative mb-8 aspect-video w-full overflow-hidden rounded-lg bg-muted">
-                  <Image
-                    src={coverUrl}
-                    alt={title}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 66vw, 896px"
-                    priority
-                    unoptimized
-                  />
-                </div>
-              )}
+              {/* Title - Moved above image */}
+              <h1 className="mb-4 text-4xl font-bold leading-tight text-foreground">
+                {title}
+              </h1>
 
               {/* Post Meta */}
               <div className="mb-6 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
@@ -310,10 +300,20 @@ export default async function PostPage({ params }: PostPageProps) {
                 )}
               </div>
 
-              {/* Title */}
-              <h1 className="mb-4 text-4xl font-bold leading-tight text-foreground">
-                {title}
-              </h1>
+              {/* Cover Image */}
+              {coverUrl && (
+                <div className="relative mb-8 aspect-video w-full overflow-hidden rounded-lg bg-muted">
+                  <Image
+                    src={coverUrl}
+                    alt={title}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 66vw, 896px"
+                    priority
+                    unoptimized
+                  />
+                </div>
+              )}
 
               {/* Excerpt */}
               {excerpt && (
