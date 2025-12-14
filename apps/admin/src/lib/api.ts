@@ -311,6 +311,8 @@ export type CreateDoctorPayload = {
   description_ru?: string | null;
   slug: string;
   imageId?: string | null;
+  branchIds?: string[];
+  patientTypes?: string[];
   order?: number;
   status?: DoctorDto['status'];
 };
