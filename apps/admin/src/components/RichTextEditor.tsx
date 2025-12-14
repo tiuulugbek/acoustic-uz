@@ -25,6 +25,7 @@ import {
   FolderOutlined,
   TableOutlined,
   AppstoreOutlined,
+  PlayCircleOutlined,
 } from '@ant-design/icons';
 import { uploadMedia, type MediaDto } from '../lib/api';
 import MediaLibraryModal from './MediaLibraryModal';
@@ -40,6 +41,8 @@ interface RichTextEditorProps {
 export default function RichTextEditor({ value, onChange, placeholder }: RichTextEditorProps) {
   const [mediaModalOpen, setMediaModalOpen] = useState(false);
   const [imageLayoutModalOpen, setImageLayoutModalOpen] = useState(false);
+  const [youtubeModalOpen, setYoutubeModalOpen] = useState(false);
+  const [youtubeUrl, setYoutubeUrl] = useState('');
   const [selectedImages, setSelectedImages] = useState<MediaDto[]>([]);
   const [isMultipleSelectionMode, setIsMultipleSelectionMode] = useState(false);
 
@@ -228,6 +231,46 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
     setSelectedImages([]);
   };
 
+  // Extract YouTube video ID from URL
+  const extractYouTubeId = (url: string): string | null => {
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+      /youtube\.com\/watch\?.*v=([^&\n?#]+)/,
+    ];
+    
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match && match[1]) {
+        return match[1];
+      }
+    }
+    
+    return null;
+  };
+
+  const addYouTubeVideo = () => {
+    if (!editor) return;
+    
+    if (!youtubeUrl.trim()) {
+      message.warning('YouTube video URL kiriting');
+      return;
+    }
+
+    const videoId = extractYouTubeId(youtubeUrl.trim());
+    if (!videoId) {
+      message.error('Noto\'g\'ri YouTube URL. Masalan: https://www.youtube.com/watch?v=VIDEO_ID yoki https://youtu.be/VIDEO_ID');
+      return;
+    }
+
+    // Insert YouTube shortcode
+    const shortcode = `[youtube id="${videoId}"]`;
+    editor.chain().focus().insertContent(shortcode).run();
+    
+    setYoutubeUrl('');
+    setYoutubeModalOpen(false);
+    message.success('YouTube video qo\'shildi');
+  };
+
 
   if (!editor) {
     return null;
@@ -358,6 +401,12 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
             size="small"
             title="Rasm layout qo'shish"
           />
+          <Button
+            icon={<PlayCircleOutlined />}
+            onClick={() => setYoutubeModalOpen(true)}
+            size="small"
+            title="YouTube video qo'shish"
+          />
 
           <div className="editor-divider" />
 
@@ -462,6 +511,38 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
               Tanlangan rasmlar: {selectedImages.map(img => img.filename || img.alt_uz || 'Rasm').join(', ')}
             </p>
           </div>
+        </div>
+      </Modal>
+
+      {/* YouTube Video Modal */}
+      <Modal
+        title="YouTube video qo'shish"
+        open={youtubeModalOpen}
+        onOk={addYouTubeVideo}
+        onCancel={() => {
+          setYoutubeModalOpen(false);
+          setYoutubeUrl('');
+        }}
+        okText="Qo'shish"
+        cancelText="Bekor qilish"
+      >
+        <div style={{ marginTop: 16 }}>
+          <p style={{ marginBottom: 8 }}>YouTube video URL kiriting:</p>
+          <Input
+            placeholder="Masalan: https://www.youtube.com/watch?v=dQw4w9WgXcQ yoki https://youtu.be/dQw4w9WgXcQ"
+            value={youtubeUrl}
+            onChange={(e) => setYoutubeUrl(e.target.value)}
+            onPressEnter={addYouTubeVideo}
+          />
+          <p style={{ marginTop: 8, fontSize: 12, color: '#666' }}>
+            Qo'llab-quvvatlanadigan formatlar:
+            <br />
+            • https://www.youtube.com/watch?v=VIDEO_ID
+            <br />
+            • https://youtu.be/VIDEO_ID
+            <br />
+            • https://www.youtube.com/embed/VIDEO_ID
+          </p>
         </div>
       </Modal>
     </div>

@@ -8,6 +8,7 @@ import { useTooltipManager } from './tooltip-manager';
  * - Tooltips: [tooltip keyword="..." content="..."] or [tooltips keyword="..." content="..."]
  * - Table positions: [table position="left|center|right|full"]...[/table]
  * - Image layouts: [images layout="grid-2|grid-3|left-right|right-left"]...[/images]
+ * - YouTube videos: [youtube id="VIDEO_ID"]
  */
 export function processContentShortcodes(content: string): string {
   let processed = content;
@@ -80,6 +81,26 @@ export function processContentShortcodes(content: string): string {
     }).join('');
 
     return `<div class="${wrapperClass}">${processedImages}</div>`;
+  });
+
+  // Process YouTube videos: [youtube id="VIDEO_ID"]
+  const youtubeRegex = /\[youtube\s+id\s*=\s*["']([^"']+)["']\]/gi;
+  processed = processed.replace(youtubeRegex, (match, videoId) => {
+    // Sanitize video ID to prevent XSS
+    const sanitizedId = videoId.replace(/[^a-zA-Z0-9_-]/g, '');
+    if (!sanitizedId) return '';
+    
+    return `<div class="youtube-video-wrapper my-6" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%;">
+      <iframe
+        class="youtube-iframe"
+        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;"
+        src="https://www.youtube.com/embed/${sanitizedId}?rel=0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+        loading="lazy"
+        title="YouTube video player"
+      ></iframe>
+    </div>`;
   });
 
   return processed;
