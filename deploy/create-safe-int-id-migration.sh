@@ -57,7 +57,14 @@ fi
 # Create migration using Prisma
 echo -e "${BLUE}Creating migration...${NC}"
 echo -e "${BLUE}DATABASE_URL: ${DATABASE_URL:0:30}...${NC}"
-sudo -u acoustic bash -c "export DATABASE_URL='$DATABASE_URL' && cd '$BACKEND_DIR' && npx prisma migrate dev --name change_ids_to_int --create-only"
+
+# Read .env file and pass DATABASE_URL to Prisma
+cd "$BACKEND_DIR"
+sudo -u acoustic bash << EOF
+export DATABASE_URL='$DATABASE_URL'
+cd '$BACKEND_DIR'
+npx prisma migrate dev --name change_ids_to_int --create-only
+EOF
 
 MIGRATION_DIR=$(ls -td prisma/migrations/*change_ids_to_int* | head -1)
 MIGRATION_FILE="$MIGRATION_DIR/migration.sql"
