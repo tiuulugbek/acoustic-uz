@@ -190,6 +190,28 @@ export default function MediaLibraryModal({
                               height: '100%',
                               objectFit: 'cover',
                             }}
+                            onError={(e) => {
+                              console.error('[MediaLibraryModal] Image load error:', {
+                                originalUrl: media.url,
+                                normalizedUrl: normalizeImageUrl(media.url),
+                                filename: media.filename,
+                                mediaId: media.id,
+                              });
+                              // Show placeholder on error
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const parent = target.parentElement;
+                              if (parent) {
+                                parent.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #999; font-size: 12px;">Rasm yuklanmadi</div>';
+                              }
+                            }}
+                            onLoad={() => {
+                              console.log('[MediaLibraryModal] Image loaded successfully:', {
+                                originalUrl: media.url,
+                                normalizedUrl: normalizeImageUrl(media.url),
+                                filename: media.filename,
+                              });
+                            }}
                           />
                           {selected && (
                             <div
