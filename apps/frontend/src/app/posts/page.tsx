@@ -83,11 +83,9 @@ export default async function PostsPage({ searchParams }: PostsPageProps) {
     getSettings(locale),
   ]);
   
-  // Filter categories: only show "news" section categories or categories without section
-  // Also include categories that don't belong to "patients" or "children" sections
-  const newsCategories = allCategories.filter(cat => 
-    !cat.section || cat.section === 'news' || (cat.section !== 'patients' && cat.section !== 'children')
-  );
+  // Filter categories: ONLY show categories without section (general categories)
+  // Exclude "news", "patients", and "children" section categories
+  const generalCategories = allCategories.filter(cat => !cat.section);
   
   // If category slug is provided, get that specific category
   let selectedCategory = null;
@@ -97,49 +95,40 @@ export default async function PostsPage({ searchParams }: PostsPageProps) {
     try {
       selectedCategory = await getPostCategoryBySlug(categorySlug, locale);
       if (!selectedCategory) {
-        // Category not found - show all posts instead of 404
-        // This provides better UX - users can still see posts even if category slug is wrong
         console.warn(`[PostsPage] Category not found: ${categorySlug}, showing all posts`);
       } else {
-        // Only allow news categories or categories without section
-        if (selectedCategory.section && selectedCategory.section !== 'news' && 
-            selectedCategory.section !== 'patients' && selectedCategory.section !== 'children') {
-          categoryId = selectedCategory.id;
-        } else if (!selectedCategory.section) {
+        // Only allow categories without section (general categories)
+        if (!selectedCategory.section) {
           categoryId = selectedCategory.id;
         } else {
-          // Category belongs to patients or children section - don't show it here
+          // Category belongs to a section - don't show it here
           console.warn(`[PostsPage] Category ${categorySlug} belongs to ${selectedCategory.section} section, not showing here`);
           selectedCategory = null;
         }
       }
     } catch (error) {
-      // Error fetching category - show all posts instead of crashing
       console.error(`[PostsPage] Error fetching category ${categorySlug}:`, error);
       selectedCategory = null;
     }
   }
   
   // Get posts - filtered by category if provided
-  // Also include posts without category (uncategorized posts)
-  const allPosts = await getPosts(locale, true, undefined); // Get all posts
+  // Only show posts that belong to general categories (no section) or don't have a category
+  const allPosts = await getPosts(locale, true, undefined);
   const posts = categoryId 
     ? allPosts.filter(post => post.categoryId === categoryId || !post.categoryId)
     : allPosts.filter(post => {
         // Show posts that:
         // 1. Don't have a category (uncategorized)
-        // 2. Belong to news categories
-        // 3. Don't belong to patients or children sections
+        // 2. Belong to general categories (no section)
         if (!post.categoryId) return true;
         const postCategory = allCategories.find(cat => cat.id === post.categoryId);
         if (!postCategory) return true; // Category not found, show it
-        return !postCategory.section || 
-               postCategory.section === 'news' || 
-               (postCategory.section !== 'patients' && postCategory.section !== 'children');
+        return !postCategory.section; // Only show if category has no section
       });
   
-  // Use news categories for display
-  const categories = newsCategories;
+  // Use general categories for display
+  const categories = generalCategories;
   
   // Build page title
   const pageTitle = selectedCategory

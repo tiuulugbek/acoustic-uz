@@ -79,6 +79,9 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
     getSettings(locale),
   ]);
   
+  // Filter categories: ONLY show "news" section categories
+  const newsCategories = allCategories.filter(cat => cat.section === 'news');
+  
   // If category slug is provided, get that specific category
   let selectedCategory = null;
   let categoryId: string | undefined = undefined;
@@ -89,7 +92,14 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
       if (!selectedCategory) {
         console.warn(`[NewsPage] Category not found: ${categorySlug}, showing all news`);
       } else {
-        categoryId = selectedCategory.id;
+        // Only allow "news" section categories
+        if (selectedCategory.section === 'news') {
+          categoryId = selectedCategory.id;
+        } else {
+          // Category belongs to another section - don't show it here
+          console.warn(`[NewsPage] Category ${categorySlug} belongs to ${selectedCategory.section} section, not showing here`);
+          selectedCategory = null;
+        }
       }
     } catch (error) {
       console.error(`[NewsPage] Error fetching category ${categorySlug}:`, error);
@@ -99,12 +109,23 @@ export default async function NewsPage({ searchParams }: NewsPageProps) {
   
   // Get all posts and filter for news only
   const allPosts = await getPosts(locale, true, undefined);
-  const newsPosts = allPosts.filter(post => post.postType === 'news');
+  const newsPosts = allPosts.filter(post => {
+    // Only show news posts
+    if (post.postType !== 'news') return false;
+    
+    // If filtering by category, only show posts in that category
+    if (categoryId) {
+      return post.categoryId === categoryId;
+    }
+    
+    // Show all news posts, but only if they belong to "news" section categories or have no category
+    if (!post.categoryId) return true; // Uncategorized news posts
+    const postCategory = allCategories.find(cat => cat.id === post.categoryId);
+    if (!postCategory) return true; // Category not found
+    return postCategory.section === 'news'; // Only show if category belongs to "news" section
+  });
   
-  // Filter posts by category if provided
-  const posts = categoryId 
-    ? newsPosts.filter(post => post.categoryId === categoryId)
-    : newsPosts;
+  const posts = newsPosts;
   
   // Build page title
   const pageTitle = selectedCategory

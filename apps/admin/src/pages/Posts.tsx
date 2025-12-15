@@ -162,15 +162,18 @@ function PostsTab() {
       return [];
     }
     
-    // Show all categories (not just published) for admin panel
-    const options = categories
+    // Filter: ONLY show "news" section categories for news posts
+    const newsCategories = categories.filter(cat => cat.section === 'news');
+    
+    // Show only news section categories (not just published) for admin panel
+    const options = newsCategories
       .sort((a, b) => a.order - b.order) // Sort by order
       .map(cat => ({
         label: `${cat.name_uz}${cat.name_ru ? ` (${cat.name_ru})` : ''}${cat.status !== 'published' ? ' [Qoralama]' : ''}`,
         value: cat.id,
       }));
     
-    console.log('Category options created:', options);
+    console.log('Category options created (news section only):', options);
     return options;
   }, [categories, categoriesError, isLoadingCategories]);
 
@@ -670,14 +673,17 @@ function PostsTab() {
   );
 }
 
-// Categories Tab Component
+// Categories Tab Component - Only shows "news" section categories
 function CategoriesTab() {
   const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery<PostCategoryDto[], ApiError>({
+  const { data: allCategories, isLoading } = useQuery<PostCategoryDto[], ApiError>({
     queryKey: ['post-categories'],
     queryFn: () => getPostCategories(),
     retry: false,
   });
+
+  // Filter: ONLY show "news" section categories
+  const data = allCategories?.filter(cat => cat.section === 'news') || [];
 
   const { data: mediaList } = useQuery({
     queryKey: ['media'],
@@ -748,7 +754,7 @@ function CategoriesTab() {
     form.setFieldsValue({
       status: 'published',
       order: 0,
-      section: null,
+      section: 'news', // Always "news" section for this tab
       imageId: null,
     });
     setIsModalOpen(true);
@@ -784,7 +790,7 @@ function CategoriesTab() {
         slug: values.slug || createSlug(values.name_uz),
         description_uz: values.description_uz || null,
         description_ru: values.description_ru || null,
-        section: values.section || null,
+        section: 'news', // Always "news" for this tab
         imageId: values.imageId || null,
         order: values.order || 0,
         status: values.status,
@@ -930,16 +936,15 @@ function CategoriesTab() {
           <Form.Item 
             label="Bo'lim" 
             name="section"
-            help="Kategoriya qaysi bo'limga tegishli. Agar bo'lim tanlanmasa, kategoriya umumiy bo'limda ko'rinadi."
+            help="Bu bo'limda faqat 'Yangiliklar' bo'limi kategoriyalari ko'rsatiladi."
             rules={[{ required: false }]}
+            initialValue="news"
           >
             <Select 
-              placeholder="Bo'limni tanlang (ixtiyoriy)"
-              allowClear
+              placeholder="Bo'limni tanlang"
+              disabled={true} // Always "news" for this tab
               options={[
-                { label: 'Umumiy (bo\'limga tegishli emas)', value: 'general' },
-                { label: 'Bemorlar', value: 'patients' },
-                { label: 'Bolalar', value: 'children' },
+                { label: 'Yangiliklar', value: 'news' },
               ]}
             />
           </Form.Item>
