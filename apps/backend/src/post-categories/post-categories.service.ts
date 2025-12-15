@@ -148,8 +148,8 @@ export class PostCategoriesService {
       // Handle image relation
       if (imageId !== undefined) {
         if (imageId === null || imageId === '' || imageId.trim() === '') {
-          // Set imageId to null if imageId is null or empty
-          updateData.imageId = null;
+          // Disconnect image if imageId is null or empty
+          updateData.image = { disconnect: true };
         } else {
           // Connect image if imageId is provided
           updateData.image = { connect: { id: imageId } };
