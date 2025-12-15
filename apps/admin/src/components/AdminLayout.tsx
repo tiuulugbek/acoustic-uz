@@ -111,7 +111,7 @@ const menuItems: MenuProps['items'] = [
     key: 'divider-1',
   },
   {
-    key: '/posts',
+    key: '/news',
     icon: <FileTextOutlined />,
     label: 'Yangiliklar',
   },

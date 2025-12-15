@@ -114,10 +114,17 @@ export default async function PostsPage({ searchParams }: PostsPageProps) {
   
   // Get posts - filtered by category if provided
   // Only show posts that belong to general categories (no section) or don't have a category
+  // EXCLUDE news posts (postType='news') - they should only appear on /news page
   const allPosts = await getPosts(locale, true, undefined);
   const posts = categoryId 
-    ? allPosts.filter(post => post.categoryId === categoryId || !post.categoryId)
+    ? allPosts.filter(post => 
+        (post.categoryId === categoryId || !post.categoryId) && 
+        post.postType !== 'news' // Exclude news posts
+      )
     : allPosts.filter(post => {
+        // Exclude news posts - they should only appear on /news page
+        if (post.postType === 'news') return false;
+        
         // Show posts that:
         // 1. Don't have a category (uncategorized)
         // 2. Belong to general categories (no section)

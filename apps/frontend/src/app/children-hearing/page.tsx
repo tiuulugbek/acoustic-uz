@@ -110,22 +110,21 @@ export default async function ChildrenHearingPage() {
     getSettings(locale),
   ]);
   
-  // Get all published posts (both with and without categories)
+  // Get all published posts (only articles, not news)
   // Then filter by section categories
   const categoryIds = categories?.map(cat => cat.id) || [];
   
-  // Get ALL published posts (no category filter)
-  const allPublishedPosts = await getPosts(locale, true, undefined, undefined);
+  // Get ALL published posts (only articles, exclude news)
+  const allPublishedPosts = await getPosts(locale, true, undefined, 'article');
   
-  // Filter posts: include posts that either:
-  // 1. Belong to this section's categories, OR
-  // 2. Don't have any category (for backward compatibility)
+  // Filter posts: ONLY include posts that belong to this section's categories
+  // Exclude posts without category - they should not appear in section pages
   let posts = allPublishedPosts.filter(post => {
+    // Only show posts that have a category AND belong to this section
     if (!post.categoryId) {
-      // Include posts without category
-      return true;
+      return false; // Exclude posts without category
     }
-    // Include posts that belong to this section's categories
+    // Only include posts that belong to this section's categories
     return categoryIds.includes(post.categoryId);
   });
   
