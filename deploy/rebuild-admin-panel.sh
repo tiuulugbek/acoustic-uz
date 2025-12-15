@@ -38,8 +38,9 @@ fi
 
 echo -e "${BLUE}   Current directory: $(pwd)${NC}"
 
-# Set environment variable for API URL
+# Set environment variables
 export VITE_API_URL="https://a.acoustic.uz/api"
+export VITE_FRONTEND_URL="https://acoustic.uz"
 
 # Remove old dist if exists
 if [ -d "dist" ]; then
