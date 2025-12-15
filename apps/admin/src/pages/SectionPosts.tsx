@@ -16,7 +16,7 @@ import {
   Tabs,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { UploadOutlined, FolderOutlined, PlusOutlined } from '@ant-design/icons';
+import { UploadOutlined, FolderOutlined, PlusOutlined, EyeOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import {
   useQuery,
@@ -531,6 +531,31 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
     },
   ];
 
+  // Helper function to get post URL based on section and post type
+  const getPostUrl = (post: PostDto): string => {
+    const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 'https://acoustic.uz';
+    
+    // If post is news, use /news/{slug}
+    if (post.postType === 'news') {
+      return `${frontendUrl}/news/${post.slug}`;
+    }
+    
+    // If post has a category, check its section
+    if (post.categoryId) {
+      const postCategory = categories?.find(c => c.id === post.categoryId);
+      if (postCategory) {
+        if (postCategory.section === 'patients') {
+          return `${frontendUrl}/post/patients/${post.slug}`;
+        } else if (postCategory.section === 'children') {
+          return `${frontendUrl}/post/children-hearing/${post.slug}`;
+        }
+      }
+    }
+    
+    // Default to /posts/{slug} (will redirect automatically)
+    return `${frontendUrl}/posts/${post.slug}`;
+  };
+
   const columns: ColumnsType<PostDto> = [
     {
       title: 'Sarlavha (uz)',
@@ -580,6 +605,16 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
       key: 'actions',
       render: (_: any, record: PostDto) => (
         <Space>
+          {record.status === 'published' && (
+            <Button 
+              size="small" 
+              icon={<EyeOutlined />}
+              onClick={() => window.open(getPostUrl(record), '_blank')}
+              title="Frontend'da ko'rish"
+            >
+              Ko'rish
+            </Button>
+          )}
           <Button size="small" onClick={() => openEditModal(record)}>
             Tahrirlash
           </Button>

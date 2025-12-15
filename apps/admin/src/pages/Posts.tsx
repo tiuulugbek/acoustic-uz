@@ -19,7 +19,7 @@ import {
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { TabsProps } from 'antd';
-import { UploadOutlined, FolderOutlined } from '@ant-design/icons';
+import { UploadOutlined, FolderOutlined, EyeOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import {
   useQuery,
@@ -386,27 +386,64 @@ function PostsTab() {
       {
         title: 'Amallar',
         key: 'actions',
-        render: (_, record) => (
-          <Space>
-            <Button size="small" onClick={() => openEditModal(record)}>
-              Tahrirlash
-            </Button>
-            <Popconfirm
-              title="Maqolani o'chirish"
-              description="Haqiqatan ham o'chirilsinmi?"
-              onConfirm={() => handleDelete(record)}
-              okText="Ha"
-              cancelText="Yo'q"
-            >
-              <Button danger size="small" loading={isDeleting}>
-                O'chirish
+        render: (_, record) => {
+          // Helper function to get post URL based on section and post type
+          const getPostUrl = (post: PostDto): string => {
+            const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 'https://acoustic.uz';
+            
+            // If post is news, use /news/{slug}
+            if (post.postType === 'news') {
+              return `${frontendUrl}/news/${post.slug}`;
+            }
+            
+            // If post has a category, check its section
+            if (post.categoryId) {
+              const postCategory = categories?.find(c => c.id === post.categoryId);
+              if (postCategory) {
+                if (postCategory.section === 'patients') {
+                  return `${frontendUrl}/post/patients/${post.slug}`;
+                } else if (postCategory.section === 'children') {
+                  return `${frontendUrl}/post/children-hearing/${post.slug}`;
+                }
+              }
+            }
+            
+            // Default to /posts/{slug} (will redirect automatically)
+            return `${frontendUrl}/posts/${post.slug}`;
+          };
+
+          return (
+            <Space>
+              {record.status === 'published' && (
+                <Button 
+                  size="small" 
+                  icon={<EyeOutlined />}
+                  onClick={() => window.open(getPostUrl(record), '_blank')}
+                  title="Frontend'da ko'rish"
+                >
+                  Ko'rish
+                </Button>
+              )}
+              <Button size="small" onClick={() => openEditModal(record)}>
+                Tahrirlash
               </Button>
-            </Popconfirm>
-          </Space>
-        ),
+              <Popconfirm
+                title="Maqolani o'chirish"
+                description="Haqiqatan ham o'chirilsinmi?"
+                onConfirm={() => handleDelete(record)}
+                okText="Ha"
+                cancelText="Yo'q"
+              >
+                <Button danger size="small" loading={isDeleting}>
+                  O'chirish
+                </Button>
+              </Popconfirm>
+            </Space>
+          );
+        },
       },
     ],
-    [isDeleting, categories],
+    [isDeleting, categories, isDeleting],
   );
 
   return (

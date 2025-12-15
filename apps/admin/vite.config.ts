@@ -97,6 +97,9 @@ export default defineConfig({
     'import.meta.env.VITE_API_URL': JSON.stringify(
       process.env.VITE_API_URL || 'https://a.acoustic.uz/api'
     ),
+    'import.meta.env.VITE_FRONTEND_URL': JSON.stringify(
+      process.env.VITE_FRONTEND_URL || 'https://acoustic.uz'
+    ),
     'import.meta.env.PROD': JSON.stringify(true),
     'import.meta.env.DEV': JSON.stringify(false),
   },
