@@ -769,7 +769,7 @@ function CategoriesTab() {
       slug: category.slug,
       description_uz: category.description_uz,
       description_ru: category.description_ru,
-      section: category.section || null,
+      section: 'news', // Always "news" for this tab
       imageId: category.imageId || null,
       order: category.order,
       status: category.status,
