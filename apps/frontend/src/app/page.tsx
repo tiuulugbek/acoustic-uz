@@ -197,7 +197,12 @@ export default async function HomePage() {
     order: step.order ?? index + 1,
   }));
 
-  const newsItems = (newsItemsData || []).slice(0, 6).map((item, index) => ({
+  // Filter news items: only show published posts with postType='news'
+  const filteredNewsItems = (newsItemsData || []).filter((item) => {
+    return item.status === 'published' && item.postType === 'news';
+  });
+  
+  const newsItems = filteredNewsItems.slice(0, 6).map((item, index) => ({
     id: item.id ?? `news-${index}`,
     title: locale === 'ru' ? (item.title_ru || '') : (item.title_uz || ''),
     excerpt: locale === 'ru' ? (item.excerpt_ru || '') : (item.excerpt_uz || ''),
