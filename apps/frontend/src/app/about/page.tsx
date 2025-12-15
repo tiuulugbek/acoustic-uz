@@ -132,33 +132,31 @@ export default async function AboutPage() {
 
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-brand-primary/10 via-brand-accent/5 to-background py-12 md:py-16">
-        <div className="mx-auto max-w-6xl px-4 md:px-6">
-          <div className="grid gap-8 md:grid-cols-2 items-center">
-            <div className="space-y-4">
-              <h2 className="text-2xl md:text-3xl font-bold text-foreground" suppressHydrationWarning>
-                {locale === 'ru' 
-                  ? 'Acoustic — это сеть современных центров слуха, специализирующихся на улучшении слухового здоровья в Узбекистане.'
-                  : 'Acoustic — bu O\'zbekistonda eshitish salomatligini yaxshilashga ixtisoslashgan zamonaviy eshitish markazlari tarmog\'i.'}
-              </h2>
-              <p className="text-lg text-muted-foreground leading-relaxed" suppressHydrationWarning>
-                {locale === 'ru'
-                  ? 'Мы помогаем улучшить качество жизни детей и взрослых через глубокую диагностику слуховых способностей, правильный выбор решений и постоянную поддержку.'
-                  : 'Biz bolalar va kattalarning eshitish qobiliyatini chuqur diagnostika qilish, to\'g\'ri yechim tanlash va doimiy qo\'llab-quvvatlash orqali hayot sifatini oshirishga xizmat qilamiz.'}
-              </p>
-            </div>
-            {galleryImages.length > 0 && (
-              <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-muted/40 shadow-lg">
-                <Image
-                  src={buildMediaUrl(galleryImages[0].url)}
-                  alt={title}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  priority
-                />
-              </div>
-            )}
+        <div className="mx-auto max-w-4xl px-4 md:px-6">
+          <div className="text-center space-y-4">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground" suppressHydrationWarning>
+              {locale === 'ru' 
+                ? 'Acoustic — это сеть современных центров слуха, специализирующихся на улучшении слухового здоровья в Узбекистане.'
+                : 'Acoustic — bu O\'zbekistonda eshitish salomatligini yaxshilashga ixtisoslashgan zamonaviy eshitish markazlari tarmog\'i.'}
+            </h2>
+            <p className="text-lg text-muted-foreground leading-relaxed max-w-3xl mx-auto" suppressHydrationWarning>
+              {locale === 'ru'
+                ? 'Мы помогаем улучшить качество жизни детей и взрослых через глубокую диагностику слуховых способностей, правильный выбор решений и постоянную поддержку.'
+                : 'Biz bolalar va kattalarning eshitish qobiliyatini chuqur diagnostika qilish, to\'g\'ri yechim tanlash va doimiy qo\'llab-quvvatlash orqali hayot sifatini oshirishga xizmat qilamiz.'}
+            </p>
           </div>
+          {galleryImages.length > 0 && (
+            <div className="mt-8 relative aspect-[4/3] w-full max-w-2xl mx-auto overflow-hidden rounded-xl bg-muted/40 shadow-lg">
+              <Image
+                src={buildMediaUrl(galleryImages[0].url)}
+                alt={title}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 50vw"
+                priority
+              />
+            </div>
+          )}
         </div>
       </section>
 
@@ -273,7 +271,7 @@ export default async function AboutPage() {
           </div>
 
           {/* Sidebar */}
-          <aside className="space-y-6">
+          <aside className="lg:sticky lg:top-6 h-fit space-y-6">
             {/* Contact Card */}
             <div className="bg-gradient-to-br from-brand-primary to-brand-accent rounded-xl p-6 text-white shadow-lg">
               <h3 className="mb-4 text-lg font-semibold" suppressHydrationWarning>
