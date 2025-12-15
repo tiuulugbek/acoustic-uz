@@ -17,7 +17,7 @@ export default function AuthorCard({ author, locale }: AuthorCardProps) {
   const imageUrl = author.image?.url ? normalizeImageUrl(author.image.url) : null;
 
   return (
-    <div className="mt-8 rounded-lg border border-border bg-muted/30 p-6">
+    <div className="mt-8 rounded-lg border border-border bg-white p-6 shadow-sm">
       {/* Header */}
       <div className="mb-4">
         <p className="text-sm font-medium text-muted-foreground">
