@@ -102,12 +102,15 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
   // Show posts that belong to this section's categories
   // Also show posts without category (for backward compatibility and easy assignment)
   const { data, isLoading, error } = useQuery<PostDto[], ApiError>({
-    queryKey: ['posts', section],
-    enabled: true, // Always enable the query
+    queryKey: ['posts', section, categoryIds.join(',')], // Include categoryIds in queryKey to trigger refetch when categories change
+    enabled: categories !== undefined, // Only enable query if categories are loaded
     queryFn: async () => {
       try {
+        // Calculate categoryIds from categories inside queryFn to ensure fresh values
+        const currentCategoryIds = categories?.map(cat => cat.id) || [];
+        
         console.log(`[SectionPosts-${section}] Fetching posts...`);
-        console.log(`[SectionPosts-${section}] Category IDs:`, categoryIds);
+        console.log(`[SectionPosts-${section}] Category IDs:`, currentCategoryIds);
         
         const allPosts = await getPosts();
         console.log(`[SectionPosts-${section}] All posts fetched:`, allPosts?.length || 0);
@@ -139,7 +142,7 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
             return true;
           }
           // Include posts that belong to this section's categories
-          const belongsToSection = categoryIds.includes(post.categoryId);
+          const belongsToSection = currentCategoryIds.includes(post.categoryId);
           if (belongsToSection) {
             console.log(`[SectionPosts-${section}] Including post with matching category:`, post.id, post.categoryId);
           }
@@ -154,7 +157,7 @@ export default function SectionPostsPage({ section, sectionName }: SectionPostsP
         console.log(`[SectionPosts-${section}] Filtered posts:`, filteredPosts.length);
         
         // Separate posts with and without categories for better display
-        const postsWithCategory = filteredPosts.filter(p => p.categoryId && categoryIds.includes(p.categoryId));
+        const postsWithCategory = filteredPosts.filter(p => p.categoryId && currentCategoryIds.includes(p.categoryId));
         const postsWithoutCategory = filteredPosts.filter(p => !p.categoryId);
         
         console.log(`[SectionPosts-${section}] Posts with category:`, postsWithCategory.length);
