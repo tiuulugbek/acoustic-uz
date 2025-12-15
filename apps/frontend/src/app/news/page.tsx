@@ -8,29 +8,25 @@ import PostsListPaginated from '@/components/posts-list-paginated';
 import CategoryGrid from '@/components/category-grid';
 import NearbyBranches from '@/components/nearby-branches';
 import Link from 'next/link';
-import { MapPin, Phone } from 'lucide-react';
-import { normalizeImageUrl } from '@/lib/image-utils';
-import Image from 'next/image';
-import { notFound } from 'next/navigation';
 
 // Force dynamic rendering to always fetch fresh data from admin
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-interface PostsPageProps {
+interface NewsPageProps {
   searchParams: Promise<{ category?: string }> | { category?: string };
 }
 
-export async function generateMetadata({ searchParams }: PostsPageProps): Promise<Metadata> {
+export async function generateMetadata({ searchParams }: NewsPageProps): Promise<Metadata> {
   const locale = detectLocale();
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
   const resolvedSearchParams = await Promise.resolve(searchParams);
   const categorySlug = resolvedSearchParams.category;
   
-  let title = locale === 'ru' ? 'Статьи' : 'Maqolalar';
+  let title = locale === 'ru' ? 'Новости' : 'Yangiliklar';
   let description = locale === 'ru' 
-    ? 'Полезные статьи о слухе и слуховых аппаратах'
-    : 'Quloq va eshitish qurilmalari haqida foydali maqolalar';
+    ? 'Последние новости о слуховых аппаратах и слухе'
+    : 'Eshitish qurilmalari va eshitish haqida so\'nggi yangiliklar';
   
   if (categorySlug) {
     const category = await getPostCategoryBySlug(categorySlug, locale);
@@ -41,8 +37,8 @@ export async function generateMetadata({ searchParams }: PostsPageProps): Promis
   }
   
   const pageUrl = categorySlug 
-    ? `${baseUrl}/posts?category=${categorySlug}`
-    : `${baseUrl}/posts`;
+    ? `${baseUrl}/news?category=${categorySlug}`
+    : `${baseUrl}/news`;
   
   return {
     title: `${title} — Acoustic.uz`,
@@ -71,23 +67,17 @@ export async function generateMetadata({ searchParams }: PostsPageProps): Promis
   };
 }
 
-export default async function PostsPage({ searchParams }: PostsPageProps) {
+export default async function NewsPage({ searchParams }: NewsPageProps) {
   const locale = detectLocale();
   const resolvedSearchParams = await Promise.resolve(searchParams);
   const categorySlug = resolvedSearchParams.category;
   
-  // Get all categories (for sidebar/navigation)
+  // Get all categories
   const [allCategories, branches, settings] = await Promise.all([
     getPostCategories(locale),
     getBranches(locale),
     getSettings(locale),
   ]);
-  
-  // Filter categories: only show "news" section categories or categories without section
-  // Also include categories that don't belong to "patients" or "children" sections
-  const newsCategories = allCategories.filter(cat => 
-    !cat.section || cat.section === 'news' || (cat.section !== 'patients' && cat.section !== 'children')
-  );
   
   // If category slug is provided, get that specific category
   let selectedCategory = null;
@@ -97,60 +87,35 @@ export default async function PostsPage({ searchParams }: PostsPageProps) {
     try {
       selectedCategory = await getPostCategoryBySlug(categorySlug, locale);
       if (!selectedCategory) {
-        // Category not found - show all posts instead of 404
-        // This provides better UX - users can still see posts even if category slug is wrong
-        console.warn(`[PostsPage] Category not found: ${categorySlug}, showing all posts`);
+        console.warn(`[NewsPage] Category not found: ${categorySlug}, showing all news`);
       } else {
-        // Only allow news categories or categories without section
-        if (selectedCategory.section && selectedCategory.section !== 'news' && 
-            selectedCategory.section !== 'patients' && selectedCategory.section !== 'children') {
-          categoryId = selectedCategory.id;
-        } else if (!selectedCategory.section) {
-          categoryId = selectedCategory.id;
-        } else {
-          // Category belongs to patients or children section - don't show it here
-          console.warn(`[PostsPage] Category ${categorySlug} belongs to ${selectedCategory.section} section, not showing here`);
-          selectedCategory = null;
-        }
+        categoryId = selectedCategory.id;
       }
     } catch (error) {
-      // Error fetching category - show all posts instead of crashing
-      console.error(`[PostsPage] Error fetching category ${categorySlug}:`, error);
+      console.error(`[NewsPage] Error fetching category ${categorySlug}:`, error);
       selectedCategory = null;
     }
   }
   
-  // Get posts - filtered by category if provided
-  // Also include posts without category (uncategorized posts)
-  const allPosts = await getPosts(locale, true, undefined); // Get all posts
-  const posts = categoryId 
-    ? allPosts.filter(post => post.categoryId === categoryId || !post.categoryId)
-    : allPosts.filter(post => {
-        // Show posts that:
-        // 1. Don't have a category (uncategorized)
-        // 2. Belong to news categories
-        // 3. Don't belong to patients or children sections
-        if (!post.categoryId) return true;
-        const postCategory = allCategories.find(cat => cat.id === post.categoryId);
-        if (!postCategory) return true; // Category not found, show it
-        return !postCategory.section || 
-               postCategory.section === 'news' || 
-               (postCategory.section !== 'patients' && postCategory.section !== 'children');
-      });
+  // Get all posts and filter for news only
+  const allPosts = await getPosts(locale, true, undefined);
+  const newsPosts = allPosts.filter(post => post.postType === 'news');
   
-  // Use news categories for display
-  const categories = newsCategories;
+  // Filter posts by category if provided
+  const posts = categoryId 
+    ? newsPosts.filter(post => post.categoryId === categoryId)
+    : newsPosts;
   
   // Build page title
   const pageTitle = selectedCategory
     ? getBilingualText(selectedCategory.name_uz, selectedCategory.name_ru, locale)
-    : locale === 'ru' ? 'Статьи' : 'Maqolalar';
+    : locale === 'ru' ? 'Новости' : 'Yangiliklar';
   
   // Build BreadcrumbList Structured Data
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
   const pageUrl = categorySlug 
-    ? `${baseUrl}/posts?category=${categorySlug}`
-    : `${baseUrl}/posts`;
+    ? `${baseUrl}/news?category=${categorySlug}`
+    : `${baseUrl}/news`;
   
   const breadcrumbJsonLd = {
     '@context': 'https://schema.org',
@@ -194,13 +159,6 @@ export default async function PostsPage({ searchParams }: PostsPageProps) {
           <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
             {/* Main Content */}
             <div className="min-w-0">
-              {/* Show categories if no specific category is selected */}
-              {!selectedCategory && categories && categories.length > 0 && (
-                <div className="mb-8">
-                  <CategoryGrid categories={categories} locale={locale} />
-                </div>
-              )}
-              
               {/* Show selected category info */}
               {selectedCategory && (
                 <div className="mb-8">
@@ -214,35 +172,35 @@ export default async function PostsPage({ searchParams }: PostsPageProps) {
                       </p>
                     ) : null}
                     <Link
-                      href="/posts"
+                      href="/news"
                       className="mt-4 inline-block text-sm font-medium text-brand-primary hover:text-brand-accent transition-colors"
                     >
-                      {locale === 'ru' ? '← Все статьи' : '← Barcha maqolalar'}
+                      {locale === 'ru' ? '← Все новости' : '← Barcha yangiliklar'}
                     </Link>
                   </div>
                 </div>
               )}
               
-              {/* Posts List with Pagination */}
+              {/* News List with Pagination */}
               {posts && posts.length > 0 ? (
                 <div>
                   {!selectedCategory && (
                     <h2 className="mb-6 text-2xl font-bold text-foreground">
-                      {locale === 'ru' ? 'Статьи' : 'Maqolalar'}
+                      {locale === 'ru' ? 'Новости' : 'Yangiliklar'}
                     </h2>
                   )}
-                  <PostsListPaginated posts={posts} locale={locale} postsPerPage={6} />
+                  <PostsListPaginated posts={posts} locale={locale} postsPerPage={6} basePath="/news" />
                 </div>
               ) : (
                 <div className="text-center py-12">
                   <p className="text-muted-foreground">
                     {locale === 'ru'
                       ? selectedCategory
-                        ? 'В этой категории пока нет статей.'
-                        : 'Статьи скоро будут добавлены.'
+                        ? 'В этой категории пока нет новостей.'
+                        : 'Новости скоро будут добавлены.'
                       : selectedCategory
-                        ? 'Bu kategoriyada hozircha maqolalar yo\'q.'
-                        : "Maqolalar tez orada qo'shiladi."}
+                        ? 'Bu kategoriyada hozircha yangiliklar yo\'q.'
+                        : "Yangiliklar tez orada qo'shiladi."}
                   </p>
                 </div>
               )}
@@ -250,29 +208,6 @@ export default async function PostsPage({ searchParams }: PostsPageProps) {
 
             {/* Sidebar */}
             <aside className="sticky top-6 h-fit space-y-6">
-              {/* Categories List (if viewing all posts) */}
-              {!selectedCategory && categories && categories.length > 0 && (
-                <div className="rounded-lg border border-border bg-white p-6 shadow-sm">
-                  <h3 className="mb-4 text-lg font-semibold text-foreground">
-                    {locale === 'ru' ? 'Категории' : 'Kategoriyalar'}
-                  </h3>
-                  <div className="space-y-2">
-                    {categories.map((category) => {
-                      const categoryName = getBilingualText(category.name_uz, category.name_ru, locale);
-                      return (
-                        <Link
-                          key={category.id}
-                          href={`/posts?category=${category.slug}`}
-                          className="block rounded-md px-3 py-2 text-sm text-foreground transition-colors hover:bg-muted hover:text-brand-primary"
-                        >
-                          {categoryName}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-              
               {/* Branches Card - Show nearby branches */}
               {branches && branches.length > 0 && (
                 <NearbyBranches branches={branches} locale={locale} limit={3} />

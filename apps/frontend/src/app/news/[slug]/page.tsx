@@ -3,7 +3,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import Script from 'next/script';
 import { Calendar, Tag, ArrowLeft } from 'lucide-react';
-import { getPostBySlug, getPosts, getPostCategories, getBrands, getSettings } from '@/lib/api-server';
+import { getPostBySlug, getPosts, getBrands, getSettings } from '@/lib/api-server';
 import { detectLocale } from '@/lib/locale-server';
 import { getBilingualText } from '@/lib/locale';
 import PageHeader from '@/components/page-header';
@@ -12,30 +12,30 @@ import AppointmentForm from '@/components/appointment-form';
 import AuthorCard from '@/components/author-card';
 import Sidebar from '@/components/sidebar';
 import ArticleTableOfContents from '@/components/article-table-of-contents';
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import dayjs from 'dayjs';
 import { normalizeImageUrl } from '@/lib/image-utils';
-import { optimizeMetaDescription, optimizeTitle, generateSeoDescription } from '@/lib/seo-utils';
+import { optimizeMetaDescription, optimizeTitle } from '@/lib/seo-utils';
 
 // ISR: Revalidate every 2 hours
 export const revalidate = 7200;
 
-interface PostPageProps {
+interface NewsPageProps {
   params: {
     slug: string;
   };
 }
 
-export async function generateMetadata({ params }: PostPageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: NewsPageProps): Promise<Metadata> {
   const locale = detectLocale();
   const post = await getPostBySlug(params.slug, locale);
 
-  if (!post || post.status !== 'published') {
+  if (!post || post.status !== 'published' || post.postType !== 'news') {
     return {
-      title: locale === 'ru' ? 'Статья — Acoustic.uz' : 'Maqola — Acoustic.uz',
+      title: locale === 'ru' ? 'Новость — Acoustic.uz' : 'Yangilik — Acoustic.uz',
       description: locale === 'ru' 
-        ? 'Статья не найдена'
-        : 'Maqola topilmadi',
+        ? 'Новость не найдена'
+        : 'Yangilik topilmadi',
     };
   }
 
@@ -47,7 +47,7 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
   const optimizedDescription = optimizeMetaDescription(rawDescription);
   
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
-  const postUrl = `${baseUrl}/posts/${params.slug}`;
+  const newsUrl = `${baseUrl}/news/${params.slug}`;
   const imageUrl = post.cover?.url 
     ? (post.cover.url.startsWith('http') 
         ? post.cover.url 
@@ -58,17 +58,17 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
     title: optimizedTitle,
     description: optimizedDescription,
     alternates: {
-      canonical: postUrl,
+      canonical: newsUrl,
       languages: {
-        uz: postUrl,
-        ru: postUrl, // Same URL since we use cookie-based locale detection
-        'x-default': postUrl,
+        uz: newsUrl,
+        ru: newsUrl,
+        'x-default': newsUrl,
       },
     },
     openGraph: {
       title: optimizedTitle,
       description: optimizedDescription,
-      url: postUrl,
+      url: newsUrl,
       siteName: 'Acoustic.uz',
       images: [
         {
@@ -93,34 +93,16 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
   };
 }
 
-export default async function PostPage({ params }: PostPageProps) {
+export default async function NewsPage({ params }: NewsPageProps) {
   const locale = detectLocale();
-  const [post, categories, brands, settings] = await Promise.all([
+  const [post, brands, settings] = await Promise.all([
     getPostBySlug(params.slug, locale),
-    getPostCategories(locale),
     getBrands(locale),
     getSettings(locale),
   ]);
 
-  if (!post || post.status !== 'published') {
+  if (!post || post.status !== 'published' || post.postType !== 'news') {
     notFound();
-  }
-
-  // Redirect based on post type and section
-  if (post.postType === 'news') {
-    redirect(`/news/${post.slug}`);
-  }
-
-  // Check if post belongs to patients or children section
-  if (post.categoryId) {
-    const postCategory = categories.find(c => c.id === post.categoryId);
-    if (postCategory) {
-      if (postCategory.section === 'patients') {
-        redirect(`/post/patients/${post.slug}`);
-      } else if (postCategory.section === 'children') {
-        redirect(`/post/children-hearing/${post.slug}`);
-      }
-    }
   }
 
   const title = getBilingualText(post.title_uz, post.title_ru, locale);
@@ -132,22 +114,20 @@ export default async function PostPage({ params }: PostPageProps) {
   const coverUrl = post.cover?.url ? normalizeImageUrl(post.cover.url) : null;
 
   // Extract table of contents from HTML content
-  // This matches the ID generation logic in ServiceContent component
   const extractTableOfContents = (content: string) => {
     if (!content) return [];
     
     const headings: Array<{ id: string; text: string; level: number }> = [];
     let headingIndex = 0;
     
-    // Extract headings in order (H2 and H3) - matching ServiceContent logic
     const headingRegex = /<(h[23])([^>]*)>(.*?)<\/h[23]>/gi;
     
     let match;
     while ((match = headingRegex.exec(content)) !== null) {
-      const tag = match[1]; // h2 or h3
+      const tag = match[1];
       const attrs = match[2] || '';
       const text = match[3]
-        .replace(/<[^>]+>/g, '') // Remove HTML tags
+        .replace(/<[^>]+>/g, '')
         .replace(/&nbsp;/g, ' ')
         .replace(/&amp;/g, '&')
         .replace(/&lt;/g, '<')
@@ -157,11 +137,8 @@ export default async function PostPage({ params }: PostPageProps) {
       
       if (text) {
         const level = tag === 'h2' ? 2 : 3;
-        
-        // Check if ID already exists in attributes
         const idMatch = attrs.match(/id=["']([^"']+)["']/i);
         const id = idMatch ? idMatch[1] : `section-${headingIndex++}`;
-        
         headings.push({ id, text, level });
       }
     }
@@ -171,24 +148,22 @@ export default async function PostPage({ params }: PostPageProps) {
 
   const tableOfContents = extractTableOfContents(body);
 
-  // Get related posts from the same category (only articles, not news)
-  const relatedPosts = post.categoryId 
-    ? await getPosts(locale, true, post.categoryId, 'article')
-    : [];
-  const filteredRelatedPosts = relatedPosts
+  // Get related news posts
+  const allPosts = await getPosts(locale, true, undefined, 'news');
+  const relatedPosts = allPosts
     .filter(p => p.id !== post.id && p.status === 'published')
     .slice(0, 3);
 
   // Build Article Structured Data
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
-  const postUrl = `${baseUrl}/posts/${post.slug}`;
+  const newsUrl = `${baseUrl}/news/${post.slug}`;
   const articleImageUrl = coverUrl 
     ? (coverUrl.startsWith('http') ? coverUrl : `${baseUrl}${coverUrl}`)
     : `${baseUrl}/logo.png`;
   
   const articleJsonLd = {
     '@context': 'https://schema.org',
-    '@type': 'Article',
+    '@type': 'NewsArticle',
     headline: title,
     image: articleImageUrl,
     datePublished: post.publishAt ? new Date(post.publishAt).toISOString() : undefined,
@@ -211,10 +186,10 @@ export default async function PostPage({ params }: PostPageProps) {
     },
     mainEntityOfPage: {
       '@type': 'WebPage',
-      '@id': postUrl,
+      '@id': newsUrl,
     },
     description: excerpt || undefined,
-    articleSection: categoryName || undefined,
+    articleSection: categoryName || (locale === 'ru' ? 'Новости' : 'Yangiliklar'),
   };
 
   // Build BreadcrumbList Structured Data
@@ -231,21 +206,20 @@ export default async function PostPage({ params }: PostPageProps) {
       {
         '@type': 'ListItem',
         position: 2,
-        name: categoryName || (locale === 'ru' ? 'Статьи' : 'Maqolalar'),
-        item: post.categoryId ? `${baseUrl}/patients` : `${baseUrl}/patients`,
+        name: locale === 'ru' ? 'Новости' : 'Yangiliklar',
+        item: `${baseUrl}/news`,
       },
       {
         '@type': 'ListItem',
         position: 3,
         name: title,
-        item: postUrl,
+        item: newsUrl,
       },
     ],
   };
 
   return (
     <main className="min-h-screen bg-background">
-      {/* Article Structured Data */}
       <Script
         id="article-jsonld"
         type="application/ld+json"
@@ -253,7 +227,6 @@ export default async function PostPage({ params }: PostPageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
       />
       
-      {/* BreadcrumbList Structured Data */}
       <Script
         id="breadcrumb-jsonld"
         type="application/ld+json"
@@ -265,8 +238,8 @@ export default async function PostPage({ params }: PostPageProps) {
         breadcrumbs={[
           { label: locale === 'ru' ? 'Главная' : 'Bosh sahifa', href: '/' },
           { 
-            label: categoryName || (locale === 'ru' ? 'Статьи' : 'Maqolalar'), 
-            href: post.categoryId ? `/patients` : '/patients' 
+            label: locale === 'ru' ? 'Новости' : 'Yangiliklar', 
+            href: '/news' 
           },
           { label: title },
         ]}
@@ -276,23 +249,19 @@ export default async function PostPage({ params }: PostPageProps) {
       <article className="bg-white py-12">
         <div className="mx-auto max-w-6xl px-4 md:px-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Main Content - 2 columns */}
             <div className="lg:col-span-2">
-              {/* Back button */}
               <Link
-                href={post.categoryId ? '/patients' : '/patients'}
+                href="/news"
                 className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-brand-primary hover:text-brand-accent transition-colors"
               >
                 <ArrowLeft className="h-4 w-4" />
-                {locale === 'ru' ? 'Назад к статьям' : 'Maqolalarga qaytish'}
+                {locale === 'ru' ? 'Назад к новостям' : 'Yangiliklarga qaytish'}
               </Link>
 
-              {/* Title - Moved above image */}
               <h1 className="mb-4 text-4xl font-bold leading-tight text-foreground">
                 {title}
               </h1>
 
-              {/* Post Meta */}
               <div className="mb-6 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
@@ -302,23 +271,18 @@ export default async function PostPage({ params }: PostPageProps) {
                 </div>
                 {categoryName && (
                   <Link
-                    href={post.categoryId ? '/patients' : '/patients'}
+                    href="/news"
                     className="flex items-center gap-2 rounded-full bg-brand-primary/10 px-3 py-1 text-brand-primary hover:bg-brand-primary/20 transition-colors"
                   >
                     <Tag className="h-3 w-3" />
                     {categoryName}
                   </Link>
                 )}
-                {post.postType && (
-                  <span className="rounded-full bg-muted px-3 py-1">
-                    {post.postType === 'news' 
-                      ? (locale === 'ru' ? '📰 Новость' : '📰 Yangilik')
-                      : (locale === 'ru' ? '📄 Статья' : '📄 Maqola')}
-                  </span>
-                )}
+                <span className="rounded-full bg-muted px-3 py-1">
+                  {locale === 'ru' ? '📰 Новость' : '📰 Yangilik'}
+                </span>
               </div>
 
-              {/* Cover Image */}
               {coverUrl && (
                 <div className="relative mb-8 aspect-video w-full overflow-hidden rounded-lg bg-muted">
                   <Image
@@ -332,19 +296,16 @@ export default async function PostPage({ params }: PostPageProps) {
                 </div>
               )}
 
-              {/* Excerpt */}
               {excerpt && (
                 <p className="mb-8 text-lg leading-relaxed text-muted-foreground">
                   {excerpt}
                 </p>
               )}
 
-              {/* Content */}
               <article className="prose prose-lg max-w-none prose-headings:font-bold prose-headings:text-foreground prose-headings:mt-8 prose-headings:mb-4 prose-p:text-muted-foreground prose-p:leading-relaxed prose-p:text-base prose-a:text-brand-primary prose-a:no-underline hover:prose-a:underline prose-strong:text-foreground prose-strong:font-semibold prose-img:rounded-lg prose-img:shadow-md prose-img:my-6 prose-img:w-full prose-ul:list-disc prose-ol:list-decimal prose-li:my-2 prose-blockquote:border-l-4 prose-blockquote:border-brand-primary prose-blockquote:pl-4 prose-blockquote:italic">
                 <ServiceContent content={body} locale={locale} />
               </article>
 
-              {/* Tags */}
               {post.tags && post.tags.length > 0 && (
                 <div className="mt-8 flex flex-wrap items-center gap-2 border-t border-border pt-6">
                   <span className="text-sm font-medium text-foreground">
@@ -361,13 +322,10 @@ export default async function PostPage({ params }: PostPageProps) {
                 </div>
               )}
 
-
-              {/* Author Card - Show if author exists */}
               {post.author && (
                 <AuthorCard author={post.author} locale={locale} />
               )}
 
-              {/* Appointment Form - Below content, same grid layout */}
               <div className="mt-8 bg-gradient-to-br from-brand-primary/5 to-brand-accent/5 rounded-lg p-6">
                 <div className="mb-4">
                   <h2 className="mb-2 text-2xl font-bold text-foreground">
@@ -379,14 +337,12 @@ export default async function PostPage({ params }: PostPageProps) {
                       : 'Bizning mutaxassislarimiz barcha savollaringizga javob berishga va eshitishingiz uchun eng yaxshi yechimni topishga tayyor.'}
                   </p>
                 </div>
-                <AppointmentForm locale={locale} doctorId={post.authorId || null} source={`post-${post.slug}`} />
+                <AppointmentForm locale={locale} doctorId={post.authorId || null} source={`news-${post.slug}`} />
               </div>
             </div>
 
-            {/* Sidebar - 1 column */}
             <div className="lg:col-span-1">
               <div className="sticky top-24 space-y-6">
-                {/* Table of Contents - Show if headings exist */}
                 {tableOfContents.length > 0 && (
                   <ArticleTableOfContents items={tableOfContents} locale={locale} />
                 )}
@@ -397,16 +353,14 @@ export default async function PostPage({ params }: PostPageProps) {
         </div>
       </article>
 
-
-      {/* Related Posts */}
-      {filteredRelatedPosts.length > 0 && (
+      {relatedPosts.length > 0 && (
         <section className="bg-muted/30 py-12">
           <div className="mx-auto max-w-6xl px-4 md:px-6">
             <h2 className="mb-6 text-2xl font-bold text-foreground">
-              {locale === 'ru' ? 'Похожие статьи' : 'O\'xshash maqolalar'}
+              {locale === 'ru' ? 'Похожие новости' : 'O\'xshash yangiliklar'}
             </h2>
             <div className="grid gap-6 md:grid-cols-3">
-              {filteredRelatedPosts.map((relatedPost) => {
+              {relatedPosts.map((relatedPost) => {
                 const relatedTitle = getBilingualText(relatedPost.title_uz, relatedPost.title_ru, locale);
                 const relatedExcerpt = getBilingualText(relatedPost.excerpt_uz, relatedPost.excerpt_ru, locale) || 
                                      getBilingualText(relatedPost.body_uz, relatedPost.body_ru, locale)?.replace(/<[^>]*>/g, '').substring(0, 100) + '...';
@@ -415,7 +369,7 @@ export default async function PostPage({ params }: PostPageProps) {
                 return (
                   <Link
                     key={relatedPost.id}
-                    href={`/posts/${relatedPost.slug}`}
+                    href={`/news/${relatedPost.slug}`}
                     className="group flex flex-col overflow-hidden rounded-lg border border-border bg-white shadow-sm transition-shadow hover:shadow-md"
                   >
                     {relatedCoverUrl && (

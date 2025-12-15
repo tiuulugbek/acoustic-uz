@@ -12,9 +12,17 @@ interface PostsListPaginatedProps {
   posts: PostResponse[];
   locale: 'uz' | 'ru';
   postsPerPage?: number;
+  basePath?: string; // Base path for post links (e.g., '/post/patients', '/post/children-hearing', '/posts', '/news')
+  getPostPath?: (post: PostResponse) => string; // Custom function to generate post path
 }
 
-export default function PostsListPaginated({ posts, locale, postsPerPage = 6 }: PostsListPaginatedProps) {
+export default function PostsListPaginated({ 
+  posts, 
+  locale, 
+  postsPerPage = 6,
+  basePath = '/posts',
+  getPostPath
+}: PostsListPaginatedProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [mounted, setMounted] = useState(false);
 
@@ -50,13 +58,18 @@ export default function PostsListPaginated({ posts, locale, postsPerPage = 6 }: 
                          getBilingualText(post.body_uz, post.body_ru, locale)?.replace(/<[^>]*>/g, '').substring(0, 100) + '...';
           const coverUrl = post.cover?.url ? normalizeImageUrl(post.cover.url) : null;
 
+          // Determine post path
+          const postPath = getPostPath 
+            ? getPostPath(post)
+            : `${basePath}/${post.slug}`;
+
           return (
             <article
               key={post.id}
               className="group flex flex-col overflow-hidden rounded-lg border border-border bg-white shadow-sm transition-shadow hover:shadow-md"
             >
               {coverUrl ? (
-                <Link href={`/posts/${post.slug}`} className="relative aspect-video w-full overflow-hidden bg-muted">
+                <Link href={postPath} className="relative aspect-video w-full overflow-hidden bg-muted">
                   <Image
                     src={coverUrl}
                     alt={title}
@@ -73,7 +86,7 @@ export default function PostsListPaginated({ posts, locale, postsPerPage = 6 }: 
               <div className="flex flex-1 flex-col p-3 md:p-4 lg:p-6">
                 <h3 className="mb-2 text-sm md:text-base lg:text-lg font-semibold leading-tight text-foreground line-clamp-2">
                   <Link
-                    href={`/posts/${post.slug}`}
+                    href={postPath}
                     className="transition-colors hover:text-brand-primary"
                   >
                     {title}

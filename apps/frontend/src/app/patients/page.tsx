@@ -191,7 +191,7 @@ export default async function PatientsPage() {
                   <h2 className="mb-6 text-2xl font-bold text-foreground">
                     {locale === 'ru' ? 'Статьи' : 'Maqolalar'}
                   </h2>
-                  <PostsListPaginated posts={posts} locale={locale} postsPerPage={6} />
+                  <PostsListPaginated posts={posts} locale={locale} postsPerPage={6} basePath="/post/patients" />
                 </div>
               ) : (
                 <div className="text-center py-12">

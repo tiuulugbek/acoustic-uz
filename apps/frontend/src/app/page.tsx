@@ -484,7 +484,7 @@ export default async function HomePage() {
               {newsItems.slice(0, 6).map((item) => (
                 <Link
                   key={item.id}
-                  href={item.slug && item.slug !== '#' ? `/posts/${item.slug}` : '#'}
+                  href={item.slug && item.slug !== '#' ? `/news/${item.slug}` : '#'}
                   className="group flex flex-col gap-3 transition hover:opacity-80"
                 >
                   <h3 className="text-base font-semibold text-brand-primary group-hover:text-brand-accent leading-snug" suppressHydrationWarning>
