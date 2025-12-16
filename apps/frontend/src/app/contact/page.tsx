@@ -14,11 +14,38 @@ export const revalidate = 0;
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = detectLocale();
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
+  const contactUrl = `${baseUrl}/contact`;
+  
+  const title = locale === 'ru' ? 'Контакты — Acoustic.uz' : 'Bog\'lanish — Acoustic.uz';
+  const description = locale === 'ru' 
+    ? 'Свяжитесь с центром слуха Acoustic. Телефон, адрес, электронная почта. Запишитесь на консультацию или задайте вопрос. Мы ответим в течение 24 часов.'
+    : 'Acoustic eshitish markazi bilan bog\'laning. Telefon, manzil, elektron pochta. Maslahat uchun yoziling yoki savol bering. Biz 24 soat ichida javob beramiz.';
+  
   return {
-    title: locale === 'ru' ? 'Контакты — Acoustic.uz' : 'Bog\'lanish — Acoustic.uz',
-    description: locale === 'ru' 
-      ? 'Свяжитесь с нами. Контактная информация центра слуха Acoustic'
-      : 'Biz bilan bog\'laning. Acoustic eshitish markazi kontakt ma\'lumotlari',
+    title,
+    description,
+    alternates: {
+      canonical: contactUrl,
+      languages: {
+        uz: contactUrl,
+        ru: contactUrl,
+        'x-default': contactUrl,
+      },
+    },
+    openGraph: {
+      title,
+      description,
+      url: contactUrl,
+      siteName: 'Acoustic.uz',
+      locale: locale === 'ru' ? 'ru_RU' : 'uz_UZ',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+    },
   };
 }
 

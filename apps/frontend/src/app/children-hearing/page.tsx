@@ -25,8 +25,8 @@ export async function generateMetadata(): Promise<Metadata> {
   if (!page || page.status !== 'published') {
     const title = locale === 'ru' ? 'Дети и слух' : 'Bolalar va eshitish';
     const description = locale === 'ru' 
-      ? 'Информация о детях и слухе'
-      : 'Bolalar va eshitish haqida ma\'lumot';
+      ? 'Информация о детях и слухе от центра Acoustic. Статьи о детской тугоухости, диагностике слуха у детей, детских слуховых аппаратах и развитии слуха. Консультации для родителей.'
+      : 'Acoustic markazidan bolalar va eshitish haqida ma\'lumot. Bolalar eshitish qobiliyati pasayishi, bolalarda eshitish diagnostikasi, bolalar eshitish apparatlari va eshitish rivojlanishi haqida maqolalar. Ota-onalar uchun maslahatlar.';
     
     return {
       title: `${title} — Acoustic.uz`,
@@ -58,7 +58,9 @@ export async function generateMetadata(): Promise<Metadata> {
   const title = getBilingualText(page.metaTitle_uz, page.metaTitle_ru, locale) || 
                 getBilingualText(page.title_uz, page.title_ru, locale);
   const description = getBilingualText(page.metaDescription_uz, page.metaDescription_ru, locale) ||
-                      (locale === 'ru' ? 'Информация о детях и слухе' : 'Bolalar va eshitish haqida ma\'lumot');
+                      (locale === 'ru' 
+                        ? 'Информация о детях и слухе от центра Acoustic. Статьи о детской тугоухости, диагностике слуха у детей, детских слуховых аппаратах и развитии слуха. Консультации для родителей.'
+                        : 'Acoustic markazidan bolalar va eshitish haqida ma\'lumot. Bolalar eshitish qobiliyati pasayishi, bolalarda eshitish diagnostikasi, bolalar eshitish apparatlari va eshitish rivojlanishi haqida maqolalar. Ota-onalar uchun maslahatlar.');
   const imageUrl = page.image?.url 
     ? (page.image.url.startsWith('http') 
         ? page.image.url 

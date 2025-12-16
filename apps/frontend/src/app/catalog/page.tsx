@@ -21,8 +21,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
   const title = locale === 'ru' ? 'Каталог' : 'Katalog';
   const description = locale === 'ru'
-    ? 'Каталог слуховых аппаратов и решений от Acoustic. Выберите подходящий аппарат под ваш образ жизни, уровень активности и бюджет.'
-    : "Acoustic eshitish markazining katalogi — eshitish apparatlari, implantlar va aksessuarlar haqida ma'lumot.";
+    ? 'Каталог слуховых аппаратов и решений от Acoustic. Выберите подходящий аппарат под ваш образ жизни, уровень активности и бюджет. Широкий выбор моделей от ведущих производителей.'
+    : "Acoustic eshitish markazining katalogi — eshitish apparatlari, implantlar va aksessuarlar haqida ma'lumot. Yetakchi ishlab chiqaruvchilarning keng tanlovi.";
   const imageUrl = `${baseUrl}/logo.png`;
 
   return {

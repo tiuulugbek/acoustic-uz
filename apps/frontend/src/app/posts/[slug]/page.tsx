@@ -172,12 +172,35 @@ export default async function PostPage({ params }: PostPageProps) {
   const tableOfContents = extractTableOfContents(body);
 
   // Get related posts from the same category (only articles, not news)
-  const relatedPosts = post.categoryId 
+  // Also include posts from related categories or popular posts if same category has less than 3 posts
+  let relatedPosts = post.categoryId 
     ? await getPosts(locale, true, post.categoryId, 'article')
     : [];
-  const filteredRelatedPosts = relatedPosts
-    .filter(p => p.id !== post.id && p.status === 'published')
-    .slice(0, 3);
+  
+  // Filter out current post
+  relatedPosts = relatedPosts.filter(p => p.id !== post.id && p.status === 'published');
+  
+  // If we have less than 3 related posts, add popular posts from other categories
+  if (relatedPosts.length < 3) {
+    const allPosts = await getPosts(locale, true, undefined, 'article');
+    const popularPosts = allPosts
+      .filter(p => 
+        p.id !== post.id && 
+        p.status === 'published' &&
+        !relatedPosts.some(rp => rp.id === p.id)
+      )
+      .sort((a, b) => {
+        // Sort by publish date (newer first)
+        const dateA = new Date(a.publishAt).getTime();
+        const dateB = new Date(b.publishAt).getTime();
+        return dateB - dateA;
+      })
+      .slice(0, 3 - relatedPosts.length);
+    
+    relatedPosts = [...relatedPosts, ...popularPosts];
+  }
+  
+  const filteredRelatedPosts = relatedPosts.slice(0, 3);
 
   // Build Article Structured Data
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
@@ -364,7 +387,7 @@ export default async function PostPage({ params }: PostPageProps) {
 
               {/* Author Card - Show if author exists */}
               {post.author && (
-                <AuthorCard author={post.author} locale={locale} />
+                <AuthorCard author={post.author} locale={locale} source={`post-${post.slug}`} />
               )}
 
               {/* Appointment Form - Below content, same grid layout */}
@@ -400,11 +423,16 @@ export default async function PostPage({ params }: PostPageProps) {
 
       {/* Related Posts */}
       {filteredRelatedPosts.length > 0 && (
-        <section className="bg-muted/30 py-12">
+        <section className="bg-muted/30 py-12" aria-label={locale === 'ru' ? 'Похожие статьи' : 'O\'xshash maqolalar'}>
           <div className="mx-auto max-w-6xl px-4 md:px-6">
-            <h2 className="mb-6 text-2xl font-bold text-foreground">
+            <h2 className="mb-2 text-2xl font-bold text-foreground">
               {locale === 'ru' ? 'Похожие статьи' : 'O\'xshash maqolalar'}
             </h2>
+            <p className="mb-6 text-sm text-muted-foreground">
+              {locale === 'ru' 
+                ? 'Рекомендуем прочитать эти статьи по теме'
+                : 'Ushbu mavzudagi maqolalarni o\'qishni tavsiya qilamiz'}
+            </p>
             <div className="grid gap-6 md:grid-cols-3">
               {filteredRelatedPosts.map((relatedPost) => {
                 const relatedTitle = getBilingualText(relatedPost.title_uz, relatedPost.title_ru, locale);

@@ -13,6 +13,10 @@ const staticPages = [
   'patients',
   'children-hearing',
   'posts',
+  'news',
+  'services',
+  'doctors',
+  'about',
 ];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -80,6 +84,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       },
     });
     
+    // Add news listing page
+    addUrl('/news', new Date(), 'daily', 0.8, {
+      languages: {
+        uz: `${baseUrl}/news`,
+        ru: `${baseUrl}/ru/news`,
+        'x-default': `${baseUrl}/news`,
+      },
+    });
+    
     // Add post category pages
     const postCategories = await getPostCategories('uz');
     postCategories.forEach((category) => {
@@ -100,11 +113,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     
     publishedPosts.forEach((post) => {
       const priority = post.postType === 'news' ? 0.6 : 0.7;
-      addUrl(`/posts/${post.slug}`, post.updatedAt ? new Date(post.updatedAt) : undefined, 'weekly', priority, {
+      
+      // Determine correct URL based on post type and category section
+      let postUrl = `/posts/${post.slug}`;
+      if (post.postType === 'news') {
+        postUrl = `/news/${post.slug}`;
+      } else if (post.categoryId) {
+        const postCategory = postCategories.find(cat => cat.id === post.categoryId);
+        if (postCategory?.section === 'patients') {
+          postUrl = `/post/patients/${post.slug}`;
+        } else if (postCategory?.section === 'children') {
+          postUrl = `/post/children-hearing/${post.slug}`;
+        }
+      }
+      
+      addUrl(postUrl, post.updatedAt ? new Date(post.updatedAt) : undefined, 'weekly', priority, {
         languages: {
-          uz: `${baseUrl}/posts/${post.slug}`,
-          ru: `${baseUrl}/ru/posts/${post.slug}`,
-          'x-default': `${baseUrl}/posts/${post.slug}`,
+          uz: `${baseUrl}${postUrl}`,
+          ru: `${baseUrl}/ru${postUrl}`,
+          'x-default': `${baseUrl}${postUrl}`,
         },
       });
     });

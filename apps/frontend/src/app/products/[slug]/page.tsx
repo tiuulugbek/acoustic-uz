@@ -787,9 +787,16 @@ export default async function ProductPage({ params }: ProductPageProps) {
             {/* Related Products */}
             {relatedProducts.length > 0 && (
               <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-foreground border-b border-border/60 pb-2">
-                  {isRu ? 'Похожие товары' : 'O\'xshash mahsulotlar'}
-                </h3>
+                <div className="border-b border-border/60 pb-2">
+                  <h3 className="text-sm font-semibold text-foreground">
+                    {isRu ? 'Похожие товары' : 'O\'xshash mahsulotlar'}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {isRu 
+                      ? 'Рекомендуем обратить внимание'
+                      : 'Diqqat qaratishni tavsiya qilamiz'}
+                  </p>
+                </div>
                 <div className="space-y-2">
                   {relatedProducts.map((relatedProduct) => {
                     const relatedProductName = getBilingualText(relatedProduct.name_uz, relatedProduct.name_ru, locale);

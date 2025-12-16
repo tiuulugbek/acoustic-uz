@@ -15,11 +15,14 @@ export async function generateMetadata(): Promise<Metadata> {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
   const faqUrl = `${baseUrl}/faq`;
   
+  const title = locale === 'ru' ? 'Часто задаваемые вопросы — Acoustic.uz' : 'Savollar — Acoustic.uz';
+  const description = locale === 'ru' 
+    ? 'Ответы на часто задаваемые вопросы о слухе и слуховых аппаратах от центра Acoustic. Узнайте о диагностике, подборе аппаратов, стоимости и многом другом.'
+    : 'Acoustic markazidan eshitish va eshitish apparatlari haqida tez-tez beriladigan savollarga javoblar. Diagnostika, apparatlarni tanlash, narx va boshqalar haqida bilib oling.';
+  
   return {
-    title: locale === 'ru' ? 'Часто задаваемые вопросы — Acoustic.uz' : 'Savollar — Acoustic.uz',
-    description: locale === 'ru' 
-      ? 'Ответы на часто задаваемые вопросы о слухе и слуховых аппаратах'
-      : 'Eshitish va eshitish apparatlari haqida tez-tez beriladigan savollarga javoblar',
+    title,
+    description,
     alternates: {
       canonical: faqUrl,
       languages: {
@@ -27,6 +30,19 @@ export async function generateMetadata(): Promise<Metadata> {
         ru: faqUrl, // Same URL since we use cookie-based locale detection
         'x-default': faqUrl,
       },
+    },
+    openGraph: {
+      title,
+      description,
+      url: faqUrl,
+      siteName: 'Acoustic.uz',
+      locale: locale === 'ru' ? 'ru_RU' : 'uz_UZ',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary',
+      title,
+      description,
     },
   };
 }

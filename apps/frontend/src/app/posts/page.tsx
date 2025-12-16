@@ -29,8 +29,8 @@ export async function generateMetadata({ searchParams }: PostsPageProps): Promis
   
   let title = locale === 'ru' ? 'Статьи' : 'Maqolalar';
   let description = locale === 'ru' 
-    ? 'Полезные статьи о слухе и слуховых аппаратах'
-    : 'Quloq va eshitish qurilmalari haqida foydali maqolalar';
+    ? 'Полезные статьи о слухе и слуховых аппаратах от экспертов центра Acoustic. Узнайте о диагностике, выборе аппаратов, уходе за слухом и многом другом.'
+    : 'Acoustic markazi mutaxassislaridan eshitish va eshitish apparatlari haqida foydali maqolalar. Diagnostika, apparatlarni tanlash, eshitish parvarishi va boshqalar haqida bilib oling.';
   
   if (categorySlug) {
     const category = await getPostCategoryBySlug(categorySlug, locale);

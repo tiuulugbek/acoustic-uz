@@ -19,10 +19,45 @@ interface DoctorPageProps {
 
 export async function generateMetadata({ params }: DoctorPageProps): Promise<Metadata> {
   const locale = detectLocale();
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
   const doctor = await getDoctorBySlug(params.slug, locale);
   const name = doctor ? getBilingualText(doctor.name_uz, doctor.name_ru, locale) : '';
+  const position = doctor ? getBilingualText(doctor.position_uz, doctor.position_ru, locale) : '';
+  const description = doctor 
+    ? (locale === 'ru'
+        ? `${name}${position ? ` - ${position}` : ''} в центре слуха Acoustic. Профессиональная диагностика и подбор слуховых аппаратов.`
+        : `Acoustic eshitish markazidagi ${name}${position ? ` - ${position}` : ''}. Professional diagnostika va eshitish apparatlarni tanlash.`)
+    : (locale === 'ru' 
+        ? 'Специалист центра слуха Acoustic'
+        : 'Acoustic eshitish markazi mutaxassisi');
+  
+  const title = name ? `${name} — Acoustic.uz` : (locale === 'ru' ? 'Специалист — Acoustic.uz' : 'Mutaxassis — Acoustic.uz');
+  const doctorUrl = doctor ? `${baseUrl}/doctors/${params.slug}` : `${baseUrl}/doctors`;
+  
   return {
-    title: name ? `${name} — Acoustic.uz` : (locale === 'ru' ? 'Специалист — Acoustic.uz' : 'Mutaxassis — Acoustic.uz'),
+    title,
+    description,
+    alternates: {
+      canonical: doctorUrl,
+      languages: {
+        uz: doctorUrl,
+        ru: doctorUrl,
+        'x-default': doctorUrl,
+      },
+    },
+    openGraph: {
+      title,
+      description,
+      url: doctorUrl,
+      siteName: 'Acoustic.uz',
+      locale: locale === 'ru' ? 'ru_RU' : 'uz_UZ',
+      type: 'profile',
+    },
+    twitter: {
+      card: 'summary',
+      title,
+      description,
+    },
   };
 }
 

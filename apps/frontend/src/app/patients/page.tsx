@@ -25,8 +25,8 @@ export async function generateMetadata(): Promise<Metadata> {
   if (!page || page.status !== 'published') {
     const title = locale === 'ru' ? 'Пациентам' : 'Bemorlar';
     const description = locale === 'ru' 
-      ? 'Информация для пациентов'
-      : 'Bemorlar uchun ma\'lumot';
+      ? 'Информация для пациентов центра слуха Acoustic. Полезные статьи о слухе, слуховых аппаратах, диагностике и уходе за слухом. Ответы на частые вопросы.'
+      : 'Acoustic eshitish markazi bemorlari uchun ma\'lumot. Eshitish, eshitish apparatlari, diagnostika va eshitish parvarishi haqida foydali maqolalar. Tez-tez beriladigan savollarga javoblar.';
     
     return {
       title: `${title} — Acoustic.uz`,
@@ -58,7 +58,9 @@ export async function generateMetadata(): Promise<Metadata> {
   const title = getBilingualText(page.metaTitle_uz, page.metaTitle_ru, locale) || 
                 getBilingualText(page.title_uz, page.title_ru, locale);
   const description = getBilingualText(page.metaDescription_uz, page.metaDescription_ru, locale) ||
-                      (locale === 'ru' ? 'Информация для пациентов' : 'Bemorlar uchun ma\'lumot');
+                      (locale === 'ru' 
+                        ? 'Информация для пациентов центра слуха Acoustic. Полезные статьи о слухе, слуховых аппаратах, диагностике и уходе за слухом. Ответы на частые вопросы.'
+                        : 'Acoustic eshitish markazi bemorlari uchun ma\'lumot. Eshitish, eshitish apparatlari, diagnostika va eshitish parvarishi haqida foydali maqolalar. Tez-tez beriladigan savollarga javoblar.');
   const imageUrl = page.image?.url 
     ? (page.image.url.startsWith('http') 
         ? page.image.url 

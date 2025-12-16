@@ -62,24 +62,74 @@ function buildMediaUrl(url: string): string {
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = detectLocale();
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
+  const aboutUrl = `${baseUrl}/about`;
   const page = await getPageBySlug('about', locale);
   
   if (!page || page.status !== 'published') {
+    const title = locale === 'ru' ? 'О нас — Acoustic.uz' : 'Biz haqimizda — Acoustic.uz';
+    const description = locale === 'ru' 
+      ? 'Центр слуха Acoustic - профессиональная диагностика и подбор слуховых аппаратов в Узбекистане. Современное оборудование, опытные специалисты, индивидуальный подход.'
+      : 'Acoustic eshitish markazi - O\'zbekistonda professional diagnostika va eshitish apparatlarni tanlash. Zamonaviy uskunalar, tajribali mutaxassislar, individual yondashuv.';
+    
     return {
-      title: locale === 'ru' ? 'О нас — Acoustic.uz' : 'Biz haqimizda — Acoustic.uz',
-      description: locale === 'ru' 
-        ? 'Информация о центре Acoustic'
-        : 'Acoustic markazi haqida ma\'lumot',
+      title,
+      description,
+      alternates: {
+        canonical: aboutUrl,
+        languages: {
+          uz: aboutUrl,
+          ru: aboutUrl,
+          'x-default': aboutUrl,
+        },
+      },
+      openGraph: {
+        title,
+        description,
+        url: aboutUrl,
+        siteName: 'Acoustic.uz',
+        locale: locale === 'ru' ? 'ru_RU' : 'uz_UZ',
+        type: 'website',
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title,
+        description,
+      },
     };
   }
 
   const title = getBilingualText(page.metaTitle_uz, page.metaTitle_ru, locale) || 
                 getBilingualText(page.title_uz, page.title_ru, locale);
-  const description = getBilingualText(page.metaDescription_uz, page.metaDescription_ru, locale);
+  const description = getBilingualText(page.metaDescription_uz, page.metaDescription_ru, locale) ||
+    (locale === 'ru' 
+      ? 'Центр слуха Acoustic - профессиональная диагностика и подбор слуховых аппаратов в Узбекистане. Современное оборудование, опытные специалисты, индивидуальный подход.'
+      : 'Acoustic eshitish markazi - O\'zbekistonda professional diagnostika va eshitish apparatlarni tanlash. Zamonaviy uskunalar, tajribali mutaxassislar, individual yondashuv.');
 
   return {
     title: `${title} — Acoustic.uz`,
-    description: description || undefined,
+    description,
+    alternates: {
+      canonical: aboutUrl,
+      languages: {
+        uz: aboutUrl,
+        ru: aboutUrl,
+        'x-default': aboutUrl,
+      },
+    },
+    openGraph: {
+      title: `${title} — Acoustic.uz`,
+      description,
+      url: aboutUrl,
+      siteName: 'Acoustic.uz',
+      locale: locale === 'ru' ? 'ru_RU' : 'uz_UZ',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${title} — Acoustic.uz`,
+      description,
+    },
   };
 }
 

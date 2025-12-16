@@ -161,6 +161,8 @@ export const leadSchema = z.object({
   source: z.string().optional(),
   message: z.string().optional(),
   productId: z.string().cuid().optional().nullable(),
+  pageUrl: z.string().url().optional().nullable(),
+  referer: z.string().optional().nullable(),
 });
 
 export const pageSchema = z.object({

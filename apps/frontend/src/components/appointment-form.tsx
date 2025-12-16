@@ -9,7 +9,9 @@ import type { BranchResponse } from '@/lib/api';
 interface AppointmentFormProps {
   locale: 'uz' | 'ru';
   doctorId?: string | null;
+  doctorName?: string | null; // Doctor name for message
   source?: string; // Source identifier (e.g., 'post-{slug}', 'service-{slug}', 'product-{slug}')
+  onSuccess?: () => void; // Callback when form is successfully submitted
 }
 
 // Phone number mask function for Uzbekistan (+998)
@@ -35,7 +37,7 @@ const getPhoneDigits = (formatted: string): string => {
   return formatted.replace(/\D/g, '');
 };
 
-export default function AppointmentForm({ locale, doctorId, source }: AppointmentFormProps) {
+export default function AppointmentForm({ locale, doctorId, doctorName, source, onSuccess }: AppointmentFormProps) {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('+998 ');
   const [selectedBranch, setSelectedBranch] = useState<string>('');
@@ -112,11 +114,27 @@ export default function AppointmentForm({ locale, doctorId, source }: Appointmen
         ? `${source}_branch_${selectedBranch}${doctorId ? `_doctor_${doctorId}` : ''}`
         : `appointment_form${doctorId ? `_doctor_${doctorId}` : ''}_branch_${selectedBranch}`;
 
+      // Build message with doctor and branch info
+      const messageParts: string[] = [];
+      if (branchName) {
+        messageParts.push(`${locale === 'ru' ? 'Филиал' : 'Filial'}: ${branchName}`);
+      }
+      if (doctorName) {
+        messageParts.push(`${locale === 'ru' ? 'Специалист' : 'Mutaxassis'}: ${doctorName}`);
+      }
+      const message = messageParts.length > 0 ? messageParts.join(', ') : undefined;
+
+      // Get current page URL and referer
+      const pageUrl = typeof window !== 'undefined' ? window.location.href : null;
+      const referer = typeof document !== 'undefined' ? document.referrer || null : null;
+
       await createLead({
         name: fullName.trim(),
         phone: phoneDigits,
         source: sourceString,
-        message: branchName ? `${locale === 'ru' ? 'Филиал' : 'Filial'}: ${branchName}` : undefined,
+        message,
+        pageUrl,
+        referer,
       }, locale);
 
       setIsSubmitted(true);
@@ -124,9 +142,16 @@ export default function AppointmentForm({ locale, doctorId, source }: Appointmen
       setPhone('+998 ');
       setConsent(false);
       
-      setTimeout(() => {
-        setIsSubmitted(false);
-      }, 5000);
+      // Call onSuccess callback if provided
+      if (onSuccess) {
+        setTimeout(() => {
+          onSuccess();
+        }, 1000);
+      } else {
+        setTimeout(() => {
+          setIsSubmitted(false);
+        }, 5000);
+      }
     } catch (error) {
       console.error('Failed to submit appointment:', error);
       alert(locale === 'ru' ? 'Ошибка при отправке. Попробуйте позже.' : 'Xatolik yuz berdi. Keyinroq urinib ko\'ring.');

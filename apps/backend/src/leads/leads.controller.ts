@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { LeadsService } from './leads.service';
 import { TelegramService } from './telegram/telegram.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -71,6 +71,70 @@ export class LeadsController {
   @ApiOperation({ summary: 'Get Telegram button click statistics' })
   getTelegramButtonStats() {
     return this.leadsService.getTelegramButtonStats();
+  }
+
+  @UseGuards(JwtAuthGuard, RbacGuard)
+  @Get('stats/overview')
+  @RequirePermissions('leads.read')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get overview statistics' })
+  @ApiQuery({ name: 'startDate', required: false, type: String })
+  @ApiQuery({ name: 'endDate', required: false, type: String })
+  getStatisticsOverview(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    const start = startDate ? new Date(startDate) : undefined;
+    const end = endDate ? new Date(endDate) : undefined;
+    return this.leadsService.getStatisticsOverview(start, end);
+  }
+
+  @UseGuards(JwtAuthGuard, RbacGuard)
+  @Get('stats/by-source')
+  @RequirePermissions('leads.read')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get statistics grouped by source' })
+  @ApiQuery({ name: 'startDate', required: false, type: String })
+  @ApiQuery({ name: 'endDate', required: false, type: String })
+  getStatisticsBySource(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    const start = startDate ? new Date(startDate) : undefined;
+    const end = endDate ? new Date(endDate) : undefined;
+    return this.leadsService.getStatisticsBySource(start, end);
+  }
+
+  @UseGuards(JwtAuthGuard, RbacGuard)
+  @Get('stats/by-page')
+  @RequirePermissions('leads.read')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get statistics grouped by page URL' })
+  @ApiQuery({ name: 'startDate', required: false, type: String })
+  @ApiQuery({ name: 'endDate', required: false, type: String })
+  getStatisticsByPage(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    const start = startDate ? new Date(startDate) : undefined;
+    const end = endDate ? new Date(endDate) : undefined;
+    return this.leadsService.getStatisticsByPage(start, end);
+  }
+
+  @UseGuards(JwtAuthGuard, RbacGuard)
+  @Get('stats/by-date')
+  @RequirePermissions('leads.read')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get statistics grouped by date' })
+  @ApiQuery({ name: 'startDate', required: false, type: String })
+  @ApiQuery({ name: 'endDate', required: false, type: String })
+  getStatisticsByDate(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    const start = startDate ? new Date(startDate) : undefined;
+    const end = endDate ? new Date(endDate) : undefined;
+    return this.leadsService.getStatisticsByDate(start, end);
   }
 
   @UseGuards(JwtAuthGuard, RbacGuard)

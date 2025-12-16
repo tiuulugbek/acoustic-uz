@@ -344,7 +344,7 @@ export default async function PostPage({ params }: PostPageProps) {
               )}
 
               {post.author && (
-                <AuthorCard author={post.author} locale={locale} />
+                <AuthorCard author={post.author} locale={locale} source={`post-patients-${post.slug}`} />
               )}
 
               <div className="mt-8 bg-gradient-to-br from-brand-primary/5 to-brand-accent/5 rounded-lg p-6">

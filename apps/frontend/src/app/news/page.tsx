@@ -25,8 +25,8 @@ export async function generateMetadata({ searchParams }: NewsPageProps): Promise
   
   let title = locale === 'ru' ? 'Новости' : 'Yangiliklar';
   let description = locale === 'ru' 
-    ? 'Последние новости о слуховых аппаратах и слухе'
-    : 'Eshitish qurilmalari va eshitish haqida so\'nggi yangiliklar';
+    ? 'Последние новости о слуховых аппаратах и слухе от центра Acoustic. Узнайте о новых технологиях, акциях, событиях и полезной информации для людей с нарушениями слуха.'
+    : 'Acoustic markazidan eshitish qurilmalari va eshitish haqida so\'nggi yangiliklar. Yangi texnologiyalar, aksiyalar, voqealar va eshitish qobiliyati buzilgan odamlar uchun foydali ma\'lumotlar haqida bilib oling.';
   
   if (categorySlug) {
     const category = await getPostCategoryBySlug(categorySlug, locale);

@@ -118,11 +118,14 @@ export async function generateMetadata({ params }: CatalogCategoryPageProps): Pr
     ? getBilingualText(catalog.name_uz, catalog.name_ru, locale)
     : getBilingualText(category!.name_uz, category!.name_ru, locale);
 
+  const title = `${pageName} — ${locale === 'ru' ? 'Каталог' : 'Katalog'} — Acoustic.uz`;
+  const description = locale === 'ru'
+    ? `Слуховые аппараты и решения ${catalog ? 'в каталоге' : 'в категории'} ${pageName}. Широкий выбор моделей от ведущих производителей. Профессиональная консультация и подбор.`
+    : `${pageName} ${catalog ? 'katalogidagi' : 'kategoriyasidagi'} eshitish apparatlari va yechimlari. Yetakchi ishlab chiqaruvchilarning keng tanlovi. Professional maslahat va tanlash.`;
+  
   return {
-    title: `${pageName} — ${locale === 'ru' ? 'Каталог' : 'Katalog'} — Acoustic.uz`,
-    description: locale === 'ru'
-      ? `Слуховые аппараты и решения ${catalog ? 'в каталоге' : 'в категории'} ${pageName}.`
-      : `${pageName} ${catalog ? 'katalogidagi' : 'kategoriyasidagi'} eshitish apparatlari va yechimlari.`,
+    title,
+    description,
     alternates: {
       canonical: pageUrl,
       languages: {
@@ -130,6 +133,19 @@ export async function generateMetadata({ params }: CatalogCategoryPageProps): Pr
         ru: pageUrl,
         'x-default': pageUrl,
       },
+    },
+    openGraph: {
+      title,
+      description,
+      url: pageUrl,
+      siteName: 'Acoustic.uz',
+      locale: locale === 'ru' ? 'ru_RU' : 'uz_UZ',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
     },
   };
 }

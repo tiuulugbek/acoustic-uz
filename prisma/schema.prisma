@@ -404,12 +404,16 @@ model Lead {
   source    String? // Form source: "home", "contact", "product", etc.
   message   String?  @db.Text
   productId String? // If from product page
+  pageUrl   String? // URL of the page where form was submitted
+  referer   String? // HTTP referer header
   status    String   @default("new") // new, contacted, converted, archived
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([status, createdAt])
   @@index([source])
+  @@index([pageUrl])
+  @@index([createdAt])
 }
 
 model HearingTest {

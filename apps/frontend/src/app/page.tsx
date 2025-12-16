@@ -39,8 +39,8 @@ export async function generateMetadata(): Promise<Metadata> {
     ? 'Acoustic.uz — Центр слуха' 
     : 'Acoustic.uz — Eshitish markazi';
   const description = locale === 'ru'
-    ? 'Центр диагностики и коррекции слуха. Современные слуховые аппараты, диагностика слуха, индивидуальные решения.'
-    : 'Eshitish diagnostikasi va korreksiyasi markazi. Zamonaviy eshitish apparatlari, eshitish diagnostikasi, individual yechimlar.';
+    ? 'Центр диагностики и коррекции слуха Acoustic в Узбекистане. Современные слуховые аппараты от ведущих производителей, профессиональная диагностика слуха, индивидуальные решения для взрослых и детей. Запишитесь на консультацию.'
+    : 'O\'zbekistondagi Acoustic eshitish diagnostikasi va korreksiyasi markazi. Yetakchi ishlab chiqaruvchilarning zamonaviy eshitish apparatlari, professional eshitish diagnostikasi, kattalar va bolalar uchun individual yechimlar. Maslahat uchun yoziling.';
   
   return {
     title,

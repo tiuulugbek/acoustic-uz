@@ -14,11 +14,38 @@ export const revalidate = 0;
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = detectLocale();
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
+  const doctorsUrl = `${baseUrl}/doctors`;
+  
+  const title = locale === 'ru' ? 'Специалисты — Acoustic.uz' : 'Mutaxassislar — Acoustic.uz';
+  const description = locale === 'ru' 
+    ? 'Профессиональные сурдологи и аудиологи центра слуха Acoustic. Опытные специалисты по диагностике и подбору слуховых аппаратов в Узбекистане. Консультации для взрослых и детей.'
+    : 'Acoustic eshitish markazining professional surdologlari va audiologlari. O\'zbekistonda eshitish diagnostikasi va apparatlarni tanlash bo\'yicha tajribali mutaxassislar. Kattalar va bolalar uchun maslahatlar.';
+  
   return {
-    title: locale === 'ru' ? 'Специалисты — Acoustic.uz' : 'Mutaxassislar — Acoustic.uz',
-    description: locale === 'ru' 
-      ? 'Наши специалисты по слуху - профессиональные сурдологи и аудиологи'
-      : 'Bizning eshitish mutaxassislarimiz - professional surdologlar va audiologlar',
+    title,
+    description,
+    alternates: {
+      canonical: doctorsUrl,
+      languages: {
+        uz: doctorsUrl,
+        ru: doctorsUrl,
+        'x-default': doctorsUrl,
+      },
+    },
+    openGraph: {
+      title,
+      description,
+      url: doctorsUrl,
+      siteName: 'Acoustic.uz',
+      locale: locale === 'ru' ? 'ru_RU' : 'uz_UZ',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+    },
   };
 }
 

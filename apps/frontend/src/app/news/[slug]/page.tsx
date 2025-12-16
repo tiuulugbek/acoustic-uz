@@ -148,10 +148,16 @@ export default async function NewsPage({ params }: NewsPageProps) {
 
   const tableOfContents = extractTableOfContents(body);
 
-  // Get related news posts
+  // Get related news posts - prioritize recent news
   const allPosts = await getPosts(locale, true, undefined, 'news');
   const relatedPosts = allPosts
     .filter(p => p.id !== post.id && p.status === 'published')
+    .sort((a, b) => {
+      // Sort by publish date (newer first)
+      const dateA = new Date(a.publishAt).getTime();
+      const dateB = new Date(b.publishAt).getTime();
+      return dateB - dateA;
+    })
     .slice(0, 3);
 
   // Build Article Structured Data
@@ -323,7 +329,7 @@ export default async function NewsPage({ params }: NewsPageProps) {
               )}
 
               {post.author && (
-                <AuthorCard author={post.author} locale={locale} />
+                <AuthorCard author={post.author} locale={locale} source={`news-${post.slug}`} />
               )}
 
               <div className="mt-8 bg-gradient-to-br from-brand-primary/5 to-brand-accent/5 rounded-lg p-6">
@@ -354,11 +360,16 @@ export default async function NewsPage({ params }: NewsPageProps) {
       </article>
 
       {relatedPosts.length > 0 && (
-        <section className="bg-muted/30 py-12">
+        <section className="bg-muted/30 py-12" aria-label={locale === 'ru' ? 'Похожие новости' : 'O\'xshash yangiliklar'}>
           <div className="mx-auto max-w-6xl px-4 md:px-6">
-            <h2 className="mb-6 text-2xl font-bold text-foreground">
+            <h2 className="mb-2 text-2xl font-bold text-foreground">
               {locale === 'ru' ? 'Похожие новости' : 'O\'xshash yangiliklar'}
             </h2>
+            <p className="mb-6 text-sm text-muted-foreground">
+              {locale === 'ru' 
+                ? 'Другие новости, которые могут вас заинтересовать'
+                : 'Sizni qiziqtirishi mumkin bo\'lgan boshqa yangiliklar'}
+            </p>
             <div className="grid gap-6 md:grid-cols-3">
               {relatedPosts.map((relatedPost) => {
                 const relatedTitle = getBilingualText(relatedPost.title_uz, relatedPost.title_ru, locale);

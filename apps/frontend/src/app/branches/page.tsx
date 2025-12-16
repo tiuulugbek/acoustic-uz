@@ -1,8 +1,14 @@
 import { Suspense } from 'react';
+import type { Metadata } from 'next';
 import { detectLocale } from '@/lib/locale-server';
 import { getBranches, getPosts } from '@/lib/api-server';
 import BranchesPageContent from './page-content';
 import type { BranchResponse, PostResponse } from '@/lib/api';
+import { generateBranchesMetadata } from './metadata';
+
+export async function generateMetadata(): Promise<Metadata> {
+  return generateBranchesMetadata();
+}
 
 export default async function BranchesPage() {
   const locale = detectLocale();

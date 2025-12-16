@@ -24,6 +24,8 @@ export class TelegramService {
     source?: string;
     message?: string;
     productId?: string;
+    pageUrl?: string | null;
+    referer?: string | null;
   }): Promise<boolean> {
     try {
       const settings = await this.settingsService.get();
@@ -41,12 +43,31 @@ export class TelegramService {
         ? `#${lead.source.replace(/[^a-zA-Z0-9_]/g, '_')}` 
         : '';
 
+      // Extract page name from URL
+      let pageInfo = '';
+      if (lead.pageUrl) {
+        try {
+          const url = new URL(lead.pageUrl);
+          const pathParts = url.pathname.split('/').filter(Boolean);
+          const pageName = pathParts.length > 0 ? pathParts[0] : 'home';
+          pageInfo = `📄 *Sahifa:* ${pageName}`;
+          if (pathParts.length > 1) {
+            pageInfo += ` (${pathParts.slice(1).join('/')})`;
+          }
+          pageInfo += '\n';
+        } catch (e) {
+          // If URL parsing fails, use pageUrl as is
+          pageInfo = `📄 *Sahifa:* ${lead.pageUrl}\n`;
+        }
+      }
+
       const message = `
 🆕 *Yangi so'rov*
 👤 *Ism:* ${lead.name}
 📞 *Telefon:* ${lead.phone}
 ${lead.email ? `📧 *Email:* ${lead.email}\n` : ''}
 ${sourceHashtag ? `${sourceHashtag}\n` : ''}
+${pageInfo}
 ${lead.message ? `💬 *Xabar:* ${lead.message}\n` : ''}
 ${lead.productId ? `🛍️ *Mahsulot ID:* ${lead.productId}\n` : ''}
       `.trim();

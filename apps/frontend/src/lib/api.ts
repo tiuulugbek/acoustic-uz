@@ -847,6 +847,8 @@ export interface CreateLeadRequest {
   source?: string;
   message?: string;
   productId?: string | null;
+  pageUrl?: string | null;
+  referer?: string | null;
 }
 
 export interface LeadResponse {
@@ -857,6 +859,8 @@ export interface LeadResponse {
   source?: string | null;
   message?: string | null;
   productId?: string | null;
+  pageUrl?: string | null;
+  referer?: string | null;
   status?: string | null;
   createdAt: string;
   updatedAt: string;

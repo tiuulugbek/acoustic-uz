@@ -16,11 +16,14 @@ export async function generateMetadata(): Promise<Metadata> {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
   const servicesUrl = `${baseUrl}/services`;
 
+  const title = locale === 'ru' ? 'Услуги — Acoustic.uz' : 'Xizmatlar — Acoustic.uz';
+  const description = locale === 'ru'
+    ? 'Все услуги сурдолога в одном месте. Профессиональная помощь людям с тугоухостью. Диагностика, лечение и коррекция нарушений слуха у взрослых и детей с самого рождения. Запишитесь на консультацию.'
+    : 'Barcha surdolog xizmatlari bir joyda. Eshitish qobiliyati buzilgan odamlarga professional yordam. Kattalar va bolalarda eshitishning diagnostikasi, davolanishi va korreksiyasi. Maslahat uchun yoziling.';
+
   return {
-    title: locale === 'ru' ? 'Услуги — Acoustic.uz' : 'Xizmatlar — Acoustic.uz',
-    description: locale === 'ru'
-      ? 'Все услуги сурдолога в одном месте. Профессиональная помощь людям с тугоухостью. Диагностика, лечение и коррекция нарушений слуха у взрослых и детей с самого рождения.'
-      : 'Barcha surdolog xizmatlari bir joyda. Eshitish qobiliyati buzilgan odamlarga professional yordam. Kattalar va bolalarda eshitishning diagnostikasi, davolanishi va korreksiyasi.',
+    title,
+    description,
     alternates: {
       canonical: servicesUrl,
       languages: {
@@ -28,6 +31,19 @@ export async function generateMetadata(): Promise<Metadata> {
         ru: servicesUrl,
         'x-default': servicesUrl,
       },
+    },
+    openGraph: {
+      title,
+      description,
+      url: servicesUrl,
+      siteName: 'Acoustic.uz',
+      locale: locale === 'ru' ? 'ru_RU' : 'uz_UZ',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
     },
   };
 }
