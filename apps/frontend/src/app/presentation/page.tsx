@@ -41,97 +41,209 @@ interface Slide {
   contentRu: React.ReactNode;
 }
 
-// Mobile Demo Component
+// Mobile Demo Component - 3 phones side by side
 function MobileDemo() {
-  const [scrollPosition, setScrollPosition] = useState(0);
-  const [isAutoScrolling, setIsAutoScrolling] = useState(true);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const autoScrollRef = useRef<NodeJS.Timeout | null>(null);
+  const scrollRefs = [
+    useRef<HTMLDivElement>(null),
+    useRef<HTMLDivElement>(null),
+    useRef<HTMLDivElement>(null),
+  ];
+  const autoScrollRefs = [
+    useRef<NodeJS.Timeout | null>(null),
+    useRef<NodeJS.Timeout | null>(null),
+    useRef<NodeJS.Timeout | null>(null),
+  ];
 
   useEffect(() => {
-    if (isAutoScrolling && scrollContainerRef.current) {
-      const container = scrollContainerRef.current;
-      const maxScroll = container.scrollHeight - container.clientHeight;
-      
-      autoScrollRef.current = setInterval(() => {
-        setScrollPosition((prev) => {
-          const newPos = prev + 2;
-          if (newPos >= maxScroll) {
-            setIsAutoScrolling(false);
-            setTimeout(() => {
-              setScrollPosition(0);
-              setIsAutoScrolling(true);
-            }, 2000);
-            return 0;
-          }
-          container.scrollTop = newPos;
-          return newPos;
-        });
-      }, 50);
-    }
+    const startAutoScroll = (index: number) => {
+      const container = scrollRefs[index].current;
+      if (!container) return;
+
+      let scrollPos = 0;
+      const scrollSpeed = 1.5;
+      const pauseAtEnd = 2000; // 2 seconds pause
+      let isPaused = false;
+
+      const scroll = () => {
+        if (isPaused) return;
+
+        const maxScroll = container.scrollHeight - container.clientHeight;
+        
+        if (scrollPos >= maxScroll) {
+          isPaused = true;
+          setTimeout(() => {
+            scrollPos = 0;
+            container.scrollTop = 0;
+            isPaused = false;
+          }, pauseAtEnd);
+          return;
+        }
+
+        scrollPos += scrollSpeed;
+        container.scrollTop = scrollPos;
+      };
+
+      autoScrollRefs[index].current = setInterval(scroll, 50);
+    };
+
+    // Start auto-scroll for all 3 phones with slight delays
+    startAutoScroll(0);
+    setTimeout(() => startAutoScroll(1), 300);
+    setTimeout(() => startAutoScroll(2), 600);
 
     return () => {
-      if (autoScrollRef.current) {
-        clearInterval(autoScrollRef.current);
-      }
+      autoScrollRefs.forEach((ref) => {
+        if (ref.current) {
+          clearInterval(ref.current);
+        }
+      });
     };
-  }, [isAutoScrolling]);
+  }, []);
 
   const mobileScreens = [
     {
-      title: 'Bosh sahifa',
+      title: 'Filiallar',
       content: (
-        <div className="bg-white p-4 space-y-4">
-          <div className="h-32 bg-gradient-to-r from-[#F07E22] to-[#3F3091] rounded-lg flex items-center justify-center text-white font-bold text-lg">
-            Acoustic.uz
+        <div className="bg-white space-y-4">
+          {/* Map area */}
+          <div className="h-48 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg relative overflow-hidden">
+            <div className="absolute inset-0 flex items-center justify-center">
+              <MapPin className="h-12 w-12 text-blue-500" />
+            </div>
+            <div className="absolute top-4 left-4 bg-white px-3 py-1 rounded-full text-xs font-medium shadow">
+              Xarita
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="h-20 bg-gray-100 rounded"></div>
-            <div className="h-20 bg-gray-100 rounded"></div>
+          {/* Branch cards */}
+          <div className="px-4 space-y-3 pb-4">
+            <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 bg-[#F07E22] rounded-full flex items-center justify-center flex-shrink-0">
+                  <MapPin className="h-5 w-5 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="h-3 bg-gray-300 rounded w-3/4 mb-2"></div>
+                  <div className="h-2 bg-gray-200 rounded w-full mb-1"></div>
+                  <div className="h-2 bg-gray-200 rounded w-2/3"></div>
+                </div>
+              </div>
+            </div>
+            <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 bg-[#3F3091] rounded-full flex items-center justify-center flex-shrink-0">
+                  <MapPin className="h-5 w-5 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="h-3 bg-gray-300 rounded w-3/4 mb-2"></div>
+                  <div className="h-2 bg-gray-200 rounded w-full mb-1"></div>
+                  <div className="h-2 bg-gray-200 rounded w-2/3"></div>
+                </div>
+              </div>
+            </div>
+            <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 bg-[#F07E22] rounded-full flex items-center justify-center flex-shrink-0">
+                  <MapPin className="h-5 w-5 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="h-3 bg-gray-300 rounded w-3/4 mb-2"></div>
+                  <div className="h-2 bg-gray-200 rounded w-full mb-1"></div>
+                  <div className="h-2 bg-gray-200 rounded w-2/3"></div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="h-24 bg-gray-50 rounded"></div>
-        </div>
-      ),
-    },
-    {
-      title: 'Xizmatlar',
-      content: (
-        <div className="bg-white p-4 space-y-3">
-          <div className="h-24 bg-[#F07E22] rounded-lg"></div>
-          <div className="h-24 bg-[#3F3091] rounded-lg"></div>
-          <div className="h-24 bg-[#F07E22] rounded-lg"></div>
         </div>
       ),
     },
     {
       title: 'Mutaxassislar',
       content: (
-        <div className="bg-white p-4 space-y-3">
-          <div className="flex gap-3">
-            <div className="w-16 h-16 bg-gray-200 rounded-full"></div>
-            <div className="flex-1 space-y-2">
-              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-              <div className="h-3 bg-gray-100 rounded w-1/2"></div>
+        <div className="bg-white space-y-4">
+          <div className="px-4 pt-4 space-y-3 pb-4">
+            <div className="flex gap-3 p-3 bg-white border border-gray-200 rounded-lg">
+              <div className="w-16 h-16 bg-gradient-to-br from-[#F07E22]/20 to-[#3F3091]/20 rounded-lg flex-shrink-0 flex items-center justify-center">
+                <Users className="h-8 w-8 text-gray-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="h-4 bg-gray-300 rounded w-3/4 mb-2"></div>
+                <div className="h-3 bg-[#3F3091] rounded w-1/2 mb-2"></div>
+                <div className="h-2 bg-gray-200 rounded w-full"></div>
+              </div>
             </div>
-          </div>
-          <div className="flex gap-3">
-            <div className="w-16 h-16 bg-gray-200 rounded-full"></div>
-            <div className="flex-1 space-y-2">
-              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-              <div className="h-3 bg-gray-100 rounded w-1/2"></div>
+            <div className="flex gap-3 p-3 bg-white border border-gray-200 rounded-lg">
+              <div className="w-16 h-16 bg-gradient-to-br from-[#F07E22]/20 to-[#3F3091]/20 rounded-lg flex-shrink-0 flex items-center justify-center">
+                <Users className="h-8 w-8 text-gray-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="h-4 bg-gray-300 rounded w-3/4 mb-2"></div>
+                <div className="h-3 bg-[#3F3091] rounded w-1/2 mb-2"></div>
+                <div className="h-2 bg-gray-200 rounded w-full"></div>
+              </div>
+            </div>
+            <div className="flex gap-3 p-3 bg-white border border-gray-200 rounded-lg">
+              <div className="w-16 h-16 bg-gradient-to-br from-[#F07E22]/20 to-[#3F3091]/20 rounded-lg flex-shrink-0 flex items-center justify-center">
+                <Users className="h-8 w-8 text-gray-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="h-4 bg-gray-300 rounded w-3/4 mb-2"></div>
+                <div className="h-3 bg-[#3F3091] rounded w-1/2 mb-2"></div>
+                <div className="h-2 bg-gray-200 rounded w-full"></div>
+              </div>
+            </div>
+            <div className="flex gap-3 p-3 bg-white border border-gray-200 rounded-lg">
+              <div className="w-16 h-16 bg-gradient-to-br from-[#F07E22]/20 to-[#3F3091]/20 rounded-lg flex-shrink-0 flex items-center justify-center">
+                <Users className="h-8 w-8 text-gray-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="h-4 bg-gray-300 rounded w-3/4 mb-2"></div>
+                <div className="h-3 bg-[#3F3091] rounded w-1/2 mb-2"></div>
+                <div className="h-2 bg-gray-200 rounded w-full"></div>
+              </div>
             </div>
           </div>
         </div>
       ),
     },
     {
-      title: 'Filiallar',
+      title: 'Eshitish moslamalari',
       content: (
-        <div className="bg-white p-4 space-y-3">
-          <div className="h-32 bg-gray-200 rounded-lg"></div>
-          <div className="space-y-2">
-            <div className="h-3 bg-gray-200 rounded"></div>
-            <div className="h-3 bg-gray-100 rounded w-5/6"></div>
+        <div className="bg-white space-y-4">
+          <div className="px-4 pt-4 space-y-3 pb-4">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="bg-white border border-gray-200 rounded-lg p-3">
+                <div className="aspect-square bg-gray-100 rounded-lg mb-2 flex items-center justify-center">
+                  <Heart className="h-8 w-8 text-gray-400" />
+                </div>
+                <div className="h-3 bg-gray-300 rounded w-full mb-1"></div>
+                <div className="h-2 bg-gray-200 rounded w-2/3"></div>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-lg p-3">
+                <div className="aspect-square bg-gray-100 rounded-lg mb-2 flex items-center justify-center">
+                  <Heart className="h-8 w-8 text-gray-400" />
+                </div>
+                <div className="h-3 bg-gray-300 rounded w-full mb-1"></div>
+                <div className="h-2 bg-gray-200 rounded w-2/3"></div>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-lg p-3">
+                <div className="aspect-square bg-gray-100 rounded-lg mb-2 flex items-center justify-center">
+                  <Heart className="h-8 w-8 text-gray-400" />
+                </div>
+                <div className="h-3 bg-gray-300 rounded w-full mb-1"></div>
+                <div className="h-2 bg-gray-200 rounded w-2/3"></div>
+              </div>
+              <div className="bg-white border border-gray-200 rounded-lg p-3">
+                <div className="aspect-square bg-gray-100 rounded-lg mb-2 flex items-center justify-center">
+                  <Heart className="h-8 w-8 text-gray-400" />
+                </div>
+                <div className="h-3 bg-gray-300 rounded w-full mb-1"></div>
+                <div className="h-2 bg-gray-200 rounded w-2/3"></div>
+              </div>
+            </div>
+            <div className="bg-[#F07E22] rounded-lg p-4 text-white text-center">
+              <div className="h-4 bg-white/20 rounded w-3/4 mx-auto mb-2"></div>
+              <div className="h-3 bg-white/20 rounded w-1/2 mx-auto"></div>
+            </div>
           </div>
         </div>
       ),
@@ -139,53 +251,61 @@ function MobileDemo() {
   ];
 
   return (
-    <div className="relative">
-      {/* iPhone Frame */}
-      <div className="relative w-[280px] h-[600px] mx-auto">
-        {/* iPhone Outer Frame */}
-        <div className="absolute inset-0 bg-gradient-to-b from-gray-800 to-gray-900 rounded-[3rem] p-2 shadow-2xl">
-          {/* Screen Bezel */}
-          <div className="w-full h-full bg-black rounded-[2.5rem] p-1">
-            {/* Notch */}
-            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-32 h-6 bg-black rounded-b-2xl z-10"></div>
-            {/* Screen */}
-            <div className="w-full h-full bg-white rounded-[2rem] overflow-hidden relative">
-              {/* Status Bar */}
-              <div className="absolute top-0 left-0 right-0 h-8 bg-white flex items-center justify-between px-4 text-xs font-medium z-20">
-                <span>9:41</span>
-                <div className="flex items-center gap-1">
-                  <div className="w-4 h-2 border border-black rounded-sm">
-                    <div className="w-3 h-1.5 bg-black rounded-sm m-0.5"></div>
+    <div className="relative w-full">
+      <div className="flex justify-center items-start gap-6 flex-wrap">
+        {mobileScreens.map((screen, index) => (
+          <div key={index} className="relative">
+            {/* iPhone Frame */}
+            <div className="relative w-[240px] h-[520px]">
+              {/* iPhone Outer Frame */}
+              <div className="absolute inset-0 bg-gradient-to-b from-gray-800 to-gray-900 rounded-[2.5rem] p-1.5 shadow-2xl">
+                {/* Screen Bezel */}
+                <div className="w-full h-full bg-black rounded-[2rem] p-0.5">
+                  {/* Notch */}
+                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-24 h-5 bg-black rounded-b-xl z-10"></div>
+                  {/* Screen */}
+                  <div className="w-full h-full bg-white rounded-[1.75rem] overflow-hidden relative">
+                    {/* Status Bar */}
+                    <div className="absolute top-0 left-0 right-0 h-7 bg-white flex items-center justify-between px-3 text-[10px] font-medium z-20">
+                      <span>9:41</span>
+                      <div className="flex items-center gap-0.5">
+                        <div className="w-3 h-1.5 border border-black rounded-sm">
+                          <div className="w-2 h-1 bg-black rounded-sm m-0.5"></div>
+                        </div>
+                        <div className="w-0.5 h-0.5 bg-black rounded-full"></div>
+                      </div>
+                    </div>
+                    
+                    {/* Scrollable Content */}
+                    <div
+                      ref={scrollRefs[index]}
+                      className="h-full overflow-y-auto pt-7"
+                      style={{ 
+                        scrollBehavior: 'smooth',
+                        WebkitOverflowScrolling: 'touch',
+                        overscrollBehavior: 'contain'
+                      }}
+                    >
+                      <div className="sticky top-7 bg-white border-b border-gray-200 px-3 py-2 z-10 mb-2">
+                        <h3 className="text-xs font-semibold text-gray-800">{screen.title}</h3>
+                      </div>
+                      {screen.content}
+                      {/* Extra space for scrolling */}
+                      <div className="h-20"></div>
+                    </div>
+                    
+                    {/* Home Indicator */}
+                    <div className="absolute bottom-1.5 left-1/2 transform -translate-x-1/2 w-24 h-0.5 bg-gray-400 rounded-full"></div>
                   </div>
-                  <div className="w-1 h-1 bg-black rounded-full"></div>
                 </div>
               </div>
-              
-              {/* Scrollable Content */}
-              <div
-                ref={scrollContainerRef}
-                className="h-full overflow-y-auto pt-8"
-                style={{ scrollBehavior: 'smooth' }}
-              >
-                {mobileScreens.map((screen, index) => (
-                  <div key={index} className="min-h-[500px]">
-                    <div className="sticky top-8 bg-white border-b-2 border-gray-200 px-4 py-2 z-10">
-                      <h3 className="text-sm font-semibold text-gray-800">{screen.title}</h3>
-                    </div>
-                    {screen.content}
-                  </div>
-                ))}
-              </div>
-              
-              {/* Home Indicator */}
-              <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-gray-400 rounded-full"></div>
             </div>
           </div>
-        </div>
+        ))}
       </div>
       
       {/* Auto-scroll indicator */}
-      <div className="mt-4 text-center">
+      <div className="mt-6 text-center">
         <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#F07E22] text-white rounded-full text-sm font-medium">
           <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
           <span>Avtomatik scroll demo</span>
@@ -257,8 +377,8 @@ export default function PresentationPage() {
   const slides: Slide[] = [
     {
       id: 'intro',
-      title: 'Acoustic.uz — Raqamli Transformatsiya',
-      titleRu: 'Acoustic.uz — Цифровая Трансформация',
+      title: 'Acoustic.uz — raqamli transformatsiya',
+      titleRu: 'Acoustic.uz — цифровая трансформация',
       content: (
         <div className="space-y-8">
           <div className="text-center space-y-4">
@@ -277,12 +397,12 @@ export default function PresentationPage() {
             </div>
             <div className="text-center p-6 rounded-lg bg-gradient-to-br from-[#3F3091]/10 to-[#F07E22]/10">
               <Smartphone className="h-12 w-12 mx-auto mb-4 text-[#3F3091]" />
-              <h3 className="text-xl font-semibold mb-2">Mobil Optimizatsiya</h3>
+              <h3 className="text-xl font-semibold mb-2">Mobil optimizatsiya</h3>
               <p className="text-muted-foreground">Barcha qurilmalarda mukammal ishlash</p>
             </div>
             <div className="text-center p-6 rounded-lg bg-gradient-to-br from-[#F07E22]/10 to-[#3F3091]/10">
               <TrendingUp className="h-12 w-12 mx-auto mb-4 text-[#F07E22]" />
-              <h3 className="text-xl font-semibold mb-2">Marketing Kuch</h3>
+              <h3 className="text-xl font-semibold mb-2">Marketing kuch</h3>
               <p className="text-muted-foreground">Mijozlar oqimini oshirish va konversiyani yaxshilash</p>
             </div>
           </div>
@@ -474,7 +594,7 @@ export default function PresentationPage() {
           <div className="text-center space-y-4 mb-8">
             <h2 className="text-3xl md:text-4xl font-bold">Nima uchun mutaxassislar kartochkalari muhim?</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Mijozlar doktorlarni ko'rish va tanlash imkoniyatiga ega bo'lishadi
+              Mijozlar mutaxassislarni ko'rish va tanlash imkoniyatiga ega bo'lishadi
             </p>
           </div>
           
@@ -485,7 +605,7 @@ export default function PresentationPage() {
                 <div>
                   <h3 className="text-xl font-semibold mb-2">Ishonch oshirish</h3>
                   <p className="text-muted-foreground">
-                    Mijozlar doktorning fotosurati, tajribasi va malakasini ko'rishadi. 
+                    Mijozlar mutaxassisning fotosurati, tajribasi va malakasini ko'rishadi. 
                     Bu ishonchni oshiradi va qaror qabul qilishni osonlashtiradi.
                   </p>
                 </div>
@@ -507,7 +627,7 @@ export default function PresentationPage() {
                 <div>
                   <h3 className="text-xl font-semibold mb-2">To'g'ridan-to'g'ri yozilish</h3>
                   <p className="text-muted-foreground">
-                    Har bir doktor kartochkasidan to'g'ridan-to'g'ri qabulga yozilish mumkin. 
+                    Har bir mutaxassis kartochkasidan to'g'ridan-to'g'ri qabulga yozilish mumkin. 
                     Bu konversiyani sezilarli darajada oshiradi.
                   </p>
                 </div>
@@ -517,7 +637,7 @@ export default function PresentationPage() {
                 <div>
                   <h3 className="text-xl font-semibold mb-2">Aloqa qulayligi</h3>
                   <p className="text-muted-foreground">
-                    Mijozlar doktor bilan aloqa qilish va savollar berish imkoniyatiga ega. 
+                    Mijozlar mutaxassis bilan aloqa qilish va savollar berish imkoniyatiga ega. 
                     Bu mijozlar bilan aloqani yaxshilaydi.
                   </p>
                 </div>
@@ -527,7 +647,7 @@ export default function PresentationPage() {
 
           {doctors.length > 0 && (
             <div className="mt-8">
-              <h3 className="text-2xl font-bold mb-6 text-center">Bizning Mutaxassislarimiz</h3>
+              <h3 className="text-2xl font-bold mb-6 text-center">Bizning mutaxassislarimiz</h3>
               <div className="grid md:grid-cols-3 gap-6">
                 {doctors.slice(0, 3).map((doctor) => {
                   const name = locale === 'ru' ? doctor.name_ru : doctor.name_uz;
@@ -738,7 +858,7 @@ export default function PresentationPage() {
 
           {branches.length > 0 && (
             <div className="mt-8">
-              <h3 className="text-2xl font-bold mb-6 text-center">Bizning Filiallarimiz</h3>
+              <h3 className="text-2xl font-bold mb-6 text-center">Bizning filiallarimiz</h3>
               <div className="grid md:grid-cols-2 gap-6">
                 {branches.slice(0, 4).map((branch) => {
                   const name = locale === 'ru' ? branch.name_ru : branch.name_uz;
@@ -1100,7 +1220,7 @@ export default function PresentationPage() {
       content: (
         <div className="space-y-8">
           <div className="text-center space-y-4 mb-8">
-            <h2 className="text-3xl md:text-4xl font-bold">Qanday Tushuntirish Kerak?</h2>
+            <h2 className="text-3xl md:text-4xl font-bold">Qanday tushuntirish kerak?</h2>
             <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Xodimlar saytning afzalliklarini tushunishlari va mijozlarga to'g'ri yo'naltirishlari kerak
             </p>
@@ -1110,7 +1230,7 @@ export default function PresentationPage() {
             <div className="p-6 rounded-lg bg-gradient-to-r from-[#F07E22]/10 to-[#3F3091]/10 border-2 border-[#F07E22]/30">
               <h3 className="text-2xl font-bold mb-4 flex items-center gap-3">
                 <span className="text-3xl">1️⃣</span>
-                <span>Saytning Asosiy Afzalliklari</span>
+                <span>Saytning asosiy afzalliklari</span>
               </h3>
               <div className="space-y-3 ml-12">
                 <p className="text-muted-foreground">
@@ -1128,17 +1248,17 @@ export default function PresentationPage() {
             <div className="p-6 rounded-lg bg-gradient-to-r from-[#3F3091]/10 to-[#F07E22]/10 border-2 border-[#3F3091]/30">
               <h3 className="text-2xl font-bold mb-4 flex items-center gap-3">
                 <span className="text-3xl">2️⃣</span>
-                <span>Mutaxassislar Kartochkalari</span>
+                <span>Mutaxassislar kartochkalari</span>
               </h3>
               <div className="space-y-3 ml-12">
                 <p className="text-muted-foreground">
-                  <strong>• Ishonch oshirish:</strong> Mijozlar doktorning fotosurati va tajribasini ko'rishadi — bu ishonchni oshiradi.
+                  <strong>• Ishonch oshirish:</strong> Mijozlar mutaxassisning fotosurati va tajribasini ko'rishadi — bu ishonchni oshiradi.
                 </p>
                 <p className="text-muted-foreground">
-                  <strong>• To'g'ridan-to'g'ri yozilish:</strong> Har bir doktor kartochkasidan to'g'ridan-to'g'ri qabulga yozilish mumkin.
+                  <strong>• To'g'ridan-to'g'ri yozilish:</strong> Har bir mutaxassis kartochkasidan to'g'ridan-to'g'ri qabulga yozilish mumkin.
                 </p>
                 <p className="text-muted-foreground">
-                  <strong>• Qanday tushuntirish:</strong> "Saytimizda barcha doktorlarimizning profillari bor. Siz ularning fotosurati, tajribasi va mutaxassislik sohalarini ko'rishingiz mumkin."
+                  <strong>• Qanday tushuntirish:</strong> "Saytimizda barcha mutaxassislarimizning profillari bor. Siz ularning fotosurati, tajribasi va mutaxassislik sohalarini ko'rishingiz mumkin."
                 </p>
               </div>
             </div>
@@ -1146,7 +1266,7 @@ export default function PresentationPage() {
             <div className="p-6 rounded-lg bg-gradient-to-r from-[#F07E22]/10 to-[#3F3091]/10 border-2 border-[#F07E22]/30">
               <h3 className="text-2xl font-bold mb-4 flex items-center gap-3">
                 <span className="text-3xl">3️⃣</span>
-                <span>Filiallar Bo'limi</span>
+                <span>Filiallar bo'limi</span>
               </h3>
               <div className="space-y-3 ml-12">
                 <p className="text-muted-foreground">
@@ -1164,7 +1284,7 @@ export default function PresentationPage() {
             <div className="p-6 rounded-lg bg-gradient-to-r from-[#3F3091]/10 to-[#F07E22]/10 border-2 border-[#3F3091]/30">
               <h3 className="text-2xl font-bold mb-4 flex items-center gap-3">
                 <span className="text-3xl">4️⃣</span>
-                <span>Onlayn Yozilish</span>
+                <span>Onlayn yozilish</span>
               </h3>
               <div className="space-y-3 ml-12">
                 <p className="text-muted-foreground">
@@ -1182,7 +1302,7 @@ export default function PresentationPage() {
             <div className="p-6 rounded-lg bg-gradient-to-r from-[#F07E22]/10 to-[#3F3091]/10 border-2 border-[#F07E22]/30">
               <h3 className="text-2xl font-bold mb-4 flex items-center gap-3">
                 <span className="text-3xl">5️⃣</span>
-                <span>Mobil Versiya</span>
+                <span>Mobil versiya</span>
               </h3>
               <div className="space-y-3 ml-12">
                 <p className="text-muted-foreground">
@@ -1199,7 +1319,7 @@ export default function PresentationPage() {
           </div>
 
           <div className="mt-8 p-6 rounded-lg bg-gradient-to-r from-[#F07E22] to-[#3F3091] text-white">
-            <h3 className="text-2xl font-bold mb-4">Muhim Maslahatlar</h3>
+            <h3 className="text-2xl font-bold mb-4">Muhim maslahatlar</h3>
             <div className="space-y-3">
               <div className="flex items-start gap-3">
                 <CheckCircle2 className="h-6 w-6 flex-shrink-0 mt-1" />
@@ -1370,7 +1490,10 @@ export default function PresentationPage() {
   }, [isAutoPlay]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div 
+      className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100"
+      style={{ overscrollBehavior: 'contain', touchAction: 'pan-y' }}
+    >
       {/* Header Controls */}
       <div className="sticky top-0 z-50 bg-white/90 backdrop-blur-sm border-b border-border shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -1481,7 +1604,7 @@ export default function PresentationPage() {
         <div className="max-w-6xl mx-auto px-4 text-center">
           <p className="text-lg font-semibold mb-2">
             {locale === 'uz' 
-              ? 'Acoustic.uz — Raqamli Transformatsiya' 
+              ? 'Acoustic.uz — raqamli transformatsiya' 
               : 'Acoustic.uz — Цифровая Трансформация'}
           </p>
           <p className="text-sm opacity-90">
