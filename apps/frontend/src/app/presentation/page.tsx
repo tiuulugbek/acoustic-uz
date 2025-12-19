@@ -25,7 +25,8 @@ import {
   ChevronRight,
   ChevronLeft,
   Play,
-  Pause
+  Pause,
+  Phone
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -42,7 +43,7 @@ interface Slide {
 }
 
 // Mobile Demo Component - 3 phones side by side with real website pages
-function MobileDemo() {
+function MobileDemo({ settings, locale }: { settings: SettingsResponse | null; locale: 'uz' | 'ru' }) {
   const iframeRefs = [
     useRef<HTMLIFrameElement>(null),
     useRef<HTMLIFrameElement>(null),
@@ -53,11 +54,6 @@ function MobileDemo() {
     useRef<HTMLDivElement>(null),
     useRef<HTMLDivElement>(null),
   ];
-  const autoScrollRefs = [
-    useRef<NodeJS.Timeout | null>(null),
-    useRef<NodeJS.Timeout | null>(null),
-    useRef<NodeJS.Timeout | null>(null),
-  ];
   const [baseUrl, setBaseUrl] = useState<string>('');
 
   useEffect(() => {
@@ -67,59 +63,7 @@ function MobileDemo() {
     setBaseUrl(url);
   }, []);
 
-  useEffect(() => {
-    if (!baseUrl) return;
-
-    const startAutoScroll = (index: number) => {
-      const container = scrollRefs[index].current;
-      if (!container) return;
-
-      // Wait a bit for iframe to load
-      setTimeout(() => {
-        let scrollPos = 0;
-        const scrollSpeed = 1.5;
-        const pauseAtEnd = 2000;
-        let isPaused = false;
-
-        const scroll = () => {
-          if (isPaused) return;
-
-          const maxScroll = container.scrollHeight - container.clientHeight;
-          
-          if (scrollPos >= maxScroll) {
-            isPaused = true;
-            setTimeout(() => {
-              scrollPos = 0;
-              container.scrollTop = 0;
-              isPaused = false;
-            }, pauseAtEnd);
-            return;
-          }
-
-          scrollPos += scrollSpeed;
-          container.scrollTop = scrollPos;
-        };
-
-        autoScrollRefs[index].current = setInterval(scroll, 50);
-      }, 1500); // Wait for iframe to load
-    };
-
-    // Start auto-scroll for all 3 phones with delays
-    const timeout1 = setTimeout(() => startAutoScroll(0), 1000);
-    const timeout2 = setTimeout(() => startAutoScroll(1), 1300);
-    const timeout3 = setTimeout(() => startAutoScroll(2), 1600);
-
-    return () => {
-      clearTimeout(timeout1);
-      clearTimeout(timeout2);
-      clearTimeout(timeout3);
-      autoScrollRefs.forEach((ref) => {
-        if (ref.current) {
-          clearInterval(ref.current);
-        }
-      });
-    };
-  }, [baseUrl]);
+  // Auto scroll removed - users can scroll manually
 
   const mobileScreens = [
     {
@@ -182,18 +126,55 @@ function MobileDemo() {
                           height: '844px',
                           transform: 'scale(0.7)',
                           transformOrigin: 'top left',
-                          pointerEvents: 'none',
+                          pointerEvents: 'auto', // Enable interaction
                           display: 'block',
                         }}
-                        sandbox="allow-same-origin allow-scripts"
+                        sandbox="allow-same-origin allow-scripts allow-forms"
                         loading="lazy"
                         title={screen.title}
                       />
                       {/* Extra space for scrolling */}
                       <div style={{ height: '250px' }}></div>
-                      {/* Overlay title */}
-                      <div className="sticky top-8 left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-2 z-30 pointer-events-none">
-                        <h3 className="text-sm font-semibold text-gray-800">{screen.title}</h3>
+                    </div>
+                    
+                    {/* Sticky Header Overlay with Phone and CTA */}
+                    <div className="absolute top-8 left-0 right-0 z-30 pointer-events-none">
+                      <div className="sticky top-0 bg-white/98 backdrop-blur-md border-b border-gray-200 shadow-sm px-3 py-2 flex items-center justify-between">
+                        <h3 className="text-xs font-semibold text-gray-800">{screen.title}</h3>
+                        <div className="flex items-center gap-1.5">
+                          <a
+                            href={`tel:${settings?.phonePrimary || '1385'}`}
+                            className="flex items-center gap-1 px-2 py-1 bg-[#F07E22] text-white rounded-md text-[10px] font-medium pointer-events-auto hover:bg-[#d66a1a] transition-colors shadow-sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.open(`tel:${settings?.phonePrimary || '1385'}`, '_self');
+                            }}
+                          >
+                            <Phone className="h-3 w-3" />
+                            {settings?.phonePrimary || '1385'}
+                          </a>
+                          <button
+                            className="px-2 py-1 bg-[#3F3091] text-white rounded-md text-[10px] font-medium pointer-events-auto hover:bg-[#2d2169] transition-colors shadow-sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              // Try to scroll to appointment form in iframe
+                              const iframe = iframeRefs[index].current;
+                              if (iframe?.contentWindow) {
+                                try {
+                                  iframe.contentWindow.postMessage({ type: 'scrollToAppointment' }, '*');
+                                } catch (err) {
+                                  // If postMessage fails, just scroll container to show form area
+                                  const container = scrollRefs[index].current;
+                                  if (container) {
+                                    container.scrollTo({ top: 200, behavior: 'smooth' });
+                                  }
+                                }
+                              }
+                            }}
+                          >
+                            {locale === 'uz' ? 'Yozilish' : 'Запись'}
+                          </button>
+                        </div>
                       </div>
                     </div>
                     
@@ -207,11 +188,11 @@ function MobileDemo() {
         ))}
       </div>
       
-      {/* Auto-scroll indicator */}
+      {/* Interaction indicator */}
       <div className="mt-6 text-center">
-        <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#F07E22] text-white rounded-full text-sm font-medium">
-          <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-          <span>Avtomatik scroll demo</span>
+        <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#3F3091] text-white rounded-full text-sm font-medium">
+          <Smartphone className="h-4 w-4" />
+          <span>{locale === 'uz' ? 'Bosib scroll qiling va sahifalarni ko\'ring' : 'Прокрутите и просмотрите страницы'}</span>
         </div>
       </div>
     </div>
@@ -989,7 +970,7 @@ export default function PresentationPage() {
 
           {/* Mobile Demo Section */}
           <div className="mt-12 flex justify-center">
-            <MobileDemo />
+            <MobileDemo settings={settings} locale={locale} />
           </div>
 
           <div className="mt-8 p-6 rounded-lg bg-muted/50">
