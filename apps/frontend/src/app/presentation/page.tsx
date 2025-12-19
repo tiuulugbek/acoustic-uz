@@ -41,8 +41,13 @@ interface Slide {
   contentRu: React.ReactNode;
 }
 
-// Mobile Demo Component - 3 phones side by side
+// Mobile Demo Component - 3 phones side by side with real website pages
 function MobileDemo() {
+  const iframeRefs = [
+    useRef<HTMLIFrameElement>(null),
+    useRef<HTMLIFrameElement>(null),
+    useRef<HTMLIFrameElement>(null),
+  ];
   const scrollRefs = [
     useRef<HTMLDivElement>(null),
     useRef<HTMLDivElement>(null),
@@ -53,200 +58,81 @@ function MobileDemo() {
     useRef<NodeJS.Timeout | null>(null),
     useRef<NodeJS.Timeout | null>(null),
   ];
+  const [baseUrl, setBaseUrl] = useState<string>('');
 
   useEffect(() => {
+    // Get base URL from environment or current location
+    const url = process.env.NEXT_PUBLIC_SITE_URL || 
+                (typeof window !== 'undefined' ? window.location.origin : 'https://acoustic.uz');
+    setBaseUrl(url);
+  }, []);
+
+  useEffect(() => {
+    if (!baseUrl) return;
+
     const startAutoScroll = (index: number) => {
       const container = scrollRefs[index].current;
       if (!container) return;
 
-      let scrollPos = 0;
-      const scrollSpeed = 1.5;
-      const pauseAtEnd = 2000; // 2 seconds pause
-      let isPaused = false;
+      // Wait a bit for iframe to load
+      setTimeout(() => {
+        let scrollPos = 0;
+        const scrollSpeed = 1.5;
+        const pauseAtEnd = 2000;
+        let isPaused = false;
 
-      const scroll = () => {
-        if (isPaused) return;
+        const scroll = () => {
+          if (isPaused) return;
 
-        const maxScroll = container.scrollHeight - container.clientHeight;
-        
-        if (scrollPos >= maxScroll) {
-          isPaused = true;
-          setTimeout(() => {
-            scrollPos = 0;
-            container.scrollTop = 0;
-            isPaused = false;
-          }, pauseAtEnd);
-          return;
-        }
+          const maxScroll = container.scrollHeight - container.clientHeight;
+          
+          if (scrollPos >= maxScroll) {
+            isPaused = true;
+            setTimeout(() => {
+              scrollPos = 0;
+              container.scrollTop = 0;
+              isPaused = false;
+            }, pauseAtEnd);
+            return;
+          }
 
-        scrollPos += scrollSpeed;
-        container.scrollTop = scrollPos;
-      };
+          scrollPos += scrollSpeed;
+          container.scrollTop = scrollPos;
+        };
 
-      autoScrollRefs[index].current = setInterval(scroll, 50);
+        autoScrollRefs[index].current = setInterval(scroll, 50);
+      }, 1500); // Wait for iframe to load
     };
 
-    // Start auto-scroll for all 3 phones with slight delays
-    startAutoScroll(0);
-    setTimeout(() => startAutoScroll(1), 300);
-    setTimeout(() => startAutoScroll(2), 600);
+    // Start auto-scroll for all 3 phones with delays
+    const timeout1 = setTimeout(() => startAutoScroll(0), 1000);
+    const timeout2 = setTimeout(() => startAutoScroll(1), 1300);
+    const timeout3 = setTimeout(() => startAutoScroll(2), 1600);
 
     return () => {
+      clearTimeout(timeout1);
+      clearTimeout(timeout2);
+      clearTimeout(timeout3);
       autoScrollRefs.forEach((ref) => {
         if (ref.current) {
           clearInterval(ref.current);
         }
       });
     };
-  }, []);
+  }, [baseUrl]);
 
   const mobileScreens = [
     {
       title: 'Filiallar',
-      content: (
-        <div className="bg-white space-y-4">
-          {/* Map area */}
-          <div className="h-48 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg relative overflow-hidden">
-            <div className="absolute inset-0 flex items-center justify-center">
-              <MapPin className="h-12 w-12 text-blue-500" />
-            </div>
-            <div className="absolute top-4 left-4 bg-white px-3 py-1 rounded-full text-xs font-medium shadow">
-              Xarita
-            </div>
-          </div>
-          {/* Branch cards */}
-          <div className="px-4 space-y-3 pb-4">
-            <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-[#F07E22] rounded-full flex items-center justify-center flex-shrink-0">
-                  <MapPin className="h-5 w-5 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="h-3 bg-gray-300 rounded w-3/4 mb-2"></div>
-                  <div className="h-2 bg-gray-200 rounded w-full mb-1"></div>
-                  <div className="h-2 bg-gray-200 rounded w-2/3"></div>
-                </div>
-              </div>
-            </div>
-            <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-[#3F3091] rounded-full flex items-center justify-center flex-shrink-0">
-                  <MapPin className="h-5 w-5 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="h-3 bg-gray-300 rounded w-3/4 mb-2"></div>
-                  <div className="h-2 bg-gray-200 rounded w-full mb-1"></div>
-                  <div className="h-2 bg-gray-200 rounded w-2/3"></div>
-                </div>
-              </div>
-            </div>
-            <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-[#F07E22] rounded-full flex items-center justify-center flex-shrink-0">
-                  <MapPin className="h-5 w-5 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="h-3 bg-gray-300 rounded w-3/4 mb-2"></div>
-                  <div className="h-2 bg-gray-200 rounded w-full mb-1"></div>
-                  <div className="h-2 bg-gray-200 rounded w-2/3"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      ),
+      url: '/branches',
     },
     {
       title: 'Mutaxassislar',
-      content: (
-        <div className="bg-white space-y-4">
-          <div className="px-4 pt-4 space-y-3 pb-4">
-            <div className="flex gap-3 p-3 bg-white border border-gray-200 rounded-lg">
-              <div className="w-16 h-16 bg-gradient-to-br from-[#F07E22]/20 to-[#3F3091]/20 rounded-lg flex-shrink-0 flex items-center justify-center">
-                <Users className="h-8 w-8 text-gray-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="h-4 bg-gray-300 rounded w-3/4 mb-2"></div>
-                <div className="h-3 bg-[#3F3091] rounded w-1/2 mb-2"></div>
-                <div className="h-2 bg-gray-200 rounded w-full"></div>
-              </div>
-            </div>
-            <div className="flex gap-3 p-3 bg-white border border-gray-200 rounded-lg">
-              <div className="w-16 h-16 bg-gradient-to-br from-[#F07E22]/20 to-[#3F3091]/20 rounded-lg flex-shrink-0 flex items-center justify-center">
-                <Users className="h-8 w-8 text-gray-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="h-4 bg-gray-300 rounded w-3/4 mb-2"></div>
-                <div className="h-3 bg-[#3F3091] rounded w-1/2 mb-2"></div>
-                <div className="h-2 bg-gray-200 rounded w-full"></div>
-              </div>
-            </div>
-            <div className="flex gap-3 p-3 bg-white border border-gray-200 rounded-lg">
-              <div className="w-16 h-16 bg-gradient-to-br from-[#F07E22]/20 to-[#3F3091]/20 rounded-lg flex-shrink-0 flex items-center justify-center">
-                <Users className="h-8 w-8 text-gray-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="h-4 bg-gray-300 rounded w-3/4 mb-2"></div>
-                <div className="h-3 bg-[#3F3091] rounded w-1/2 mb-2"></div>
-                <div className="h-2 bg-gray-200 rounded w-full"></div>
-              </div>
-            </div>
-            <div className="flex gap-3 p-3 bg-white border border-gray-200 rounded-lg">
-              <div className="w-16 h-16 bg-gradient-to-br from-[#F07E22]/20 to-[#3F3091]/20 rounded-lg flex-shrink-0 flex items-center justify-center">
-                <Users className="h-8 w-8 text-gray-400" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="h-4 bg-gray-300 rounded w-3/4 mb-2"></div>
-                <div className="h-3 bg-[#3F3091] rounded w-1/2 mb-2"></div>
-                <div className="h-2 bg-gray-200 rounded w-full"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      ),
+      url: '/doctors',
     },
     {
       title: 'Eshitish moslamalari',
-      content: (
-        <div className="bg-white space-y-4">
-          <div className="px-4 pt-4 space-y-3 pb-4">
-            <div className="grid grid-cols-2 gap-2">
-              <div className="bg-white border border-gray-200 rounded-lg p-3">
-                <div className="aspect-square bg-gray-100 rounded-lg mb-2 flex items-center justify-center">
-                  <Heart className="h-8 w-8 text-gray-400" />
-                </div>
-                <div className="h-3 bg-gray-300 rounded w-full mb-1"></div>
-                <div className="h-2 bg-gray-200 rounded w-2/3"></div>
-              </div>
-              <div className="bg-white border border-gray-200 rounded-lg p-3">
-                <div className="aspect-square bg-gray-100 rounded-lg mb-2 flex items-center justify-center">
-                  <Heart className="h-8 w-8 text-gray-400" />
-                </div>
-                <div className="h-3 bg-gray-300 rounded w-full mb-1"></div>
-                <div className="h-2 bg-gray-200 rounded w-2/3"></div>
-              </div>
-              <div className="bg-white border border-gray-200 rounded-lg p-3">
-                <div className="aspect-square bg-gray-100 rounded-lg mb-2 flex items-center justify-center">
-                  <Heart className="h-8 w-8 text-gray-400" />
-                </div>
-                <div className="h-3 bg-gray-300 rounded w-full mb-1"></div>
-                <div className="h-2 bg-gray-200 rounded w-2/3"></div>
-              </div>
-              <div className="bg-white border border-gray-200 rounded-lg p-3">
-                <div className="aspect-square bg-gray-100 rounded-lg mb-2 flex items-center justify-center">
-                  <Heart className="h-8 w-8 text-gray-400" />
-                </div>
-                <div className="h-3 bg-gray-300 rounded w-full mb-1"></div>
-                <div className="h-2 bg-gray-200 rounded w-2/3"></div>
-              </div>
-            </div>
-            <div className="bg-[#F07E22] rounded-lg p-4 text-white text-center">
-              <div className="h-4 bg-white/20 rounded w-3/4 mx-auto mb-2"></div>
-              <div className="h-3 bg-white/20 rounded w-1/2 mx-auto"></div>
-            </div>
-          </div>
-        </div>
-      ),
+      url: '/catalog?productType=hearing-aids',
     },
   ];
 
@@ -276,22 +162,39 @@ function MobileDemo() {
                       </div>
                     </div>
                     
-                    {/* Scrollable Content */}
+                    {/* Scrollable container for iframe */}
                     <div
                       ref={scrollRefs[index]}
-                      className="h-full overflow-y-auto pt-7"
+                      className="h-full overflow-y-auto pt-7 relative"
                       style={{ 
                         scrollBehavior: 'smooth',
-                        WebkitOverflowScrolling: 'touch',
-                        overscrollBehavior: 'contain'
+                        overscrollBehavior: 'contain',
+                        touchAction: 'pan-y',
+                        WebkitOverflowScrolling: 'touch'
                       }}
                     >
-                      <div className="sticky top-7 bg-white border-b border-gray-200 px-3 py-2 z-10 mb-2">
+                      <iframe
+                        ref={iframeRefs[index]}
+                        src={`${baseUrl}${screen.url}`}
+                        className="border-0"
+                        style={{
+                          width: '375px',
+                          height: '667px',
+                          transform: 'scale(0.64)',
+                          transformOrigin: 'top left',
+                          pointerEvents: 'none',
+                          display: 'block',
+                        }}
+                        sandbox="allow-same-origin allow-scripts"
+                        loading="lazy"
+                        title={screen.title}
+                      />
+                      {/* Extra space for scrolling */}
+                      <div style={{ height: '200px' }}></div>
+                      {/* Overlay title */}
+                      <div className="sticky top-7 left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-3 py-2 z-30 pointer-events-none">
                         <h3 className="text-xs font-semibold text-gray-800">{screen.title}</h3>
                       </div>
-                      {screen.content}
-                      {/* Extra space for scrolling */}
-                      <div className="h-20"></div>
                     </div>
                     
                     {/* Home Indicator */}
