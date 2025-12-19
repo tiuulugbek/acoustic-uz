@@ -141,31 +141,31 @@ function MobileDemo() {
       <div className="flex justify-center items-start gap-6 flex-wrap">
         {mobileScreens.map((screen, index) => (
           <div key={index} className="relative">
-            {/* iPhone Frame */}
-            <div className="relative w-[240px] h-[520px]">
+            {/* iPhone Frame - Realistic proportions */}
+            <div className="relative w-[280px] h-[600px]">
               {/* iPhone Outer Frame */}
-              <div className="absolute inset-0 bg-gradient-to-b from-gray-800 to-gray-900 rounded-[2.5rem] p-1.5 shadow-2xl">
+              <div className="absolute inset-0 bg-gradient-to-b from-gray-800 via-gray-800 to-gray-900 rounded-[3rem] p-2 shadow-2xl">
                 {/* Screen Bezel */}
-                <div className="w-full h-full bg-black rounded-[2rem] p-0.5">
+                <div className="w-full h-full bg-black rounded-[2.5rem] p-1">
                   {/* Notch */}
-                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-24 h-5 bg-black rounded-b-xl z-10"></div>
+                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-28 h-6 bg-black rounded-b-2xl z-10"></div>
                   {/* Screen */}
-                  <div className="w-full h-full bg-white rounded-[1.75rem] overflow-hidden relative">
+                  <div className="w-full h-full bg-white rounded-[2rem] overflow-hidden relative">
                     {/* Status Bar */}
-                    <div className="absolute top-0 left-0 right-0 h-7 bg-white flex items-center justify-between px-3 text-[10px] font-medium z-20">
+                    <div className="absolute top-0 left-0 right-0 h-8 bg-white flex items-center justify-between px-4 text-xs font-medium z-20">
                       <span>9:41</span>
-                      <div className="flex items-center gap-0.5">
-                        <div className="w-3 h-1.5 border border-black rounded-sm">
-                          <div className="w-2 h-1 bg-black rounded-sm m-0.5"></div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-4 h-2 border border-black rounded-sm">
+                          <div className="w-3 h-1.5 bg-black rounded-sm m-0.5"></div>
                         </div>
-                        <div className="w-0.5 h-0.5 bg-black rounded-full"></div>
+                        <div className="w-1 h-1 bg-black rounded-full"></div>
                       </div>
                     </div>
                     
                     {/* Scrollable container for iframe */}
                     <div
                       ref={scrollRefs[index]}
-                      className="h-full overflow-y-auto pt-7 relative"
+                      className="h-full overflow-y-auto pt-8 relative"
                       style={{ 
                         scrollBehavior: 'smooth',
                         overscrollBehavior: 'contain',
@@ -178,9 +178,9 @@ function MobileDemo() {
                         src={`${baseUrl}${screen.url}`}
                         className="border-0"
                         style={{
-                          width: '375px',
-                          height: '667px',
-                          transform: 'scale(0.64)',
+                          width: '390px',
+                          height: '844px',
+                          transform: 'scale(0.7)',
                           transformOrigin: 'top left',
                           pointerEvents: 'none',
                           display: 'block',
@@ -190,15 +190,15 @@ function MobileDemo() {
                         title={screen.title}
                       />
                       {/* Extra space for scrolling */}
-                      <div style={{ height: '200px' }}></div>
+                      <div style={{ height: '250px' }}></div>
                       {/* Overlay title */}
-                      <div className="sticky top-7 left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-3 py-2 z-30 pointer-events-none">
-                        <h3 className="text-xs font-semibold text-gray-800">{screen.title}</h3>
+                      <div className="sticky top-8 left-0 right-0 bg-white/95 backdrop-blur-sm border-b border-gray-200 px-4 py-2 z-30 pointer-events-none">
+                        <h3 className="text-sm font-semibold text-gray-800">{screen.title}</h3>
                       </div>
                     </div>
                     
                     {/* Home Indicator */}
-                    <div className="absolute bottom-1.5 left-1/2 transform -translate-x-1/2 w-24 h-0.5 bg-gray-400 rounded-full"></div>
+                    <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-gray-400 rounded-full"></div>
                   </div>
                 </div>
               </div>
