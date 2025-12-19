@@ -33,6 +33,7 @@ import Link from 'next/link';
 import { getDoctors, getBranches, getSettings } from '@/lib/api';
 import type { DoctorResponse, BranchResponse, SettingsResponse } from '@/lib/api';
 import { normalizeImageUrl } from '@/lib/image-utils';
+import PresentationLock from './lock';
 
 interface Slide {
   id: string;
@@ -137,43 +138,30 @@ function MobileDemo({ settings, locale }: { settings: SettingsResponse | null; l
                       <div style={{ height: '250px' }}></div>
                     </div>
                     
-                    {/* Sticky Header Overlay with Phone and CTA */}
+                    {/* Sticky Header Overlay with Phone and CTA - Real website style */}
                     <div className="absolute top-8 left-0 right-0 z-30 pointer-events-none">
                       <div className="sticky top-0 bg-white/98 backdrop-blur-md border-b border-gray-200 shadow-sm px-3 py-2 flex items-center justify-between">
                         <h3 className="text-xs font-semibold text-gray-800">{screen.title}</h3>
                         <div className="flex items-center gap-1.5">
                           <a
-                            href={`tel:${settings?.phonePrimary || '1385'}`}
-                            className="flex items-center gap-1 px-2 py-1 bg-[#F07E22] text-white rounded-md text-[10px] font-medium pointer-events-auto hover:bg-[#d66a1a] transition-colors shadow-sm"
+                            href={`tel:${settings?.phoneSecondary?.replace(/\s/g, '') || '+998712021441'}`}
+                            className="inline-flex items-center gap-1 rounded-full border border-[#F07E22]/30 bg-[#F07E22] px-2.5 py-1 text-[10px] font-semibold text-white shadow transition hover:bg-[#F07E22]/90 pointer-events-auto"
                             onClick={(e) => {
                               e.stopPropagation();
-                              window.open(`tel:${settings?.phonePrimary || '1385'}`, '_self');
                             }}
                           >
-                            <Phone className="h-3 w-3" />
-                            {settings?.phonePrimary || '1385'}
+                            <Phone size={10} /> {settings?.phonePrimary || '1385'}
                           </a>
-                          <button
-                            className="px-2 py-1 bg-[#3F3091] text-white rounded-md text-[10px] font-medium pointer-events-auto hover:bg-[#2d2169] transition-colors shadow-sm"
+                          <Link
+                            href="/contact"
+                            className="inline-flex items-center gap-1 rounded-full border border-[#3F3091]/30 bg-[#3F3091] px-2.5 py-1 text-[10px] font-semibold text-white shadow transition hover:bg-[#3F3091]/90 pointer-events-auto"
                             onClick={(e) => {
                               e.stopPropagation();
-                              // Try to scroll to appointment form in iframe
-                              const iframe = iframeRefs[index].current;
-                              if (iframe?.contentWindow) {
-                                try {
-                                  iframe.contentWindow.postMessage({ type: 'scrollToAppointment' }, '*');
-                                } catch (err) {
-                                  // If postMessage fails, just scroll container to show form area
-                                  const container = scrollRefs[index].current;
-                                  if (container) {
-                                    container.scrollTo({ top: 200, behavior: 'smooth' });
-                                  }
-                                }
-                              }
                             }}
                           >
-                            {locale === 'uz' ? 'Yozilish' : 'Запись'}
-                          </button>
+                            <MessageSquare size={10} />
+                            {locale === 'uz' ? 'Qabulga yozilish' : 'Записаться'}
+                          </Link>
                         </div>
                       </div>
                     </div>
@@ -1374,10 +1362,11 @@ export default function PresentationPage() {
   }, [isAutoPlay]);
 
   return (
-    <div 
-      className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100"
-      style={{ overscrollBehavior: 'contain', touchAction: 'pan-y' }}
-    >
+    <PresentationLock>
+      <div 
+        className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100"
+        style={{ overscrollBehavior: 'contain', touchAction: 'pan-y' }}
+      >
       {/* Header Controls */}
       <div className="sticky top-0 z-50 bg-white/90 backdrop-blur-sm border-b border-border shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -1499,6 +1488,7 @@ export default function PresentationPage() {
         </div>
       </div>
     </div>
+    </PresentationLock>
   );
 }
 
