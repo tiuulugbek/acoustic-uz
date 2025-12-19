@@ -41,6 +41,160 @@ interface Slide {
   contentRu: React.ReactNode;
 }
 
+// Mobile Demo Component
+function MobileDemo() {
+  const [scrollPosition, setScrollPosition] = useState(0);
+  const [isAutoScrolling, setIsAutoScrolling] = useState(true);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const autoScrollRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (isAutoScrolling && scrollContainerRef.current) {
+      const container = scrollContainerRef.current;
+      const maxScroll = container.scrollHeight - container.clientHeight;
+      
+      autoScrollRef.current = setInterval(() => {
+        setScrollPosition((prev) => {
+          const newPos = prev + 2;
+          if (newPos >= maxScroll) {
+            setIsAutoScrolling(false);
+            setTimeout(() => {
+              setScrollPosition(0);
+              setIsAutoScrolling(true);
+            }, 2000);
+            return 0;
+          }
+          container.scrollTop = newPos;
+          return newPos;
+        });
+      }, 50);
+    }
+
+    return () => {
+      if (autoScrollRef.current) {
+        clearInterval(autoScrollRef.current);
+      }
+    };
+  }, [isAutoScrolling]);
+
+  const mobileScreens = [
+    {
+      title: 'Bosh sahifa',
+      content: (
+        <div className="bg-white p-4 space-y-4">
+          <div className="h-32 bg-gradient-to-r from-[#F07E22] to-[#3F3091] rounded-lg flex items-center justify-center text-white font-bold text-lg">
+            Acoustic.uz
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="h-20 bg-gray-100 rounded"></div>
+            <div className="h-20 bg-gray-100 rounded"></div>
+          </div>
+          <div className="h-24 bg-gray-50 rounded"></div>
+        </div>
+      ),
+    },
+    {
+      title: 'Xizmatlar',
+      content: (
+        <div className="bg-white p-4 space-y-3">
+          <div className="h-24 bg-[#F07E22] rounded-lg"></div>
+          <div className="h-24 bg-[#3F3091] rounded-lg"></div>
+          <div className="h-24 bg-[#F07E22] rounded-lg"></div>
+        </div>
+      ),
+    },
+    {
+      title: 'Mutaxassislar',
+      content: (
+        <div className="bg-white p-4 space-y-3">
+          <div className="flex gap-3">
+            <div className="w-16 h-16 bg-gray-200 rounded-full"></div>
+            <div className="flex-1 space-y-2">
+              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-3 bg-gray-100 rounded w-1/2"></div>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <div className="w-16 h-16 bg-gray-200 rounded-full"></div>
+            <div className="flex-1 space-y-2">
+              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              <div className="h-3 bg-gray-100 rounded w-1/2"></div>
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: 'Filiallar',
+      content: (
+        <div className="bg-white p-4 space-y-3">
+          <div className="h-32 bg-gray-200 rounded-lg"></div>
+          <div className="space-y-2">
+            <div className="h-3 bg-gray-200 rounded"></div>
+            <div className="h-3 bg-gray-100 rounded w-5/6"></div>
+          </div>
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <div className="relative">
+      {/* iPhone Frame */}
+      <div className="relative w-[280px] h-[600px] mx-auto">
+        {/* iPhone Outer Frame */}
+        <div className="absolute inset-0 bg-gradient-to-b from-gray-800 to-gray-900 rounded-[3rem] p-2 shadow-2xl">
+          {/* Screen Bezel */}
+          <div className="w-full h-full bg-black rounded-[2.5rem] p-1">
+            {/* Notch */}
+            <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-32 h-6 bg-black rounded-b-2xl z-10"></div>
+            {/* Screen */}
+            <div className="w-full h-full bg-white rounded-[2rem] overflow-hidden relative">
+              {/* Status Bar */}
+              <div className="absolute top-0 left-0 right-0 h-8 bg-white flex items-center justify-between px-4 text-xs font-medium z-20">
+                <span>9:41</span>
+                <div className="flex items-center gap-1">
+                  <div className="w-4 h-2 border border-black rounded-sm">
+                    <div className="w-3 h-1.5 bg-black rounded-sm m-0.5"></div>
+                  </div>
+                  <div className="w-1 h-1 bg-black rounded-full"></div>
+                </div>
+              </div>
+              
+              {/* Scrollable Content */}
+              <div
+                ref={scrollContainerRef}
+                className="h-full overflow-y-auto pt-8"
+                style={{ scrollBehavior: 'smooth' }}
+              >
+                {mobileScreens.map((screen, index) => (
+                  <div key={index} className="min-h-[500px]">
+                    <div className="sticky top-8 bg-white border-b-2 border-gray-200 px-4 py-2 z-10">
+                      <h3 className="text-sm font-semibold text-gray-800">{screen.title}</h3>
+                    </div>
+                    {screen.content}
+                  </div>
+                ))}
+              </div>
+              
+              {/* Home Indicator */}
+              <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-gray-400 rounded-full"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Auto-scroll indicator */}
+      <div className="mt-4 text-center">
+        <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#F07E22] text-white rounded-full text-sm font-medium">
+          <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+          <span>Avtomatik scroll demo</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PresentationPage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [locale, setLocale] = useState<'uz' | 'ru'>('uz');
@@ -166,8 +320,8 @@ export default function PresentationPage() {
     },
     {
       id: 'marketing',
-      title: 'Marketing Nuqtai Nazaridan Saytning Ahamiyati',
-      titleRu: 'Важность Сайта с Точки Зрения Маркетинга',
+      title: 'Marketing nuqtai nazaridan saytning ahamiyati',
+      titleRu: 'Важность сайта с точки зрения маркетинга',
       content: (
         <div className="space-y-8">
           <div className="grid md:grid-cols-2 gap-8">
@@ -175,7 +329,7 @@ export default function PresentationPage() {
               <div className="flex items-start gap-4 p-6 rounded-lg bg-gradient-to-br from-[#F07E22]/10 to-white border border-[#F07E22]/20">
                 <BarChart3 className="h-8 w-8 text-[#F07E22] flex-shrink-0 mt-1" />
                 <div>
-                  <h3 className="text-xl font-semibold mb-2">Statistikalar va Analitika</h3>
+                  <h3 className="text-xl font-semibold mb-2">Statistikalar va analitika</h3>
                   <p className="text-muted-foreground">
                     Har bir mijoz oqimi, sahifa ko'rish va konversiya to'g'risida batafsil ma'lumot. 
                     Qaysi sahifalar eng ko'p natija berayotganini aniqlash.
@@ -185,7 +339,7 @@ export default function PresentationPage() {
               <div className="flex items-start gap-4 p-6 rounded-lg bg-gradient-to-br from-[#3F3091]/10 to-white border border-[#3F3091]/20">
                 <Target className="h-8 w-8 text-[#3F3091] flex-shrink-0 mt-1" />
                 <div>
-                  <h3 className="text-xl font-semibold mb-2">Maqsadli Marketing</h3>
+                  <h3 className="text-xl font-semibold mb-2">Maqsadli marketing</h3>
                   <p className="text-muted-foreground">
                     Har bir sahifa va bo'lim uchun alohida tracking. Qaysi manbadan 
                     eng ko'p mijoz kelayotganini aniqlash va marketing byudjetini optimallashtirish.
@@ -197,7 +351,7 @@ export default function PresentationPage() {
               <div className="flex items-start gap-4 p-6 rounded-lg bg-gradient-to-br from-[#F07E22]/10 to-white border border-[#F07E22]/20">
                 <TrendingUp className="h-8 w-8 text-[#F07E22] flex-shrink-0 mt-1" />
                 <div>
-                  <h3 className="text-xl font-semibold mb-2">Konversiya Optimizatsiyasi</h3>
+                  <h3 className="text-xl font-semibold mb-2">Konversiya optimizatsiyasi</h3>
                   <p className="text-muted-foreground">
                     Onlayn yozilish formalari, telefon qo'ng'iroqlari va chat integratsiyalari. 
                     Har bir mijoz oqimini kuzatish va konversiya darajasini oshirish.
@@ -207,7 +361,7 @@ export default function PresentationPage() {
               <div className="flex items-start gap-4 p-6 rounded-lg bg-gradient-to-br from-[#3F3091]/10 to-white border border-[#3F3091]/20">
                 <Eye className="h-8 w-8 text-[#3F3091] flex-shrink-0 mt-1" />
                 <div>
-                  <h3 className="text-xl font-semibold mb-2">SEO va Ko'rinish</h3>
+                  <h3 className="text-xl font-semibold mb-2">SEO va ko'rinish</h3>
                   <p className="text-muted-foreground">
                     Google va boshqa qidiruv tizimlarida yuqori pozitsiyalar. 
                     Potentsial mijozlar sizni topishlari osonlashadi.
@@ -216,8 +370,8 @@ export default function PresentationPage() {
               </div>
             </div>
           </div>
-          <div className="mt-8 p-6 rounded-lg bg-gradient-to-r from-[#F07E22] to-[#3F3091] text-white">
-            <h3 className="text-2xl font-bold mb-4">Marketing Natijalari</h3>
+          <div className="mt-8 p-6 rounded-lg bg-[#F07E22] text-white">
+            <h3 className="text-2xl font-bold mb-4">Marketing natijalari</h3>
             <div className="grid md:grid-cols-4 gap-4">
               <div className="text-center">
                 <div className="text-3xl font-bold mb-1">24/7</div>
@@ -313,8 +467,8 @@ export default function PresentationPage() {
     },
     {
       id: 'doctors',
-      title: 'Mutaxassislar Kartochkalari — Ishonch va Professionalizm',
-      titleRu: 'Карточки Специалистов — Доверие и Профессионализм',
+      title: 'Mutaxassislar kartochkalari — ishonch va professionalizm',
+      titleRu: 'Карточки специалистов — доверие и профессионализм',
       content: (
         <div className="space-y-8">
           <div className="text-center space-y-4 mb-8">
@@ -329,7 +483,7 @@ export default function PresentationPage() {
               <div className="flex items-start gap-4 p-6 rounded-lg bg-white border-2 border-[#F07E22]/30 shadow-lg">
                 <Users className="h-8 w-8 text-[#F07E22] flex-shrink-0 mt-1" />
                 <div>
-                  <h3 className="text-xl font-semibold mb-2">Ishonch Oshirish</h3>
+                  <h3 className="text-xl font-semibold mb-2">Ishonch oshirish</h3>
                   <p className="text-muted-foreground">
                     Mijozlar doktorning fotosurati, tajribasi va malakasini ko'rishadi. 
                     Bu ishonchni oshiradi va qaror qabul qilishni osonlashtiradi.
@@ -339,7 +493,7 @@ export default function PresentationPage() {
               <div className="flex items-start gap-4 p-6 rounded-lg bg-white border-2 border-[#3F3091]/30 shadow-lg">
                 <Star className="h-8 w-8 text-[#3F3091] flex-shrink-0 mt-1" />
                 <div>
-                  <h3 className="text-xl font-semibold mb-2">Professional Ko'rinish</h3>
+                  <h3 className="text-xl font-semibold mb-2">Professional ko'rinish</h3>
                   <p className="text-muted-foreground">
                     Har bir mutaxassisning batafsil profili, kasbiy yutuqlari va 
                     mutaxassislik sohalari ko'rsatiladi.
@@ -351,7 +505,7 @@ export default function PresentationPage() {
               <div className="flex items-start gap-4 p-6 rounded-lg bg-white border-2 border-[#F07E22]/30 shadow-lg">
                 <Calendar className="h-8 w-8 text-[#F07E22] flex-shrink-0 mt-1" />
                 <div>
-                  <h3 className="text-xl font-semibold mb-2">To'g'ridan-to'g'ri Yozilish</h3>
+                  <h3 className="text-xl font-semibold mb-2">To'g'ridan-to'g'ri yozilish</h3>
                   <p className="text-muted-foreground">
                     Har bir doktor kartochkasidan to'g'ridan-to'g'ri qabulga yozilish mumkin. 
                     Bu konversiyani sezilarli darajada oshiradi.
@@ -361,7 +515,7 @@ export default function PresentationPage() {
               <div className="flex items-start gap-4 p-6 rounded-lg bg-white border-2 border-[#3F3091]/30 shadow-lg">
                 <MessageSquare className="h-8 w-8 text-[#3F3091] flex-shrink-0 mt-1" />
                 <div>
-                  <h3 className="text-xl font-semibold mb-2">Aloqa Qulayligi</h3>
+                  <h3 className="text-xl font-semibold mb-2">Aloqa qulayligi</h3>
                   <p className="text-muted-foreground">
                     Mijozlar doktor bilan aloqa qilish va savollar berish imkoniyatiga ega. 
                     Bu mijozlar bilan aloqani yaxshilaydi.
@@ -524,8 +678,8 @@ export default function PresentationPage() {
     },
     {
       id: 'branches',
-      title: 'Filiallar Bo\'limi — Geografik Qamrov va Qulaylik',
-      titleRu: 'Раздел Филиалов — Географический Охват и Удобство',
+      title: 'Filiallar bo\'limi — geografik qamrov va qulaylik',
+      titleRu: 'Раздел филиалов — географический охват и удобство',
       content: (
         <div className="space-y-8">
           <div className="text-center space-y-4 mb-8">
@@ -540,7 +694,7 @@ export default function PresentationPage() {
               <div className="flex items-start gap-4 p-6 rounded-lg bg-white border-2 border-[#F07E22]/30 shadow-lg">
                 <MapPin className="h-8 w-8 text-[#F07E22] flex-shrink-0 mt-1" />
                 <div>
-                  <h3 className="text-xl font-semibold mb-2">Geografik Qamrov</h3>
+                  <h3 className="text-xl font-semibold mb-2">Geografik qamrov</h3>
                   <p className="text-muted-foreground">
                     Barcha filiallar interaktiv xaritada ko'rsatiladi. Mijozlar eng yaqin 
                     filialni topishlari va u yerga qanday borishni bilishlari mumkin.
@@ -550,7 +704,7 @@ export default function PresentationPage() {
               <div className="flex items-start gap-4 p-6 rounded-lg bg-white border-2 border-[#3F3091]/30 shadow-lg">
                 <Clock className="h-8 w-8 text-[#3F3091] flex-shrink-0 mt-1" />
                 <div>
-                  <h3 className="text-xl font-semibold mb-2">Ish Vaqtlari</h3>
+                  <h3 className="text-xl font-semibold mb-2">Ish vaqtlari</h3>
                   <p className="text-muted-foreground">
                     Har bir filialning ish vaqtlari, telefon raqamlari va boshqa 
                     muhim ma'lumotlar ko'rsatiladi.
@@ -562,7 +716,7 @@ export default function PresentationPage() {
               <div className="flex items-start gap-4 p-6 rounded-lg bg-white border-2 border-[#F07E22]/30 shadow-lg">
                 <Zap className="h-8 w-8 text-[#F07E22] flex-shrink-0 mt-1" />
                 <div>
-                  <h3 className="text-xl font-semibold mb-2">Tezkor Qaror</h3>
+                  <h3 className="text-xl font-semibold mb-2">Tezkor qaror</h3>
                   <p className="text-muted-foreground">
                     Mijozlar filialni tanlash va u yerga yozilishni bir necha soniyada 
                     amalga oshirishlari mumkin. Bu konversiyani oshiradi.
@@ -572,7 +726,7 @@ export default function PresentationPage() {
               <div className="flex items-start gap-4 p-6 rounded-lg bg-white border-2 border-[#3F3091]/30 shadow-lg">
                 <Shield className="h-8 w-8 text-[#3F3091] flex-shrink-0 mt-1" />
                 <div>
-                  <h3 className="text-xl font-semibold mb-2">Ishonchli Ma'lumot</h3>
+                  <h3 className="text-xl font-semibold mb-2">Ishonchli ma'lumot</h3>
                   <p className="text-muted-foreground">
                     Barcha filiallar haqida to'liq va yangilangan ma'lumotlar. 
                     Mijozlar xato ma'lumotlar tufayli vaqt yo'qotmaydi.
@@ -723,8 +877,8 @@ export default function PresentationPage() {
     },
     {
       id: 'mobile',
-      title: 'Mobil Versiya — Har Qanday Joyda, Har Qanday Vaqtda',
-      titleRu: 'Мобильная Версия — В Любом Месте, В Любое Время',
+      title: 'Mobil versiya — har qanday joyda, har qanday vaqtda',
+      titleRu: 'Мобильная версия — в любом месте, в любое время',
       content: (
         <div className="space-y-8">
           <div className="text-center space-y-4 mb-8">
@@ -737,21 +891,21 @@ export default function PresentationPage() {
           <div className="grid md:grid-cols-3 gap-6 mb-8">
             <div className="text-center p-6 rounded-lg bg-gradient-to-br from-[#F07E22]/10 to-white border-2 border-[#F07E22]/30">
               <Smartphone className="h-12 w-12 mx-auto mb-4 text-[#F07E22]" />
-              <h3 className="text-xl font-semibold mb-2">Responsive Dizayn</h3>
+              <h3 className="text-xl font-semibold mb-2">Responsive dizayn</h3>
               <p className="text-muted-foreground text-sm">
                 Barcha ekran o'lchamlarida mukammal ko'rinish va ishlash
               </p>
             </div>
             <div className="text-center p-6 rounded-lg bg-gradient-to-br from-[#3F3091]/10 to-white border-2 border-[#3F3091]/30">
               <Zap className="h-12 w-12 mx-auto mb-4 text-[#3F3091]" />
-              <h3 className="text-xl font-semibold mb-2">Tez Yuklanish</h3>
+              <h3 className="text-xl font-semibold mb-2">Tez yuklanish</h3>
               <p className="text-muted-foreground text-sm">
                 Optimallashtirilgan kod va rasmlar tez yuklanishni ta'minlaydi
               </p>
             </div>
             <div className="text-center p-6 rounded-lg bg-gradient-to-br from-[#F07E22]/10 to-white border-2 border-[#F07E22]/30">
               <CheckCircle2 className="h-12 w-12 mx-auto mb-4 text-[#F07E22]" />
-              <h3 className="text-xl font-semibold mb-2">Qulay Interfeys</h3>
+              <h3 className="text-xl font-semibold mb-2">Qulay interfeys</h3>
               <p className="text-muted-foreground text-sm">
                 Barmoq bilan boshqarish uchun optimallashtirilgan tugmalar va formalar
               </p>
@@ -759,7 +913,7 @@ export default function PresentationPage() {
           </div>
 
           <div className="bg-gradient-to-r from-[#F07E22] to-[#3F3091] rounded-lg p-8 text-white">
-            <h3 className="text-2xl font-bold mb-6 text-center">Mobil Versiya Afzalliklari</h3>
+            <h3 className="text-2xl font-bold mb-6 text-center">Mobil versiya afzalliklari</h3>
             <div className="grid md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div className="flex items-start gap-3">
@@ -808,6 +962,11 @@ export default function PresentationPage() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Mobile Demo Section */}
+          <div className="mt-12 flex justify-center">
+            <MobileDemo />
           </div>
 
           <div className="mt-8 p-6 rounded-lg bg-muted/50">
@@ -936,8 +1095,8 @@ export default function PresentationPage() {
     },
     {
       id: 'guide',
-      title: 'Xodimlarga Tushuntirish Qo\'llanmasi',
-      titleRu: 'Руководство по Объяснению Сотрудникам',
+      title: 'Xodimlarga tushuntirish qo\'llanmasi',
+      titleRu: 'Руководство по объяснению сотрудникам',
       content: (
         <div className="space-y-8">
           <div className="text-center space-y-4 mb-8">
@@ -1218,7 +1377,7 @@ export default function PresentationPage() {
           <div className="flex items-center gap-4">
             <button
               onClick={() => setLocale(locale === 'uz' ? 'ru' : 'uz')}
-              className="px-4 py-2 rounded-lg bg-gradient-to-r from-[#F07E22] to-[#3F3091] text-white font-medium hover:opacity-90 transition-opacity"
+              className="px-4 py-2 rounded-lg bg-[#F07E22] text-white font-medium hover:opacity-90 transition-opacity"
             >
               {locale === 'uz' ? 'RU' : 'UZ'}
             </button>
@@ -1269,7 +1428,7 @@ export default function PresentationPage() {
                   onClick={() => setCurrentSlide(index)}
                   className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
                     currentSlide === index
-                      ? 'bg-gradient-to-r from-[#F07E22] to-[#3F3091] text-white'
+                      ? 'bg-[#F07E22] text-white'
                       : 'bg-muted hover:bg-muted/80 text-muted-foreground'
                   }`}
                 >
@@ -1303,7 +1462,7 @@ export default function PresentationPage() {
               >
                 <div className="max-w-6xl mx-auto">
                   <div className="mb-8 text-center">
-                    <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-[#F07E22] to-[#3F3091] bg-clip-text text-transparent">
+                    <h1 className="text-4xl md:text-5xl font-bold mb-4 text-[#F07E22]">
                       {locale === 'uz' ? slide.title : slide.titleRu}
                     </h1>
                   </div>
@@ -1318,7 +1477,7 @@ export default function PresentationPage() {
       </div>
 
       {/* Footer */}
-      <div className="bg-gradient-to-r from-[#F07E22] to-[#3F3091] text-white py-8">
+      <div className="bg-[#F07E22] text-white py-8">
         <div className="max-w-6xl mx-auto px-4 text-center">
           <p className="text-lg font-semibold mb-2">
             {locale === 'uz' 
