@@ -26,7 +26,15 @@ import {
   ChevronLeft,
   Play,
   Pause,
-  Phone
+  Phone,
+  Share2,
+  Network,
+  Building2,
+  Link2,
+  Megaphone,
+  UserCheck,
+  FileText,
+  Settings
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -1372,6 +1380,1023 @@ export default function PresentationPage() {
                 <p>Всегда напоминать о преимуществах сайта</p>
               </div>
             </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'integrated-system',
+      title: 'Sayt, ijtimoiy tarmoqlar va reklama',
+      titleRu: 'Сайт, социальные сети и реклама',
+      content: (
+        <div className="space-y-8">
+          <div className="text-center space-y-4 mb-8">
+            <h2 className="text-3xl md:text-4xl font-bold">Nega bir tizim bo'lishi kerak?</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Bugungi kunda mijozlar bitta manbadan emas, bir nechta kanallar orqali qaror qabul qiladi
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-6 mb-8">
+            <div className="p-6 rounded-lg bg-gradient-to-br from-[#F07E22]/10 to-white border border-[#F07E22]/20">
+              <div className="flex items-start gap-4">
+                <Search className="h-8 w-8 text-[#F07E22] flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="text-xl font-semibold mb-2">Google yoki Yandex</h3>
+                  <p className="text-muted-foreground">Mijoz "eshitish moslamasi", "eshitish tekshiruvi" kabi so'zlarni qidiradi</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6 rounded-lg bg-gradient-to-br from-[#3F3091]/10 to-white border border-[#3F3091]/20">
+              <div className="flex items-start gap-4">
+                <Share2 className="h-8 w-8 text-[#3F3091] flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="text-xl font-semibold mb-2">Instagram yoki Facebook</h3>
+                  <p className="text-muted-foreground">Mijoz videoni ko'radi va ma'lumot o'qiydi</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6 rounded-lg bg-gradient-to-br from-[#F07E22]/10 to-white border border-[#F07E22]/20">
+              <div className="flex items-start gap-4">
+                <MessageSquare className="h-8 w-8 text-[#F07E22] flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="text-xl font-semibold mb-2">Telegram kanal</h3>
+                  <p className="text-muted-foreground">Mijoz kanalga kirib ma'lumot o'qiydi</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6 rounded-lg bg-gradient-to-br from-[#3F3091]/10 to-white border border-[#3F3091]/20">
+              <div className="flex items-start gap-4">
+                <Globe className="h-8 w-8 text-[#3F3091] flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="text-xl font-semibold mb-2">Sayt yoki filial</h3>
+                  <p className="text-muted-foreground">So'ng saytga kiradi yoki filialga qo'ng'iroq qiladi</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-6 rounded-lg bg-gradient-to-r from-[#F07E22] to-[#3F3091] text-white">
+            <div className="flex items-start gap-4">
+              <Network className="h-8 w-8 flex-shrink-0 mt-1" />
+              <div>
+                <h3 className="text-2xl font-bold mb-2">Yagona tizim</h3>
+                <p className="text-lg opacity-90">
+                  Sayt, ijtimoiy tarmoqlar va reklama bir-biridan ajralgan holda emas, 
+                  yagona tizim sifatida ishlashi kerak
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
+      contentRu: (
+        <div className="space-y-8">
+          <div className="text-center space-y-4 mb-8">
+            <h2 className="text-3xl md:text-4xl font-bold">Почему должна быть единая система?</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Сегодня клиенты принимают решения не из одного источника, а через несколько каналов
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-6 mb-8">
+            <div className="p-6 rounded-lg bg-gradient-to-br from-[#F07E22]/10 to-white border border-[#F07E22]/20">
+              <div className="flex items-start gap-4">
+                <Search className="h-8 w-8 text-[#F07E22] flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="text-xl font-semibold mb-2">Google или Yandex</h3>
+                  <p className="text-muted-foreground">Клиент ищет такие слова, как "слуховой аппарат", "проверка слуха"</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6 rounded-lg bg-gradient-to-br from-[#3F3091]/10 to-white border border-[#3F3091]/20">
+              <div className="flex items-start gap-4">
+                <Share2 className="h-8 w-8 text-[#3F3091] flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="text-xl font-semibold mb-2">Instagram или Facebook</h3>
+                  <p className="text-muted-foreground">Клиент смотрит видео и читает информацию</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6 rounded-lg bg-gradient-to-br from-[#F07E22]/10 to-white border border-[#F07E22]/20">
+              <div className="flex items-start gap-4">
+                <MessageSquare className="h-8 w-8 text-[#F07E22] flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="text-xl font-semibold mb-2">Telegram канал</h3>
+                  <p className="text-muted-foreground">Клиент заходит в канал и читает информацию</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6 rounded-lg bg-gradient-to-br from-[#3F3091]/10 to-white border border-[#3F3091]/20">
+              <div className="flex items-start gap-4">
+                <Globe className="h-8 w-8 text-[#3F3091] flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="text-xl font-semibold mb-2">Сайт или филиал</h3>
+                  <p className="text-muted-foreground">Затем заходит на сайт или звонит в филиал</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-6 rounded-lg bg-gradient-to-r from-[#F07E22] to-[#3F3091] text-white">
+            <div className="flex items-start gap-4">
+              <Network className="h-8 w-8 flex-shrink-0 mt-1" />
+              <div>
+                <h3 className="text-2xl font-bold mb-2">Единая система</h3>
+                <p className="text-lg opacity-90">
+                  Сайт, социальные сети и реклама должны работать не отдельно друг от друга, 
+                  а как единая система
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'advertising-impact',
+      title: 'Reklama va filial',
+      titleRu: 'Реклама и филиал',
+      content: (
+        <div className="space-y-8">
+          <div className="text-center space-y-4 mb-8">
+            <h2 className="text-3xl md:text-4xl font-bold">Reklama qanday ishlaydi?</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Reklama filialga qanday ta'sir qiladi va nima uchun javob tezligi muhim?
+            </p>
+          </div>
+          
+          <div className="space-y-6">
+            <div className="p-6 rounded-lg bg-gradient-to-br from-[#F07E22]/10 to-white border-2 border-[#F07E22]/30">
+              <div className="flex items-start gap-4">
+                <Megaphone className="h-8 w-8 text-[#F07E22] flex-shrink-0 mt-1" />
+                <div className="flex-1">
+                  <h3 className="text-2xl font-semibold mb-4">Google va Yandex reklamalari</h3>
+                  <div className="space-y-3">
+                    <p className="text-muted-foreground">
+                      <strong>• Qidiruv:</strong> Mijoz "eshitish moslamasi", "eshitish tekshiruvi" kabi so'zlarni qidirganda chiqadi
+                    </p>
+                    <p className="text-muted-foreground">
+                      <strong>• Mijozlar:</strong> Asosan tayyor ehtiyojli mijozlarni olib keladi
+                    </p>
+                    <p className="text-muted-foreground">
+                      <strong>• Jarayon:</strong> Reklama orqali kelgan mijoz saytga kiradi, filial telefonini ko'radi yoki to'g'ridan-to'g'ri keladi
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6 rounded-lg bg-gradient-to-br from-[#3F3091]/10 to-white border-2 border-[#3F3091]/30">
+              <div className="flex items-start gap-4">
+                <Share2 className="h-8 w-8 text-[#3F3091] flex-shrink-0 mt-1" />
+                <div className="flex-1">
+                  <h3 className="text-2xl font-semibold mb-4">Ijtimoiy tarmoqlar</h3>
+                  <div className="space-y-3">
+                    <p className="text-muted-foreground">
+                      <strong>• Instagram, Facebook, Telegram:</strong> Mijoz ehtiyojini asta-sekin shakllantiradi
+                    </p>
+                    <p className="text-muted-foreground">
+                      <strong>• Ishonch:</strong> Ishonch hosil qiladi va real hayotiy misollar, maslahatlar orqali qarorga olib keladi
+                    </p>
+                    <p className="text-muted-foreground">
+                      <strong>• Filial faolligi:</strong> Har bir filialning faolligi umumiy natijaga bevosita ta'sir qiladi
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-6 rounded-lg bg-gradient-to-r from-[#F07E22] to-[#3F3091] text-white">
+            <div className="flex items-start gap-4">
+              <Clock className="h-8 w-8 flex-shrink-0 mt-1" />
+              <div>
+                <h3 className="text-2xl font-bold mb-2">Muhim nuqta</h3>
+                <p className="text-lg opacity-90">
+                  Bu bosqichda sayt va filialning javob tezligi juda muhim. 
+                  Tezkor javob mijozni saqlab qoladi va konversiyani oshiradi.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
+      contentRu: (
+        <div className="space-y-8">
+          <div className="text-center space-y-4 mb-8">
+            <h2 className="text-3xl md:text-4xl font-bold">Как работает реклама?</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Как реклама влияет на филиал и почему важна скорость ответа?
+            </p>
+          </div>
+          
+          <div className="space-y-6">
+            <div className="p-6 rounded-lg bg-gradient-to-br from-[#F07E22]/10 to-white border-2 border-[#F07E22]/30">
+              <div className="flex items-start gap-4">
+                <Megaphone className="h-8 w-8 text-[#F07E22] flex-shrink-0 mt-1" />
+                <div className="flex-1">
+                  <h3 className="text-2xl font-semibold mb-4">Реклама Google и Yandex</h3>
+                  <div className="space-y-3">
+                    <p className="text-muted-foreground">
+                      <strong>• Поиск:</strong> Появляется, когда клиент ищет такие слова, как "слуховой аппарат", "проверка слуха"
+                    </p>
+                    <p className="text-muted-foreground">
+                      <strong>• Клиенты:</strong> В основном привлекает готовых клиентов с потребностью
+                    </p>
+                    <p className="text-muted-foreground">
+                      <strong>• Процесс:</strong> Клиент, пришедший через рекламу, заходит на сайт, видит телефон филиала или приходит напрямую
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6 rounded-lg bg-gradient-to-br from-[#3F3091]/10 to-white border-2 border-[#3F3091]/30">
+              <div className="flex items-start gap-4">
+                <Share2 className="h-8 w-8 text-[#3F3091] flex-shrink-0 mt-1" />
+                <div className="flex-1">
+                  <h3 className="text-2xl font-semibold mb-4">Социальные сети</h3>
+                  <div className="space-y-3">
+                    <p className="text-muted-foreground">
+                      <strong>• Instagram, Facebook, Telegram:</strong> Постепенно формирует потребность клиента
+                    </p>
+                    <p className="text-muted-foreground">
+                      <strong>• Доверие:</strong> Создает доверие и приводит к решению через реальные примеры и советы
+                    </p>
+                    <p className="text-muted-foreground">
+                      <strong>• Активность филиала:</strong> Активность каждого филиала напрямую влияет на общий результат
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-6 rounded-lg bg-gradient-to-r from-[#F07E22] to-[#3F3091] text-white">
+            <div className="flex items-start gap-4">
+              <Clock className="h-8 w-8 flex-shrink-0 mt-1" />
+              <div>
+                <h3 className="text-2xl font-bold mb-2">Важный момент</h3>
+                <p className="text-lg opacity-90">
+                  На этом этапе очень важна скорость ответа сайта и филиала. 
+                  Быстрый ответ сохраняет клиента и увеличивает конверсию.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'branch-pages',
+      title: 'Filial sahifalari',
+      titleRu: 'Страницы филиалов',
+      content: (
+        <div className="space-y-8">
+          <div className="text-center space-y-4 mb-8">
+            <h2 className="text-3xl md:text-4xl font-bold">Nega har bir filialning o'z sahifasi bo'lishi muhim?</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Acoustic — respublika bo'ylab faoliyat yuritadi
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-6 mb-8">
+            <div className="p-6 rounded-lg bg-gradient-to-br from-[#F07E22]/10 to-white border-2 border-[#F07E22]/30">
+              <div className="flex items-start gap-4">
+                <MapPin className="h-8 w-8 text-[#F07E22] flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="text-xl font-semibold mb-3">Mahalliy auditoriya</h3>
+                  <p className="text-muted-foreground mb-3">
+                    Mijozlar o'ziga yaqin filialni qidiradi va ishonadi
+                  </p>
+                  <p className="text-muted-foreground">
+                    Har bir filial o'z hududidagi auditoriya bilan ishlashi kerak
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6 rounded-lg bg-gradient-to-br from-[#3F3091]/10 to-white border-2 border-[#3F3091]/30">
+              <div className="flex items-start gap-4">
+                <FileText className="h-8 w-8 text-[#3F3091] flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="text-xl font-semibold mb-3">Real kontent</h3>
+                  <p className="text-muted-foreground mb-3">
+                    Har bir filialning o'z sahifasida real hayotiy kontent bo'lishi zarur
+                  </p>
+                  <p className="text-muted-foreground">
+                    Filial ichidagi jarayonlar, mijozlar bilan ish, mahalliy muhit
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-6 rounded-lg bg-white border-2 border-[#F07E22]/30">
+            <h3 className="text-xl font-semibold mb-4">Kontent misollari:</h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="h-5 w-5 text-[#F07E22] flex-shrink-0 mt-1" />
+                <p className="text-muted-foreground">Filial ichidagi jarayonlar</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="h-5 w-5 text-[#F07E22] flex-shrink-0 mt-1" />
+                <p className="text-muted-foreground">Mijozlar bilan ish</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="h-5 w-5 text-[#F07E22] flex-shrink-0 mt-1" />
+                <p className="text-muted-foreground">Mahalliy muhit</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="h-5 w-5 text-[#F07E22] flex-shrink-0 mt-1" />
+                <p className="text-muted-foreground">Hududga mos savol va muammolar</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-6 rounded-lg bg-gradient-to-r from-[#F07E22] to-[#3F3091] text-white">
+            <div className="flex items-start gap-4">
+              <Star className="h-8 w-8 flex-shrink-0 mt-1" />
+              <div>
+                <h3 className="text-2xl font-bold mb-2">Natija</h3>
+                <p className="text-lg opacity-90">
+                  Bu markaziy sahifani kuchaytiradi va raqobatchilardan ajratadi. 
+                  Har bir filialning o'z sahifasi umumiy marketing tizimining muhim qismidir.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
+      contentRu: (
+        <div className="space-y-8">
+          <div className="text-center space-y-4 mb-8">
+            <h2 className="text-3xl md:text-4xl font-bold">Почему важно иметь страницу для каждого филиала?</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Acoustic работает по всей республике
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-6 mb-8">
+            <div className="p-6 rounded-lg bg-gradient-to-br from-[#F07E22]/10 to-white border-2 border-[#F07E22]/30">
+              <div className="flex items-start gap-4">
+                <MapPin className="h-8 w-8 text-[#F07E22] flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="text-xl font-semibold mb-3">Локальная аудитория</h3>
+                  <p className="text-muted-foreground mb-3">
+                    Клиенты ищут и доверяют ближайшему филиалу
+                  </p>
+                  <p className="text-muted-foreground">
+                    Каждый филиал должен работать со своей региональной аудиторией
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6 rounded-lg bg-gradient-to-br from-[#3F3091]/10 to-white border-2 border-[#3F3091]/30">
+              <div className="flex items-start gap-4">
+                <FileText className="h-8 w-8 text-[#3F3091] flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="text-xl font-semibold mb-3">Реальный контент</h3>
+                  <p className="text-muted-foreground mb-3">
+                    На странице каждого филиала должен быть реальный жизненный контент
+                  </p>
+                  <p className="text-muted-foreground">
+                    Процессы внутри филиала, работа с клиентами, местная среда
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-6 rounded-lg bg-white border-2 border-[#F07E22]/30">
+            <h3 className="text-xl font-semibold mb-4">Примеры контента:</h3>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="h-5 w-5 text-[#F07E22] flex-shrink-0 mt-1" />
+                <p className="text-muted-foreground">Процессы внутри филиала</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="h-5 w-5 text-[#F07E22] flex-shrink-0 mt-1" />
+                <p className="text-muted-foreground">Работа с клиентами</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="h-5 w-5 text-[#F07E22] flex-shrink-0 mt-1" />
+                <p className="text-muted-foreground">Местная среда</p>
+              </div>
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="h-5 w-5 text-[#F07E22] flex-shrink-0 mt-1" />
+                <p className="text-muted-foreground">Вопросы и проблемы, актуальные для региона</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-6 rounded-lg bg-gradient-to-r from-[#F07E22] to-[#3F3091] text-white">
+            <div className="flex items-start gap-4">
+              <Star className="h-8 w-8 flex-shrink-0 mt-1" />
+              <div>
+                <h3 className="text-2xl font-bold mb-2">Результат</h3>
+                <p className="text-lg opacity-90">
+                  Это усиливает центральную страницу и отличает от конкурентов. 
+                  Страница каждого филиала является важной частью общей маркетинговой системы.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'branch-responsibility',
+      title: 'Filial mas\'uliyati',
+      titleRu: 'Ответственность филиала',
+      content: (
+        <div className="space-y-8">
+          <div className="text-center space-y-4 mb-8">
+            <h2 className="text-3xl md:text-4xl font-bold">Filial sahifalarini yuritish</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Har bir filialda aniq mas'ul xodim biriktirilishi shart
+            </p>
+          </div>
+          
+          <div className="p-6 rounded-lg bg-gradient-to-br from-[#F07E22]/10 to-white border-2 border-[#F07E22]/30 mb-6">
+            <div className="flex items-start gap-4">
+              <UserCheck className="h-8 w-8 text-[#F07E22] flex-shrink-0 mt-1" />
+              <div className="flex-1">
+                <h3 className="text-2xl font-semibold mb-4">Mas'ul xodimning vazifalari</h3>
+                <div className="space-y-4">
+                  <div className="p-4 rounded-lg bg-white border border-[#F07E22]/20">
+                    <h4 className="font-semibold mb-2 text-[#F07E22]">Filial ichida:</h4>
+                    <ul className="space-y-2 text-muted-foreground">
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-[#F07E22] flex-shrink-0 mt-0.5" />
+                        <span>Foto va videolarni olish</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-[#F07E22] flex-shrink-0 mt-0.5" />
+                        <span>Qisqa lavhalarni tayyorlash</span>
+                      </li>
+                    </ul>
+                  </div>
+                  
+                  <div className="p-4 rounded-lg bg-white border border-[#3F3091]/20">
+                    <h4 className="font-semibold mb-2 text-[#3F3091]">Markaziy marketing bo'limiga:</h4>
+                    <ul className="space-y-2 text-muted-foreground">
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-[#3F3091] flex-shrink-0 mt-0.5" />
+                        <span>Materiallarni vaqtida yuborish</span>
+                      </li>
+                    </ul>
+                  </div>
+                  
+                  <div className="p-4 rounded-lg bg-white border border-[#F07E22]/20">
+                    <h4 className="font-semibold mb-2 text-[#F07E22]">Sahifadagi izoh va xabarlarga:</h4>
+                    <ul className="space-y-2 text-muted-foreground">
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-[#F07E22] flex-shrink-0 mt-0.5" />
+                        <span>Tezkor javob berilishini ta'minlash</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-6 rounded-lg bg-gradient-to-r from-[#3F3091] to-[#2d2169] text-white">
+            <div className="flex items-start gap-4">
+              <Shield className="h-8 w-8 flex-shrink-0 mt-1" />
+              <div>
+                <h3 className="text-2xl font-bold mb-2">Muhim shart</h3>
+                <p className="text-lg opacity-90">
+                  Bu xodim marketing mutaxassisi bo'lishi shart emas, 
+                  lekin mas'uliyatli va faol bo'lishi kerak. 
+                  Faqat shu holda filial sahifasi samarali ishlaydi.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
+      contentRu: (
+        <div className="space-y-8">
+          <div className="text-center space-y-4 mb-8">
+            <h2 className="text-3xl md:text-4xl font-bold">Управление страницами филиалов</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              В каждом филиале должен быть назначен ответственный сотрудник
+            </p>
+          </div>
+          
+          <div className="p-6 rounded-lg bg-gradient-to-br from-[#F07E22]/10 to-white border-2 border-[#F07E22]/30 mb-6">
+            <div className="flex items-start gap-4">
+              <UserCheck className="h-8 w-8 text-[#F07E22] flex-shrink-0 mt-1" />
+              <div className="flex-1">
+                <h3 className="text-2xl font-semibold mb-4">Обязанности ответственного сотрудника</h3>
+                <div className="space-y-4">
+                  <div className="p-4 rounded-lg bg-white border border-[#F07E22]/20">
+                    <h4 className="font-semibold mb-2 text-[#F07E22]">В филиале:</h4>
+                    <ul className="space-y-2 text-muted-foreground">
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-[#F07E22] flex-shrink-0 mt-0.5" />
+                        <span>Съемка фото и видео</span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-[#F07E22] flex-shrink-0 mt-0.5" />
+                        <span>Подготовка кратких описаний</span>
+                      </li>
+                    </ul>
+                  </div>
+                  
+                  <div className="p-4 rounded-lg bg-white border border-[#3F3091]/20">
+                    <h4 className="font-semibold mb-2 text-[#3F3091]">В центральный маркетинговый отдел:</h4>
+                    <ul className="space-y-2 text-muted-foreground">
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-[#3F3091] flex-shrink-0 mt-0.5" />
+                        <span>Своевременная отправка материалов</span>
+                      </li>
+                    </ul>
+                  </div>
+                  
+                  <div className="p-4 rounded-lg bg-white border border-[#F07E22]/20">
+                    <h4 className="font-semibold mb-2 text-[#F07E22]">На комментарии и сообщения на странице:</h4>
+                    <ul className="space-y-2 text-muted-foreground">
+                      <li className="flex items-start gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-[#F07E22] flex-shrink-0 mt-0.5" />
+                        <span>Обеспечение быстрого ответа</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-6 rounded-lg bg-gradient-to-r from-[#3F3091] to-[#2d2169] text-white">
+            <div className="flex items-start gap-4">
+              <Shield className="h-8 w-8 flex-shrink-0 mt-1" />
+              <div>
+                <h3 className="text-2xl font-bold mb-2">Важное условие</h3>
+                <p className="text-lg opacity-90">
+                  Этот сотрудник не обязательно должен быть маркетологом, 
+                  но должен быть ответственным и активным. 
+                  Только в этом случае страница филиала будет работать эффективно.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'central-marketing',
+      title: 'Markaziy marketing',
+      titleRu: 'Центральный маркетинг',
+      content: (
+        <div className="space-y-8">
+          <div className="text-center space-y-4 mb-8">
+            <h2 className="text-3xl md:text-4xl font-bold">Markaziy marketing va filiallar</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Ikki tomon bir-birisiz samarali ishlay olmaydi
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-6 mb-8">
+            <div className="p-6 rounded-lg bg-gradient-to-br from-[#F07E22]/10 to-white border-2 border-[#F07E22]/30">
+              <div className="flex items-start gap-4">
+                <Settings className="h-8 w-8 text-[#F07E22] flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="text-xl font-semibold mb-4">Markaziy marketing bo'limi</h3>
+                  <ul className="space-y-3 text-muted-foreground">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-[#F07E22] flex-shrink-0 mt-0.5" />
+                      <span>Kontent rejani tuzadi</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-[#F07E22] flex-shrink-0 mt-0.5" />
+                      <span>Reklama kampaniyalarini boshqaradi</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-[#F07E22] flex-shrink-0 mt-0.5" />
+                      <span>Dizayn va matnlarni tayyorlaydi</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-[#F07E22] flex-shrink-0 mt-0.5" />
+                      <span>Statistikani tahlil qiladi</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6 rounded-lg bg-gradient-to-br from-[#3F3091]/10 to-white border-2 border-[#3F3091]/30">
+              <div className="flex items-start gap-4">
+                <Building2 className="h-8 w-8 text-[#3F3091] flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="text-xl font-semibold mb-4">Filiallar</h3>
+                  <ul className="space-y-3 text-muted-foreground">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-[#3F3091] flex-shrink-0 mt-0.5" />
+                      <span>Real hayotiy kontent manbai</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-[#3F3091] flex-shrink-0 mt-0.5" />
+                      <span>Hududiy auditoriya bilan aloqa nuqtasi</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-[#3F3091] flex-shrink-0 mt-0.5" />
+                      <span>Mijozlar bilan bevosita muloqot joyi</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-6 rounded-lg bg-gradient-to-r from-[#F07E22] to-[#3F3091] text-white">
+            <div className="flex items-start gap-4">
+              <Link2 className="h-8 w-8 flex-shrink-0 mt-1" />
+              <div>
+                <h3 className="text-2xl font-bold mb-2">Hamkorlik</h3>
+                <p className="text-lg opacity-90">
+                  Bu ikki tomon bir-birisiz samarali ishlay olmaydi. 
+                  Markaziy marketing strategiyani belgilaydi, filiallar esa real kontent va mijozlar bilan aloqani ta'minlaydi.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
+      contentRu: (
+        <div className="space-y-8">
+          <div className="text-center space-y-4 mb-8">
+            <h2 className="text-3xl md:text-4xl font-bold">Центральный маркетинг и филиалы</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Две стороны не могут эффективно работать друг без друга
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 gap-6 mb-8">
+            <div className="p-6 rounded-lg bg-gradient-to-br from-[#F07E22]/10 to-white border-2 border-[#F07E22]/30">
+              <div className="flex items-start gap-4">
+                <Settings className="h-8 w-8 text-[#F07E22] flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="text-xl font-semibold mb-4">Центральный маркетинговый отдел</h3>
+                  <ul className="space-y-3 text-muted-foreground">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-[#F07E22] flex-shrink-0 mt-0.5" />
+                      <span>Составляет план контента</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-[#F07E22] flex-shrink-0 mt-0.5" />
+                      <span>Управляет рекламными кампаниями</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-[#F07E22] flex-shrink-0 mt-0.5" />
+                      <span>Подготавливает дизайн и тексты</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-[#F07E22] flex-shrink-0 mt-0.5" />
+                      <span>Анализирует статистику</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6 rounded-lg bg-gradient-to-br from-[#3F3091]/10 to-white border-2 border-[#3F3091]/30">
+              <div className="flex items-start gap-4">
+                <Building2 className="h-8 w-8 text-[#3F3091] flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="text-xl font-semibold mb-4">Филиалы</h3>
+                  <ul className="space-y-3 text-muted-foreground">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-[#3F3091] flex-shrink-0 mt-0.5" />
+                      <span>Источник реального жизненного контента</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-[#3F3091] flex-shrink-0 mt-0.5" />
+                      <span>Точка связи с региональной аудиторией</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-[#3F3091] flex-shrink-0 mt-0.5" />
+                      <span>Место прямого общения с клиентами</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-6 rounded-lg bg-gradient-to-r from-[#F07E22] to-[#3F3091] text-white">
+            <div className="flex items-start gap-4">
+              <Link2 className="h-8 w-8 flex-shrink-0 mt-1" />
+              <div>
+                <h3 className="text-2xl font-bold mb-2">Сотрудничество</h3>
+                <p className="text-lg opacity-90">
+                  Эти две стороны не могут эффективно работать друг без друга. 
+                  Центральный маркетинг определяет стратегию, а филиалы обеспечивают реальный контент и связь с клиентами.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'system-importance',
+      title: 'Tizimning ahamiyati',
+      titleRu: 'Важность системы',
+      content: (
+        <div className="space-y-8">
+          <div className="text-center space-y-4 mb-8">
+            <h2 className="text-3xl md:text-4xl font-bold">Nima uchun bu tizim muhim?</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Agar tizim bo'lmasa, natija bo'lmaydi
+            </p>
+          </div>
+          
+          <div className="space-y-6 mb-8">
+            <div className="p-6 rounded-lg bg-red-50 border-2 border-red-200">
+              <div className="flex items-start gap-4">
+                <div className="text-3xl">❌</div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-semibold mb-3 text-red-700">Muammolar (agar tizim bo'lmasa):</h3>
+                  <ul className="space-y-2 text-red-600">
+                    <li className="flex items-start gap-2">
+                      <span className="font-bold">•</span>
+                      <span>Reklama bor, lekin filial faol emas bo'lsa → ishonch yo'qoladi</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="font-bold">•</span>
+                      <span>Sahifa bor, lekin javob bo'lmasa → mijoz ketadi</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="font-bold">•</span>
+                      <span>Kontent bor, lekin tizim bo'lmasa → natija bo'lmaydi</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6 rounded-lg bg-green-50 border-2 border-green-200">
+              <div className="flex items-start gap-4">
+                <div className="text-3xl">✅</div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-semibold mb-3 text-green-700">Yagona tizim bo'lsa:</h3>
+                  <ul className="space-y-2 text-green-600">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <span>Reklama samarasi oshadi</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <span>Filiallarga keluvchilar ko'payadi</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <span>Brend ishonchi kuchayadi</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-6 rounded-lg bg-gradient-to-r from-[#F07E22] to-[#3F3091] text-white">
+            <div className="flex items-start gap-4">
+              <Zap className="h-8 w-8 flex-shrink-0 mt-1" />
+              <div>
+                <h3 className="text-2xl font-bold mb-2">Xulosa</h3>
+                <p className="text-lg opacity-90">
+                  Yagona tizim — bu barcha elementlar bir-biri bilan bog'langan holda ishlashi. 
+                  Reklama, sayt, ijtimoiy tarmoqlar va filiallar — bitta zanjir bo'lishi kerak.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
+      contentRu: (
+        <div className="space-y-8">
+          <div className="text-center space-y-4 mb-8">
+            <h2 className="text-3xl md:text-4xl font-bold">Почему важна эта система?</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Если системы нет, результата не будет
+            </p>
+          </div>
+          
+          <div className="space-y-6 mb-8">
+            <div className="p-6 rounded-lg bg-red-50 border-2 border-red-200">
+              <div className="flex items-start gap-4">
+                <div className="text-3xl">❌</div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-semibold mb-3 text-red-700">Проблемы (если системы нет):</h3>
+                  <ul className="space-y-2 text-red-600">
+                    <li className="flex items-start gap-2">
+                      <span className="font-bold">•</span>
+                      <span>Есть реклама, но филиал не активен → теряется доверие</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="font-bold">•</span>
+                      <span>Есть страница, но нет ответа → клиент уходит</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="font-bold">•</span>
+                      <span>Есть контент, но нет системы → результата нет</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6 rounded-lg bg-green-50 border-2 border-green-200">
+              <div className="flex items-start gap-4">
+                <div className="text-3xl">✅</div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-semibold mb-3 text-green-700">Если есть единая система:</h3>
+                  <ul className="space-y-2 text-green-600">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <span>Эффективность рекламы увеличивается</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <span>Количество посетителей филиалов увеличивается</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                      <span>Доверие к бренду усиливается</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-6 rounded-lg bg-gradient-to-r from-[#F07E22] to-[#3F3091] text-white">
+            <div className="flex items-start gap-4">
+              <Zap className="h-8 w-8 flex-shrink-0 mt-1" />
+              <div>
+                <h3 className="text-2xl font-bold mb-2">Вывод</h3>
+                <p className="text-lg opacity-90">
+                  Единая система — это когда все элементы работают взаимосвязано. 
+                  Реклама, сайт, социальные сети и филиалы должны быть одной цепью.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      id: 'conclusion',
+      title: 'Yakuniy xulosa',
+      titleRu: 'Заключение',
+      content: (
+        <div className="space-y-8">
+          <div className="text-center space-y-4 mb-8">
+            <h2 className="text-3xl md:text-4xl font-bold">Yakuniy xulosa</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Bugungi kunda sayt, ijtimoiy tarmoqlar va reklama — bitta zanjir
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-6 mb-8">
+            <div className="p-6 rounded-lg bg-gradient-to-br from-[#F07E22]/10 to-white border-2 border-[#F07E22]/30 text-center">
+              <Globe className="h-12 w-12 mx-auto mb-4 text-[#F07E22]" />
+              <h3 className="text-xl font-semibold mb-2">Sayt</h3>
+              <p className="text-muted-foreground">Raqamli yuz va mijozlar bilan aloqa nuqtasi</p>
+            </div>
+            
+            <div className="p-6 rounded-lg bg-gradient-to-br from-[#3F3091]/10 to-white border-2 border-[#3F3091]/30 text-center">
+              <Share2 className="h-12 w-12 mx-auto mb-4 text-[#3F3091]" />
+              <h3 className="text-xl font-semibold mb-2">Ijtimoiy tarmoqlar</h3>
+              <p className="text-muted-foreground">Ishonch shakllantirish va ehtiyojni o'stirish</p>
+            </div>
+            
+            <div className="p-6 rounded-lg bg-gradient-to-br from-[#F07E22]/10 to-white border-2 border-[#F07E22]/30 text-center">
+              <Megaphone className="h-12 w-12 mx-auto mb-4 text-[#F07E22]" />
+              <h3 className="text-xl font-semibold mb-2">Reklama</h3>
+              <p className="text-muted-foreground">Tayyor mijozlarni jalb qilish</p>
+            </div>
+          </div>
+          
+          <div className="p-6 rounded-lg bg-gradient-to-br from-[#3F3091]/10 to-white border-2 border-[#3F3091]/30">
+            <div className="flex items-start gap-4">
+              <Building2 className="h-8 w-8 text-[#3F3091] flex-shrink-0 mt-1" />
+              <div>
+                <h3 className="text-xl font-semibold mb-3">Filiallar — muhim bo'g'in</h3>
+                <p className="text-muted-foreground mb-4">
+                  Har bir filial ushbu zanjirning muhim bo'g'ini hisoblanadi. 
+                  Filiallar o'z sahifalari va mas'ul xodimlari orqali umumiy marketing tizimining bir qismi bo'lishi zarur.
+                </p>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-[#3F3091] flex-shrink-0 mt-0.5" />
+                    <p className="text-muted-foreground">O'z sahifasi va kontenti</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-[#3F3091] flex-shrink-0 mt-0.5" />
+                    <p className="text-muted-foreground">Mas'ul xodim</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-[#3F3091] flex-shrink-0 mt-0.5" />
+                    <p className="text-muted-foreground">Tezkor javob</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-[#3F3091] flex-shrink-0 mt-0.5" />
+                    <p className="text-muted-foreground">Markaziy marketing bilan hamkorlik</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-6 rounded-lg bg-gradient-to-r from-[#F07E22] to-[#3F3091] text-white text-center">
+            <Network className="h-16 w-16 mx-auto mb-4" />
+            <h3 className="text-3xl font-bold mb-4">Yagona tizim — muvaffaqiyat kaliti</h3>
+            <p className="text-xl opacity-90">
+              Barcha elementlar bir-biri bilan bog'langan holda ishlashi — 
+              bu marketing samarasini maksimal darajada oshirishning yagona yo'li
+            </p>
+          </div>
+        </div>
+      ),
+      contentRu: (
+        <div className="space-y-8">
+          <div className="text-center space-y-4 mb-8">
+            <h2 className="text-3xl md:text-4xl font-bold">Заключение</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Сегодня сайт, социальные сети и реклама — одна цепь
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-6 mb-8">
+            <div className="p-6 rounded-lg bg-gradient-to-br from-[#F07E22]/10 to-white border-2 border-[#F07E22]/30 text-center">
+              <Globe className="h-12 w-12 mx-auto mb-4 text-[#F07E22]" />
+              <h3 className="text-xl font-semibold mb-2">Сайт</h3>
+              <p className="text-muted-foreground">Цифровое лицо и точка связи с клиентами</p>
+            </div>
+            
+            <div className="p-6 rounded-lg bg-gradient-to-br from-[#3F3091]/10 to-white border-2 border-[#3F3091]/30 text-center">
+              <Share2 className="h-12 w-12 mx-auto mb-4 text-[#3F3091]" />
+              <h3 className="text-xl font-semibold mb-2">Социальные сети</h3>
+              <p className="text-muted-foreground">Формирование доверия и развитие потребности</p>
+            </div>
+            
+            <div className="p-6 rounded-lg bg-gradient-to-br from-[#F07E22]/10 to-white border-2 border-[#F07E22]/30 text-center">
+              <Megaphone className="h-12 w-12 mx-auto mb-4 text-[#F07E22]" />
+              <h3 className="text-xl font-semibold mb-2">Реклама</h3>
+              <p className="text-muted-foreground">Привлечение готовых клиентов</p>
+            </div>
+          </div>
+          
+          <div className="p-6 rounded-lg bg-gradient-to-br from-[#3F3091]/10 to-white border-2 border-[#3F3091]/30">
+            <div className="flex items-start gap-4">
+              <Building2 className="h-8 w-8 text-[#3F3091] flex-shrink-0 mt-1" />
+              <div>
+                <h3 className="text-xl font-semibold mb-3">Филиалы — важное звено</h3>
+                <p className="text-muted-foreground mb-4">
+                  Каждый филиал является важным звеном этой цепи. 
+                  Филиалы должны быть частью общей маркетинговой системы через свои страницы и ответственных сотрудников.
+                </p>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-[#3F3091] flex-shrink-0 mt-0.5" />
+                    <p className="text-muted-foreground">Своя страница и контент</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-[#3F3091] flex-shrink-0 mt-0.5" />
+                    <p className="text-muted-foreground">Ответственный сотрудник</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-[#3F3091] flex-shrink-0 mt-0.5" />
+                    <p className="text-muted-foreground">Быстрый ответ</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-[#3F3091] flex-shrink-0 mt-0.5" />
+                    <p className="text-muted-foreground">Сотрудничество с центральным маркетингом</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="p-6 rounded-lg bg-gradient-to-r from-[#F07E22] to-[#3F3091] text-white text-center">
+            <Network className="h-16 w-16 mx-auto mb-4" />
+            <h3 className="text-3xl font-bold mb-4">Единая система — ключ к успеху</h3>
+            <p className="text-xl opacity-90">
+              Когда все элементы работают взаимосвязано — 
+              это единственный способ максимально увеличить эффективность маркетинга
+            </p>
           </div>
         </div>
       ),
