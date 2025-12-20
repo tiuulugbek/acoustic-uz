@@ -140,8 +140,33 @@ function MobileDemo({ settings, locale }: { settings: SettingsResponse | null; l
                       <div style={{ height: '200px' }}></div>
                     </div>
                     
+                    {/* Bottom Action Bar with Phone and CTA - Real website style */}
+                    <div className="absolute bottom-0 left-0 right-0 z-30 pointer-events-none">
+                      <div className="bg-white/98 backdrop-blur-md border-t border-gray-200 shadow-lg px-3 py-2.5 flex items-center justify-between gap-2">
+                        <a
+                          href={`tel:${settings?.phoneSecondary?.replace(/\s/g, '') || '+998712021441'}`}
+                          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-full border border-[#F07E22]/30 bg-[#F07E22] px-3 py-2 text-[11px] font-semibold text-white shadow transition hover:bg-[#F07E22]/90 pointer-events-auto"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                          }}
+                        >
+                          <Phone size={12} /> {settings?.phonePrimary || '1385'}
+                        </a>
+                        <Link
+                          href="/contact"
+                          className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-full border border-[#3F3091]/30 bg-[#3F3091] px-3 py-2 text-[11px] font-semibold text-white shadow transition hover:bg-[#3F3091]/90 pointer-events-auto"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                          }}
+                        >
+                          <MessageSquare size={12} />
+                          {locale === 'uz' ? 'Qabulga yozilish' : 'Записаться'}
+                        </Link>
+                      </div>
+                    </div>
+                    
                     {/* Home Indicator */}
-                    <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-gray-400 rounded-full"></div>
+                    <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-gray-400 rounded-full"></div>
                   </div>
                 </div>
               </div>
