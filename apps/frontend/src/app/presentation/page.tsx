@@ -87,7 +87,7 @@ function MobileDemo({ settings, locale }: { settings: SettingsResponse | null; l
         {mobileScreens.map((screen, index) => (
           <div key={index} className="relative">
             {/* iPhone Frame - Realistic proportions */}
-            <div className="relative w-[280px] h-[600px]">
+            <div className="relative w-[280px] h-[610px]">
               {/* iPhone Outer Frame */}
               <div className="absolute inset-0 bg-gradient-to-b from-gray-800 via-gray-800 to-gray-900 rounded-[3rem] p-2 shadow-2xl">
                 {/* Screen Bezel */}
@@ -110,7 +110,7 @@ function MobileDemo({ settings, locale }: { settings: SettingsResponse | null; l
                     {/* Scrollable container for iframe */}
                     <div
                       ref={scrollRefs[index]}
-                      className="h-full overflow-y-auto pt-8 relative"
+                      className="h-full overflow-y-auto relative pt-8"
                       style={{ 
                         scrollBehavior: 'smooth',
                         overscrollBehavior: 'contain',
@@ -125,45 +125,19 @@ function MobileDemo({ settings, locale }: { settings: SettingsResponse | null; l
                         style={{
                           width: '390px',
                           height: '844px',
-                          transform: 'scale(0.7)',
+                          transform: 'scale(0.72)',
                           transformOrigin: 'top left',
-                          pointerEvents: 'auto', // Enable interaction
+                          pointerEvents: 'auto',
                           display: 'block',
+                          border: 'none',
                         }}
-                        sandbox="allow-same-origin allow-scripts allow-forms"
+                        sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
                         loading="lazy"
                         title={screen.title}
+                        scrolling="yes"
                       />
                       {/* Extra space for scrolling */}
-                      <div style={{ height: '250px' }}></div>
-                    </div>
-                    
-                    {/* Sticky Header Overlay with Phone and CTA - Real website style */}
-                    <div className="absolute top-8 left-0 right-0 z-30 pointer-events-none">
-                      <div className="sticky top-0 bg-white/98 backdrop-blur-md border-b border-gray-200 shadow-sm px-3 py-2 flex items-center justify-between">
-                        <h3 className="text-xs font-semibold text-gray-800">{screen.title}</h3>
-                        <div className="flex items-center gap-1.5">
-                          <a
-                            href={`tel:${settings?.phoneSecondary?.replace(/\s/g, '') || '+998712021441'}`}
-                            className="inline-flex items-center gap-1 rounded-full border border-[#F07E22]/30 bg-[#F07E22] px-2.5 py-1 text-[10px] font-semibold text-white shadow transition hover:bg-[#F07E22]/90 pointer-events-auto"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                            }}
-                          >
-                            <Phone size={10} /> {settings?.phonePrimary || '1385'}
-                          </a>
-                          <Link
-                            href="/contact"
-                            className="inline-flex items-center gap-1 rounded-full border border-[#3F3091]/30 bg-[#3F3091] px-2.5 py-1 text-[10px] font-semibold text-white shadow transition hover:bg-[#3F3091]/90 pointer-events-auto"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                            }}
-                          >
-                            <MessageSquare size={10} />
-                            {locale === 'uz' ? 'Qabulga yozilish' : 'Записаться'}
-                          </Link>
-                        </div>
-                      </div>
+                      <div style={{ height: '200px' }}></div>
                     </div>
                     
                     {/* Home Indicator */}
