@@ -361,6 +361,36 @@ export default function PresentationPage() {
               </div>
             </div>
           </div>
+          
+          {/* Telegram Statistics Section */}
+          <div className="mt-8 p-6 rounded-lg bg-gradient-to-br from-[#3F3091] to-[#2d2169] text-white border-2 border-[#3F3091]/30 shadow-xl">
+            <div className="flex items-center gap-3 mb-6">
+              <MessageSquare className="h-8 w-8" />
+              <h3 className="text-2xl font-bold">Telegram tugmasi statistikasi</h3>
+            </div>
+            <p className="text-sm opacity-90 mb-6">
+              Sayt ishga tushgan kunidan boshlab shu kungacha (10 kundan ortmadi). 
+              Shu vaqt davomidagi sayt orqali bizga aloqaga chiqqanlar soni:
+            </p>
+            <div className="grid md:grid-cols-4 gap-4">
+              <div className="text-center p-4 rounded-lg bg-white/10 backdrop-blur-sm">
+                <div className="text-4xl font-bold mb-2">223</div>
+                <div className="text-sm opacity-90">Jami bosilgan</div>
+              </div>
+              <div className="text-center p-4 rounded-lg bg-white/10 backdrop-blur-sm">
+                <div className="text-4xl font-bold mb-2">9</div>
+                <div className="text-sm opacity-90">Bugun</div>
+              </div>
+              <div className="text-center p-4 rounded-lg bg-white/10 backdrop-blur-sm">
+                <div className="text-4xl font-bold mb-2">138</div>
+                <div className="text-sm opacity-90">Bu hafta</div>
+              </div>
+              <div className="text-center p-4 rounded-lg bg-white/10 backdrop-blur-sm">
+                <div className="text-4xl font-bold mb-2">223</div>
+                <div className="text-sm opacity-90">Bu oy</div>
+              </div>
+            </div>
+          </div>
         </div>
       ),
       contentRu: (
@@ -429,6 +459,36 @@ export default function PresentationPage() {
               <div className="text-center">
                 <div className="text-3xl font-bold mb-1">0</div>
                 <div className="text-sm opacity-90">Дополнительных расходов</div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Telegram Statistics Section */}
+          <div className="mt-8 p-6 rounded-lg bg-gradient-to-br from-[#3F3091] to-[#2d2169] text-white border-2 border-[#3F3091]/30 shadow-xl">
+            <div className="flex items-center gap-3 mb-6">
+              <MessageSquare className="h-8 w-8" />
+              <h3 className="text-2xl font-bold">Статистика кнопки Telegram</h3>
+            </div>
+            <p className="text-sm opacity-90 mb-6">
+              С момента запуска сайта до сегодняшнего дня (менее 10 дней). 
+              Количество обращений через сайт за это время:
+            </p>
+            <div className="grid md:grid-cols-4 gap-4">
+              <div className="text-center p-4 rounded-lg bg-white/10 backdrop-blur-sm">
+                <div className="text-4xl font-bold mb-2">223</div>
+                <div className="text-sm opacity-90">Всего нажатий</div>
+              </div>
+              <div className="text-center p-4 rounded-lg bg-white/10 backdrop-blur-sm">
+                <div className="text-4xl font-bold mb-2">9</div>
+                <div className="text-sm opacity-90">Сегодня</div>
+              </div>
+              <div className="text-center p-4 rounded-lg bg-white/10 backdrop-blur-sm">
+                <div className="text-4xl font-bold mb-2">138</div>
+                <div className="text-sm opacity-90">На этой неделе</div>
+              </div>
+              <div className="text-center p-4 rounded-lg bg-white/10 backdrop-blur-sm">
+                <div className="text-4xl font-bold mb-2">223</div>
+                <div className="text-sm opacity-90">В этом месяце</div>
               </div>
             </div>
           </div>
