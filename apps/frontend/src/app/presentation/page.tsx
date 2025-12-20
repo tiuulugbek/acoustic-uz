@@ -87,7 +87,7 @@ function MobileDemo({ settings, locale }: { settings: SettingsResponse | null; l
         {mobileScreens.map((screen, index) => (
           <div key={index} className="relative">
             {/* iPhone Frame - Realistic proportions */}
-            <div className="relative w-[280px] h-[610px]">
+            <div className="relative w-[320px] h-[640px]">
               {/* iPhone Outer Frame */}
               <div className="absolute inset-0 bg-gradient-to-b from-gray-800 via-gray-800 to-gray-900 rounded-[3rem] p-2 shadow-2xl">
                 {/* Screen Bezel */}
@@ -125,7 +125,7 @@ function MobileDemo({ settings, locale }: { settings: SettingsResponse | null; l
                         style={{
                           width: '390px',
                           height: '844px',
-                          transform: 'scale(0.72)',
+                          transform: 'scale(0.78)',
                           transformOrigin: 'top left',
                           pointerEvents: 'auto',
                           display: 'block',
@@ -208,7 +208,11 @@ export default function PresentationPage() {
   }, [isAutoPlay]);
 
   useEffect(() => {
-    slideRefs.current[currentSlide]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    // Smooth scroll to slide using transform
+    const slideContainer = document.querySelector('[data-slide-container]') as HTMLElement;
+    if (slideContainer) {
+      slideContainer.style.transform = `translateX(-${currentSlide * 100}%)`;
+    }
   }, [currentSlide]);
 
   const toggleFullscreen = () => {
@@ -223,8 +227,8 @@ export default function PresentationPage() {
   const slides: Slide[] = [
     {
       id: 'intro',
-      title: 'Acoustic.uz — raqamli transformatsiya',
-      titleRu: 'Acoustic.uz — цифровая трансформация',
+      title: 'Acoustic.uz',
+      titleRu: 'Acoustic.uz',
       content: (
         <div className="space-y-8">
           <div className="text-center space-y-4">
@@ -286,8 +290,8 @@ export default function PresentationPage() {
     },
     {
       id: 'marketing',
-      title: 'Marketing nuqtai nazaridan saytning ahamiyati',
-      titleRu: 'Важность сайта с точки зрения маркетинга',
+      title: 'Marketing ahamiyati',
+      titleRu: 'Важность маркетинга',
       content: (
         <div className="space-y-8">
           <div className="grid md:grid-cols-2 gap-8">
@@ -433,8 +437,8 @@ export default function PresentationPage() {
     },
     {
       id: 'doctors',
-      title: 'Mutaxassislar kartochkalari — ishonch va professionalizm',
-      titleRu: 'Карточки специалистов — доверие и профессионализм',
+      title: 'Mutaxassislar',
+      titleRu: 'Специалисты',
       content: (
         <div className="space-y-8">
           <div className="text-center space-y-4 mb-8">
@@ -644,8 +648,8 @@ export default function PresentationPage() {
     },
     {
       id: 'branches',
-      title: 'Filiallar bo\'limi — geografik qamrov va qulaylik',
-      titleRu: 'Раздел филиалов — географический охват и удобство',
+      title: 'Filiallar',
+      titleRu: 'Филиалы',
       content: (
         <div className="space-y-8">
           <div className="text-center space-y-4 mb-8">
@@ -843,8 +847,8 @@ export default function PresentationPage() {
     },
     {
       id: 'mobile',
-      title: 'Mobil versiya — har qanday joyda, har qanday vaqtda',
-      titleRu: 'Мобильная версия — в любом месте, в любое время',
+      title: 'Mobil versiya',
+      titleRu: 'Мобильная версия',
       content: (
         <div className="space-y-8">
           <div className="text-center space-y-4 mb-8">
@@ -1061,8 +1065,8 @@ export default function PresentationPage() {
     },
     {
       id: 'guide',
-      title: 'Xodimlarga tushuntirish qo\'llanmasi',
-      titleRu: 'Руководство по объяснению сотрудникам',
+      title: 'Xodimlarga qo\'llanma',
+      titleRu: 'Руководство сотрудникам',
       content: (
         <div className="space-y-8">
           <div className="text-center space-y-4 mb-8">
@@ -1421,6 +1425,7 @@ export default function PresentationPage() {
       <div className="relative">
         <div className="overflow-x-hidden">
           <div
+            data-slide-container
             className="flex transition-transform duration-500 ease-in-out"
             style={{ transform: `translateX(-${currentSlide * 100}%)` }}
           >
