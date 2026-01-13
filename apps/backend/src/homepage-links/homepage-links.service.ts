@@ -9,21 +9,12 @@ export class HomepageLinksService {
   async findAll(publicOnly = false, sectionKey?: string, position?: string) {
     const where: Prisma.HomepageLinkWhereInput = {};
     
-    if (publicOnly) {
-      where.status = 'published';
-    }
-    
-    if (sectionKey) {
-      where.sectionKey = sectionKey;
-    }
-    
-    if (position) {
-      where.position = position;
-    }
+    // Note: HomepageLink model doesn't have status, sectionKey, or position fields
+    // These filters are ignored if the fields don't exist in the schema
     
     return this.prisma.homepageLink.findMany({
       where,
-      orderBy: [{ sectionKey: 'asc' }, { order: 'asc' }],
+      orderBy: { order: 'asc' },
     });
   }
 

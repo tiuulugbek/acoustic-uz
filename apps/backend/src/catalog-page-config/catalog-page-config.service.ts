@@ -25,14 +25,10 @@ export class CatalogPageConfigService {
       where: { id: 'singleton' },
       create: {
         id: 'singleton',
-        hearingAidsTitle_uz: typeof data.hearingAidsTitle_uz === 'string' ? data.hearingAidsTitle_uz : undefined,
-        hearingAidsTitle_ru: typeof data.hearingAidsTitle_ru === 'string' ? data.hearingAidsTitle_ru : undefined,
-        interacousticsTitle_uz: typeof data.interacousticsTitle_uz === 'string' ? data.interacousticsTitle_uz : undefined,
-        interacousticsTitle_ru: typeof data.interacousticsTitle_ru === 'string' ? data.interacousticsTitle_ru : undefined,
-        accessoriesTitle_uz: typeof data.accessoriesTitle_uz === 'string' ? data.accessoriesTitle_uz : undefined,
-        accessoriesTitle_ru: typeof data.accessoriesTitle_ru === 'string' ? data.accessoriesTitle_ru : undefined,
-        brandTabIds: Array.isArray(data.brandTabIds) ? data.brandTabIds : [],
-        brandTabOrder: Array.isArray(data.brandTabOrder) ? data.brandTabOrder : [],
+        heroTitle_uz: typeof data.heroTitle_uz === 'string' ? data.heroTitle_uz : undefined,
+        heroTitle_ru: typeof data.heroTitle_ru === 'string' ? data.heroTitle_ru : undefined,
+        heroDescription_uz: typeof data.heroDescription_uz === 'string' ? data.heroDescription_uz : undefined,
+        heroDescription_ru: typeof data.heroDescription_ru === 'string' ? data.heroDescription_ru : undefined,
       },
       update: data,
     });

@@ -59,6 +59,7 @@ model Media {
   doctors             Doctor[]
   settingsCatalogHero Setting? @relation("SettingCatalogHero")
   settingsLogo        Setting? @relation("SettingLogo")
+  homepagePlaceholders HomepagePlaceholder[]
 
   @@index([url])
 }
@@ -496,6 +497,30 @@ model HomepageService {
   @@index([status, order])
 }
 
+model HomepageSection {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  content   Json
+  order     Int      @default(0)
+  status    String   @default("published") // published, draft, archived
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, order])
+}
+
+model HomepagePlaceholder {
+  id         String   @id @default(cuid())
+  sectionKey String   @unique
+  content    Json
+  imageId    String?
+  image      Media?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([sectionKey])
+}
+
 model Doctor {
   id             String   @id @default(cuid())
   name_uz        String
@@ -519,4 +544,63 @@ model Doctor {
 
   @@index([slug])
   @@index([status, order])
+}
+
+model AvailabilityStatus {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  label_uz  String
+  label_ru  String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+  @@index([order])
+}
+
+model CatalogPageConfig {
+  id        String   @id @default("singleton")
+  heroTitle_uz String?
+  heroTitle_ru String?
+  heroDescription_uz String? @db.Text
+  heroDescription_ru String? @db.Text
+  updatedAt DateTime @updatedAt
+}
+
+model CommonText {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  text_uz   String   @db.Text
+  text_ru   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+}
+
+model HomepageEmptyState {
+  id         String   @id @default(cuid())
+  sectionKey String   @unique
+  title_uz   String
+  title_ru   String
+  text_uz    String?  @db.Text
+  text_ru    String?  @db.Text
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([sectionKey])
+}
+
+model HomepageLink {
+  id          String   @id @default(cuid())
+  title_uz    String
+  title_ru   String
+  href        String
+  icon        String?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([order])
 }

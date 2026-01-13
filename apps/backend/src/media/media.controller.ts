@@ -17,7 +17,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RbacGuard } from '../common/guards/rbac.guard';
 import { RequirePermissions } from '../common/decorators/permissions.decorator';
 import { Public } from '../common/decorators/public.decorator';
-import { UploadedFile as StoredFile } from './storage/storage.service';
+import { Express } from 'express';
 
 @ApiTags('admin')
 @Controller('media')
@@ -59,7 +59,7 @@ export class MediaController {
   })
   @ApiOperation({ summary: 'Upload media' })
   upload(
-    @UploadedFile() file: StoredFile,
+    @UploadedFile() file: Express.Multer.File,
     @Body('alt_uz') alt_uz?: string,
     @Body('alt_ru') alt_ru?: string
   ) {

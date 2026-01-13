@@ -27,7 +27,7 @@ export class MediaService {
     return media;
   }
 
-  async create(file: UploadedFile, alt_uz?: string, alt_ru?: string) {
+  async create(file: Express.Multer.File, alt_uz?: string, alt_ru?: string) {
     const uploadResult = await this.storageService.upload(file);
 
     return this.prisma.media.create({

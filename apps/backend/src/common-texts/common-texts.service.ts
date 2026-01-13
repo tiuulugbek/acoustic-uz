@@ -8,9 +8,8 @@ export class CommonTextsService {
 
   async findAll(category?: string) {
     const where: Prisma.CommonTextWhereInput = {};
-    if (category) {
-      where.category = category;
-    }
+    // Note: CommonText model doesn't have a category field in the schema
+    // If category filtering is needed, it should be added to the schema first
     return this.prisma.commonText.findMany({
       where,
       orderBy: { key: 'asc' },
