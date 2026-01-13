@@ -1,0 +1,41 @@
+export declare class CreateProductDto {
+    name_uz: string;
+    name_ru: string;
+    slug: string;
+    productType?: 'hearing-aids' | 'accessories' | 'interacoustics';
+    description_uz?: string;
+    description_ru?: string;
+    price?: number;
+    stock?: number;
+    brandId?: string;
+    categoryId?: string;
+    catalogIds?: string[];
+    galleryIds?: string[];
+    galleryUrls?: string[];
+    specsText?: string;
+    audience?: string[];
+    formFactors?: string[];
+    signalProcessing?: string;
+    powerLevel?: string;
+    hearingLossLevels?: string[];
+    smartphoneCompatibility?: string[];
+    tinnitusSupport?: boolean;
+    paymentOptions?: string[];
+    availabilityStatus?: string;
+    intro_uz?: string;
+    intro_ru?: string;
+    features_uz?: string[];
+    features_ru?: string[];
+    benefits_uz?: string[];
+    benefits_ru?: string[];
+    tech_uz?: string;
+    tech_ru?: string;
+    fittingRange_uz?: string;
+    fittingRange_ru?: string;
+    regulatoryNote_uz?: string;
+    regulatoryNote_ru?: string;
+    relatedProductIds?: string[];
+    usefulArticleSlugs?: string[];
+    status?: 'published' | 'draft' | 'archived';
+}
+//# sourceMappingURL=create-product.dto.d.ts.map

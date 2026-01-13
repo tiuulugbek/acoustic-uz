@@ -1,0 +1,107 @@
+import { PagesService } from './pages.service';
+export declare class PagesController {
+    private readonly service;
+    constructor(service: PagesService);
+    findBySlug(slug: string, includeDraft?: string): Promise<{
+        gallery: {
+            id: string;
+            size: number | null;
+            createdAt: Date;
+            updatedAt: Date;
+            alt_uz: string | null;
+            alt_ru: string | null;
+            url: string;
+            filename: string | null;
+            mimeType: string | null;
+        }[];
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        title_uz: string;
+        title_ru: string;
+        body_uz: string | null;
+        body_ru: string | null;
+        slug: string;
+        status: string;
+        metaTitle_uz: string | null;
+        metaTitle_ru: string | null;
+        metaDescription_uz: string | null;
+        metaDescription_ru: string | null;
+        galleryIds: string[];
+        videoUrl: string | null;
+        usefulArticleSlugs: string[];
+    }>;
+    findAll(): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        title_uz: string;
+        title_ru: string;
+        body_uz: string | null;
+        body_ru: string | null;
+        slug: string;
+        status: string;
+        metaTitle_uz: string | null;
+        metaTitle_ru: string | null;
+        metaDescription_uz: string | null;
+        metaDescription_ru: string | null;
+        galleryIds: string[];
+        videoUrl: string | null;
+        usefulArticleSlugs: string[];
+    }[]>;
+    create(dto: unknown): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        title_uz: string;
+        title_ru: string;
+        body_uz: string | null;
+        body_ru: string | null;
+        slug: string;
+        status: string;
+        metaTitle_uz: string | null;
+        metaTitle_ru: string | null;
+        metaDescription_uz: string | null;
+        metaDescription_ru: string | null;
+        galleryIds: string[];
+        videoUrl: string | null;
+        usefulArticleSlugs: string[];
+    }>;
+    update(id: string, dto: unknown): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        title_uz: string;
+        title_ru: string;
+        body_uz: string | null;
+        body_ru: string | null;
+        slug: string;
+        status: string;
+        metaTitle_uz: string | null;
+        metaTitle_ru: string | null;
+        metaDescription_uz: string | null;
+        metaDescription_ru: string | null;
+        galleryIds: string[];
+        videoUrl: string | null;
+        usefulArticleSlugs: string[];
+    }>;
+    remove(id: string): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        title_uz: string;
+        title_ru: string;
+        body_uz: string | null;
+        body_ru: string | null;
+        slug: string;
+        status: string;
+        metaTitle_uz: string | null;
+        metaTitle_ru: string | null;
+        metaDescription_uz: string | null;
+        metaDescription_ru: string | null;
+        galleryIds: string[];
+        videoUrl: string | null;
+        usefulArticleSlugs: string[];
+    }>;
+}
+//# sourceMappingURL=pages.controller.d.ts.map

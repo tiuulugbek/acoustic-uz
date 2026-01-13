@@ -1,0 +1,107 @@
+import { PrismaService } from '../prisma/prisma.service';
+export declare class PagesService {
+    private prisma;
+    constructor(prisma: PrismaService);
+    findBySlug(slug: string, includeDraft?: boolean): Promise<{
+        gallery: {
+            id: string;
+            size: number | null;
+            createdAt: Date;
+            updatedAt: Date;
+            alt_uz: string | null;
+            alt_ru: string | null;
+            url: string;
+            filename: string | null;
+            mimeType: string | null;
+        }[];
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        title_uz: string;
+        title_ru: string;
+        body_uz: string | null;
+        body_ru: string | null;
+        slug: string;
+        status: string;
+        metaTitle_uz: string | null;
+        metaTitle_ru: string | null;
+        metaDescription_uz: string | null;
+        metaDescription_ru: string | null;
+        galleryIds: string[];
+        videoUrl: string | null;
+        usefulArticleSlugs: string[];
+    } | null>;
+    findAll(): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        title_uz: string;
+        title_ru: string;
+        body_uz: string | null;
+        body_ru: string | null;
+        slug: string;
+        status: string;
+        metaTitle_uz: string | null;
+        metaTitle_ru: string | null;
+        metaDescription_uz: string | null;
+        metaDescription_ru: string | null;
+        galleryIds: string[];
+        videoUrl: string | null;
+        usefulArticleSlugs: string[];
+    }[]>;
+    create(data: unknown): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        title_uz: string;
+        title_ru: string;
+        body_uz: string | null;
+        body_ru: string | null;
+        slug: string;
+        status: string;
+        metaTitle_uz: string | null;
+        metaTitle_ru: string | null;
+        metaDescription_uz: string | null;
+        metaDescription_ru: string | null;
+        galleryIds: string[];
+        videoUrl: string | null;
+        usefulArticleSlugs: string[];
+    }>;
+    update(id: string, data: unknown): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        title_uz: string;
+        title_ru: string;
+        body_uz: string | null;
+        body_ru: string | null;
+        slug: string;
+        status: string;
+        metaTitle_uz: string | null;
+        metaTitle_ru: string | null;
+        metaDescription_uz: string | null;
+        metaDescription_ru: string | null;
+        galleryIds: string[];
+        videoUrl: string | null;
+        usefulArticleSlugs: string[];
+    }>;
+    delete(id: string): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        title_uz: string;
+        title_ru: string;
+        body_uz: string | null;
+        body_ru: string | null;
+        slug: string;
+        status: string;
+        metaTitle_uz: string | null;
+        metaTitle_ru: string | null;
+        metaDescription_uz: string | null;
+        metaDescription_ru: string | null;
+        galleryIds: string[];
+        videoUrl: string | null;
+        usefulArticleSlugs: string[];
+    }>;
+}
+//# sourceMappingURL=pages.service.d.ts.map

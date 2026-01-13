@@ -1,0 +1,307 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.revalidate = void 0;
+exports.generateMetadata = generateMetadata;
+exports.default = PostPage;
+const image_1 = __importDefault(require("next/image"));
+const link_1 = __importDefault(require("next/link"));
+const script_1 = __importDefault(require("next/script"));
+const lucide_react_1 = require("lucide-react");
+const api_server_1 = require("@/lib/api-server");
+const locale_server_1 = require("@/lib/locale-server");
+const locale_1 = require("@/lib/locale");
+const page_header_1 = __importDefault(require("@/components/page-header"));
+const service_content_1 = __importDefault(require("@/components/service-content"));
+const appointment_form_1 = __importDefault(require("@/components/appointment-form"));
+const author_card_1 = __importDefault(require("@/components/author-card"));
+const sidebar_1 = __importDefault(require("@/components/sidebar"));
+const navigation_1 = require("next/navigation");
+const dayjs_1 = __importDefault(require("dayjs"));
+const image_utils_1 = require("@/lib/image-utils");
+// ISR: Revalidate every 2 hours
+exports.revalidate = 7200;
+async function generateMetadata({ params }) {
+    const locale = (0, locale_server_1.detectLocale)();
+    const post = await (0, api_server_1.getPostBySlug)(params.slug, locale);
+    if (!post || post.status !== 'published') {
+        return {
+            title: locale === 'ru' ? 'Статья — Acoustic.uz' : 'Maqola — Acoustic.uz',
+            description: locale === 'ru'
+                ? 'Статья не найдена'
+                : 'Maqola topilmadi',
+        };
+    }
+    const title = (0, locale_1.getBilingualText)(post.title_uz, post.title_ru, locale);
+    const description = (0, locale_1.getBilingualText)(post.excerpt_uz, post.excerpt_ru, locale) ||
+        (0, locale_1.getBilingualText)(post.body_uz, post.body_ru, locale)?.replace(/<[^>]*>/g, '').substring(0, 160);
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
+    const postUrl = `${baseUrl}/posts/${params.slug}`;
+    const imageUrl = post.cover?.url
+        ? (post.cover.url.startsWith('http')
+            ? post.cover.url
+            : `${baseUrl}${post.cover.url}`)
+        : `${baseUrl}/logo.png`;
+    return {
+        title: `${title} — Acoustic.uz`,
+        description: description || undefined,
+        alternates: {
+            canonical: postUrl,
+            languages: {
+                uz: postUrl,
+                ru: postUrl,
+                'x-default': postUrl,
+            },
+        },
+        openGraph: {
+            title: `${title} — Acoustic.uz`,
+            description: description || undefined,
+            url: postUrl,
+            siteName: 'Acoustic.uz',
+            images: [
+                {
+                    url: imageUrl,
+                    width: 1200,
+                    height: 630,
+                    alt: title,
+                },
+            ],
+            locale: locale === 'ru' ? 'ru_RU' : 'uz_UZ',
+            type: 'article',
+            publishedTime: post.publishAt ? new Date(post.publishAt).toISOString() : undefined,
+            modifiedTime: post.updatedAt ? new Date(post.updatedAt).toISOString() : undefined,
+            authors: post.author ? [post.author.name] : undefined,
+        },
+        twitter: {
+            card: 'summary_large_image',
+            title: `${title} — Acoustic.uz`,
+            description: description || undefined,
+            images: [imageUrl],
+        },
+    };
+}
+async function PostPage({ params }) {
+    const locale = (0, locale_server_1.detectLocale)();
+    const [post, brands, settings] = await Promise.all([
+        (0, api_server_1.getPostBySlug)(params.slug, locale),
+        (0, api_server_1.getBrands)(locale),
+        (0, api_server_1.getSettings)(locale),
+    ]);
+    if (!post || post.status !== 'published') {
+        (0, navigation_1.notFound)();
+    }
+    const title = (0, locale_1.getBilingualText)(post.title_uz, post.title_ru, locale);
+    const body = (0, locale_1.getBilingualText)(post.body_uz, post.body_ru, locale) || '';
+    const excerpt = (0, locale_1.getBilingualText)(post.excerpt_uz, post.excerpt_ru, locale);
+    const categoryName = post.category
+        ? (0, locale_1.getBilingualText)(post.category.name_uz, post.category.name_ru, locale)
+        : null;
+    const coverUrl = post.cover?.url ? (0, image_utils_1.normalizeImageUrl)(post.cover.url) : null;
+    // Get related posts from the same category (only articles, not news)
+    const relatedPosts = post.categoryId
+        ? await (0, api_server_1.getPosts)(locale, true, post.categoryId, 'article')
+        : [];
+    const filteredRelatedPosts = relatedPosts
+        .filter(p => p.id !== post.id && p.status === 'published')
+        .slice(0, 3);
+    // Build Article Structured Data
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
+    const postUrl = `${baseUrl}/posts/${post.slug}`;
+    const articleImageUrl = coverUrl
+        ? (coverUrl.startsWith('http') ? coverUrl : `${baseUrl}${coverUrl}`)
+        : `${baseUrl}/logo.png`;
+    const articleJsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'Article',
+        headline: title,
+        image: articleImageUrl,
+        datePublished: post.publishAt ? new Date(post.publishAt).toISOString() : undefined,
+        dateModified: post.updatedAt ? new Date(post.updatedAt).toISOString() : undefined,
+        author: post.author ? {
+            '@type': 'Person',
+            name: post.author.name,
+        } : undefined,
+        publisher: {
+            '@type': 'Organization',
+            name: 'Acoustic.uz',
+            logo: {
+                '@type': 'ImageObject',
+                url: settings?.logo?.url
+                    ? (settings.logo.url.startsWith('http')
+                        ? settings.logo.url
+                        : `${baseUrl}${settings.logo.url}`)
+                    : `${baseUrl}/logo.png`,
+            },
+        },
+        mainEntityOfPage: {
+            '@type': 'WebPage',
+            '@id': postUrl,
+        },
+        description: excerpt || undefined,
+        articleSection: categoryName || undefined,
+    };
+    // Build BreadcrumbList Structured Data
+    const breadcrumbJsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+            {
+                '@type': 'ListItem',
+                position: 1,
+                name: locale === 'ru' ? 'Главная' : 'Bosh sahifa',
+                item: baseUrl,
+            },
+            {
+                '@type': 'ListItem',
+                position: 2,
+                name: categoryName || (locale === 'ru' ? 'Статьи' : 'Maqolalar'),
+                item: post.categoryId ? `${baseUrl}/patients` : `${baseUrl}/patients`,
+            },
+            {
+                '@type': 'ListItem',
+                position: 3,
+                name: title,
+                item: postUrl,
+            },
+        ],
+    };
+    return (<main className="min-h-screen bg-background">
+      {/* Article Structured Data */}
+      <script_1.default id="article-jsonld" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}/>
+      
+      {/* BreadcrumbList Structured Data */}
+      <script_1.default id="breadcrumb-jsonld" type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}/>
+      <page_header_1.default locale={locale} breadcrumbs={[
+            { label: locale === 'ru' ? 'Главная' : 'Bosh sahifa', href: '/' },
+            {
+                label: categoryName || (locale === 'ru' ? 'Статьи' : 'Maqolalar'),
+                href: post.categoryId ? `/patients` : '/patients'
+            },
+            { label: title },
+        ]} title={title}/>
+
+      <article className="bg-white py-12">
+        <div className="mx-auto max-w-6xl px-4 md:px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Main Content - 2 columns */}
+            <div className="lg:col-span-2">
+              {/* Back button */}
+              <link_1.default href={post.categoryId ? '/patients' : '/patients'} className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-brand-primary hover:text-brand-accent transition-colors">
+                <lucide_react_1.ArrowLeft className="h-4 w-4"/>
+                {locale === 'ru' ? 'Назад к статьям' : 'Maqolalarga qaytish'}
+              </link_1.default>
+
+              {/* Cover Image */}
+              {coverUrl && (<div className="relative mb-8 aspect-video w-full overflow-hidden rounded-lg bg-muted">
+                  <image_1.default src={coverUrl} alt={title} fill className="object-cover" sizes="(max-width: 768px) 100vw, (max-width: 1024px) 66vw, 896px" priority unoptimized/>
+                </div>)}
+
+              {/* Post Meta */}
+              <div className="mb-6 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <lucide_react_1.Calendar className="h-4 w-4"/>
+                  <time dateTime={post.publishAt}>
+                    {(0, dayjs_1.default)(post.publishAt).format('DD.MM.YYYY')}
+                  </time>
+                </div>
+                {categoryName && (<link_1.default href={post.categoryId ? '/patients' : '/patients'} className="flex items-center gap-2 rounded-full bg-brand-primary/10 px-3 py-1 text-brand-primary hover:bg-brand-primary/20 transition-colors">
+                    <lucide_react_1.Tag className="h-3 w-3"/>
+                    {categoryName}
+                  </link_1.default>)}
+                {post.postType && (<span className="rounded-full bg-muted px-3 py-1">
+                    {post.postType === 'news'
+                ? (locale === 'ru' ? '📰 Новость' : '📰 Yangilik')
+                : (locale === 'ru' ? '📄 Статья' : '📄 Maqola')}
+                  </span>)}
+              </div>
+
+              {/* Title */}
+              <h1 className="mb-4 text-4xl font-bold leading-tight text-foreground">
+                {title}
+              </h1>
+
+              {/* Excerpt */}
+              {excerpt && (<p className="mb-8 text-lg leading-relaxed text-muted-foreground">
+                  {excerpt}
+                </p>)}
+
+              {/* Content */}
+              <article className="prose prose-lg max-w-none prose-headings:font-bold prose-headings:text-foreground prose-headings:mt-8 prose-headings:mb-4 prose-p:text-muted-foreground prose-p:leading-relaxed prose-p:text-base prose-a:text-brand-primary prose-a:no-underline hover:prose-a:underline prose-strong:text-foreground prose-strong:font-semibold prose-img:rounded-lg prose-img:shadow-md prose-img:my-6 prose-img:w-full prose-ul:list-disc prose-ol:list-decimal prose-li:my-2 prose-blockquote:border-l-4 prose-blockquote:border-brand-primary prose-blockquote:pl-4 prose-blockquote:italic">
+                <service_content_1.default content={body} locale={locale}/>
+              </article>
+
+              {/* Tags */}
+              {post.tags && post.tags.length > 0 && (<div className="mt-8 flex flex-wrap items-center gap-2 border-t border-border pt-6">
+                  <span className="text-sm font-medium text-foreground">
+                    {locale === 'ru' ? 'Теги:' : 'Teglar:'}
+                  </span>
+                  {post.tags.map((tag) => (<span key={tag} className="rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground">
+                      {tag}
+                    </span>))}
+                </div>)}
+
+
+              {/* Author Card - Show if author exists */}
+              {post.author && (<author_card_1.default author={post.author} locale={locale}/>)}
+
+              {/* Appointment Form - Below content, same grid layout */}
+              <div className="mt-8 bg-gradient-to-br from-brand-primary/5 to-brand-accent/5 rounded-lg p-6">
+                <div className="mb-4">
+                  <h2 className="mb-2 text-2xl font-bold text-foreground">
+                    {locale === 'ru' ? 'Записаться на консультацию' : 'Maslahat uchun yozilish'}
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    {locale === 'ru'
+            ? 'Наши специалисты готовы ответить на все ваши вопросы и помочь подобрать оптимальное решение для вашего слуха.'
+            : 'Bizning mutaxassislarimiz barcha savollaringizga javob berishga va eshitishingiz uchun eng yaxshi yechimni topishga tayyor.'}
+                  </p>
+                </div>
+                <appointment_form_1.default locale={locale} doctorId={post.authorId || null} source={`post-${post.slug}`}/>
+              </div>
+            </div>
+
+            {/* Sidebar - 1 column */}
+            <div className="lg:col-span-1">
+              <div className="sticky top-24 space-y-6">
+                <sidebar_1.default locale={locale} settingsData={settings} brandsData={brands} pageType="posts"/>
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+
+      {/* Related Posts */}
+      {filteredRelatedPosts.length > 0 && (<section className="bg-muted/30 py-12">
+          <div className="mx-auto max-w-6xl px-4 md:px-6">
+            <h2 className="mb-6 text-2xl font-bold text-foreground">
+              {locale === 'ru' ? 'Похожие статьи' : 'O\'xshash maqolalar'}
+            </h2>
+            <div className="grid gap-6 md:grid-cols-3">
+              {filteredRelatedPosts.map((relatedPost) => {
+                const relatedTitle = (0, locale_1.getBilingualText)(relatedPost.title_uz, relatedPost.title_ru, locale);
+                const relatedExcerpt = (0, locale_1.getBilingualText)(relatedPost.excerpt_uz, relatedPost.excerpt_ru, locale) ||
+                    (0, locale_1.getBilingualText)(relatedPost.body_uz, relatedPost.body_ru, locale)?.replace(/<[^>]*>/g, '').substring(0, 100) + '...';
+                const relatedCoverUrl = relatedPost.cover?.url;
+                return (<link_1.default key={relatedPost.id} href={`/posts/${relatedPost.slug}`} className="group flex flex-col overflow-hidden rounded-lg border border-border bg-white shadow-sm transition-shadow hover:shadow-md">
+                    {relatedCoverUrl && (<div className="relative aspect-video w-full overflow-hidden bg-muted">
+                        <image_1.default src={relatedCoverUrl} alt={relatedTitle} fill className="object-cover transition-transform group-hover:scale-105" sizes="(max-width: 768px) 100vw, 33vw"/>
+                      </div>)}
+                    <div className="flex flex-1 flex-col p-5">
+                      <h3 className="mb-2 text-lg font-semibold leading-tight text-foreground line-clamp-2 group-hover:text-brand-primary transition-colors">
+                        {relatedTitle}
+                      </h3>
+                      {relatedExcerpt && (<p className="mb-0 flex-1 text-sm text-muted-foreground line-clamp-3">
+                          {relatedExcerpt}
+                        </p>)}
+                    </div>
+                  </link_1.default>);
+            })}
+            </div>
+          </div>
+        </section>)}
+    </main>);
+}
+//# sourceMappingURL=page.js.map
