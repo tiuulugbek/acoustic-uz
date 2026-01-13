@@ -1,0 +1,72 @@
+"use strict";
+'use client';
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.default = ProductTabs;
+const react_1 = require("react");
+const tooltip_manager_1 = require("./tooltip-manager");
+const content_processor_1 = require("./content-processor");
+const htmlRegex = /<\/?[a-z][\s\S]*>/i;
+// processTooltips is now handled by processContentShortcodes
+function renderContent(content, variant = 'primary') {
+    if (!content) {
+        return null;
+    }
+    const trimmed = content.trim();
+    if (!trimmed.length) {
+        return null;
+    }
+    const isHtml = htmlRegex.test(trimmed);
+    if (isHtml) {
+        // Process all shortcodes (tooltips, tables, images)
+        const processed = (0, content_processor_1.processContentShortcodes)(trimmed);
+        return (<TooltipContent html={processed} variant={variant}/>);
+    }
+    return (<p className={`whitespace-pre-line ${variant === 'secondary' ? 'text-brand-accent/70' : 'text-brand-accent'}`}>
+      {content}
+    </p>);
+}
+/**
+ * Component that renders HTML content and adds tooltip functionality
+ * Uses the optimized tooltip-manager hook for better performance
+ */
+function TooltipContent({ html, variant }) {
+    const containerRef = (0, react_1.useRef)(null);
+    // Use the optimized tooltip manager hook
+    (0, tooltip_manager_1.useTooltipManager)(containerRef);
+    return (<div ref={containerRef} className={`rich-content ${variant === 'secondary' ? 'rich-content--secondary' : ''}`} dangerouslySetInnerHTML={{ __html: html }}/>);
+}
+function ProductTabs({ tabs }) {
+    const availableTabs = (0, react_1.useMemo)(() => tabs.filter((tab) => (tab.primary && tab.primary.trim().length) || (tab.secondary && tab.secondary.trim().length)), [tabs]);
+    // Default active tab: "description" (Tavsif) if available, otherwise first tab
+    const defaultTab = availableTabs.find((tab) => tab.key === 'description')?.key ?? availableTabs[0]?.key ?? tabs[0]?.key ?? '';
+    const [activeTab, setActiveTab] = (0, react_1.useState)(defaultTab);
+    // If no tabs have content, show placeholder message
+    if (!availableTabs.length) {
+        return (<div className="rounded-3xl border border-border/60 bg-white shadow-sm">
+        <div className="p-6 text-center text-sm text-muted-foreground">
+          <p>Ma'lumot qo'shilmagan</p>
+        </div>
+      </div>);
+    }
+    const current = availableTabs.find((tab) => tab.key === activeTab) ?? availableTabs[0];
+    return (<div className="rounded-3xl border border-border/60 bg-white shadow-sm">
+      <div className="flex flex-wrap gap-2 border-b border-border/50 bg-brand-accent/5 p-3">
+        {availableTabs.map((tab) => {
+            const isActive = tab.key === activeTab;
+            return (<button key={tab.key} type="button" onClick={() => setActiveTab(tab.key)} className={`rounded-full px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-brand-primary/50 ${isActive
+                    ? 'bg-brand-primary text-white shadow focus:ring-brand-primary'
+                    : 'bg-white text-brand-accent border border-brand-accent/40 hover:bg-brand-primary/10'}`}>
+              {tab.title}
+            </button>);
+        })}
+      </div>
+      <div className="space-y-4 p-6 text-sm leading-relaxed text-muted-foreground">
+        {renderContent(current?.primary, 'primary')}
+        {renderContent(current?.secondary, 'secondary')}
+        {!current?.primary && !current?.secondary && (<p className="text-center text-muted-foreground italic">
+            Ma'lumot qo'shilmagan
+          </p>)}
+      </div>
+    </div>);
+}
+//# sourceMappingURL=product-tabs.js.map
