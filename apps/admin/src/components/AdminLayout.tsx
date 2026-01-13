@@ -13,6 +13,7 @@ import {
   PictureOutlined,
   OrderedListOutlined,
   QuestionCircleOutlined,
+  MessageOutlined,
 } from '@ant-design/icons';
 import { useLocation, useNavigate, Outlet } from 'react-router-dom';
 import type { MenuProps } from 'antd';
@@ -20,7 +21,44 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getCurrentUser, logout, ApiError, UserDto } from '../lib/api';
 import { useEffect, useState } from 'react';
 
-const { Header, Sider, Content } = Layout;
+const { Header, Sider, Content, Footer } = Layout;
+
+// Version state - will be loaded dynamically to avoid cache issues
+const getInitialVersion = (): { version: string; buildTime: string } => {
+  // Try to get from window object first (injected by plugin in HTML)
+  if (typeof window !== 'undefined') {
+    const windowVersion = (window as any).__APP_VERSION__;
+    const windowBuildTime = (window as any).__BUILD_TIME__;
+    
+    // Also try to get from meta tag (fallback)
+    if (!windowVersion) {
+      const metaVersion = document.querySelector('meta[name="app-version"]')?.getAttribute('content');
+      const metaBuildTime = document.querySelector('meta[name="build-time"]')?.getAttribute('content');
+      
+      if (metaVersion && metaBuildTime) {
+        // Set window object for consistency
+        (window as any).__APP_VERSION__ = metaVersion;
+        (window as any).__BUILD_TIME__ = metaBuildTime;
+        return {
+          version: metaVersion,
+          buildTime: metaBuildTime,
+        };
+      }
+    }
+    
+    if (windowVersion && windowBuildTime) {
+      return {
+        version: windowVersion,
+        buildTime: windowBuildTime,
+      };
+    }
+  }
+  // Fallback
+  return {
+    version: '1.0.0',
+    buildTime: new Date().toISOString(),
+  };
+};
 
 const menuItems: MenuProps['items'] = [
   {
@@ -73,9 +111,9 @@ const menuItems: MenuProps['items'] = [
     key: 'divider-1',
   },
   {
-    key: '/posts',
+    key: '/news',
     icon: <FileTextOutlined />,
-    label: 'Maqolalar',
+    label: 'Yangiliklar',
   },
   {
     key: '/banners',
@@ -91,6 +129,11 @@ const menuItems: MenuProps['items'] = [
     key: '/faq',
     icon: <QuestionCircleOutlined />,
     label: 'Savol-Javob',
+  },
+  {
+    key: '/leads',
+    icon: <MessageOutlined />,
+    label: 'So\'rovlar',
   },
   {
     type: 'divider',
@@ -116,10 +159,74 @@ export default function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [versionInfo, setVersionInfo] = useState<{ version: string; buildTime: string }>(getInitialVersion);
 
   const selectedKey = menuItems?.find((item) => item?.key === location.pathname)
     ? [location.pathname]
     : ['/'];
+
+  // Load version on mount - prioritize window.__APP_VERSION__ (injected in HTML)
+  useEffect(() => {
+    // Log initial version
+    const windowVersion = (window as any).__APP_VERSION__;
+    const windowBuildTime = (window as any).__BUILD_TIME__;
+    
+    console.log('[AdminLayout] Initial window.__APP_VERSION__:', windowVersion);
+    console.log('[AdminLayout] Initial window.__BUILD_TIME__:', windowBuildTime);
+    console.log('[AdminLayout] Initial versionInfo state:', versionInfo);
+    
+    // Update version from window object (injected in HTML during build)
+    if (windowVersion && windowBuildTime) {
+      const newVersionInfo = {
+        version: windowVersion,
+        buildTime: windowBuildTime,
+      };
+      setVersionInfo(newVersionInfo);
+      console.log('[AdminLayout] ✅ Version updated from window:', windowVersion);
+    }
+    
+    // Also try to fetch version.json as fallback (with cache busting)
+    const fetchVersion = async () => {
+      try {
+        const response = await fetch(`/version.json?t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+          },
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch version.json: ${response.status} ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('[AdminLayout] Fetched version.json:', data);
+        
+        // Only update if version.json has newer version or window version is missing
+        if (data.version && data.buildTime) {
+          if (!windowVersion || data.version !== windowVersion) {
+            const newVersionInfo = {
+              version: data.version,
+              buildTime: data.buildTime,
+            };
+            setVersionInfo(newVersionInfo);
+            (window as any).__APP_VERSION__ = data.version;
+            (window as any).__BUILD_TIME__ = data.buildTime;
+            console.log('[AdminLayout] ✅ Version updated from version.json:', data.version);
+          }
+        }
+      } catch (error) {
+        console.log('[AdminLayout] ⚠️ version.json not available (using window version):', error);
+        // Keep version from window object
+      }
+    };
+    
+    // Only fetch version.json if window version is missing
+    if (!windowVersion) {
+      fetchVersion();
+    }
+  }, []);
 
   // Use useState to manage user - initialize from localStorage immediately
   const [userState, setUserState] = useState<UserDto | null>(() => {
@@ -221,6 +328,9 @@ export default function AdminLayout() {
     await logoutMutation();
   };
 
+  // Note: Footer is rendered at the bottom of the Layout
+  // Version is also shown in the header for easy visibility
+
   if (isLoading || isLoggingOut) {
     return (
       <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center' }}>
@@ -264,10 +374,26 @@ export default function AdminLayout() {
           />
         </div>
       </Sider>
-      <Layout style={{ marginLeft: 220 }}>
-        <Header style={{ background: '#fff', padding: '0 24px', borderBottom: '1px solid #f0f0f0' }}>
+      <Layout style={{ marginLeft: 220, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <Header style={{ background: '#fff', padding: '0 24px', borderBottom: '1px solid #f0f0f0', flexShrink: 0 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '100%' }}>
-            <h1 style={{ fontSize: '18px', fontWeight: 600, color: '#F07E22', margin: 0 }}>Admin panel</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <h1 style={{ fontSize: '18px', fontWeight: 600, color: '#F07E22', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                Admin panel
+                <span style={{ 
+                  fontSize: '11px', 
+                  fontWeight: 600,
+                  color: '#F07E22', 
+                  backgroundColor: '#fff3e0',
+                  padding: '2px 8px',
+                  borderRadius: '4px',
+                  fontFamily: 'monospace',
+                  border: '1px solid #ffcc80'
+                }}>
+                  v{versionInfo.version}
+                </span>
+              </h1>
+            </div>
             <button
               type="button"
               onClick={handleLogout}
@@ -287,9 +413,67 @@ export default function AdminLayout() {
             </button>
           </div>
         </Header>
-        <Content style={{ margin: '24px', padding: '24px', background: '#fff', minHeight: 'calc(100vh - 64px)' }}>
-          <Outlet />
-        </Content>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <Content style={{ 
+            margin: '24px', 
+            padding: '24px', 
+            background: '#fff', 
+            flex: 1, 
+            overflow: 'auto',
+            paddingBottom: '24px'
+          }}>
+            <Outlet />
+          </Content>
+          <Footer 
+            id="admin-footer"
+            style={{ 
+              textAlign: 'center', 
+              background: '#fafafa', 
+              borderTop: '2px solid #e8e8e8',
+              padding: '16px 24px',
+              fontSize: '13px',
+              color: '#595959',
+              flexShrink: 0,
+              width: '100%',
+              boxShadow: '0 -2px 8px rgba(0,0,0,0.08)',
+              minHeight: '60px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <span style={{ fontWeight: 500, color: '#262626' }}>Admin Panel</span>
+            <span style={{ color: '#d9d9d9', fontSize: '16px' }}>•</span>
+            <span 
+              style={{ fontWeight: 600, color: '#F07E22', fontSize: '14px' }}
+              title={`Version: ${versionInfo.version}\nBuild time: ${versionInfo.buildTime}\nWindow version: ${(window as any).__APP_VERSION__ || 'N/A'}`}
+            >
+              v{versionInfo.version}
+            </span>
+            <span style={{ color: '#d9d9d9', fontSize: '16px' }}>•</span>
+            <span 
+              title={`Build time: ${versionInfo.buildTime}`} 
+              style={{ 
+                fontFamily: 'monospace', 
+                fontSize: '12px',
+                color: '#8c8c8c',
+                backgroundColor: '#f5f5f5',
+                padding: '2px 6px',
+                borderRadius: '4px'
+              }}
+            >
+              {new Date(versionInfo.buildTime).toLocaleDateString('uz-UZ', { 
+                year: 'numeric', 
+                month: '2-digit', 
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </span>
+          </div>
+        </Footer>
+        </div>
       </Layout>
     </Layout>
   );

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Modal,
   Input,
@@ -25,6 +25,7 @@ import {
   type MediaDto,
   ApiError,
 } from '../lib/api';
+import { normalizeImageUrl } from '../utils/image';
 
 type FileType = 'all' | 'image' | 'other';
 
@@ -35,6 +36,7 @@ interface MediaLibraryModalProps {
   multiple?: boolean;
   fileType?: FileType;
   selectedMediaIds?: string[];
+  onConfirm?: (selectedMediaIds: string[]) => void;
 }
 
 export default function MediaLibraryModal({
@@ -44,15 +46,35 @@ export default function MediaLibraryModal({
   multiple = false,
   fileType = 'all',
   selectedMediaIds = [],
+  onConfirm,
 }: MediaLibraryModalProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [fileTypeFilter, setFileTypeFilter] = useState<FileType>(fileType);
 
-  const { data: mediaList, isLoading } = useQuery<MediaDto[], ApiError>({
+  const { data: mediaList, isLoading, refetch } = useQuery<MediaDto[], ApiError>({
     queryKey: ['media'],
     queryFn: getMedia,
-    enabled: open,
+    enabled: open, // Only fetch when modal is open
+    refetchOnMount: 'always', // Always refetch when component mounts (modal opens)
+    refetchOnWindowFocus: false,
+    staleTime: 0, // Always consider data stale to ensure fresh data
+    cacheTime: 0, // Don't cache data when modal is closed
   });
+
+  // Refetch when modal opens to ensure fresh data (including after upload)
+  useEffect(() => {
+    if (open) {
+      console.log('[MediaLibraryModal] Modal opened, refetching media...');
+      // Small delay to ensure invalidateQueries has completed
+      setTimeout(() => {
+        refetch().then(() => {
+          console.log('[MediaLibraryModal] Media refetched successfully');
+        }).catch((error) => {
+          console.error('[MediaLibraryModal] Error refetching media:', error);
+        });
+      }, 100);
+    }
+  }, [open, refetch]);
 
   const filteredMedia = useMemo(() => {
     if (!mediaList) return [];
@@ -85,27 +107,24 @@ export default function MediaLibraryModal({
 
   const isImage = (mimeType: string) => mimeType?.startsWith('image/');
 
-  // Helper function to normalize image URLs
-  const normalizeImageUrl = (url: string | null | undefined): string => {
-    if (!url) return '';
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return url;
-    }
-    if (url.startsWith('/uploads/')) {
-      const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-      const baseUrl = apiBase.replace('/api', '');
-      return `${baseUrl}${url}`;
-    }
-    return url;
-  };
-
   return (
     <Modal
       open={open}
       onCancel={onCancel}
-      title="Media kutubxonasi"
+      title={multiple ? `Media kutubxonasi (${selectedMediaIds.length} ta tanlandi)` : 'Media kutubxonasi'}
       width={900}
-      footer={null}
+      footer={multiple ? (
+        <Space>
+          <Button onClick={onCancel}>Bekor qilish</Button>
+          <Button 
+            type="primary" 
+            onClick={() => onConfirm?.(selectedMediaIds)}
+            disabled={selectedMediaIds.length === 0}
+          >
+            Tanlash ({selectedMediaIds.length})
+          </Button>
+        </Space>
+      ) : null}
       style={{ top: 20 }}
     >
       {/* Filters */}
@@ -170,6 +189,28 @@ export default function MediaLibraryModal({
                               width: '100%',
                               height: '100%',
                               objectFit: 'cover',
+                            }}
+                            onError={(e) => {
+                              console.error('[MediaLibraryModal] Image load error:', {
+                                originalUrl: media.url,
+                                normalizedUrl: normalizeImageUrl(media.url),
+                                filename: media.filename,
+                                mediaId: media.id,
+                              });
+                              // Show placeholder on error
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const parent = target.parentElement;
+                              if (parent) {
+                                parent.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #999; font-size: 12px;">Rasm yuklanmadi</div>';
+                              }
+                            }}
+                            onLoad={() => {
+                              console.log('[MediaLibraryModal] Image loaded successfully:', {
+                                originalUrl: media.url,
+                                normalizedUrl: normalizeImageUrl(media.url),
+                                filename: media.filename,
+                              });
                             }}
                           />
                           {selected && (

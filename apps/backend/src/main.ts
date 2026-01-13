@@ -26,16 +26,66 @@ async function bootstrap() {
   }));
   app.use(cookieParser());
 
-  // CORS
-  const corsOrigins = configService.get<string>('CORS_ORIGIN', '').split(',');
+  // CORS - Always include admin.acoustic.uz and acoustic.uz in allowed origins
+  const corsOriginsEnv = configService.get<string>('CORS_ORIGIN', '');
+  const defaultOrigins = [
+    'https://admin.acoustic.uz',
+    'https://acoustic.uz',
+    'https://www.acoustic.uz',
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'http://localhost:3002',
+  ];
+  
+  // Always merge environment origins with defaults to ensure admin.acoustic.uz is always allowed
+  let corsOrigins: string[];
+  if (corsOriginsEnv) {
+    const envOrigins = corsOriginsEnv.split(',').map(origin => origin.trim()).filter(Boolean);
+    corsOrigins = [...new Set([...defaultOrigins, ...envOrigins])];
+  } else {
+    corsOrigins = defaultOrigins;
+  }
+  
+  logger.log(`🌐 CORS enabled for origins: ${corsOrigins.join(', ')}`);
+  
   app.enableCors({
-    origin: corsOrigins.length > 0 ? corsOrigins : true,
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+      
+      // Check if origin is in allowed list
+      if (corsOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      
+      // Log blocked origin for debugging
+      logger.warn(`🚫 CORS blocked origin: ${origin}`);
+      callback(null, false);
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Locale'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Locale', 'Accept', 'Origin', 'X-Requested-With'],
     exposedHeaders: ['Vary', 'Cache-Control'],
-    // Allow images to be loaded from backend
-    optionsSuccessStatus: 200,
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+  });
+
+  // Serve static files from uploads directory - BEFORE global prefix
+  // This allows /uploads/ to work without /api prefix
+  // Use explicit path: if cwd is project root, use apps/backend/uploads
+  // If cwd is backend root, use uploads
+  const uploadsPath = process.cwd().endsWith('backend')
+    ? join(process.cwd(), 'uploads')
+    : join(process.cwd(), 'apps', 'backend', 'uploads');
+  
+  logger.log(`📁 Serving static files from: ${uploadsPath}`);
+  
+  app.useStaticAssets(uploadsPath, {
+    prefix: '/uploads/',
   });
 
   // Validation
@@ -50,13 +100,8 @@ async function bootstrap() {
     })
   );
 
-  // Global prefix
+  // Global prefix (applies to controllers, not static assets)
   app.setGlobalPrefix('api');
-
-  // Serve static files from uploads directory
-  app.useStaticAssets(join(process.cwd(), 'uploads'), {
-    prefix: '/uploads/',
-  });
 
   // Swagger
   const config = new DocumentBuilder()

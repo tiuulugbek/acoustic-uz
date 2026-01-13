@@ -1,7 +1,24 @@
 import { Suspense } from 'react';
+import type { Metadata } from 'next';
+import { detectLocale } from '@/lib/locale-server';
+import { getBranches, getPosts } from '@/lib/api-server';
 import BranchesPageContent from './page-content';
+import type { BranchResponse, PostResponse } from '@/lib/api';
+import { generateBranchesMetadata } from './metadata';
 
-export default function BranchesPage() {
+export async function generateMetadata(): Promise<Metadata> {
+  return generateBranchesMetadata();
+}
+
+export default async function BranchesPage() {
+  const locale = detectLocale();
+  
+  // Fetch data on server
+  const [branches, posts] = await Promise.all([
+    getBranches(locale),
+    getPosts(locale, true, undefined, 'article'),
+  ]);
+
   return (
     <Suspense fallback={
       <main className="min-h-screen bg-background">
@@ -13,7 +30,11 @@ export default function BranchesPage() {
         </div>
       </main>
     }>
-      <BranchesPageContent />
+      <BranchesPageContent 
+        initialBranches={branches || []} 
+        initialPosts={posts || []}
+        initialLocale={locale}
+      />
     </Suspense>
   );
 }

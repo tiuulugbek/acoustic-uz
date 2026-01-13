@@ -7,3 +7,8 @@ Disallow: /search?*
 
 Sitemap: https://acoustic.uz/sitemap.xml
 
+
+
+
+
+

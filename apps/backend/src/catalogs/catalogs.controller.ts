@@ -73,3 +73,17 @@ export class CatalogsController {
   }
 }
 
+// Legacy route support: /api/catalog/:slug -> /api/catalogs/slug/:slug
+@ApiTags('public', 'admin')
+@Controller('catalog')
+export class CatalogLegacyController {
+  constructor(private readonly service: CatalogsService) {}
+
+  @Public()
+  @Get(':slug')
+  @ApiOperation({ summary: 'Get catalog by slug (legacy route)' })
+  findBySlug(@Param('slug') slug: string, @Query('public') publicOnly?: string) {
+    return this.service.findBySlug(slug, publicOnly === 'true');
+  }
+}
+

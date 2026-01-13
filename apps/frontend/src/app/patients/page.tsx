@@ -1,11 +1,16 @@
 import type { Metadata } from 'next';
-import { getPageBySlug, getPosts } from '@/lib/api-server';
+import Script from 'next/script';
+import { getPageBySlug, getPosts, getPostCategories, getBranches, getSettings } from '@/lib/api-server';
 import { detectLocale } from '@/lib/locale-server';
 import { getBilingualText } from '@/lib/locale';
 import PageHeader from '@/components/page-header';
-import ServiceContent from '@/components/service-content';
-import PostsList from '@/components/posts-list';
-import { notFound } from 'next/navigation';
+import PostsListPaginated from '@/components/posts-list-paginated';
+import CategoryGrid from '@/components/category-grid';
+import NearbyBranches from '@/components/nearby-branches';
+import Link from 'next/link';
+import { MapPin, Phone } from 'lucide-react';
+import { normalizeImageUrl } from '@/lib/image-utils';
+import Image from 'next/image';
 
 // Force dynamic rendering to always fetch fresh data from admin
 export const dynamic = 'force-dynamic';
@@ -14,44 +19,159 @@ export const revalidate = 0;
 export async function generateMetadata(): Promise<Metadata> {
   const locale = detectLocale();
   const page = await getPageBySlug('patients', locale);
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
+  const pageUrl = `${baseUrl}/patients`;
   
   if (!page || page.status !== 'published') {
+    const title = locale === 'ru' ? 'Пациентам' : 'Bemorlar';
+    const description = locale === 'ru' 
+      ? 'Информация для пациентов центра слуха Acoustic. Полезные статьи о слухе, слуховых аппаратах, диагностике и уходе за слухом. Ответы на частые вопросы.'
+      : 'Acoustic eshitish markazi bemorlari uchun ma\'lumot. Eshitish, eshitish apparatlari, diagnostika va eshitish parvarishi haqida foydali maqolalar. Tez-tez beriladigan savollarga javoblar.';
+    
     return {
-      title: locale === 'ru' ? 'Пациентам — Acoustic.uz' : 'Bemorlar — Acoustic.uz',
-      description: locale === 'ru' 
-        ? 'Информация для пациентов'
-        : 'Bemorlar uchun ma\'lumot',
+      title: `${title} — Acoustic.uz`,
+      description,
+      alternates: {
+        canonical: pageUrl,
+        languages: {
+          uz: pageUrl,
+          ru: pageUrl,
+          'x-default': pageUrl,
+        },
+      },
+      openGraph: {
+        title: `${title} — Acoustic.uz`,
+        description,
+        url: pageUrl,
+        siteName: 'Acoustic.uz',
+        locale: locale === 'ru' ? 'ru_RU' : 'uz_UZ',
+        type: 'website',
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: `${title} — Acoustic.uz`,
+        description,
+      },
     };
   }
 
   const title = getBilingualText(page.metaTitle_uz, page.metaTitle_ru, locale) || 
                 getBilingualText(page.title_uz, page.title_ru, locale);
-  const description = getBilingualText(page.metaDescription_uz, page.metaDescription_ru, locale);
+  const description = getBilingualText(page.metaDescription_uz, page.metaDescription_ru, locale) ||
+                      (locale === 'ru' 
+                        ? 'Информация для пациентов центра слуха Acoustic. Полезные статьи о слухе, слуховых аппаратах, диагностике и уходе за слухом. Ответы на частые вопросы.'
+                        : 'Acoustic eshitish markazi bemorlari uchun ma\'lumot. Eshitish, eshitish apparatlari, diagnostika va eshitish parvarishi haqida foydali maqolalar. Tez-tez beriladigan savollarga javoblar.');
+  const imageUrl = page.image?.url 
+    ? (page.image.url.startsWith('http') 
+        ? page.image.url 
+        : `${baseUrl}${page.image.url}`)
+    : `${baseUrl}/logo.png`;
 
   return {
     title: `${title} — Acoustic.uz`,
     description: description || undefined,
+    alternates: {
+      canonical: pageUrl,
+      languages: {
+        uz: pageUrl,
+        ru: pageUrl,
+        'x-default': pageUrl,
+      },
+    },
+    openGraph: {
+      title: `${title} — Acoustic.uz`,
+      description: description || undefined,
+      url: pageUrl,
+      siteName: 'Acoustic.uz',
+      images: [
+        {
+          url: imageUrl,
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
+      locale: locale === 'ru' ? 'ru_RU' : 'uz_UZ',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${title} — Acoustic.uz`,
+      description: description || undefined,
+      images: [imageUrl],
+    },
   };
 }
 
 export default async function PatientsPage() {
   const locale = detectLocale();
-  const page = await getPageBySlug('patients', locale);
-  // Get posts for 'bemorlar' category by slug
-  // We'll use the category slug 'bemorlar' - backend will handle it
-  const bemorlarCategoryId = 'cmi8uhl5t0000x9s3mf4y07h2'; // Bemorlar category ID from database
-  const posts = await getPosts(locale, true, bemorlarCategoryId);
+  const [page, categories, branches, settings] = await Promise.all([
+    getPageBySlug('patients', locale),
+    getPostCategories(locale, 'patients'),
+    getBranches(locale),
+    getSettings(locale),
+  ]);
+  
+  // Get all published posts (only articles, not news)
+  // Then filter by section categories
+  const categoryIds = categories?.map(cat => cat.id) || [];
+  
+  // Get ALL published posts (only articles, exclude news)
+  const allPublishedPosts = await getPosts(locale, true, undefined, 'article');
+  
+  // Filter posts: ONLY include posts that belong to this section's categories
+  // Exclude posts without category - they should not appear in section pages
+  let posts = allPublishedPosts.filter(post => {
+    // Only show posts that have a category AND belong to this section
+    if (!post.categoryId) {
+      return false; // Exclude posts without category
+    }
+    // Only include posts that belong to this section's categories
+    return categoryIds.includes(post.categoryId);
+  });
+  
+  // Sort by publishAt descending (newest first)
+  posts = posts.sort((a, b) => {
+    const dateA = new Date(a.publishAt).getTime();
+    const dateB = new Date(b.publishAt).getTime();
+    return dateB - dateA;
+  });
 
   // Use fallback if page doesn't exist or is not published
   const title = page && page.status === 'published' 
     ? getBilingualText(page.title_uz, page.title_ru, locale)
     : locale === 'ru' ? 'Пациентам' : 'Bemorlar';
-  const body = page && page.status === 'published'
-    ? getBilingualText(page.body_uz, page.body_ru, locale) || ''
-    : '';
+
+  // Build BreadcrumbList Structured Data
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
+  const pageUrl = `${baseUrl}/patients`;
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: locale === 'ru' ? 'Главная' : 'Bosh sahifa',
+        item: baseUrl,
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: title,
+        item: pageUrl,
+      },
+    ],
+  };
 
   return (
     <main className="min-h-screen bg-background">
+      {/* BreadcrumbList Structured Data */}
+      <Script
+        id="breadcrumb-jsonld"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       <PageHeader
         locale={locale}
         breadcrumbs={[
@@ -63,27 +183,54 @@ export default async function PatientsPage() {
 
       <section className="bg-white py-12">
         <div className="mx-auto max-w-6xl px-4 md:px-6">
-          {body && (
-            <div className="mb-8">
-              <ServiceContent content={body} locale={locale} />
+          <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
+            {/* Main Content */}
+            <div className="min-w-0">
+              {/* Posts List with Pagination */}
+              {posts && posts.length > 0 ? (
+                <div>
+                  <h2 className="mb-6 text-2xl font-bold text-foreground">
+                    {locale === 'ru' ? 'Статьи' : 'Maqolalar'}
+                  </h2>
+                  <PostsListPaginated posts={posts} locale={locale} postsPerPage={6} basePath="/post/patients" />
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground">
+                    {locale === 'ru'
+                      ? 'Статьи скоро будут добавлены.'
+                      : "Maqolalar tez orada qo'shiladi."}
+                  </p>
+                </div>
+              )}
             </div>
-          )}
-          
-          {!body && (
-            <div className="mb-8">
-              <p className="text-lg text-muted-foreground">
-                {locale === 'ru' 
-                  ? 'В этом разделе вы найдете полную информацию о том, как устроен слух человека, какие причины влияют на его ухудшение, что такое тугоухость и можно ли ее вылечить.'
-                  : 'Ushbu bo\'limda siz odam eshitish organi qanday tuzilgan, uning yomonlashishiga qanday sabablar ta\'sir qiladi, tugouxoсть nima va uni davolash mumkinmi haqida to\'liq ma\'lumot topasiz.'}
-              </p>
-            </div>
-          )}
-          
-          {posts && posts.length > 0 && (
-            <div>
-              <PostsList posts={posts} locale={locale} layout="two-column" />
-            </div>
-          )}
+
+            {/* Sidebar */}
+            <aside className="sticky top-6 h-fit space-y-6">
+              {/* Branches Card - Show nearby branches */}
+              {branches && branches.length > 0 && (
+                <NearbyBranches branches={branches} locale={locale} limit={3} />
+              )}
+
+              {/* Contact Card */}
+              <div className="rounded-lg border border-border bg-gradient-to-br from-brand-primary/5 to-brand-accent/5 p-6">
+                <h3 className="mb-3 text-lg font-semibold text-foreground">
+                  {locale === 'ru' ? 'Связаться с нами' : 'Biz bilan bog\'laning'}
+                </h3>
+                <p className="mb-4 text-sm text-muted-foreground">
+                  {locale === 'ru' 
+                    ? 'Наши специалисты готовы ответить на все ваши вопросы.'
+                    : 'Bizning mutaxassislarimiz barcha savollaringizga javob berishga tayyor.'}
+                </p>
+                <Link
+                  href="/contact"
+                  className="block w-full rounded-md bg-brand-primary px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-brand-accent"
+                >
+                  {locale === 'ru' ? 'Связаться' : 'Bog\'lanish'}
+                </Link>
+              </div>
+            </aside>
+          </div>
         </div>
       </section>
     </main>

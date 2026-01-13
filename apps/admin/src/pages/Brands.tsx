@@ -107,16 +107,62 @@ export default function BrandsPage() {
     const { file, onSuccess, onError } = options;
     setUploadingLogo(true);
     try {
+      console.log('📤 Starting logo upload:', {
+        name: (file as File).name,
+        size: (file as File).size,
+        type: (file as File).type,
+      });
+
       const compressedFile = await compressImage(file as File);
+      console.log('📦 Compressed file:', {
+        name: compressedFile.name,
+        size: compressedFile.size,
+        type: compressedFile.type,
+      });
+
       const media = await uploadMedia(compressedFile);
+      
+      if (!media || !media.id) {
+        throw new Error('Media yuklanmadi - server javob bermadi');
+      }
+
+      console.log('✅ Logo uploaded successfully:', {
+        id: media.id,
+        url: media.url,
+      });
+
       form.setFieldsValue({ logoId: media.id });
-      setPreviewLogo(normalizeImageUrl(media.url));
+      const normalizedUrl = normalizeImageUrl(media.url);
+      console.log('🔗 URL normalization:', {
+        original: media.url,
+        normalized: normalizedUrl,
+        apiBase: import.meta.env.VITE_API_URL,
+      });
+      setPreviewLogo(normalizedUrl);
       message.success('Logo yuklandi');
       queryClient.invalidateQueries({ queryKey: ['media'] });
       onSuccess?.(media);
     } catch (error) {
+      console.error('❌ Logo upload error:', error);
       const apiError = error as ApiError;
-      message.error(apiError.message || 'Logo yuklashda xatolik');
+      
+      let errorMessage = 'Logo yuklashda xatolik';
+      if (apiError.message) {
+        errorMessage = apiError.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
+      // Xatolik turiga qarab maxsus xabarlar
+      if (apiError.status === 401) {
+        errorMessage = 'Sessiya tugadi. Iltimos, qayta kiring.';
+      } else if (apiError.status === 403) {
+        errorMessage = 'Rasm yuklash uchun ruxsat yo\'q.';
+      } else if (apiError.status === 413) {
+        errorMessage = 'Rasm hajmi juda katta. Maksimal hajm: 10MB';
+      }
+
+      message.error(errorMessage);
       onError?.(error as Error);
     } finally {
       setUploadingLogo(false);
@@ -124,7 +170,7 @@ export default function BrandsPage() {
   };
 
   const handleRemoveLogo = () => {
-    form.setFieldsValue({ logoId: null });
+    form.setFieldsValue({ logoId: undefined });
     setPreviewLogo(null);
   };
 
@@ -311,11 +357,25 @@ export default function BrandsPage() {
                 >
                   Mavjud rasmdan tanlash
                 </Button>
-                {form.getFieldValue('logoId') && (
-                  <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
-                    Tanlangan: {mediaList?.find(m => m.id === form.getFieldValue('logoId'))?.filename || 'Noma\'lum'}
-                  </div>
-                )}
+                {form.getFieldValue('logoId') && (() => {
+                  const selectedMedia = mediaList?.find(m => m.id === form.getFieldValue('logoId'));
+                  if (selectedMedia) {
+                    // Filename'ni tozalash - blob nomlarini olib tashlash
+                    let displayName = selectedMedia.filename || selectedMedia.alt_uz || 'Noma\'lum';
+                    // Blob nomlarini olib tashlash
+                    displayName = displayName.replace(/^[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]+-blob-[a-z0-9]+-?/i, '');
+                    // Fayl kengaytmasini olib tashlash
+                    displayName = displayName.replace(/\.[^/.]+$/, '');
+                    // Hajmni ko'rsatish
+                    const sizeKB = selectedMedia.size ? (selectedMedia.size / 1024).toFixed(1) : '?';
+                    return (
+                      <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
+                        Tanlangan: {displayName} ({sizeKB} KB)
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
             </div>
           </Form.Item>

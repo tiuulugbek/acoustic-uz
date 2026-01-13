@@ -39,6 +39,7 @@ import {
   type MediaDto,
   ApiError,
 } from '../lib/api';
+import { normalizeImageUrl } from '../utils/image';
 import { compressImage } from '../utils/image-compression';
 
 type ViewMode = 'grid' | 'list';
@@ -54,43 +55,85 @@ export default function MediaPage() {
   const [form] = Form.useForm();
   const [uploading, setUploading] = useState(false);
 
-  const { data: mediaList, isLoading } = useQuery<MediaDto[], ApiError>({
+  const { data: mediaList, isLoading, refetch: refetchMedia } = useQuery<MediaDto[], ApiError>({
     queryKey: ['media'],
     queryFn: getMedia,
+    refetchOnWindowFocus: false,
   });
 
   // Debug: Log media data when it loads
   useEffect(() => {
     if (mediaList) {
-      console.log('Media loaded:', mediaList.length, 'items');
+      console.log('📚 Media loaded:', mediaList.length, 'items');
       if (mediaList.length > 0) {
-        console.log('First media item:', mediaList[0]);
-        console.log('First media URL:', mediaList[0].url);
+        console.log('📸 First media item:', mediaList[0]);
+        console.log('🔗 First media URL:', mediaList[0].url);
+        console.log('🔗 First media normalized URL:', normalizeImageUrl(mediaList[0].url));
       }
     }
   }, [mediaList]);
 
   const { mutateAsync: uploadMutation } = useMutation<MediaDto, ApiError, { file: File; alt_uz?: string; alt_ru?: string }>({
     mutationFn: async ({ file, alt_uz, alt_ru }) => {
-      // Rasmni yuklashdan oldin siqish
-      const compressedFile = await compressImage(file);
-      return uploadMedia(compressedFile, alt_uz, alt_ru);
+      try {
+        console.log('📤 Starting upload:', {
+          name: file.name,
+          size: (file.size / 1024).toFixed(1) + 'KB',
+          type: file.type,
+        });
+        
+        // Rasmni yuklashdan oldin siqish (WebP konvertatsiya o'chirilgan)
+        const compressedFile = await compressImage(file, {
+          convertToWebP: false, // WebP ga o'tkazish - muammo bo'lsa false qiling
+          maxSizeMB: 0.15,
+          quality: 0.65,
+        });
+        
+        console.log('📸 Compressed file:', {
+          name: compressedFile.name,
+          size: (compressedFile.size / 1024).toFixed(1) + 'KB',
+          type: compressedFile.type,
+        });
+        
+        // WebP bo'lsa, backend'ga skipWebp flag yuborish
+        const skipWebp = compressedFile.type === 'image/webp';
+        const result = await uploadMedia(compressedFile, alt_uz, alt_ru, skipWebp);
+        
+        console.log('✅ Upload successful:', {
+          id: result.id,
+          url: result.url,
+          filename: result.filename,
+        });
+        
+        return result;
+      } catch (error) {
+        console.error('❌ Upload error:', error);
+        const apiError = error as ApiError;
+        throw new ApiError(apiError.message || 'Rasm yuklashda xatolik yuz berdi', apiError.status || 500);
+      }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['media'] });
+    onSuccess: async (data) => {
+      console.log('✅ Upload successful, new media:', data);
+      // Invalidate and refetch media list to show the newly uploaded image
+      await queryClient.invalidateQueries({ queryKey: ['media'] });
+      const refetchResult = await refetchMedia();
+      console.log('✅ Media refetched, new count:', refetchResult.data?.length);
       message.success('Rasm yuklandi');
       setUploading(false);
     },
     onError: (error) => {
-      message.error(error.message || 'Rasm yuklashda xatolik');
+      console.error('Upload mutation error:', error);
+      const errorMessage = error.message || 'Rasm yuklashda xatolik';
+      message.error(errorMessage);
       setUploading(false);
     },
   });
 
   const { mutateAsync: deleteMutation } = useMutation<void, ApiError, string>({
     mutationFn: deleteMedia,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['media'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['media'] });
+      await refetchMedia();
       message.success('Rasm o\'chirildi');
     },
     onError: (error) => {
@@ -100,8 +143,9 @@ export default function MediaPage() {
 
   const { mutateAsync: updateMutation } = useMutation<MediaDto, ApiError, { id: string; alt_uz?: string; alt_ru?: string }>({
     mutationFn: ({ id, alt_uz, alt_ru }) => updateMedia(id, alt_uz, alt_ru),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['media'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['media'] });
+      await refetchMedia();
       message.success('Rasm yangilandi');
       setEditingMedia(null);
       form.resetFields();
@@ -175,26 +219,6 @@ export default function MediaPage() {
   };
 
   const isImage = (mimeType: string) => mimeType?.startsWith('image/');
-
-  // Helper function to normalize image URLs - same logic as Settings.tsx
-  const normalizeImageUrl = (url: string | null | undefined): string => {
-    if (!url) return '';
-    // If already absolute URL, return as is
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return url;
-    }
-    // If relative URL starting with /uploads/, make it absolute
-    if (url.startsWith('/uploads/')) {
-      // Use the same API base as Settings.tsx
-      const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-      const baseUrl = apiBase.replace('/api', '');
-      const normalized = `${baseUrl}${url}`;
-      console.log('Normalizing URL:', { original: url, normalized, apiBase, baseUrl });
-      return normalized;
-    }
-    console.warn('Unexpected URL format:', url);
-    return url;
-  };
 
   if (isLoading) {
     return (

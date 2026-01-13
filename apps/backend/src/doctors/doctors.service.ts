@@ -9,11 +9,18 @@ export class DoctorsService {
 
   async findAll(publicOnly = false) {
     const where: any = publicOnly ? { status: 'published' } : {};
-    return this.prisma.doctor.findMany({
+    const doctors = await this.prisma.doctor.findMany({
       where,
       include: { image: true },
       orderBy: { order: 'asc' },
     });
+    
+    // Ensure branchIds and patientTypes are properly serialized
+    return doctors.map(doctor => ({
+      ...doctor,
+      branchIds: doctor.branchIds || [],
+      patientTypes: doctor.patientTypes || [],
+    }));
   }
 
   async findOne(id: string) {
@@ -26,7 +33,12 @@ export class DoctorsService {
       throw new NotFoundException('Doctor not found');
     }
 
-    return doctor;
+    // Ensure branchIds and patientTypes are properly serialized
+    return {
+      ...doctor,
+      branchIds: doctor.branchIds || [],
+      patientTypes: doctor.patientTypes || [],
+    };
   }
 
   async findBySlug(slug: string) {
@@ -39,18 +51,30 @@ export class DoctorsService {
       throw new NotFoundException('Doctor not found');
     }
 
-    return doctor;
+    // Ensure branchIds and patientTypes are properly serialized
+    return {
+      ...doctor,
+      branchIds: doctor.branchIds || [],
+      patientTypes: doctor.patientTypes || [],
+    };
   }
 
   async create(data: unknown) {
     const validated = doctorSchema.parse(data);
-    return this.prisma.doctor.create({
+    const doctor = await this.prisma.doctor.create({
       data: {
         ...validated,
         imageId: validated.imageId ?? undefined,
       } as Prisma.DoctorUncheckedCreateInput,
       include: { image: true },
     });
+    
+    // Ensure branchIds and patientTypes are properly serialized
+    return {
+      ...doctor,
+      branchIds: doctor.branchIds || [],
+      patientTypes: doctor.patientTypes || [],
+    };
   }
 
   async update(id: string, data: unknown) {
@@ -60,11 +84,18 @@ export class DoctorsService {
       ...(validated.imageId !== undefined ? { imageId: validated.imageId } : {}),
     };
 
-    return this.prisma.doctor.update({
+    const doctor = await this.prisma.doctor.update({
       where: { id },
       data: updateData,
       include: { image: true },
     });
+    
+    // Ensure branchIds and patientTypes are properly serialized
+    return {
+      ...doctor,
+      branchIds: doctor.branchIds || [],
+      patientTypes: doctor.patientTypes || [],
+    };
   }
 
   async delete(id: string) {

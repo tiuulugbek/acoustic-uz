@@ -14,9 +14,13 @@ import { getProductBySlug, getProductCategories, getBrands, getSettings } from '
 import ProductTabs from '@/components/product-tabs';
 import ProductSpecsTable from '@/components/product-specs-table';
 import ProductFeaturesList from '@/components/product-features-list';
+import AppointmentForm from '@/components/appointment-form';
+import ProductViewTracker from '@/components/product-view-tracker';
 import { detectLocale } from '@/lib/locale-server';
 import { getBilingualText } from '@/lib/locale';
 import Sidebar from '@/components/sidebar';
+import { normalizeImageUrl } from '@/lib/image-utils';
+import { optimizeMetaDescription, optimizeTitle, generateSeoDescription } from '@/lib/seo-utils';
 
 // ISR: Revalidate every hour
 export const revalidate = 3600;
@@ -29,7 +33,7 @@ const availabilityMap: Record<string, { uz: string; ru: string; schema: string; 
     uz: 'Sotuvda',
     ru: 'В наличии',
     schema: 'https://schema.org/InStock',
-    color: 'text-emerald-600 bg-emerald-50',
+    color: 'text-green-600 bg-green-50 border border-green-200',
   },
   preorder: {
     uz: 'Buyurtmaga',
@@ -97,59 +101,112 @@ async function getProductMetadata(slug: string): Promise<{ title: string; descri
 }
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
-  const locale = detectLocale();
-  const { title, description } = await getProductMetadata(params.slug);
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
-  const productUrl = `${baseUrl}/products/${params.slug}`;
-  
-  // Get product for image
-  const product = await getProductBySlug(params.slug, locale);
-  const mainImage = product?.galleryUrls?.[0] || product?.brand?.logo?.url || '';
-  const imageUrl = mainImage && mainImage.startsWith('http') 
-    ? mainImage 
-    : mainImage && mainImage.startsWith('/')
-    ? `${baseUrl}${mainImage}`
-    : mainImage
-    ? `${baseUrl}${mainImage}`
-    : `${baseUrl}/logo.png`;
-  
-  return {
-    title,
-    description,
-    alternates: {
-      canonical: productUrl,
-      languages: {
-        uz: productUrl,
-        ru: productUrl,
-        'x-default': productUrl,
-      },
-    },
-    openGraph: {
-      title,
-      description: description || undefined,
-      url: productUrl,
-      siteName: 'Acoustic.uz',
-      images: [
-        {
-          url: imageUrl,
-          width: 1200,
-          height: 630,
-          alt: title,
+  try {
+    const locale = detectLocale();
+    const product = await getProductBySlug(params.slug, locale);
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
+    const productUrl = `${baseUrl}/products/${params.slug}`;
+    
+    if (!product) {
+      const fallbackTitle = optimizeTitle(
+        locale === 'ru' ? 'Продукт не найден' : 'Mahsulot topilmadi'
+      );
+      return {
+        title: fallbackTitle,
+        description: generateSeoDescription(null, [], locale),
+      };
+    }
+    
+    const productName = getBilingualText(product.name_uz, product.name_ru, locale);
+    const productDescription = getBilingualText(
+      product.description_uz ?? product.intro_uz,
+      product.description_ru ?? product.intro_ru,
+      locale
+    );
+    
+    // Generate SEO-optimized title and description
+    const optimizedTitle = optimizeTitle(productName);
+    const keywords = [
+      product.brand?.name,
+      product.category?.name_uz || product.category?.name_ru,
+      locale === 'ru' ? 'слуховой аппарат' : 'eshitish moslamasi',
+    ].filter(Boolean) as string[];
+    
+    const optimizedDescription = generateSeoDescription(
+      productDescription,
+      keywords,
+      locale
+    );
+    
+    const mainImage = product?.galleryUrls?.[0] || product?.brand?.logo?.url || '';
+    const imageUrl = mainImage && mainImage.startsWith('http') 
+      ? mainImage 
+      : mainImage && mainImage.startsWith('/')
+      ? `${baseUrl}${mainImage}`
+      : mainImage
+      ? `${baseUrl}${mainImage}`
+      : `${baseUrl}/logo.png`;
+    
+    return {
+      title: optimizedTitle,
+      description: optimizedDescription,
+      alternates: {
+        canonical: productUrl,
+        languages: {
+          uz: productUrl,
+          ru: productUrl,
+          'x-default': productUrl,
         },
-      ],
-      locale: locale === 'ru' ? 'ru_RU' : 'uz_UZ',
-      type: 'website',
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title,
-      description: description || undefined,
-      images: [imageUrl],
-    },
-  };
+      },
+      openGraph: {
+        title: optimizedTitle,
+        description: optimizedDescription,
+        url: productUrl,
+        siteName: 'Acoustic.uz',
+        images: [
+          {
+            url: imageUrl,
+            width: 1200,
+            height: 630,
+            alt: productName,
+          },
+        ],
+        locale: locale === 'ru' ? 'ru_RU' : 'uz_UZ',
+        type: 'website',
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title: optimizedTitle,
+        description: optimizedDescription,
+        images: [imageUrl],
+      },
+    };
+  } catch (error) {
+    // Fallback metadata if anything fails
+    const locale = detectLocale();
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
+    const productUrl = `${baseUrl}/products/${params.slug}`;
+    const fallbackTitle = optimizeTitle(
+      locale === 'ru' ? 'Продукт не найден' : 'Mahsulot topilmadi'
+    );
+    
+    console.error(`[ProductPage] Error generating metadata for ${params.slug}:`, error);
+    
+    return {
+      title: fallbackTitle,
+      description: generateSeoDescription(null, [], locale),
+      alternates: {
+        canonical: productUrl,
+      },
+    };
+  }
 }
 
-function buildJsonLd(product: ProductResponse, mainImage: string, locale: 'uz' | 'ru') {
+function buildJsonLd(product: ProductResponse | null, mainImage: string, locale: 'uz' | 'ru') {
+  // Safety check - return empty array if product is null
+  if (!product) {
+    return [];
+  }
   const baseUrl = 'https://acoustic.uz';
   const offers = product.price
     ? {
@@ -262,6 +319,42 @@ export default async function ProductPage({ params }: ProductPageProps) {
     getSettings(locale),
   ]);
 
+  // Get related products (same brand or same category)
+  let relatedProducts: ProductResponse[] = [];
+  if (product) {
+    const { getProducts } = await import('@/lib/api-server');
+    const relatedParams: Parameters<typeof getProducts>[0] = {
+      page: 1,
+      limit: 4,
+      status: 'published',
+    };
+    
+    // Try to get products from same brand first
+    if (product.brandId) {
+      const brandProducts = await getProducts(
+        { ...relatedParams, brandId: product.brandId },
+        locale
+      );
+      relatedProducts = brandProducts.items
+        .filter(p => p.id !== product.id && p.status === 'published')
+        .slice(0, 4);
+    }
+    
+    // If not enough, add products from same category
+    if (relatedProducts.length < 4 && product.categoryId) {
+      const categoryProducts = await getProducts(
+        { ...relatedParams, categoryId: product.categoryId },
+        locale
+      );
+      const additionalProducts = categoryProducts.items
+        .filter(p => p.id !== product.id && 
+                     p.status === 'published' &&
+                     !relatedProducts.some(rp => rp.id === p.id))
+        .slice(0, 4 - relatedProducts.length);
+      relatedProducts = [...relatedProducts, ...additionalProducts];
+    }
+  }
+
   // If product is null, show fallback UI (backend down or product not found)
   // Never crash - always show UI structure
   if (!product) {
@@ -288,46 +381,17 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const priceFormatted = formatPrice(product.price);
   const availability = product.availabilityStatus ? availabilityMap[product.availabilityStatus] : undefined;
   
-  // Helper function to convert relative URLs to absolute URLs
-  const normalizeImageUrl = (url: string | null | undefined): string => {
-    if (!url) return placeholderImage;
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      // URL already absolute, but ensure pathname is properly encoded
-      try {
-        const urlObj = new URL(url);
-        // Only encode the filename part, not the entire path
-        const pathParts = urlObj.pathname.split('/');
-        const filename = pathParts.pop();
-        if (filename) {
-          // Encode only the filename to handle spaces
-          const encodedFilename = encodeURIComponent(filename);
-          urlObj.pathname = [...pathParts, encodedFilename].join('/');
-        }
-        return urlObj.toString();
-      } catch {
-        // If URL parsing fails, return as is (Next.js Image will handle it)
-        return url;
-      }
-    }
-    if (url.startsWith('/uploads/')) {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3001';
-      // Encode only the filename part
-      const pathParts = url.split('/');
-      const filename = pathParts.pop();
-      if (filename) {
-        const encodedFilename = encodeURIComponent(filename);
-        return `${baseUrl}${pathParts.join('/')}/${encodedFilename}`;
-      }
-      return `${baseUrl}${url}`;
-    }
-    return url;
+  // Helper function to normalize image URL with placeholder fallback
+  const normalizeImageUrlWithPlaceholder = (url: string | null | undefined): string => {
+    const normalized = normalizeImageUrl(url);
+    return normalized || placeholderImage;
   };
   
-  const mainImage = normalizeImageUrl(product.galleryUrls?.[0] ?? product.brand?.logo?.url);
+  const mainImage = normalizeImageUrlWithPlaceholder(product.galleryUrls?.[0] ?? product.brand?.logo?.url);
   const gallery = product.galleryUrls?.length 
-    ? product.galleryUrls.map(normalizeImageUrl)
+    ? product.galleryUrls.map(normalizeImageUrlWithPlaceholder)
     : product.brand?.logo?.url 
-      ? [normalizeImageUrl(product.brand.logo.url)] 
+      ? [normalizeImageUrlWithPlaceholder(product.brand.logo.url)] 
       : [];
   const features = product.features_uz?.length || product.features_ru?.length 
     ? [...(product.features_uz || []), ...(product.features_ru || [])].join('\n')
@@ -435,165 +499,181 @@ export default async function ProductPage({ params }: ProductPageProps) {
   
   const techTables = techTablesParts.length > 0 ? techTablesParts.join('\n\n') : null;
 
+  // Tabs - description, tech, and fitting range
+  // FIX: Ensure correct language is shown based on locale
   const productTabs = [
-    // Description tab - always first, shows full HTML content including tables
+    // Description tab (first, if available)
     ...(hasDescription ? [{
       key: 'description',
       title: tabTitles.description,
       primary: descriptionPrimary,
       secondary: descriptionSecondary,
     }] : []),
-    // Technologies tab
+    // Technologies tab - FIX: Correct language mapping
     {
       key: 'tech',
       title: tabTitles.tech,
-      primary: isRu
+      primary: locale === 'ru'
         ? product.tech_ru ?? techTables ?? null
         : product.tech_uz ?? techTables ?? null,
-      secondary: isRu ? product.tech_uz ?? null : product.tech_ru ?? null,
+      secondary: locale === 'ru' ? product.tech_uz ?? null : product.tech_ru ?? null,
     },
-    // Fitting range tab
+    // Fitting range tab - FIX: Correct language mapping
     {
       key: 'fitting',
       title: tabTitles.fitting,
-      primary: isRu ? product.fittingRange_ru ?? null : product.fittingRange_uz ?? null,
-      secondary: isRu ? product.fittingRange_uz ?? null : product.fittingRange_ru ?? null,
+      primary: locale === 'ru' ? product.fittingRange_ru ?? null : product.fittingRange_uz ?? null,
+      secondary: locale === 'ru' ? product.fittingRange_uz ?? null : product.fittingRange_ru ?? null,
     },
   ];
 
-  const jsonLd = buildJsonLd(product, mainImage, locale);
+  // Safety check - ensure product exists before building JSON-LD
+  const jsonLd = product ? buildJsonLd(product, mainImage, locale) : [];
+  const productName = product ? getBilingualText(product.name_uz, product.name_ru, locale) : '';
 
   return (
-    <main className="min-h-screen bg-background">
-      {Array.isArray(jsonLd) ? (
-        jsonLd.map((schema, index) => (
+    <main className="min-h-screen bg-background" suppressHydrationWarning>
+      {product && <ProductViewTracker slug={product.slug || product.id} name={productName} />}
+      {jsonLd && jsonLd.length > 0 && (
+        Array.isArray(jsonLd) ? (
+          jsonLd.map((schema, index) => (
+            <Script
+              key={index}
+              id={`product-jsonld-${index}`}
+              type="application/ld+json"
+              strategy="afterInteractive"
+              dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+            />
+          ))
+        ) : (
           <Script
-            key={index}
-            id={`product-jsonld-${index}`}
+            id="product-jsonld"
             type="application/ld+json"
-            dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+            strategy="afterInteractive"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
           />
-        ))
-      ) : (
-        <Script
-          id="product-jsonld"
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
+        )
       )}
       
       {/* Breadcrumbs */}
-      <section className="bg-muted/40">
-        <div className="mx-auto max-w-6xl px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:px-6">
-          <Link href="/" className="hover:text-brand-primary" suppressHydrationWarning>
-            {locale === 'ru' ? 'Главная' : 'Bosh sahifa'}
-          </Link>
-          <span className="mx-2">›</span>
-          <Link href="/catalog" className="hover:text-brand-primary" suppressHydrationWarning>
-            {locale === 'ru' ? 'Каталог' : 'Katalog'}
-          </Link>
-          <span className="mx-2">›</span>
-          <span className="text-brand-primary" suppressHydrationWarning>{getBilingualText(product.name_uz, product.name_ru, locale)}</span>
+      <section className="bg-[hsl(var(--secondary))]" suppressHydrationWarning>
+        <div className="mx-auto max-w-6xl px-4 py-2 sm:py-3 text-xs font-semibold uppercase tracking-wide text-white sm:px-6">
+          <div className="flex flex-wrap items-center gap-x-2">
+            <Link href="/" className="hover:text-white/80 text-white/70" suppressHydrationWarning>
+              {locale === 'ru' ? 'Главная' : 'Bosh sahifa'}
+            </Link>
+            <span className="mx-1 sm:mx-2">›</span>
+            <Link href="/catalog" className="hover:text-white/80 text-white/70" suppressHydrationWarning>
+              {locale === 'ru' ? 'Каталог' : 'Katalog'}
+            </Link>
+            <span className="mx-1 sm:mx-2">›</span>
+            <span className="text-white" suppressHydrationWarning>{getBilingualText(product.name_uz, product.name_ru, locale)}</span>
+          </div>
         </div>
       </section>
 
-      {/* Header - White background like sluh.by */}
-      <section className="bg-white py-6">
-        <div className="mx-auto max-w-6xl px-4 md:px-6">
-          <h1 className="text-2xl font-bold text-foreground md:text-3xl" suppressHydrationWarning>
-            {getBilingualText(product.name_uz, product.name_ru, locale)}
-          </h1>
-        </div>
-      </section>
+      {/* Main Content - Compact layout */}
+      <section className="bg-white py-6" suppressHydrationWarning>
+        <div className="mx-auto max-w-6xl px-4 md:px-6" suppressHydrationWarning>
+          {/* 2-Column Layout: Main Content | Sidebar */}
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_280px]" suppressHydrationWarning>
+            {/* Left Column: Main Content (Title + Image + Info + Tabs) */}
+            <div className="space-y-6" suppressHydrationWarning>
+              {/* Product Title */}
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground break-words" suppressHydrationWarning>
+                {getBilingualText(product.name_uz, product.name_ru, locale)}
+              </h1>
 
-      {/* Main Content - 3 columns: Image | Info | Sidebar */}
-      <section className="bg-white py-8">
-        <div className="mx-auto max-w-6xl px-4 md:px-6">
-          <div className="grid gap-6 lg:grid-cols-[400px_1fr] xl:grid-cols-[400px_1fr_280px]">
-            {/* Left Column - Image */}
-            <div className="space-y-4">
-              {/* Main Image */}
-              <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-white border border-border/40 shadow-sm">
-                <Image
-                  src={mainImage}
-                  alt={getBilingualText(product.name_uz, product.name_ru, locale)}
-                  fill
-                  sizes="400px"
-                  className="object-contain p-8"
-                  priority
-                  unoptimized
-                />
-              </div>
+              {/* Product Header: Image + Product Info */}
+              <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+                {/* Column 1: Image */}
+                <div className="space-y-3">
+                  {/* Main Image */}
+                  <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-white border border-border/40">
+                    <Image
+                      src={mainImage}
+                      alt={locale === 'ru' 
+                        ? `${getBilingualText(product.name_uz, product.name_ru, locale)} — Слуховой аппарат`
+                        : `${getBilingualText(product.name_uz, product.name_ru, locale)} — Eshitish moslamasi`}
+                      fill
+                      sizes="280px"
+                      className="object-contain p-4"
+                      priority
+                    />
+                  </div>
 
-              {/* Gallery */}
-              {gallery.length > 1 && (
-                <div className="grid grid-cols-4 gap-2">
-                  {gallery.slice(1, 5).map((image, index) => (
-                    <div key={index} className="relative aspect-square w-full overflow-hidden rounded-lg bg-white border border-border/40 shadow-sm">
-                      <Image
-                        src={image}
-                        alt={`${getBilingualText(product.name_uz, product.name_ru, locale)} ${index + 2}`}
-                        fill
-                        sizes="(max-width: 1024px) 25vw, 100px"
-                        className="object-contain p-2"
-                        unoptimized
-                      />
+                  {/* Gallery - Compact */}
+                  {gallery.length > 1 && (
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {gallery.slice(1, 5).map((image, index) => {
+                        const productName = getBilingualText(product.name_uz, product.name_ru, locale);
+                        const galleryImageAlt = locale === 'ru' 
+                          ? `${productName} — Дополнительное изображение ${index + 2}`
+                          : `${productName} — Qo'shimcha rasm ${index + 2}`;
+                        return (
+                          <div key={index} className="relative aspect-square w-full overflow-hidden rounded bg-white border border-border/40">
+                            <Image
+                              src={image}
+                              alt={galleryImageAlt}
+                              fill
+                              sizes="(max-width: 1024px) 25vw, 60px"
+                              className="object-contain p-1"
+                            />
+                          </div>
+                        );
+                      })}
                     </div>
-                  ))}
+                  )}
                 </div>
-              )}
-            </div>
 
-            {/* Center Column - Product Info */}
-            <div className="space-y-4">
-              {/* Product Details */}
-              <div className="space-y-3">
-                {product.brand && (
+                {/* Column 2: Product Info */}
+                <div className="space-y-2">
+                  {product.brand && (
+                    <p className="text-sm text-muted-foreground">
+                      <span className="font-bold">{isRu ? 'Производитель' : 'Ishlab chiqaruvchi'}:</span> {product.brand.name}
+                    </p>
+                  )}
+                  {availability && (
+                    <p className="text-sm text-muted-foreground">
+                      <span className="font-bold">{isRu ? 'Наличие' : 'Mavjudlik'}:</span>{' '}
+                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${availability.color}`}>
+                        {isRu ? availability.ru : availability.uz}
+                      </span>
+                    </p>
+                  )}
+                  {priceFormatted && (
+                    <p className="text-base font-semibold text-foreground">
+                      <span className="font-bold">{isRu ? 'Цена' : 'Narx'}:</span> {priceFormatted}
+                    </p>
+                  )}
                   <p className="text-sm text-muted-foreground">
-                    <span className="font-medium">{isRu ? 'Производитель' : 'Ishlab chiqaruvchi'}:</span> {product.brand.name}
+                    <span className="font-bold">{isRu ? 'Способ оплаты' : 'To\'lov turi'}:</span>{' '}
+                    {isRu ? 'Наличными, картой Visa/MasterCard' : 'Naqd pul, Visa/MasterCard kartasi'}
                   </p>
-                )}
-                {availability && (
-                  <p className="text-sm text-muted-foreground">
-                    <span className="font-medium">{isRu ? 'Наличие' : 'Mavjudlik'}:</span>{' '}
-                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${availability.color}`}>
-                      {isRu ? availability.ru : availability.uz}
-                    </span>
-                  </p>
-                )}
-                {priceFormatted && (
-                  <p className="text-lg font-semibold text-foreground">
-                    <span className="font-medium">{isRu ? 'Цена' : 'Narx'}:</span> {priceFormatted}
-                  </p>
-                )}
-                <p className="text-sm text-muted-foreground">
-                  {isRu ? 'Способ оплаты: Наличными, картой Visa/MasterCard' : 'To\'lov usuli: Naqd pul, Visa/MasterCard kartasi'}
-                </p>
-                <Link
-                  href="/contact"
-                  className="inline-flex items-center gap-2 rounded-lg bg-pink-500 px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-pink-600 hover:shadow-lg"
-                >
-                  <Phone className="h-4 w-4" />
-                  {isRu ? 'Записаться на подбор' : 'Tanlash uchun yozilish'}
-                </Link>
+                </div>
               </div>
-            </div>
 
-            {/* Right Column - Sidebar (spans both rows on desktop, hidden on mobile) */}
-            <div className="hidden xl:block xl:col-span-1 xl:row-span-2">
-              <Sidebar locale={locale} settingsData={settings} brandsData={brands} pageType="products" />
-            </div>
-
-            {/* Second Row - Product Tabs */}
-            {productTabs.some((tab) => tab.primary || tab.secondary) && (
-              <div className="lg:col-span-2 xl:col-span-2">
+              {/* Tabs - Below image and product info */}
+              <div>
                 <ProductTabs tabs={productTabs} />
               </div>
-            )}
+
+              {/* Appointment Form - Below tabs */}
+              <div className="mt-6">
+                <AppointmentForm locale={locale} doctorId={null} source={`product-${product.slug}`} />
+              </div>
+            </div>
+
+            {/* Right Column: Sidebar (Sticky) */}
+            <div className="hidden lg:block">
+              <div className="sticky top-6">
+                <Sidebar locale={locale} settingsData={settings} brandsData={brands} pageType="products" />
+              </div>
+            </div>
           </div>
 
           {/* Sidebar - Mobile (after product info and tabs) */}
-          <div className="mt-6 xl:hidden">
+          <div className="mt-6 lg:hidden">
             <Sidebar locale={locale} settingsData={settings} brandsData={brands} pageType="products" />
           </div>
 
@@ -615,7 +695,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
                         <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded bg-white">
                           <Image
                             src={category.image.url}
-                            alt={getBilingualText(category.name_uz, category.name_ru, locale)}
+                            alt={locale === 'ru' 
+                              ? `Категория: ${getBilingualText(category.name_uz, category.name_ru, locale)}`
+                              : `Kategoriya: ${getBilingualText(category.name_uz, category.name_ru, locale)}`}
                             fill
                             sizes="40px"
                             className="object-contain p-1"
@@ -685,7 +767,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
                           <div className="relative h-10 w-full">
                             <Image
                               src={brand.logo.url}
-                              alt={brand.name}
+                              alt={locale === 'ru' 
+                                ? `Логотип ${brand.name}`
+                                : `${brand.name} logotipi`}
                               fill
                               sizes="200px"
                               className="object-contain"
@@ -697,6 +781,61 @@ export default async function ProductPage({ params }: ProductPageProps) {
                       </Link>
                     ))}
                   </div>
+              </div>
+            )}
+
+            {/* Related Products */}
+            {relatedProducts.length > 0 && (
+              <div className="space-y-3">
+                <div className="border-b border-border/60 pb-2">
+                  <h3 className="text-sm font-semibold text-foreground">
+                    {isRu ? 'Похожие товары' : 'O\'xshash mahsulotlar'}
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {isRu 
+                      ? 'Рекомендуем обратить внимание'
+                      : 'Diqqat qaratishni tavsiya qilamiz'}
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  {relatedProducts.map((relatedProduct) => {
+                    const relatedProductName = getBilingualText(relatedProduct.name_uz, relatedProduct.name_ru, locale);
+                    const relatedImage = relatedProduct.galleryUrls?.[0] || relatedProduct.brand?.logo?.url || '';
+                    return (
+                      <Link
+                        key={relatedProduct.id}
+                        href={`/products/${relatedProduct.slug}`}
+                        className="group flex items-center gap-3 rounded-lg border border-border/60 bg-muted/30 p-3 transition hover:border-brand-primary/50 hover:bg-white"
+                      >
+                        {relatedImage ? (
+                          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded bg-white">
+                            <Image
+                              src={normalizeImageUrl(relatedImage)}
+                              alt={relatedProductName}
+                              fill
+                              sizes="48px"
+                              className="object-contain p-1"
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded bg-white border border-border/40">
+                            <ArrowRight className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-foreground group-hover:text-brand-primary line-clamp-2">
+                            {relatedProductName}
+                          </p>
+                          {relatedProduct.price && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {formatPrice(relatedProduct.price)}
+                            </p>
+                          )}
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
               </div>
             )}
 

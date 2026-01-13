@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { ArrowRight, Phone } from 'lucide-react';
 import type { BannerResponse } from '@/lib/api';
 import type { Locale } from '@/lib/locale';
+import { normalizeImageUrl } from '@/lib/image-utils';
 
 type HeroSlide = {
   id: string;
@@ -36,29 +37,18 @@ export default function HeroSlider({ banners, locale, apiBaseUrl, phoneNumber = 
       
       let imageUrl = banner.image?.url || '';
       
-      // Debug: log banner image data
-      if (process.env.NODE_ENV === 'development') {
-        console.log('[HeroSlider] Banner image:', {
-          bannerId: banner.id,
-          image: banner.image,
-          imageUrl: imageUrl,
-          apiBaseUrl,
-        });
-      }
-      
-      // Normalize image URL
+      // Normalize image URL using shared utility
       if (imageUrl) {
-        // If already absolute URL, use as-is
-        if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
-          // Already absolute, use as-is
-        } else if (imageUrl.startsWith('/uploads/')) {
-          // Relative path, prepend base URL
-          const baseUrl = apiBaseUrl.replace('/api', '');
-          imageUrl = `${baseUrl}${imageUrl}`;
-        } else if (imageUrl.startsWith('/') && !imageUrl.startsWith('//')) {
-          // Other relative paths
-          const baseUrl = apiBaseUrl.replace('/api', '');
-          imageUrl = `${baseUrl}${imageUrl}`;
+        imageUrl = normalizeImageUrl(imageUrl);
+        
+        // Debug: log banner image data
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[HeroSlider] Banner image:', {
+            bannerId: banner.id,
+            originalUrl: banner.image?.url,
+            normalizedUrl: imageUrl,
+            apiBaseUrl,
+          });
         }
       }
       

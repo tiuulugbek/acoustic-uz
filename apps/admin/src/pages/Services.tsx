@@ -72,7 +72,7 @@ export default function ServicesPage() {
 
 function ServicesManager() {
   const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery<ServiceDto[], ApiError>({
+  const { data, isLoading, refetch } = useQuery<ServiceDto[], ApiError>({
     queryKey: ['services'],
     queryFn: getServices,
     retry: false,
@@ -116,6 +116,7 @@ function ServicesManager() {
     mutationFn: ({ id, payload }) => updateService(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['services'] });
+      queryClient.invalidateQueries({ queryKey: ['service-categories-admin'] }); // Also invalidate categories to refresh category info
       message.success('Xizmat yangilandi');
     },
     onError: (error) => message.error(error.message || 'Yangilashda xatolik'),
@@ -137,27 +138,42 @@ function ServicesManager() {
     form.setFieldsValue({
       status: 'published',
       order: 0,
+      categoryId: [], // Explicitly reset categoryId to empty array
     });
     setIsModalOpen(true);
   };
 
   const openEditModal = (service: ServiceDto) => {
-    setEditingService(service);
-    setPreviewImage(service.cover?.url ? normalizeImageUrl(service.cover.url) : null);
-    form.setFieldsValue({
-      title_uz: service.title_uz,
-      title_ru: service.title_ru,
-      excerpt_uz: service.excerpt_uz,
-      excerpt_ru: service.excerpt_ru,
-      body_uz: service.body_uz,
-      body_ru: service.body_ru,
-      slug: service.slug,
-      status: service.status,
-      order: service.order,
-      coverId: service.cover?.id,
-      categoryId: service.categoryId || service.category?.id,
-    });
-    setIsModalOpen(true);
+    // Reset everything first
+    form.resetFields();
+    setPreviewImage(null);
+    setEditingService(null);
+    
+    // Use setTimeout to ensure form reset completes before setting new values
+    setTimeout(() => {
+      setEditingService(service);
+      setPreviewImage(service.cover?.url ? normalizeImageUrl(service.cover.url) : null);
+      
+      // Handle categoryId - convert to array for multiple select
+      // Explicitly check if categoryId exists and is not null/undefined
+      const categoryId = service.categoryId || service.category?.id || null;
+      
+      form.setFieldsValue({
+        title_uz: service.title_uz || '',
+        title_ru: service.title_ru || '',
+        excerpt_uz: service.excerpt_uz || '',
+        excerpt_ru: service.excerpt_ru || '',
+        body_uz: service.body_uz || '',
+        body_ru: service.body_ru || '',
+        slug: service.slug || '',
+        status: service.status || 'published',
+        order: service.order ?? 0,
+        coverId: service.cover?.id || undefined,
+        categoryId: categoryId ? [categoryId] : [], // Always use array, empty if no category
+      });
+      
+      setIsModalOpen(true);
+    }, 0);
   };
 
   const handleUpload: UploadProps['customRequest'] = async (options) => {
@@ -200,6 +216,11 @@ function ServicesManager() {
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
+      // Handle multiple category selection - take first one if array, or use single value
+      const categoryId = Array.isArray(values.categoryId) 
+        ? (values.categoryId.length > 0 ? values.categoryId[0] : undefined)
+        : values.categoryId;
+      
       const payload: CreateServicePayload = {
         title_uz: values.title_uz,
         title_ru: values.title_ru,
@@ -211,7 +232,7 @@ function ServicesManager() {
         order: typeof values.order === 'number' ? values.order : Number(values.order ?? 0),
         status: values.status,
         coverId: values.coverId || undefined,
-        categoryId: values.categoryId || undefined,
+        categoryId: categoryId || undefined,
       };
 
       if (editingService) {
@@ -223,6 +244,7 @@ function ServicesManager() {
       setIsModalOpen(false);
       form.resetFields();
       setPreviewImage(null);
+      setEditingService(null);
     } catch (error) {
       // validation handled by antd
     }
@@ -324,7 +346,9 @@ function ServicesManager() {
         open={isModalOpen}
         onCancel={() => {
           setIsModalOpen(false);
+          form.resetFields();
           setPreviewImage(null);
+          setEditingService(null);
         }}
         onOk={handleSubmit}
         confirmLoading={isCreating || isUpdating}
@@ -470,12 +494,13 @@ function ServicesManager() {
           <Form.Item label="Holat" name="status" initialValue="published">
             <Select options={statusOptions} />
           </Form.Item>
-          <Form.Item label="Kategoriya" name="categoryId" extra="Xizmat kategoriyasini tanlang (ixtiyoriy)">
+          <Form.Item label="Kategoriyalar" name="categoryId" extra="Xizmat kategoriyalarini tanlang (bir nechta tanlash mumkin, ixtiyoriy)">
             <Select
-              placeholder="Kategoriyani tanlang"
+              mode="multiple"
+              placeholder="Kategoriyalarni tanlang"
               allowClear
               loading={isLoadingCategories}
-              options={categoriesData?.map((cat) => ({
+              options={categoriesData?.map((cat: ServiceCategoryDto) => ({
                 label: `${cat.name_uz}${cat.name_ru ? ` / ${cat.name_ru}` : ''}`,
                 value: cat.id,
               }))}

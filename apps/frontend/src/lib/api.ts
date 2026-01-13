@@ -1,4 +1,24 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
+// Get API base URL - use env var if set, otherwise detect from hostname
+// This function is called at runtime to ensure correct URL detection
+function getApiBase(): string {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  
+  // Runtime detection: if running on localhost, use localhost API, otherwise use production
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'http://localhost:3001/api';
+    }
+  }
+  
+  // Default to production API URL (for SSR and production)
+  return 'https://a.acoustic.uz/api';
+}
+
+// Use a getter function instead of a constant to ensure runtime detection
+const getApiBaseUrl = () => getApiBase();
 
 export class ApiFetchError extends Error {
   status: number;
@@ -12,7 +32,9 @@ export class ApiFetchError extends Error {
 /**
  * Fetch JSON from API with locale support
  * Adds locale to query params and sets X-Locale header for backend
- * Always uses cache: 'no-store' to prevent caching of locale-dependent content
+ * Uses appropriate cache strategy based on environment:
+ * - Server-side: Uses revalidate for ISR (Incremental Static Regeneration)
+ * - Client-side: Uses no-store to prevent stale data
  * 
  * Gracefully handles errors: if the backend is unavailable, returns empty data
  * instead of throwing errors, so the UI can display fallback content.
@@ -26,10 +48,12 @@ async function fetchJson<T>(
     // Parse the path to handle existing query parameters
     const [pathname, existingQuery] = path.split('?');
     // Fix: Remove leading slash if present to avoid absolute path replacement
-    // Then properly append to API_BASE
+    // Then properly append to API base URL
     const cleanPath = pathname.startsWith('/') ? pathname.slice(1) : pathname;
-    // Ensure API_BASE ends with / for proper URL construction
-    const baseUrl = API_BASE.endsWith('/') ? API_BASE : `${API_BASE}/`;
+    // Get API base URL at runtime to ensure correct detection
+    const apiBase = getApiBaseUrl();
+    // Ensure API base URL ends with / for proper URL construction
+    const baseUrl = apiBase.endsWith('/') ? apiBase : `${apiBase}/`;
     const url = new URL(cleanPath, baseUrl);
     
     // Add existing query parameters if any
@@ -92,10 +116,18 @@ async function fetchJson<T>(
         finalUrl = `${finalUrl}${separator}_t=${Date.now()}`;
       }
       
+      // Determine cache strategy based on environment
+      // Server-side: Use revalidate for ISR (works with static generation)
+      // Client-side: Use no-store to prevent stale data
+      const isServer = typeof window === 'undefined';
+      const cacheOptions = isServer 
+        ? { next: { revalidate: 300 } } // 5 minutes revalidation for ISR to ensure updates are reflected quickly
+        : { cache: 'no-store' as RequestCache }; // No cache for client-side
+      
       const response = await fetch(finalUrl, {
         ...init,
         headers,
-        cache: 'no-store', // Always disable caching for locale-dependent content
+        ...cacheOptions,
         signal: controller.signal,
       });
 
@@ -126,17 +158,18 @@ async function fetchJson<T>(
     const errorName = error instanceof Error ? error.name : 'Unknown';
     
     // Enhanced error logging for debugging
+    const apiBase = getApiBaseUrl();
     console.error(`[API] ❌ Failed to fetch ${path}:`, {
       error: errorMessage,
       errorType: errorName,
-      apiBase: API_BASE,
-      fullUrl: `${API_BASE}/${path}`,
+      apiBase: apiBase,
+      fullUrl: `${apiBase}/${path}`,
       locale: locale || 'not provided',
     });
     
     // Check if it's a network error (backend not running)
     if (errorName === 'AbortError' || errorMessage.includes('timeout') || errorMessage.includes('Failed to fetch')) {
-      console.error(`[API] ⚠️ Backend appears to be unavailable or unreachable at ${API_BASE}`);
+      console.error(`[API] ⚠️ Backend appears to be unavailable or unreachable at ${apiBase}`);
       throw new Error(`Backend unavailable: ${errorMessage}`);
     }
     
@@ -588,12 +621,36 @@ export interface PostCategoryResponse {
   name_uz: string;
   name_ru: string;
   slug: string;
+  description_uz?: string | null;
+  description_ru?: string | null;
+  section?: string | null; // "patients" or "children"
+  imageId?: string | null;
+  image?: MediaResponse | null;
+  order?: number;
+  status?: string;
 }
 
-export const getPosts = (locale?: string, publicOnly = true, categoryId?: string) => {
+export const getPostCategories = (locale?: string, section?: string) => {
+  const params = new URLSearchParams();
+  if (section) params.append('section', section);
+  const query = params.toString() ? `?${params.toString()}` : '';
+  return fetchJson<PostCategoryResponse[]>(`/post-categories${query}`, locale);
+};
+
+export const getPostCategoryBySlug = async (slug: string, locale?: string): Promise<PostCategoryResponse | null> => {
+  try {
+    return await fetchJson<PostCategoryResponse>(`/post-categories/slug/${slug}`, locale);
+  } catch (error) {
+    console.error(`Failed to fetch post category by slug: ${slug}`, error);
+    return null;
+  }
+};
+
+export const getPosts = (locale?: string, publicOnly = true, categoryId?: string, postType?: string) => {
   const params = new URLSearchParams();
   if (publicOnly) params.append('public', 'true');
   if (categoryId) params.append('categoryId', categoryId);
+  if (postType) params.append('postType', postType);
   const query = params.toString() ? `?${params.toString()}` : '';
   return fetchJson<PostResponse[]>(`/posts${query}`, locale);
 };
@@ -662,6 +719,10 @@ export interface SettingsResponse {
   email?: string | null;
   telegramBotToken?: string | null;
   telegramChatId?: string | null;
+  telegramButtonBotToken?: string | null;
+  telegramButtonBotUsername?: string | null;
+  telegramButtonMessage_uz?: string | null;
+  telegramButtonMessage_ru?: string | null;
   brandPrimary?: string | null;
   brandAccent?: string | null;
   featureFlags?: unknown;
@@ -670,6 +731,8 @@ export interface SettingsResponse {
   catalogHeroImage?: MediaResponse | null;
   logoId?: string | null;
   logo?: MediaResponse | null;
+  faviconId?: string | null;
+  favicon?: MediaResponse | null;
   sidebarSections?: SidebarSection[] | null;
   sidebarBrandIds?: string[];
   sidebarConfigs?: {
@@ -726,6 +789,9 @@ export interface DoctorResponse {
   description_ru?: string | null;
   slug: string;
   image?: MediaResponse | null;
+  imageId?: string | null;
+  branchIds?: string[];
+  patientTypes?: string[];
   order: number;
   status: string;
 }
@@ -772,4 +838,96 @@ export const search = (query: string, locale?: string): Promise<SearchResponse> 
   const params = new URLSearchParams();
   params.append('q', query);
   return fetchJson<SearchResponse>(`/search?${params.toString()}`, locale);
+};
+
+export interface CreateLeadRequest {
+  name: string;
+  phone: string;
+  email?: string | null;
+  source?: string;
+  message?: string;
+  productId?: string | null;
+  pageUrl?: string | null;
+  referer?: string | null;
+}
+
+export interface LeadResponse {
+  id: string;
+  name: string;
+  phone: string;
+  email?: string | null;
+  source?: string | null;
+  message?: string | null;
+  productId?: string | null;
+  pageUrl?: string | null;
+  referer?: string | null;
+  status?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const createLead = async (data: CreateLeadRequest, locale?: string): Promise<LeadResponse> => {
+  const response = await fetch(`${getApiBaseUrl()}/leads`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(locale ? { 'X-Locale': locale } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new ApiFetchError(response.status, errorText || 'Failed to create lead');
+  }
+
+  return response.json();
+};
+
+export interface HearingTestRequest {
+  name?: string;
+  phone?: string;
+  email?: string;
+  deviceType: 'speaker' | 'headphone';
+  volumeLevel?: number;
+  leftEarResults: Record<string, boolean>;
+  rightEarResults: Record<string, boolean>;
+}
+
+export interface HearingTestResponse {
+  id: string;
+  name?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  deviceType: string;
+  volumeLevel?: number | null;
+  leftEarResults: Record<string, boolean>;
+  rightEarResults: Record<string, boolean>;
+  leftEarScore?: number | null;
+  rightEarScore?: number | null;
+  overallScore?: number | null;
+  leftEarLevel?: string | null;
+  rightEarLevel?: string | null;
+  source: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const submitHearingTest = async (data: HearingTestRequest, locale?: string): Promise<HearingTestResponse> => {
+  const response = await fetch(`${getApiBaseUrl()}/hearing-test`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(locale ? { 'X-Locale': locale } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new ApiFetchError(response.status, errorText || 'Failed to submit hearing test');
+  }
+
+  return response.json();
 };

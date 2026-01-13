@@ -20,6 +20,8 @@ import {
   getHomepageNews as getHomepageNewsApi,
   getPosts as getPostsApi,
   getPostBySlug as getPostBySlugApi,
+  getPostCategories as getPostCategoriesApi,
+  getPostCategoryBySlug as getPostCategoryBySlugApi,
   getPublicFaq as getPublicFaqApi,
   getHomepageJourney as getHomepageJourneyApi,
   getServiceCategories as getServiceCategoriesApi,
@@ -66,6 +68,7 @@ export type {
   HearingAidItemResponse,
   HomepageNewsItemResponse,
   PostResponse,
+  PostCategoryResponse,
   FaqResponse,
   HomepageJourneyStepResponse,
   BrandResponse,
@@ -280,15 +283,44 @@ export async function getHomepageNews(
 }
 
 /**
+ * Get post categories - returns empty array if backend is down
+ */
+export async function getPostCategories(
+  locale?: string,
+  section?: string,
+): Promise<PostCategoryResponse[]> {
+  return safeApiCall(
+    () => getPostCategoriesApi(locale, section),
+    [],
+    'Failed to fetch post categories',
+  );
+}
+
+/**
+ * Get post category by slug - returns null if not found or backend is down
+ */
+export async function getPostCategoryBySlug(
+  slug: string,
+  locale?: string,
+): Promise<PostCategoryResponse | null> {
+  return safeApiCall(
+    () => getPostCategoryBySlugApi(slug, locale),
+    null,
+    `Failed to fetch post category: ${slug}`,
+  );
+}
+
+/**
  * Get posts - returns empty array if backend is down
  */
 export async function getPosts(
   locale?: string,
   publicOnly = true,
   categoryId?: string,
+  postType?: string,
 ): Promise<PostResponse[]> {
   return safeApiCall(
-    () => getPostsApi(locale, publicOnly, categoryId),
+    () => getPostsApi(locale, publicOnly, categoryId, postType),
     [],
     'Failed to fetch posts',
   );

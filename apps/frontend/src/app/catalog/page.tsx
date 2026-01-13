@@ -1,14 +1,15 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import Script from 'next/script';
 import { ArrowRight } from 'lucide-react';
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { getCatalogs, getPosts, getBrands, getSettings } from '@/lib/api-server';
 import type { CatalogResponse, PostResponse, BrandResponse, SettingsResponse } from '@/lib/api';
 import { detectLocale } from '@/lib/locale-server';
-import PageHeader from '@/components/page-header';
-import CatalogHeroImage from '@/components/catalog-hero-image';
 import Sidebar from '@/components/sidebar';
+import MobileFilterDrawer from '@/components/mobile-filter-drawer';
+import { normalizeImageUrl } from '@/lib/image-utils';
 
 // ISR: Revalidate every 30 minutes
 export const revalidate = 1800;
@@ -18,11 +19,15 @@ export async function generateMetadata(): Promise<Metadata> {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
   const catalogUrl = `${baseUrl}/catalog`;
 
+  const title = locale === 'ru' ? 'Каталог' : 'Katalog';
+  const description = locale === 'ru'
+    ? 'Каталог слуховых аппаратов и решений от Acoustic. Выберите подходящий аппарат под ваш образ жизни, уровень активности и бюджет. Широкий выбор моделей от ведущих производителей.'
+    : "Acoustic eshitish markazining katalogi — eshitish apparatlari, implantlar va aksessuarlar haqida ma'lumot. Yetakchi ishlab chiqaruvchilarning keng tanlovi.";
+  const imageUrl = `${baseUrl}/logo.png`;
+
   return {
-    title: locale === 'ru' ? 'Каталог — Acoustic.uz' : 'Katalog — Acoustic.uz',
-    description: locale === 'ru'
-      ? 'Каталог слуховых аппаратов и решений от Acoustic. Выберите подходящий аппарат под ваш образ жизни, уровень активности и бюджет.'
-      : "Acoustic eshitish markazining katalogi — eshitish apparatlari, implantlar va aksessuarlar haqida ma'lumot.",
+    title: `${title} — Acoustic.uz`,
+    description,
     alternates: {
       canonical: catalogUrl,
       languages: {
@@ -30,6 +35,28 @@ export async function generateMetadata(): Promise<Metadata> {
         ru: catalogUrl,
         'x-default': catalogUrl,
       },
+    },
+    openGraph: {
+      title: `${title} — Acoustic.uz`,
+      description,
+      url: catalogUrl,
+      siteName: 'Acoustic.uz',
+      images: [
+        {
+          url: imageUrl,
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
+      locale: locale === 'ru' ? 'ru_RU' : 'uz_UZ',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${title} — Acoustic.uz`,
+      description,
+      images: [imageUrl],
     },
   };
 }
@@ -86,7 +113,7 @@ export default async function CatalogPage({
         sort: searchParams.sort === 'price_asc' ? 'price_asc' : searchParams.sort === 'price_desc' ? 'price_desc' : 'newest',
       }, locale) || { items: [], total: 0, page: 1, pageSize: 12 },
       getProductCategories(locale),
-      getPosts(locale, true),
+      getPosts(locale, true, undefined, 'article'),
       getBrands(locale),
       getSettings(locale),
     ]);
@@ -138,65 +165,37 @@ export default async function CatalogPage({
       preorder: { uz: 'Buyurtmaga', ru: 'Под заказ' },
       'out-of-stock': { uz: 'Tugagan', ru: 'Нет в наличии' },
     };
-
-    // Helper function to normalize image URLs
-    const normalizeImageUrl = (url: string | null | undefined): string => {
-      if (!url || url.trim() === '') return '';
-      
-      // Fix malformed URLs like "https:/.acoustic.uz/..." -> "https://acoustic.uz/..."
-      let fixedUrl = url.trim();
-      if (fixedUrl.startsWith('https:/') && !fixedUrl.startsWith('https://')) {
-        fixedUrl = fixedUrl.replace(/^https:\//, 'https://');
-      }
-      if (fixedUrl.startsWith('http:/') && !fixedUrl.startsWith('http://')) {
-        fixedUrl = fixedUrl.replace(/^http:\//, 'http://');
-      }
-      
-      // If URL already absolute, ensure pathname is properly encoded
-      if (fixedUrl.startsWith('http://') || fixedUrl.startsWith('https://')) {
-        try {
-          const urlObj = new URL(fixedUrl);
-          // Only encode the filename part, not the entire path
-          const pathParts = urlObj.pathname.split('/');
-          const filename = pathParts.pop();
-          if (filename) {
-            // Encode only the filename to handle spaces
-            const encodedFilename = encodeURIComponent(filename);
-            urlObj.pathname = [...pathParts, encodedFilename].join('/');
-          }
-          return urlObj.toString();
-        } catch {
-          // If URL parsing fails, try to fix common issues
-          // Fix double slashes after domain
-          fixedUrl = fixedUrl.replace(/(https?:\/\/[^\/]+)\/+/g, '$1/');
-          return fixedUrl;
-        }
-      }
-      
-      // If relative URL starting with /uploads/
-      if (fixedUrl.startsWith('/uploads/')) {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3001';
-        // Encode only the filename part
-        const pathParts = fixedUrl.split('/');
-        const filename = pathParts.pop();
-        if (filename) {
-          const encodedFilename = encodeURIComponent(filename);
-          return `${baseUrl}${pathParts.join('/')}/${encodedFilename}`;
-        }
-        return `${baseUrl}${fixedUrl}`;
-      }
-      
-      // If relative URL without /uploads/, assume it's from API base
-      if (fixedUrl.startsWith('/')) {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3001';
-        return `${baseUrl}${fixedUrl}`;
-      }
-      
-      return fixedUrl;
-    };
     
+    // Build BreadcrumbList Structured Data
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
+    const catalogUrl = `${baseUrl}/catalog`;
+    const breadcrumbJsonLd = {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: locale === 'ru' ? 'Главная' : 'Bosh sahifa',
+          item: baseUrl,
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: locale === 'ru' ? 'Каталог' : 'Katalog',
+          item: catalogUrl,
+        },
+      ],
+    };
+
     return (
       <main className="min-h-screen bg-background">
+        {/* BreadcrumbList Structured Data */}
+        <Script
+          id="breadcrumb-jsonld"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+        />
         {/* Breadcrumbs */}
         <section className="bg-muted/40">
           <div className="mx-auto max-w-6xl px-4 py-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:px-6">
@@ -231,8 +230,8 @@ export default async function CatalogPage({
         <section className="bg-white py-8">
           <div className="mx-auto max-w-6xl px-4 md:px-6">
             <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-              {/* Sidebar - Filter Panel First */}
-              <aside className="space-y-6">
+              {/* Sidebar - Hidden on mobile, shown on desktop */}
+              <aside className="hidden lg:block space-y-6">
                 {/* Filter Panel - Hide for interacoustics */}
                 {searchParams.productType !== 'interacoustics' && (
                   <div className="rounded-lg border border-border/60 bg-white p-4">
@@ -607,7 +606,8 @@ export default async function CatalogPage({
                     <div className="space-y-3">
                       {postsData.slice(0, 5).map((post) => {
                         const title = locale === 'ru' ? (post.title_ru || '') : (post.title_uz || '');
-                        const coverImage = (post as any).cover?.url || '';
+                        const rawCoverImage = (post as any).cover?.url || '';
+                        const coverImage = normalizeImageUrl(rawCoverImage);
                         return (
                           <Link
                             key={post.id}
@@ -645,20 +645,25 @@ export default async function CatalogPage({
                 )}
               </aside>
 
-              {/* Main Content */}
+              {/* Main Content - Banner and Brand Filter First */}
               <div className="space-y-6">
-                {/* Promotional Hero Section - Before Brand Tabs */}
-                {searchParams.productType === 'hearing-aids' && (
+                {/* 1. Promotional Hero Banner - First */}
+                {searchParams.productType === 'hearing-aids' && settingsData?.catalogHeroImage?.url && (
                   <section className="relative w-full rounded-lg overflow-hidden">
-                    <CatalogHeroImage
-                      src={normalizeImageUrl(settingsData?.catalogHeroImage?.url) || '/images/catalog-hero.jpg'}
-                      alt={locale === 'ru' ? 'Каталог слуховых аппаратов' : 'Eshitish moslamalari katalogi'}
-                      locale={locale}
-                    />
+                    <div className="relative aspect-[21/9] w-full">
+                      <Image
+                        src={normalizeImageUrl(settingsData.catalogHeroImage.url)}
+                        alt={locale === 'ru' ? 'Каталог слуховых аппаратов' : 'Eshitish moslamalari katalogi'}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, 1200px"
+                        priority
+                      />
+                    </div>
                   </section>
                 )}
 
-                {/* Brand Tabs - Hide for interacoustics */}
+                {/* 2. Brand Tabs - Second */}
                 {brandTabs.length > 0 && searchParams.productType !== 'interacoustics' && (
                   <div className="flex flex-wrap gap-2">
                     <Link
@@ -701,7 +706,7 @@ export default async function CatalogPage({
                   </div>
                 )}
 
-                {/* Sort */}
+                {/* 3. Sort */}
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <span>{locale === 'ru' ? 'Сортировать по:' : 'Saralash:'}</span>
                   <Link
@@ -712,77 +717,77 @@ export default async function CatalogPage({
                   </Link>
                 </div>
 
-                {/* Products Grid - 3x4 = 12 items */}
-            {filteredProducts.length > 0 ? (
+                {/* 4. Products Grid - Third */}
+                {filteredProducts.length > 0 ? (
                   <>
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid grid-cols-2 gap-3 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
                       {filteredProducts.slice(0, pageSize).map((product) => {
-                  const productName = locale === 'ru' ? (product.name_ru || '') : (product.name_uz || '');
-                  
-                  // Try to get image from galleryUrls, thumbnail, or brand logo
-                  let mainImage = '';
-                  if (product.galleryUrls && product.galleryUrls.length > 0) {
-                    mainImage = normalizeImageUrl(product.galleryUrls[0]);
-                  } else if (product.brand?.logo?.url) {
-                    mainImage = normalizeImageUrl(product.brand.logo.url);
-                  }
-                  
-                  const priceFormatted = product.price 
-                    ? `${new Intl.NumberFormat('uz-UZ').format(Number(product.price))} so'm`
-                    : null;
-                      const availability = product.availabilityStatus 
-                        ? availabilityMap[product.availabilityStatus] 
-                    : null;
-                  
-                  return (
-                    <Link
-                      key={product.id}
-                      href={`/products/${product.slug}`}
-                          className="group flex flex-col gap-3 rounded-lg border-[0.5px] border-brand-accent/40 bg-white p-4 shadow-sm transition hover:border-brand-accent/60 hover:shadow-md"
-                        >
-                          {/* Product Image - Top, Large */}
-                          <div className="relative aspect-square w-full overflow-hidden rounded-lg border border-brand-accent/60 bg-white">
-                          {mainImage ? (
-                            <Image
-                              src={mainImage}
-                              alt={productName}
-                              fill
-                              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                              className="object-contain p-4 transition-transform duration-300 group-hover:scale-105"
-                              suppressHydrationWarning
-                              unoptimized
-                            />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center bg-brand-primary">
-                                <span className="text-white text-lg font-bold">Acoustic</span>
-                            </div>
-                          )}
-                        </div>
+                        const productName = locale === 'ru' ? (product.name_ru || '') : (product.name_uz || '');
                         
-                          {/* Product Info */}
-                          <div className="flex flex-col gap-2">
-                            <h3 className="text-base font-semibold text-foreground line-clamp-2 group-hover:text-brand-primary" suppressHydrationWarning>
-                            {productName}
-                          </h3>
-                            {priceFormatted && (
-                              <p className="text-lg font-semibold text-brand-primary" suppressHydrationWarning>
-                                {priceFormatted}
-                              </p>
-                            )}
-                            {availability && (
-                              <p className="text-sm text-emerald-600 font-medium" suppressHydrationWarning>
-                                {locale === 'ru' ? availability.ru : availability.uz}
-                              </p>
-                            )}
-                            <span className="inline-flex items-center gap-1 text-sm font-medium text-brand-primary group-hover:gap-2 transition-all mt-auto" suppressHydrationWarning>
-                              {locale === 'ru' ? 'Подробнее' : 'Batafsil'}
-                              <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
-                        </span>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
+                        // Try to get image from galleryUrls, thumbnail, or brand logo
+                        let mainImage = '';
+                        if (product.galleryUrls && product.galleryUrls.length > 0) {
+                          mainImage = normalizeImageUrl(product.galleryUrls[0]);
+                        } else if (product.brand?.logo?.url) {
+                          mainImage = normalizeImageUrl(product.brand.logo.url);
+                        }
+                        
+                        const priceFormatted = product.price 
+                          ? `${new Intl.NumberFormat('uz-UZ').format(Number(product.price))} so'm`
+                          : null;
+                        const availability = product.availabilityStatus 
+                          ? availabilityMap[product.availabilityStatus] 
+                          : null;
+                        
+                        return (
+                          <Link
+                            key={product.id}
+                            href={`/products/${product.slug}`}
+                            className="group flex flex-col gap-2 sm:gap-3 rounded-lg border-[0.5px] border-brand-accent/40 bg-white p-2 sm:p-4 shadow-sm transition hover:border-brand-accent/60 hover:shadow-md"
+                          >
+                            {/* Product Image - Top, Large */}
+                            <div className="relative aspect-square w-full overflow-hidden rounded-lg border border-brand-accent/60 bg-white">
+                              {mainImage ? (
+                                <Image
+                                  src={mainImage}
+                                  alt={productName}
+                                  fill
+                                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 33vw"
+                                  className="object-contain p-2 sm:p-4 transition-transform duration-300 group-hover:scale-105"
+                                  suppressHydrationWarning
+                                  unoptimized
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center bg-brand-primary">
+                                  <span className="text-white text-lg font-bold">Acoustic</span>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Product Info */}
+                            <div className="flex flex-col gap-1 sm:gap-2">
+                              <h3 className="text-sm sm:text-base font-semibold text-foreground line-clamp-2 group-hover:text-brand-primary" suppressHydrationWarning>
+                                {productName}
+                              </h3>
+                              {priceFormatted && (
+                                <p className="text-base sm:text-lg font-semibold text-brand-primary" suppressHydrationWarning>
+                                  {priceFormatted}
+                                </p>
+                              )}
+                              {availability && (
+                                <p className="text-xs sm:text-sm text-emerald-600 font-medium" suppressHydrationWarning>
+                                  {locale === 'ru' ? availability.ru : availability.uz}
+                                </p>
+                              )}
+                              <span className="inline-flex items-center gap-1 text-xs sm:text-sm font-medium text-brand-primary group-hover:gap-2 transition-all mt-auto" suppressHydrationWarning>
+                                {locale === 'ru' ? 'Подробнее' : 'Batafsil'}
+                                <ArrowRight size={12} className="sm:w-3.5 sm:h-3.5 transition-transform group-hover:translate-x-1" />
+                              </span>
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
                     
                     {/* Pagination */}
                     {totalPages > 1 && (
@@ -808,26 +813,27 @@ export default async function CatalogPage({
                               pageNum = page - 3 + i;
                             }
                             
-                            const params = new URLSearchParams();
-                            if (searchParams.productType) params.set('productType', searchParams.productType);
-                            params.set('page', pageNum.toString());
-                            if (searchParams.brandId) params.set('brandId', searchParams.brandId);
-                            if (searchParams.sort) params.set('sort', searchParams.sort);
-                            if (searchParams.audience) params.set('audience', searchParams.audience);
-                            if (searchParams.formFactor) params.set('formFactor', searchParams.formFactor);
-                            if (searchParams.signalProcessing) params.set('signalProcessing', searchParams.signalProcessing);
-                            if (searchParams.powerLevel) params.set('powerLevel', searchParams.powerLevel);
-                            if (searchParams.hearingLossLevel) params.set('hearingLossLevel', searchParams.hearingLossLevel);
-                            if (searchParams.smartphoneCompatibility) params.set('smartphoneCompatibility', searchParams.smartphoneCompatibility);
+                            const isActive = pageNum === page;
+                            const pageParams = new URLSearchParams();
+                            if (searchParams.productType) pageParams.set('productType', searchParams.productType);
+                            if (searchParams.brandId) pageParams.set('brandId', searchParams.brandId);
+                            if (searchParams.sort) pageParams.set('sort', searchParams.sort);
+                            if (searchParams.audience) pageParams.set('audience', searchParams.audience);
+                            if (searchParams.formFactor) pageParams.set('formFactor', searchParams.formFactor);
+                            if (searchParams.signalProcessing) pageParams.set('signalProcessing', searchParams.signalProcessing);
+                            if (searchParams.powerLevel) pageParams.set('powerLevel', searchParams.powerLevel);
+                            if (searchParams.hearingLossLevel) pageParams.set('hearingLossLevel', searchParams.hearingLossLevel);
+                            if (searchParams.smartphoneCompatibility) pageParams.set('smartphoneCompatibility', searchParams.smartphoneCompatibility);
+                            pageParams.set('page', pageNum.toString());
                             
                             return (
                               <Link
                                 key={pageNum}
-                                href={`/catalog?${params.toString()}`}
-                                className={`px-3 py-2 rounded-lg text-sm font-medium transition ${
-                                  page === pageNum
+                                href={`/catalog?${pageParams.toString()}`}
+                                className={`px-3 py-1.5 rounded text-sm font-medium transition ${
+                                  isActive
                                     ? 'bg-brand-primary text-white'
-                                    : 'border border-border/60 bg-white text-foreground hover:border-brand-primary/50 hover:bg-muted/20'
+                                    : 'bg-white text-foreground border border-border/60 hover:border-brand-primary/50 hover:bg-muted/20'
                                 }`}
                               >
                                 {pageNum}
@@ -840,38 +846,50 @@ export default async function CatalogPage({
                             href={`/catalog?productType=${searchParams.productType}&page=${page + 1}${searchParams.brandId ? `&brandId=${searchParams.brandId}` : ''}${searchParams.sort ? `&sort=${searchParams.sort}` : ''}${searchParams.audience ? `&audience=${searchParams.audience}` : ''}${searchParams.formFactor ? `&formFactor=${searchParams.formFactor}` : ''}${searchParams.signalProcessing ? `&signalProcessing=${searchParams.signalProcessing}` : ''}${searchParams.powerLevel ? `&powerLevel=${searchParams.powerLevel}` : ''}${searchParams.hearingLossLevel ? `&hearingLossLevel=${searchParams.hearingLossLevel}` : ''}${searchParams.smartphoneCompatibility ? `&smartphoneCompatibility=${searchParams.smartphoneCompatibility}` : ''}`}
                             className="px-4 py-2 rounded-lg border border-border/60 bg-white text-sm font-medium text-foreground transition hover:border-brand-primary/50 hover:bg-muted/20"
                           >
-                            {locale === 'ru' ? 'Далее' : 'Keyingi'}
+                            {locale === 'ru' ? 'Вперед' : 'Keyingi'}
                           </Link>
                         )}
                       </div>
                     )}
                   </>
                 ) : (
-                  <div className="rounded-lg border border-border/60 bg-muted/20 p-12 text-center">
-                <p className="text-lg font-semibold text-brand-accent" suppressHydrationWarning>
-                  {locale === 'ru' ? 'Товары не найдены' : 'Mahsulotlar topilmadi'}
-                </p>
-                <p className="mt-2 text-sm text-muted-foreground" suppressHydrationWarning>
-                  {locale === 'ru'
-                    ? 'Попробуйте изменить параметры фильтров.'
-                    : "Filtrlarni o'zgartirib ko'ring."}
-                </p>
-              </div>
-            )}
+                  <div className="rounded-2xl border border-border/60 bg-muted/20 p-12 text-center lg:order-2">
+                    <p className="text-lg font-semibold text-brand-accent" suppressHydrationWarning>
+                      {locale === 'ru' ? 'Товары не найдены' : 'Mahsulotlar topilmadi'}
+                    </p>
+                    <p className="mt-2 text-sm text-muted-foreground" suppressHydrationWarning>
+                      {locale === 'ru'
+                        ? 'Попробуйте изменить параметры фильтров.'
+                        : "Filtrlarni o'zgartirib ko'ring."}
+                    </p>
+                  </div>
+                )}
+
               </div>
             </div>
           </div>
         </section>
+
+        {/* Mobile Filter Drawer */}
+        {searchParams.productType && searchParams.productType !== 'interacoustics' && (
+          <MobileFilterDrawer
+            locale={locale}
+            brandTabs={brandTabs}
+            searchParams={searchParams}
+          />
+        )}
       </main>
     );
   }
   
-  // Fetch catalogs, posts, brands, and settings from backend
-  const [catalogsData, postsData, brandsData, settingsData] = await Promise.all([
+  // Fetch catalogs, posts, brands, settings, and homepage hearing aid items from backend
+  const { getHomepageHearingAidItems } = await import('@/lib/api-server');
+  const [catalogsData, postsData, brandsData, settingsData, hearingAidItemsData] = await Promise.all([
     getCatalogs(locale),
     getPosts(locale, true),
     getBrands(locale),
     getSettings(locale),
+    getHomepageHearingAidItems(locale),
   ]);
 
   // Filter brands based on settings.sidebarBrandIds, or fallback to Oticon, ReSound, Signia
@@ -884,33 +902,33 @@ export default async function CatalogPage({
   } else {
     // Fallback to default brands: Oticon, ReSound, Signia
     mainBrands = brandsData?.filter((brand) => {
-      const brandName = brand.name?.toLowerCase() || '';
-      const brandSlug = brand.slug?.toLowerCase() || '';
-      return (
-        brandName.includes('oticon') ||
-        brandName.includes('resound') ||
-        brandName.includes('signia') ||
-        brandSlug.includes('oticon') ||
-        brandSlug.includes('resound') ||
-        brandSlug.includes('signia')
-      );
-    }) || [];
-    
-    // Check if Signia exists in the filtered brands
-    const hasSignia = mainBrands.some(b => {
-      const name = (b.name || '').toLowerCase();
-      const slug = (b.slug || '').toLowerCase();
-      return name.includes('signia') || slug.includes('signia');
-    });
-    
-    // If Signia is not found in backend, add it manually
-    if (!hasSignia) {
-      mainBrands.push({
-        id: 'signia-manual',
-        name: 'Signia',
-        slug: 'signia',
-        logo: null,
-      } as BrandResponse);
+    const brandName = brand.name?.toLowerCase() || '';
+    const brandSlug = brand.slug?.toLowerCase() || '';
+    return (
+      brandName.includes('oticon') ||
+      brandName.includes('resound') ||
+      brandName.includes('signia') ||
+      brandSlug.includes('oticon') ||
+      brandSlug.includes('resound') ||
+      brandSlug.includes('signia')
+    );
+  }) || [];
+  
+  // Check if Signia exists in the filtered brands
+  const hasSignia = mainBrands.some(b => {
+    const name = (b.name || '').toLowerCase();
+    const slug = (b.slug || '').toLowerCase();
+    return name.includes('signia') || slug.includes('signia');
+  });
+  
+  // If Signia is not found in backend, add it manually
+  if (!hasSignia) {
+    mainBrands.push({
+      id: 'signia-manual',
+      name: 'Signia',
+      slug: 'signia',
+      logo: null,
+    } as BrandResponse);
     }
   }
   
@@ -922,142 +940,182 @@ export default async function CatalogPage({
         return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
       })
     : [...mainBrands].sort((a, b) => {
-        const aName = (a.name || '').toLowerCase();
-        const bName = (b.name || '').toLowerCase();
-        const aSlug = (a.slug || '').toLowerCase();
-        const bSlug = (b.slug || '').toLowerCase();
-        const order = ['oticon', 'resound', 'signia'];
-        const aIndex = order.findIndex(o => aName.includes(o) || aSlug.includes(o));
-        const bIndex = order.findIndex(o => bName.includes(o) || bSlug.includes(o));
-        return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
-      });
+    const aName = (a.name || '').toLowerCase();
+    const bName = (b.name || '').toLowerCase();
+    const aSlug = (a.slug || '').toLowerCase();
+    const bSlug = (b.slug || '').toLowerCase();
+    const order = ['oticon', 'resound', 'signia'];
+    const aIndex = order.findIndex(o => aName.includes(o) || aSlug.includes(o));
+    const bIndex = order.findIndex(o => bName.includes(o) || bSlug.includes(o));
+    return (aIndex === -1 ? 999 : aIndex) - (bIndex === -1 ? 999 : bIndex);
+  });
 
   // Get sidebar sections from settings, fallback to default
   const otherSections = (settingsData?.sidebarSections && Array.isArray(settingsData.sidebarSections) && settingsData.sidebarSections.length > 0)
     ? settingsData.sidebarSections.sort((a, b) => (a.order || 0) - (b.order || 0))
     : [
-        {
-          id: 'accessories',
-          title_uz: 'Aksessuarlar',
-          title_ru: 'Аксессуары',
-          link: '/catalog/accessories',
-          icon: '📱',
-        },
-        {
-          id: 'earmolds',
-          title_uz: 'Quloq qo\'shimchalari',
-          title_ru: 'Ушные вкладыши',
-          link: '/catalog/earmolds',
-          icon: '👂',
-        },
-        {
-          id: 'batteries',
-          title_uz: 'Batareyalar',
-          title_ru: 'Батарейки',
-          link: '/catalog/batteries',
-          icon: '🔋',
-        },
-        {
-          id: 'care',
-          title_uz: 'Parvarish vositalari',
-          title_ru: 'Средства ухода',
-          link: '/catalog/care',
-          icon: '🧴',
-        },
-      ];
+    {
+      id: 'accessories',
+      title_uz: 'Aksessuarlar',
+      title_ru: 'Аксессуары',
+      link: '/catalog/accessories',
+      icon: '📱',
+    },
+    {
+      id: 'earmolds',
+      title_uz: 'Quloq qo\'shimchalari',
+      title_ru: 'Ушные вкладыши',
+      link: '/catalog/earmolds',
+      icon: '👂',
+    },
+    {
+      id: 'batteries',
+      title_uz: 'Batareyalar',
+      title_ru: 'Батарейки',
+      link: '/catalog/batteries',
+      icon: '🔋',
+    },
+    {
+      id: 'care',
+      title_uz: 'Parvarish vositalari',
+      title_ru: 'Средства ухода',
+      link: '/catalog/care',
+      icon: '🧴',
+    },
+  ];
 
-  // Transform catalogs for display
-  const catalogItems = (catalogsData && catalogsData.length > 0 ? catalogsData : []).map((catalog) => {
-    const title = locale === 'ru' ? (catalog.name_ru || '') : (catalog.name_uz || '');
-    const description = locale === 'ru' ? (catalog.description_ru || '') : (catalog.description_uz || '');
-    
-    // Build image URL
-    let image = catalog.image?.url || '';
-    if (image && image.startsWith('/') && !image.startsWith('//')) {
-      const baseUrl = API_BASE_URL.replace('/api', '');
-      image = `${baseUrl}${image}`;
-    }
-    
-    // Use catalog slug for link
-    const link = catalog.slug ? `/catalog/${catalog.slug}` : '/catalog';
-
+  // Transform catalogs for display - use homepage hearing aid items if available
+  // This ensures catalog page shows the same images as homepage
+  const hearingAidItemsWithImages = (hearingAidItemsData || []).map((item) => {
+    const title = locale === 'ru' ? (item.name_ru || '') : (item.name_uz || '');
+    const description = locale === 'ru' ? (item.description_ru || '') : (item.description_uz || '');
+    let image = item.image?.url || '';
+    image = normalizeImageUrl(image);
+    const link = item.slug ? `/catalog/${item.slug}` : '/catalog';
     return {
-      id: catalog.id,
+      id: item.id,
       title: title || '',
       description: description || '',
       image: image || '',
       link,
+      hasImage: !!item.image?.url,
     };
   });
 
+  // Use homepage hearing aid items if available, otherwise fallback to catalogs
+  const catalogItems = (hearingAidItemsWithImages.length > 0)
+    ? hearingAidItemsWithImages
+    : (catalogsData && catalogsData.length > 0 ? catalogsData : []).map((catalog) => {
+        const title = locale === 'ru' ? (catalog.name_ru || '') : (catalog.name_uz || '');
+        const description = locale === 'ru' ? (catalog.description_ru || '') : (catalog.description_uz || '');
+        
+        // Build image URL
+        let image = catalog.image?.url || '';
+        if (image && image.startsWith('/') && !image.startsWith('//')) {
+          // Properly extract base URL by removing /api from the end
+          let baseUrl = API_BASE_URL;
+          if (baseUrl.endsWith('/api')) {
+            baseUrl = baseUrl.slice(0, -4); // Remove '/api'
+          } else if (baseUrl.endsWith('/api/')) {
+            baseUrl = baseUrl.slice(0, -5); // Remove '/api/'
+          }
+          // Ensure baseUrl doesn't end with /
+          if (baseUrl.endsWith('/')) {
+            baseUrl = baseUrl.slice(0, -1);
+          }
+          image = `${baseUrl}${image}`;
+        }
+        image = normalizeImageUrl(image);
+        
+        // Use catalog slug for link
+        const link = catalog.slug ? `/catalog/${catalog.slug}` : '/catalog';
+
+        return {
+          id: catalog.id,
+          title: title || '',
+          description: description || '',
+          image: image || '',
+          link,
+          hasImage: !!catalog.image?.url,
+        };
+      });
+
   return (
     <main className="min-h-screen bg-background">
-      <PageHeader
-        locale={locale}
-        breadcrumbs={[
-          { label: locale === 'ru' ? 'Главная' : 'Bosh sahifa', href: '/' },
-          { label: locale === 'ru' ? 'Каталог' : 'Katalog' },
-        ]}
-        title={locale === 'ru' ? 'Решения для вашего образа жизни' : 'Turmush tarziga mos eshitish yechimlari'}
-        description={locale === 'ru'
-          ? 'Мы подберём аппарат под ваши привычки, уровень активности и бюджет. Выберите один из разделов, затем просмотрите подходящие товары в каталоге.'
-          : "Biz sizning odatlaringiz, faolligingiz va byudjetingizga mos modelni topamiz. Bo'limlardan birini tanlang, keyin esa katalog ichida mos mahsulotlarni ko'ring."}
-      />
+      {/* Breadcrumbs */}
+      <section className="bg-[hsl(var(--secondary))]">
+        <div className="mx-auto max-w-6xl px-4 py-2 sm:py-3 text-xs font-semibold uppercase tracking-wide text-white sm:px-6">
+          <div className="flex flex-wrap items-center gap-x-2">
+            <Link href="/" className="hover:text-white/80 text-white/70 break-words" suppressHydrationWarning>
+              {locale === 'ru' ? 'Главная' : 'Bosh sahifa'}
+            </Link>
+            <span className="mx-1 sm:mx-2">›</span>
+            <span className="text-white break-words" suppressHydrationWarning>
+              {locale === 'ru' ? 'Каталог' : 'Katalog'}
+            </span>
+          </div>
+        </div>
+      </section>
 
       {/* Main Content with Sidebar */}
-      <section className="bg-white py-16">
+      <section className="bg-white py-8 md:py-12">
         <div className="mx-auto max-w-6xl px-4 md:px-6">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             {/* Main Content - 3 columns on large screens */}
             <div className="lg:col-span-3">
+              {/* Header Title and Description */}
+              <div className="mb-8">
+                <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-3" suppressHydrationWarning>
+                  {locale === 'ru' ? 'Решения для вашего образа жизни' : 'Turmush tarziga mos eshitish yechimlari'}
+                </h1>
+                <p className="text-base text-muted-foreground leading-relaxed" suppressHydrationWarning>
+                  {locale === 'ru'
+                    ? 'Мы подберём аппарат под ваши привычки, уровень активности и бюджет. Выберите один из разделов, затем просмотрите подходящие товары в каталоге.'
+                    : "Biz sizning odatlaringiz, faolligingiz va byudjetingizga mos modelni topamiz. Bo'limlardan birini tanlang, keyin esa katalog ichida mos mahsulotlarni ko'ring."}
+                </p>
+              </div>
+
+              {/* Catalog Cards */}
               {catalogItems.length > 0 ? (
-                <div className="grid gap-4 grid-cols-2 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-3 grid-cols-2 md:gap-6 md:grid-cols-2">
                   {catalogItems.map((item) => (
                     <Link
                       key={item.id}
                       href={item.link}
-                      className="group flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-4 transition hover:border-brand-primary/50 hover:shadow-sm"
+                      className="group flex gap-2 md:gap-4 rounded-lg border border-gray-200 bg-white p-2.5 md:p-4 transition hover:border-brand-primary/50 hover:shadow-md"
                     >
-                      {/* Mobil: rasm yuqorida, Desktop: rasm va nom bir qatorda */}
-                      <div className="flex flex-col md:flex-row gap-3">
-                        {/* Rasm - mobil: yuqorida, desktop: chapda */}
-                        <div className="relative h-40 w-full md:h-20 md:w-28 shrink-0 overflow-hidden rounded-xl bg-brand-primary/10">
-                          {item.image ? (
-                            <Image 
-                              src={item.image} 
-                              alt={item.title} 
-                              fill 
-                              sizes="(max-width: 768px) 100vw, 112px"
-                              className="object-cover transition-transform duration-300 group-hover:scale-105"
-                              suppressHydrationWarning
-                            />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center bg-brand-primary">
-                              <span className="text-white text-xs font-bold">Acoustic</span>
-                            </div>
-                          )}
-                        </div>
-                        {/* Nom - mobil: rasm tagida, desktop: rasm yonida */}
-                        <div className="flex flex-col flex-1 min-w-0 md:justify-between">
-                          <h3 className="text-base font-semibold text-brand-accent leading-tight group-hover:text-brand-primary transition-colors" suppressHydrationWarning>
-                            {item.title}
-                          </h3>
-                          {/* Desktop: Batafsil link rasm yonida */}
-                          <span className="hidden md:inline-flex items-center gap-1 text-xs font-semibold text-brand-primary group-hover:text-brand-accent transition-all mt-auto" suppressHydrationWarning>
-                            {locale === 'ru' ? 'Подробнее' : 'Batafsil'} ↗
-                          </span>
-                        </div>
+                      {/* Rasm - chapda */}
+                      <div className="relative h-16 w-16 md:h-24 md:w-24 shrink-0 overflow-hidden rounded-lg bg-brand-primary/10">
+                        {(item as any).hasImage && item.image ? (
+                          <Image 
+                            src={item.image} 
+                            alt={item.title} 
+                            fill 
+                            sizes="(max-width: 768px) 64px, 96px"
+                            className="object-cover transition-transform duration-300 group-hover:scale-105"
+                            suppressHydrationWarning
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center bg-brand-primary">
+                            <span className="text-white text-[10px] md:text-xs font-bold">Acoustic</span>
+                          </div>
+                        )}
                       </div>
-                      {/* Tavsif - rasm tagida */}
-                      {item.description && (
-                        <p className="text-sm text-muted-foreground leading-snug line-clamp-2" suppressHydrationWarning>
-                          {item.description}
-                        </p>
-                      )}
-                      {/* Mobil: Batafsil link pastda */}
-                      <span className="inline-flex md:hidden items-center gap-1 text-xs font-semibold text-brand-primary group-hover:text-brand-accent transition-all" suppressHydrationWarning>
-                        {locale === 'ru' ? 'Подробнее' : 'Batafsil'} ↗
-                      </span>
+                      
+                      {/* Matn - o'ngda */}
+                      <div className="flex flex-col gap-1 md:gap-1.5 flex-1 min-w-0">
+                        {/* Katalog nomi */}
+                        <h3 className="text-xs md:text-sm font-semibold text-brand-accent leading-tight group-hover:text-brand-primary transition-colors line-clamp-2" suppressHydrationWarning>
+                          {item.title}
+                        </h3>
+                        
+                        {/* Tavsif */}
+                        {item.description && (
+                          <p className="text-[10px] md:text-xs text-muted-foreground leading-relaxed line-clamp-2 md:line-clamp-3" suppressHydrationWarning>
+                            {item.description}
+                          </p>
+                        )}
+                      </div>
                     </Link>
                   ))}
                 </div>
@@ -1073,7 +1131,9 @@ export default async function CatalogPage({
             </div>
 
             {/* Sidebar - 1 column on large screens */}
-            <Sidebar locale={locale} settingsData={settingsData} brandsData={brandsData} pageType="catalog" />
+            <div className="lg:col-span-1">
+              <Sidebar locale={locale} settingsData={settingsData} brandsData={brandsData} pageType="catalog" />
+            </div>
           </div>
         </div>
       </section>

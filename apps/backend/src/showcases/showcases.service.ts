@@ -12,7 +12,7 @@ export class ShowcasesService {
 
     if (!showcase) {
       showcase = await this.prisma.showcase.create({
-        data: { type, productIds: [], productMetadata: {} },
+        data: { type, productIds: [] },
       });
     }
 
@@ -22,63 +22,47 @@ export class ShowcasesService {
         status: 'published', // Only return published products
       },
       include: { 
-        brand: true, 
+        brand: { include: { logo: true } },
         category: true,
       },
     });
 
-    // Fetch Media objects for all products
-    const allMediaIds = new Set<string>();
-    products.forEach(product => {
-      if (product.thumbnailId) allMediaIds.add(product.thumbnailId);
-      product.galleryIds.forEach(id => allMediaIds.add(id));
-    });
+    // Fetch thumbnail and gallery images for each product
+    const productsWithImages = await Promise.all(
+      products.map(async (product) => {
+        let thumbnail = null;
+        let gallery = [];
 
-    const mediaMap = new Map<string, any>();
-    if (allMediaIds.size > 0) {
-      const media = await this.prisma.media.findMany({
-        where: { id: { in: Array.from(allMediaIds) } },
-      });
-      media.forEach(m => mediaMap.set(m.id, m));
-    }
+        // Fetch thumbnail if thumbnailId exists
+        if (product.thumbnailId) {
+          thumbnail = await this.prisma.media.findUnique({
+            where: { id: product.thumbnailId },
+          });
+        }
 
-    // Map products with metadata (descriptions from productMetadata)
-    const productMetadata = (showcase.productMetadata as Record<string, { description_uz?: string; description_ru?: string; imageId?: string }>) || {};
-    const productsWithMetadata = products.map((product) => {
-      const metadata = productMetadata[product.id] || {};
-      // Find homepage image if imageId is provided
-      let homepageImage = null;
-      if (metadata.imageId && mediaMap.has(metadata.imageId)) {
-        homepageImage = mediaMap.get(metadata.imageId);
-      }
-      return {
-        ...product,
-        homepageDescription_uz: metadata.description_uz || null,
-        homepageDescription_ru: metadata.description_ru || null,
-        homepageImageId: metadata.imageId || null,
-        homepageImage: homepageImage,
-      };
-    });
+        // Fetch gallery images if galleryIds exist
+        if (product.galleryIds && product.galleryIds.length > 0) {
+          gallery = await this.prisma.media.findMany({
+            where: { id: { in: product.galleryIds } },
+          });
+        }
 
-    return { ...showcase, products: productsWithMetadata };
+        return {
+          ...product,
+          thumbnail,
+          gallery,
+        };
+      })
+    );
+
+    return { ...showcase, products: productsWithImages };
   }
 
-  async update(
-    type: 'interacoustics' | 'cochlear',
-    productIds: string[],
-    productMetadata?: Record<string, { description_uz?: string; description_ru?: string; imageId?: string }>
-  ) {
+  async update(type: 'interacoustics' | 'cochlear', productIds: string[]) {
     return this.prisma.showcase.upsert({
       where: { type },
-      update: {
-        productIds,
-        ...(productMetadata !== undefined ? { productMetadata } : {}),
-      },
-      create: {
-        type,
-        productIds,
-        productMetadata: productMetadata || {},
-      },
+      update: { productIds },
+      create: { type, productIds },
     });
   }
 }

@@ -26,6 +26,7 @@ import HeroSlider from '@/components/homepage/hero-slider';
 import FAQAccordion from '@/components/homepage/faq-accordion';
 import Script from 'next/script';
 import type { Metadata } from 'next';
+import { normalizeImageUrl } from '@/lib/image-utils';
 
 // ISR: Revalidate every 30 minutes
 export const revalidate = 1800;
@@ -38,8 +39,8 @@ export async function generateMetadata(): Promise<Metadata> {
     ? 'Acoustic.uz — Центр слуха' 
     : 'Acoustic.uz — Eshitish markazi';
   const description = locale === 'ru'
-    ? 'Центр диагностики и коррекции слуха. Современные слуховые аппараты, диагностика слуха, индивидуальные решения.'
-    : 'Eshitish diagnostikasi va korreksiyasi markazi. Zamonaviy eshitish apparatlari, eshitish diagnostikasi, individual yechimlar.';
+    ? 'Центр диагностики и коррекции слуха Acoustic в Узбекистане. Современные слуховые аппараты от ведущих производителей, профессиональная диагностика слуха, индивидуальные решения для взрослых и детей. Запишитесь на консультацию.'
+    : 'O\'zbekistondagi Acoustic eshitish diagnostikasi va korreksiyasi markazi. Yetakchi ishlab chiqaruvchilarning zamonaviy eshitish apparatlari, professional eshitish diagnostikasi, kattalar va bolalar uchun individual yechimlar. Maslahat uchun yoziling.';
   
   return {
     title,
@@ -101,7 +102,7 @@ export default async function HomePage() {
     getShowcase('interacoustics', locale),
     getCatalogs(locale),
     getHomepageJourney(locale),
-    getPosts(locale, true),
+    getPosts(locale, true, undefined, 'news'),
     getPublicFaq(locale),
     getHomepageHearingAidItems(locale),
     getSettings(locale),
@@ -112,10 +113,7 @@ export default async function HomePage() {
     const title = locale === 'ru' ? (service.title_ru || '') : (service.title_uz || '');
     const description = locale === 'ru' ? (service.excerpt_ru || '') : (service.excerpt_uz || '');
     let image = (service as any)?.image?.url ?? (service as any)?.cover?.url ?? '';
-    if (image && image.startsWith('/') && !image.startsWith('//')) {
-      const baseUrl = API_BASE_URL.replace('/api', '');
-      image = `${baseUrl}${image}`;
-    }
+    image = normalizeImageUrl(image);
     // Generate link: use slug as-is, if it starts with / use it directly, otherwise prepend /
     const serviceSlug = service.slug || service.id || `service-${index}`;
     const serviceLink = serviceSlug.startsWith('/') ? serviceSlug : `/${serviceSlug}`;
@@ -136,19 +134,7 @@ export default async function HomePage() {
         const title = locale === 'ru' ? (item.title_ru || '') : (item.title_uz || '');
         const description = locale === 'ru' ? (item.description_ru || '') : (item.description_uz || '');
         let image = item.image?.url || '';
-        // Debug: log image data
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[Homepage] Hearing aid item:', {
-            id: item.id,
-            title,
-            image: item.image,
-            imageUrl: image,
-          });
-        }
-        if (image && image.startsWith('/') && !image.startsWith('//')) {
-          const baseUrl = API_BASE_URL.replace('/api', '');
-          image = `${baseUrl}${image}`;
-        }
+        image = normalizeImageUrl(image);
         const link = item.link || '/catalog';
         return {
           id: item.id,
@@ -166,10 +152,7 @@ export default async function HomePage() {
           const title = locale === 'ru' ? (catalog.name_ru || '') : (catalog.name_uz || '');
           const description = locale === 'ru' ? (catalog.description_ru || '') : (catalog.description_uz || '');
           let image = catalog.image?.url || '';
-          if (image && image.startsWith('/') && !image.startsWith('//')) {
-            const baseUrl = API_BASE_URL.replace('/api', '');
-            image = `${baseUrl}${image}`;
-          }
+          image = normalizeImageUrl(image);
           const link = catalog.slug ? `/catalog/${catalog.slug}` : '/catalog';
           return {
             id: catalog.id,
@@ -187,17 +170,16 @@ export default async function HomePage() {
     const description = locale === 'ru' 
       ? ((product as any).homepageDescription_ru || product.description_ru || '')
       : ((product as any).homepageDescription_uz || product.description_uz || '');
-    // Use homepageImage if available, otherwise fallback to brand logo
+    // Use thumbnail if available, otherwise fallback to first gallery image, then brand logo
     let image = '';
-    if ((product as any).homepageImage?.url) {
-      image = (product as any).homepageImage.url;
+    if ((product as any).thumbnail?.url) {
+      image = (product as any).thumbnail.url;
+    } else if ((product as any).gallery && (product as any).gallery.length > 0 && (product as any).gallery[0]?.url) {
+      image = (product as any).gallery[0].url;
     } else {
       image = product.brand?.logo?.url || '';
     }
-    if (image && image.startsWith('/') && !image.startsWith('//')) {
-      const baseUrl = API_BASE_URL.replace('/api', '');
-      image = `${baseUrl}${image}`;
-    }
+    image = normalizeImageUrl(image);
     return {
       id: product.slug ?? product.id ?? `interacoustics-${index}`,
       title: title || '',
@@ -215,7 +197,12 @@ export default async function HomePage() {
     order: step.order ?? index + 1,
   }));
 
-  const newsItems = (newsItemsData || []).slice(0, 6).map((item, index) => ({
+  // Filter news items: only show published posts with postType='news'
+  const filteredNewsItems = (newsItemsData || []).filter((item) => {
+    return item.status === 'published' && item.postType === 'news';
+  });
+  
+  const newsItems = filteredNewsItems.slice(0, 6).map((item, index) => ({
     id: item.id ?? `news-${index}`,
     title: locale === 'ru' ? (item.title_ru || '') : (item.title_uz || ''),
     excerpt: locale === 'ru' ? (item.excerpt_ru || '') : (item.excerpt_uz || ''),
@@ -234,52 +221,49 @@ export default async function HomePage() {
         phoneLink={settingsData?.phoneSecondary?.replace(/\s/g, '') || '+998712021441'}
       />
 
-      {/* 2. Services Section */}
-      <section className="bg-white py-12">
+      {/* 2. Services Section - Compact design like reference image */}
+      <section className="bg-[#F5F5F0] py-8 md:py-12">
         <div className="mx-auto max-w-6xl px-4 md:px-6">
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold text-foreground md:text-4xl" suppressHydrationWarning>
+          <div className="mb-6">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground" suppressHydrationWarning>
               {locale === 'ru' ? 'Наши услуги' : 'Bizning xizmatlar'}
             </h2>
           </div>
           {services.length > 0 ? (
-            <div className="grid gap-6 grid-cols-2 md:grid-cols-4">
+            <div className="grid gap-4 md:gap-5 grid-cols-2 md:grid-cols-4">
               {services.map((service) => (
                 <Link
                   key={service.id}
                   href={service.link || `/services/${service.slug}`}
-                  className="group flex flex-col overflow-hidden rounded-lg bg-white shadow-sm transition hover:shadow-md"
+                  className="group flex flex-col overflow-hidden rounded-lg bg-white shadow-sm transition-all hover:shadow-lg hover:-translate-y-1"
                 >
-                  <div className="relative aspect-[4/3] w-full overflow-hidden bg-brand-primary rounded-lg">
+                  <div className="relative aspect-[4/3] w-full overflow-hidden bg-muted/20">
                     {service.image ? (
                       <Image
                         src={service.image}
-                        alt={service.title}
+                        alt={locale === 'ru' 
+                          ? `Услуга: ${service.title}`
+                          : `Xizmat: ${service.title}`}
                         fill
-                        className="object-cover object-center transition-transform duration-300 group-hover:scale-110"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                        style={{ minWidth: '100%', minHeight: '100%' }}
+                        className="object-cover object-center transition-transform duration-300 group-hover:scale-105"
+                        sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 25vw"
                         suppressHydrationWarning
                       />
                     ) : (
-                      <div className="flex h-full items-center justify-center bg-brand-primary">
-                        <span className="text-white text-lg font-bold">Acoustic</span>
+                      <div className="flex h-full items-center justify-center bg-brand-primary/10">
+                        <span className="text-brand-primary text-sm font-bold">Acoustic</span>
                       </div>
                     )}
                   </div>
-                  <div className="flex flex-1 flex-col p-5">
-                    <h3 className="mb-2 text-lg font-semibold text-foreground group-hover:text-brand-primary" suppressHydrationWarning>
+                  <div className="flex flex-1 flex-col p-4 md:p-5">
+                    <h3 className="mb-2 text-sm md:text-base font-semibold text-foreground group-hover:text-brand-primary line-clamp-2 leading-tight" suppressHydrationWarning>
                       {service.title}
                     </h3>
                     {service.description && (
-                      <p className="mb-4 flex-1 text-sm leading-relaxed text-muted-foreground" suppressHydrationWarning>
+                      <p className="text-xs md:text-sm leading-relaxed text-muted-foreground line-clamp-3" suppressHydrationWarning>
                         {service.description}
                       </p>
                     )}
-                    <span className="inline-flex items-center gap-1 text-sm font-medium text-brand-primary group-hover:gap-2" suppressHydrationWarning>
-                      {locale === 'ru' ? 'Подробнее' : 'Batafsil'}
-                      <ArrowRight size={14} className="transition-transform group-hover:translate-x-1" />
-                    </span>
                   </div>
                 </Link>
               ))}
@@ -315,57 +299,46 @@ export default async function HomePage() {
             )}
           </div>
           {hearingItems.length > 0 ? (
-            <div className="grid gap-2.5 md:gap-3 grid-cols-2 md:grid-cols-3">
+            <div className="grid gap-3 grid-cols-2 md:gap-4 md:grid-cols-2 lg:grid-cols-3">
               {hearingItems.map((item) => (
                 <Link
                   key={item.id}
                   href={item.link}
-                  className="group flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-3 transition hover:border-brand-primary/50 hover:shadow-sm"
+                  className="group flex gap-2 md:gap-4 rounded-lg border border-gray-200 bg-white p-2.5 md:p-4 transition hover:border-brand-primary/50 hover:shadow-md"
                 >
-                  {/* Desktop: sarlavha yuqorida, Mobil: sarlavha rasm bilan bir qatorda */}
-                  <h3 className="hidden md:block text-sm md:text-base font-semibold text-brand-accent leading-tight group-hover:text-brand-primary transition-colors line-clamp-2" suppressHydrationWarning>
-                    {item.title}
-                  </h3>
-                  
-                  {/* Mobil: rasm va sarlavha vertikal, Desktop: rasm va tavsif yonma-yon */}
-                  <div className="flex flex-col md:flex-row gap-3">
-                    {/* Rasm - mobil: yuqorida, desktop: chapda */}
-                    <div className="relative h-40 w-full md:h-20 md:w-24 shrink-0 overflow-hidden rounded-lg bg-brand-primary/10">
-                      {item.hasImage && item.image ? (
-                        <Image 
-                          src={item.image} 
-                          alt={item.title} 
-                          fill 
-                          sizes="(max-width: 768px) 100vw, 96px" 
-                          className="object-cover transition-transform duration-300 group-hover:scale-105"
-                          suppressHydrationWarning
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-brand-primary">
-                          <span className="text-white text-xs font-bold">Acoustic</span>
-                        </div>
-                      )}
-                    </div>
-                    {/* Matn - mobil: rasm tagida, desktop: o'ngda */}
-                    <div className="flex flex-col flex-1 min-w-0 gap-2 justify-between">
-                      <div className="flex flex-col gap-1.5">
-                        {/* Mobil: sarlavha */}
-                        <h3 className="md:hidden text-sm font-semibold text-brand-accent leading-tight group-hover:text-brand-primary transition-colors line-clamp-2" suppressHydrationWarning>
-                          {item.title}
-                        </h3>
-                        {/* Tavsif */}
-                        {item.description && (
-                          <p className="text-xs md:text-lg text-muted-foreground leading-relaxed" suppressHydrationWarning>
-                            {item.description}
-                          </p>
-                        )}
+                  {/* Rasm - chapda */}
+                  <div className="relative h-16 w-16 md:h-24 md:w-24 shrink-0 overflow-hidden rounded-lg bg-brand-primary/10">
+                    {item.hasImage && item.image ? (
+                      <Image 
+                        src={item.image} 
+                        alt={locale === 'ru' 
+                          ? `Слуховой аппарат ${item.title}`
+                          : `Eshitish moslamasi ${item.title}`} 
+                        fill 
+                        sizes="(max-width: 768px) 64px, 96px"
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        suppressHydrationWarning
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-brand-primary">
+                        <span className="text-white text-[10px] md:text-xs font-bold">Acoustic</span>
                       </div>
-                      {/* Batafsil link */}
-                      <span className="inline-flex items-center gap-1 text-xs md:text-base font-medium text-brand-primary group-hover:text-brand-accent transition-all w-fit" suppressHydrationWarning>
-                        {locale === 'ru' ? 'Подробнее' : 'Batafsil'}
-                        <ArrowRight size={12} className="md:w-4 md:h-4 transition-transform group-hover:translate-x-1" />
-                      </span>
-                    </div>
+                    )}
+                  </div>
+                  
+                  {/* Matn - o'ngda */}
+                  <div className="flex flex-col gap-1 md:gap-1.5 flex-1 min-w-0">
+                    {/* Katalog nomi */}
+                    <h3 className="text-xs md:text-base font-semibold text-brand-accent leading-tight group-hover:text-brand-primary transition-colors line-clamp-2" suppressHydrationWarning>
+                      {item.title}
+                    </h3>
+                    
+                    {/* Tavsif */}
+                    {item.description && (
+                      <p className="text-[10px] md:text-sm text-muted-foreground leading-relaxed line-clamp-2 md:line-clamp-3" suppressHydrationWarning>
+                        {item.description}
+                      </p>
+                    )}
                   </div>
                 </Link>
               ))}
@@ -403,7 +376,7 @@ export default async function HomePage() {
               {/* To'liq katalog link - Desktop only, header qismida */}
               <div className="hidden md:block">
                 <Link 
-                  href="/catalog" 
+                  href="/catalog?productType=interacoustics" 
                   className="inline-flex items-center gap-1 text-base font-medium text-muted-foreground hover:text-brand-primary transition-colors whitespace-nowrap"
                   suppressHydrationWarning
                 >
@@ -427,7 +400,9 @@ export default async function HomePage() {
                       {hasImage ? (
                         <Image 
                           src={product.image} 
-                          alt={product.title} 
+                          alt={locale === 'ru' 
+                            ? `Диагностическое оборудование Interacoustics ${product.title}`
+                            : `Interacoustics diagnostika uskunasi ${product.title}`} 
                           fill 
                           sizes="(max-width: 768px) 64px, (max-width: 1024px) 50vw, 25vw" 
                           className="object-cover transition-transform duration-300 group-hover:scale-105"
@@ -514,7 +489,7 @@ export default async function HomePage() {
               {newsItems.slice(0, 6).map((item) => (
                 <Link
                   key={item.id}
-                  href={item.slug && item.slug !== '#' ? `/posts/${item.slug}` : '#'}
+                  href={item.slug && item.slug !== '#' ? `/news/${item.slug}` : '#'}
                   className="group flex flex-col gap-3 transition hover:opacity-80"
                 >
                   <h3 className="text-base font-semibold text-brand-primary group-hover:text-brand-accent leading-snug" suppressHydrationWarning>

@@ -112,3 +112,8 @@ echo ""
 echo "🌐 Application will be available at: http://${SERVER_IP}:3000"
 echo ""
 
+
+
+
+
+

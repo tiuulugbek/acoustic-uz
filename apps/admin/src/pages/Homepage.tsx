@@ -67,6 +67,7 @@ import {
   type UpdateHomepageHearingAidPayload,
 } from '../lib/api';
 import MediaLibraryModal from '../components/MediaLibraryModal';
+import ImageSizeHint from '../components/ImageSizeHint';
 import { normalizeImageUrl } from '../utils/image';
 import { compressImage } from '../utils/image-compression';
 
@@ -95,19 +96,6 @@ function HomepageServicesTab() {
     queryFn: getMedia,
   });
 
-  // Helper function to normalize image URLs
-  const normalizeImageUrl = (url: string | null | undefined): string => {
-    if (!url) return '';
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return url;
-    }
-    if (url.startsWith('/uploads/')) {
-      const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-      const baseUrl = apiBase.replace('/api', '');
-      return `${baseUrl}${url}`;
-    }
-    return url;
-  };
 
   const createMutation = useMutation({
     mutationFn: createHomepageService,
@@ -370,6 +358,7 @@ function HomepageServicesTab() {
               placeholder="xizmat-slug yoki /services/xizmat-slug" 
             />
           </Form.Item>
+          <ImageSizeHint type="service" />
           <Form.Item 
             label={
               <span>
@@ -476,19 +465,6 @@ function HomepageProductsTab() {
     queryFn: getMedia,
   });
 
-  // Helper function to normalize image URLs
-  const normalizeImageUrl = (url: string | null | undefined): string => {
-    if (!url) return '';
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return url;
-    }
-    if (url.startsWith('/uploads/')) {
-      const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-      const baseUrl = apiBase.replace('/api', '');
-      return `${baseUrl}${url}`;
-    }
-    return url;
-  };
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<HomepageHearingAidDto | null>(null);
@@ -976,19 +952,6 @@ function CatalogsTab() {
     queryFn: getMedia,
   });
 
-  // Helper function to normalize image URLs
-  const normalizeImageUrl = (url: string | null | undefined): string => {
-    if (!url) return '';
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return url;
-    }
-    if (url.startsWith('/uploads/')) {
-      const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-      const baseUrl = apiBase.replace('/api', '');
-      return `${baseUrl}${url}`;
-    }
-    return url;
-  };
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCatalog, setEditingCatalog] = useState<CatalogDto | null>(null);
@@ -1248,6 +1211,7 @@ function CatalogsTab() {
           <Form.Item label="Tavsif (ru)" name="description_ru" extra="Краткое описание, которое отображается на карточке каталога на главной странице">
             <Input.TextArea rows={2} placeholder="Например, Невидимые слуховые аппараты" />
           </Form.Item>
+          <ImageSizeHint type="catalog" />
           <Form.Item label="Rasm" name="imageId" extra="Bosh sahifadagi katalog kartasida ko'rinadigan rasm">
             <div>
               <Row gutter={16}>
@@ -1356,19 +1320,6 @@ function InteracousticsTab() {
     queryFn: getMedia,
   });
 
-  // Helper function to normalize image URLs
-  const normalizeImageUrl = (url: string | null | undefined): string => {
-    if (!url) return '';
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return url;
-    }
-    if (url.startsWith('/uploads/')) {
-      const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-      const baseUrl = apiBase.replace('/api', '');
-      return `${baseUrl}${url}`;
-    }
-    return url;
-  };
 
   const updateMutation = useMutation({
     mutationFn: (payload: UpdateShowcasePayload) => updateShowcase('interacoustics', payload),
@@ -1664,6 +1615,7 @@ function InteracousticsTab() {
             name="imageId"
             extra="Bosh sahifadagi mahsulot kartasida ko'rinadigan rasm (ixtiyoriy)"
           >
+            <ImageSizeHint type="product" showAsAlert={false} />
             <div>
               <Row gutter={16}>
                 <Col span={12}>

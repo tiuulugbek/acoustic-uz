@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { getDoctorBySlug } from '@/lib/api-server';
 import PageHeader from '@/components/page-header';
+import { normalizeImageUrl } from '@/lib/image-utils';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -18,10 +19,45 @@ interface DoctorPageProps {
 
 export async function generateMetadata({ params }: DoctorPageProps): Promise<Metadata> {
   const locale = detectLocale();
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
   const doctor = await getDoctorBySlug(params.slug, locale);
   const name = doctor ? getBilingualText(doctor.name_uz, doctor.name_ru, locale) : '';
+  const position = doctor ? getBilingualText(doctor.position_uz, doctor.position_ru, locale) : '';
+  const description = doctor 
+    ? (locale === 'ru'
+        ? `${name}${position ? ` - ${position}` : ''} в центре слуха Acoustic. Профессиональная диагностика и подбор слуховых аппаратов.`
+        : `Acoustic eshitish markazidagi ${name}${position ? ` - ${position}` : ''}. Professional diagnostika va eshitish apparatlarni tanlash.`)
+    : (locale === 'ru' 
+        ? 'Специалист центра слуха Acoustic'
+        : 'Acoustic eshitish markazi mutaxassisi');
+  
+  const title = name ? `${name} — Acoustic.uz` : (locale === 'ru' ? 'Специалист — Acoustic.uz' : 'Mutaxassis — Acoustic.uz');
+  const doctorUrl = doctor ? `${baseUrl}/doctors/${params.slug}` : `${baseUrl}/doctors`;
+  
   return {
-    title: name ? `${name} — Acoustic.uz` : (locale === 'ru' ? 'Специалист — Acoustic.uz' : 'Mutaxassis — Acoustic.uz'),
+    title,
+    description,
+    alternates: {
+      canonical: doctorUrl,
+      languages: {
+        uz: doctorUrl,
+        ru: doctorUrl,
+        'x-default': doctorUrl,
+      },
+    },
+    openGraph: {
+      title,
+      description,
+      url: doctorUrl,
+      siteName: 'Acoustic.uz',
+      locale: locale === 'ru' ? 'ru_RU' : 'uz_UZ',
+      type: 'profile',
+    },
+    twitter: {
+      card: 'summary',
+      title,
+      description,
+    },
   };
 }
 
@@ -51,12 +87,7 @@ export default async function DoctorSlugPage({ params }: DoctorPageProps) {
   const experience = getBilingualText(specialist.experience_uz, specialist.experience_ru, locale);
   const description = getBilingualText(specialist.description_uz, specialist.description_ru, locale);
   
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-  let imageUrl = specialist.image?.url || '';
-  if (imageUrl && imageUrl.startsWith('/') && !imageUrl.startsWith('//')) {
-    const baseUrl = API_BASE_URL.replace('/api', '');
-    imageUrl = `${baseUrl}${imageUrl}`;
-  }
+  const imageUrl = normalizeImageUrl(specialist.image?.url);
 
   return (
     <main className="min-h-screen bg-background">
@@ -84,6 +115,7 @@ export default async function DoctorSlugPage({ params }: DoctorPageProps) {
                   fill
                   className="object-cover"
                   sizes="300px"
+                  unoptimized
                 />
               ) : (
                 <div className="flex h-full items-center justify-center bg-brand-primary">

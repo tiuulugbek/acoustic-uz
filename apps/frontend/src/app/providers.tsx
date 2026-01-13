@@ -2,8 +2,15 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
+import AnalyticsProvider from '@/components/analytics-provider';
+import type { SettingsResponse } from '@/lib/api';
 
-export function Providers({ children }: { children: React.ReactNode }) {
+interface ProvidersProps {
+  children: React.ReactNode;
+  settings?: SettingsResponse | null;
+}
+
+export function Providers({ children, settings }: ProvidersProps) {
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -22,7 +29,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      <AnalyticsProvider settings={settings}>
+        {children}
+      </AnalyticsProvider>
+    </QueryClientProvider>
   );
 }
 

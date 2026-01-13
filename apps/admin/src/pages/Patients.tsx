@@ -1,5 +1,5 @@
-import PageEditor from '../components/PageEditor';
+import SectionPostsPage from './SectionPosts';
 
 export default function PatientsPage() {
-  return <PageEditor slug="patients" defaultTitleUz="Bemorlar" defaultTitleRu="Пациентам" />;
+  return <SectionPostsPage section="patients" sectionName={{ uz: 'Bemorlar', ru: 'Пациентам' }} />;
 }

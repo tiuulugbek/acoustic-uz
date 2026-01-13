@@ -1,9 +1,9 @@
 'use client';
 
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { type Locale, DEFAULT_LOCALE } from '@/lib/locale';
+import { type Locale, DEFAULT_LOCALE, LOCALE_COOKIE_NAME } from '@/lib/locale';
 import { getLocaleFromCookie } from '@/lib/locale-client';
 
 // Helper to get locale from DOM (available on client)
@@ -29,43 +29,76 @@ function getLocaleFromDOM(): Locale {
   return getLocaleFromCookie();
 }
 
-// Function to change language using API route
-// This ensures the cookie is set server-side and all React Query caches are cleared
+// Function to change language
+// Uses API route to set cookie server-side, then redirects to ensure page content updates
 function changeLanguage(
   newLocale: Locale,
   currentPath: string,
   queryString: string,
-  queryClient: ReturnType<typeof useQueryClient>
+  queryClient: ReturnType<typeof useQueryClient>,
+  router: ReturnType<typeof useRouter>
 ) {
-  // Build the current URL with query params
-  const currentUrl = `${currentPath}${queryString ? `?${queryString}` : ''}`;
+  // Set cookie client-side immediately for instant UI feedback (header/footer)
+  if (typeof document !== 'undefined') {
+    const expires = new Date();
+    expires.setTime(expires.getTime() + 365 * 24 * 60 * 60 * 1000); // 1 year
+    document.cookie = `${LOCALE_COOKIE_NAME}=${newLocale}; path=/; max-age=${365 * 24 * 60 * 60}; SameSite=Lax${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`;
+    
+    // Update data-locale attribute immediately for instant UI feedback
+    document.documentElement.setAttribute('data-locale', newLocale);
+  }
   
-  // Clear ALL React Query caches before redirect to prevent stale data
-  // This ensures fresh data is fetched with the new locale
-  queryClient.clear();
+  // Only invalidate locale-specific queries, not all caches
+  // This preserves non-locale-dependent data and improves performance
+  queryClient.invalidateQueries({ 
+    predicate: (query) => {
+      const key = query.queryKey;
+      // Invalidate queries that depend on locale
+      return Array.isArray(key) && (
+        key.includes('menu') ||
+        key.includes('catalogs') ||
+        key.includes('services') ||
+        key.includes('products') ||
+        key.includes('branches') ||
+        key.includes('doctors') ||
+        key.includes('settings') ||
+        key.includes('faq')
+      );
+    }
+  });
   
   // Use API route to set cookie server-side and redirect
-  // This is the most reliable method as the cookie is set on the server
+  // This ensures page content (server-side rendered) updates correctly
+  // Build the current URL with query params
+  const currentUrl = `${currentPath}${queryString ? `?${queryString}` : ''}`;
   const apiUrl = `/api/locale?locale=${newLocale}&redirect=${encodeURIComponent(currentUrl)}`;
   
-  // Navigate to API route - it will set cookie and redirect back
-  // Using window.location.href ensures a full page reload with fresh server render
-  window.location.href = apiUrl;
+  // Navigate to API route - it will set cookie server-side and redirect back
+  // This ensures both client-side (header/footer) and server-side (page content) update
+  if (typeof window !== 'undefined') {
+    window.location.href = apiUrl;
+  }
 }
 
-export default function LanguageSwitcher() {
+interface LanguageSwitcherProps {
+  initialLocale?: Locale;
+}
+
+export default function LanguageSwitcher({ initialLocale }: LanguageSwitcherProps = {}) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
+  const router = useRouter();
   
-  // CRITICAL: Read initial locale synchronously from DOM to match server render
-  // This prevents hydration mismatches
+  // CRITICAL: Use initialLocale from props to match server render, prevent hydration mismatches
+  // Fallback to DOM read only if initialLocale is not provided
   const getInitialLocale = (): Locale => {
+    if (initialLocale) return initialLocale;
     if (typeof document === 'undefined') return DEFAULT_LOCALE;
     return getLocaleFromDOM();
   };
   
-  const [currentLocale, setCurrentLocale] = useState<Locale>(getInitialLocale);
+  const [currentLocale, setCurrentLocale] = useState<Locale>(getInitialLocale());
   const [isHydrated, setIsHydrated] = useState(false);
 
   // After mount, read actual locale from DOM and update if changed
@@ -120,9 +153,9 @@ export default function LanguageSwitcher() {
     const currentPath = pathname || '/';
     const queryString = searchParams?.toString() || '';
     
-    // Change language (clears caches, sets cookie, and reloads)
-    changeLanguage(newLocale, currentPath, queryString, queryClient);
-  }, [currentLocale, pathname, searchParams, queryClient]);
+    // Change language (optimized: uses client-side cookie and router.refresh())
+    changeLanguage(newLocale, currentPath, queryString, queryClient, router);
+  }, [currentLocale, pathname, searchParams, queryClient, router]);
 
   // During SSR and initial client render, use initial locale from DOM
   // After hydration, use currentLocale state
@@ -160,18 +193,21 @@ export default function LanguageSwitcher() {
 }
 
 // Mobile version for header - same simple design
-export function LanguageSwitcherMobile() {
+export function LanguageSwitcherMobile({ initialLocale }: LanguageSwitcherProps = {}) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const queryClient = useQueryClient();
+  const router = useRouter();
   
-  // CRITICAL: Read initial locale synchronously from DOM to match server render
+  // CRITICAL: Use initialLocale from props to match server render, prevent hydration mismatches
+  // Fallback to DOM read only if initialLocale is not provided
   const getInitialLocale = (): Locale => {
+    if (initialLocale) return initialLocale;
     if (typeof document === 'undefined') return DEFAULT_LOCALE;
     return getLocaleFromDOM();
   };
   
-  const [currentLocale, setCurrentLocale] = useState<Locale>(getInitialLocale);
+  const [currentLocale, setCurrentLocale] = useState<Locale>(getInitialLocale());
   const [isHydrated, setIsHydrated] = useState(false);
 
   // After mount, read actual locale from DOM and update if changed
@@ -220,9 +256,9 @@ export function LanguageSwitcherMobile() {
     const currentPath = pathname || '/';
     const queryString = searchParams?.toString() || '';
     
-    // Change language (clears caches, sets cookie, and reloads)
-    changeLanguage(newLocale, currentPath, queryString, queryClient);
-  }, [currentLocale, pathname, searchParams, queryClient]);
+    // Change language (optimized: uses client-side cookie and router.refresh())
+    changeLanguage(newLocale, currentPath, queryString, queryClient, router);
+  }, [currentLocale, pathname, searchParams, queryClient, router]);
 
   // During SSR and initial client render, use initial locale from DOM
   // After hydration, use currentLocale state

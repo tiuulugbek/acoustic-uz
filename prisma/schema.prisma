@@ -46,53 +46,55 @@ model Media {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  banners             Banner[]
-  services            Service[]
-  brands              Brand[]
-  posts               Post[]
-  branches            Branch[]
-  homepageHearingAids HomepageHearingAid[]
-  homepageServices    HomepageService[]
-  productCategories   ProductCategory[]
-  serviceCategories   ServiceCategory[]
-  catalogs            Catalog[]
-  doctors             Doctor[]
-  settingsCatalogHero Setting? @relation("SettingCatalogHero")
-  settingsLogo        Setting? @relation("SettingLogo")
+  banners              Banner[]
+  services             Service[]
+  brands               Brand[]
+  posts                Post[]
+  branches             Branch[]
+  homepageHearingAids  HomepageHearingAid[]
+  homepageServices     HomepageService[]
+  productCategories    ProductCategory[]
+  serviceCategories    ServiceCategory[]
+  postCategories       PostCategory[]
+  catalogs             Catalog[]
+  doctors              Doctor[]
+  settingsCatalogHero  Setting?              @relation("SettingCatalogHero")
+  settingsLogo         Setting?              @relation("SettingLogo")
+  settingsFavicon      Setting?              @relation("SettingFavicon")
   homepagePlaceholders HomepagePlaceholder[]
 
   @@index([url])
 }
 
 model Setting {
-  id                 String   @id @default("singleton")
-  phonePrimary       String?  @default("1385")
-  phoneSecondary     String?  @default("+998 71 202 14 41")
-  email              String?
-  telegramBotToken   String?
-  telegramChatId     String?
-  brandPrimary       String?  @default("#F07E22")
-  brandAccent        String?  @default("#3F3091")
-  featureFlags       Json? // see §11
-  socialLinks        Json? // { facebook, instagram, telegram, etc. }
-  catalogHeroImageId String?  @unique
-  catalogHeroImage   Media?   @relation("SettingCatalogHero", fields: [catalogHeroImageId], references: [id], onDelete: SetNull)
-  logoId             String?  @unique
-  logo               Media?   @relation("SettingLogo", fields: [logoId], references: [id], onDelete: SetNull)
+  id                        String   @id @default("singleton")
+  phonePrimary              String?  @default("1385")
+  phoneSecondary            String?  @default("+998 71 202 14 41")
+  email                     String?
+  telegramBotToken          String? // Bot token for forms (sends to Telegram)
+  telegramChatId            String? // Chat ID for forms bot
+  telegramButtonBotToken    String? // Bot token for Telegram button
+  telegramButtonBotUsername String? // Bot username for Telegram button (e.g., @yourbot)
+  telegramButtonMessage_uz  String? // Message shown in chat bubble (Uzbek)
+  telegramButtonMessage_ru  String? // Message shown in chat bubble (Russian)
+  brandPrimary              String?  @default("#F07E22")
+  brandAccent               String?  @default("#3F3091")
+  featureFlags              Json? // see §11
+  socialLinks               Json? // { facebook, instagram, telegram, etc. }
+  googleAnalyticsId         String? // Google Analytics 4 Measurement ID (e.g., G-XXXXXXXXXX)
+  yandexMetrikaId           String? // Yandex Metrika Counter ID (e.g., 12345678)
+  catalogHeroImageId        String?  @unique
+  catalogHeroImage          Media?   @relation("SettingCatalogHero", fields: [catalogHeroImageId], references: [id], onDelete: SetNull)
+  logoId                    String?  @unique
+  logo                      Media?   @relation("SettingLogo", fields: [logoId], references: [id], onDelete: SetNull)
+  faviconId                 String?  @unique
+  favicon                   Media?   @relation("SettingFavicon", fields: [faviconId], references: [id], onDelete: SetNull)
   // Sidebar settings - per page type
-  sidebarConfigs     Json? // { catalog: { sections: [...], brandIds: [...] }, products: {...}, services: {...}, posts: {...} }
+  sidebarConfigs            Json? // { catalog: { sections: [...], brandIds: [...] }, products: {...}, services: {...}, posts: {...} }
   // Legacy sidebar settings (for backward compatibility)
-  sidebarSections    Json? // Array of { id, title_uz, title_ru, link, icon, imageId, order }
-  sidebarBrandIds    String[] @default([]) // Array of Brand IDs to show in sidebar
-  // AmoCRM settings
-  amocrmDomain       String?  // e.g., "yourcompany.amocrm.ru"
-  amocrmClientId     String?  // OAuth Client ID
-  amocrmClientSecret String?  // OAuth Client Secret
-  amocrmAccessToken  String?  // Access token (auto-refreshed)
-  amocrmRefreshToken String?  // Refresh token (auto-refreshed)
-  amocrmPipelineId   String?  // Pipeline ID for leads
-  amocrmStatusId     String?  // Status ID for leads
-  updatedAt          DateTime @updatedAt
+  sidebarSections           Json? // Array of { id, title_uz, title_ru, link, icon, imageId, order }
+  sidebarBrandIds           String[] @default([]) // Array of Brand IDs to show in sidebar
+  updatedAt                 DateTime @updatedAt
 }
 
 model Banner {
@@ -271,28 +273,32 @@ model Product {
 }
 
 model Showcase {
-  id                String   @id @default(cuid())
-  type              String   @unique // "interacoustics" or "cochlear"
-  productIds       String[] // Array of Product IDs in order
-  productMetadata  Json?    // { [productId]: { description_uz, description_ru, imageId } }
-  updatedAt         DateTime @updatedAt
+  id              String   @id @default(cuid())
+  type            String   @unique // "interacoustics" or "cochlear"
+  productIds      String[] // Array of Product IDs in order
+  productMetadata Json? // { [productId]: { description_uz, description_ru, imageId } }
+  updatedAt       DateTime @updatedAt
 }
 
 model PostCategory {
-  id          String   @id @default(cuid())
-  name_uz     String
-  name_ru     String
-  slug        String   @unique
-  description_uz String? @db.Text
-  description_ru String? @db.Text
-  order       Int      @default(0)
-  status      String   @default("published")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  posts       Post[]
+  id             String   @id @default(cuid())
+  name_uz        String
+  name_ru        String
+  slug           String   @unique
+  description_uz String?  @db.Text
+  description_ru String?  @db.Text
+  section        String? // "patients" or "children" - which section this category belongs to
+  imageId        String?  @unique
+  image          Media?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
+  order          Int      @default(0)
+  status         String   @default("published")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  posts          Post[]
 
   @@index([slug])
   @@index([status, order])
+  @@index([section])
 }
 
 model Post {
@@ -308,7 +314,7 @@ model Post {
   cover             Media?             @relation(fields: [coverId], references: [id], onDelete: SetNull)
   postType          String             @default("article") // "article" or "news"
   categoryId        String?
-  category          PostCategory?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  category          PostCategory?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   authorId          String?
   author            Doctor?            @relation(fields: [authorId], references: [id], onDelete: SetNull)
   tags              String[]
@@ -342,27 +348,27 @@ model Faq {
 }
 
 model Branch {
-  id             String   @id @default(cuid())
-  name_uz        String
-  name_ru        String
-  slug           String?  @unique
-  address_uz     String
-  address_ru     String
-  phone          String
-  phones         String[] // Additional phones
-  imageId        String?
-  image          Media?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
-  map_iframe     String?  @db.Text
-  tour3d_iframe  String?  @db.Text // 3D virtual tour iframe (legacy, for backward compatibility)
-  tour3d_config  Json?    // 3D virtual tour configuration (Pannellum-based tour config)
-  latitude       Float?   // GPS latitude
-  longitude      Float?   // GPS longitude
-  workingHours_uz String? @db.Text // Ish vaqti (uzbek) - Masalan: "Dushanba - Juma: 09:00-20:00\nShanba - Yakshanba: 09:00-18:00"
-  workingHours_ru String? @db.Text // Ish vaqti (russian) - Masalan: "Понедельник - Пятница: 09:00-20:00\nСуббота - Воскресенье: 09:00-18:00"
-  serviceIds     String[] @default([]) // Xizmatlar ID'lari array'i
-  order          Int      @default(0)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id              String   @id @default(cuid())
+  name_uz         String
+  name_ru         String
+  slug            String?  @unique
+  address_uz      String
+  address_ru      String
+  phone           String
+  phones          String[] // Additional phones
+  imageId         String?
+  image           Media?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
+  map_iframe      String?  @db.Text
+  tour3d_iframe   String?  @db.Text // 3D virtual tour iframe (legacy, for backward compatibility)
+  tour3d_config   Json? // 3D virtual tour configuration (Pannellum-based tour config)
+  latitude        Float? // GPS latitude
+  longitude       Float? // GPS longitude
+  workingHours_uz String?  @db.Text // Ish vaqti (uzbek) - Masalan: "Dushanba - Juma: 09:00-20:00\nShanba - Yakshanba: 09:00-18:00"
+  workingHours_ru String?  @db.Text // Ish vaqti (russian) - Masalan: "Понедельник - Пятница: 09:00-20:00\nСуббота - Воскресенье: 09:00-18:00"
+  serviceIds      String[] @default([]) // Xizmatlar ID'lari array'i
+  order           Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@index([slug])
   @@index([order])
@@ -380,7 +386,7 @@ model Page {
   metaDescription_uz String?
   metaDescription_ru String?
   galleryIds         String[] @default([]) // Array of Media IDs for image gallery
-  videoUrl           String?  // YouTube video URL
+  videoUrl           String? // YouTube video URL
   usefulArticleSlugs String[] @default([]) // Array of Post slugs for useful articles sidebar
   status             String   @default("published")
   createdAt          DateTime @default(now())
@@ -398,7 +404,46 @@ model Lead {
   source    String? // Form source: "home", "contact", "product", etc.
   message   String?  @db.Text
   productId String? // If from product page
+  pageUrl   String? // URL of the page where form was submitted
+  referer   String? // HTTP referer header
   status    String   @default("new") // new, contacted, converted, archived
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
+  @@index([source])
+  @@index([pageUrl])
+  @@index([createdAt])
+}
+
+model HearingTest {
+  id    String  @id @default(cuid())
+  name  String? // Foydalanuvchi ismi (ixtiyoriy)
+  phone String? // Telefon raqami (ixtiyoriy)
+  email String? // Email (ixtiyoriy)
+
+  // Test sozlamalari
+  deviceType  String // "speaker" yoki "headphone"
+  volumeLevel Float? // Ovoz balandligi (0-1)
+
+  // Test natijalari
+  leftEarResults  Json // { "250": true/false, "500": true/false, ... }
+  rightEarResults Json // { "250": true/false, "500": true/false, ... }
+
+  // Hisoblangan natijalar
+  leftEarScore  Int? // 0-100 (foiz)
+  rightEarScore Int? // 0-100 (foiz)
+  overallScore  Int? // 0-100 (foiz)
+
+  // Eshitish darajasi
+  leftEarLevel  String? // "normal", "mild", "moderate", "severe", "profound"
+  rightEarLevel String? // "normal", "mild", "moderate", "severe", "profound"
+
+  // Qo'shimcha ma'lumotlar
+  source String  @default("hearing_test")
+  status String  @default("completed") // "completed", "contacted", "converted"
+  notes  String? @db.Text
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -497,30 +542,6 @@ model HomepageService {
   @@index([status, order])
 }
 
-model HomepageSection {
-  id        String   @id @default(cuid())
-  key       String   @unique
-  content   Json
-  order     Int      @default(0)
-  status    String   @default("published") // published, draft, archived
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([status, order])
-}
-
-model HomepagePlaceholder {
-  id         String   @id @default(cuid())
-  sectionKey String   @unique
-  content    Json
-  imageId    String?
-  image      Media?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@index([sectionKey])
-}
-
 model Doctor {
   id             String   @id @default(cuid())
   name_uz        String
@@ -546,61 +567,109 @@ model Doctor {
   @@index([status, order])
 }
 
-model AvailabilityStatus {
-  id        String   @id @default(cuid())
-  key       String   @unique
-  label_uz  String
-  label_ru  String
-  order     Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model HomepageSection {
+  id              String   @id @default(cuid())
+  key             String   @unique
+  title_uz        String?
+  title_ru        String?
+  subtitle_uz     String?
+  subtitle_ru     String?
+  description_uz  String?  @db.Text
+  description_ru  String?  @db.Text
+  showTitle       Boolean  @default(true)
+  showSubtitle    Boolean  @default(false)
+  showDescription Boolean  @default(false)
+  order           Int      @default(0)
+  status          String   @default("published") // published, draft, hidden
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@index([key])
-  @@index([order])
+  @@index([status, order])
 }
 
-model CatalogPageConfig {
-  id        String   @id @default("singleton")
-  heroTitle_uz String?
-  heroTitle_ru String?
-  heroDescription_uz String? @db.Text
-  heroDescription_ru String? @db.Text
-  updatedAt DateTime @updatedAt
+model HomepageLink {
+  id         String   @id @default(cuid())
+  sectionKey String
+  text_uz    String
+  text_ru    String
+  href       String
+  icon       String?
+  position   String   @default("bottom") // bottom, header, inline
+  order      Int      @default(0)
+  status     String   @default("published") // published, draft
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([sectionKey])
+  @@index([position, order])
+  @@index([status])
 }
 
-model CommonText {
-  id        String   @id @default(cuid())
-  key       String   @unique
-  text_uz   String   @db.Text
-  text_ru   String   @db.Text
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model HomepagePlaceholder {
+  id              String   @id @default(cuid())
+  sectionKey      String   @unique
+  text_uz         String?
+  text_ru         String?
+  backgroundColor String?
+  textColor       String?
+  fontSize        String?
+  fontWeight      String?
+  imageId         String?
+  image           Media?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  @@index([key])
+  @@index([sectionKey])
 }
 
 model HomepageEmptyState {
   id         String   @id @default(cuid())
   sectionKey String   @unique
-  title_uz   String
-  title_ru   String
-  text_uz    String?  @db.Text
-  text_ru    String?  @db.Text
+  message_uz String
+  message_ru String
+  icon       String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
   @@index([sectionKey])
 }
 
-model HomepageLink {
-  id          String   @id @default(cuid())
-  title_uz    String
-  title_ru   String
-  href        String
-  icon        String?
-  order       Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model CatalogPageConfig {
+  id                     String   @id @default("singleton")
+  hearingAidsTitle_uz    String?
+  hearingAidsTitle_ru    String?
+  interacousticsTitle_uz String?
+  interacousticsTitle_ru String?
+  accessoriesTitle_uz    String?
+  accessoriesTitle_ru    String?
+  updatedAt              DateTime @updatedAt
+}
 
+model CommonText {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  text_uz   String
+  text_ru   String
+  category  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+  @@index([category])
+}
+
+model AvailabilityStatus {
+  id         String   @id @default(cuid())
+  key        String   @unique
+  label_uz   String
+  label_ru   String
+  schema     String? // Schema.org URL
+  colorClass String? // Tailwind CSS classes
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([key])
   @@index([order])
 }

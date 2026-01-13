@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Menu,
@@ -23,6 +23,7 @@ import { getCatalogs, getMenu, getSettings, type MenuItemResponse, type CatalogR
 import LanguageSwitcher, { LanguageSwitcherMobile } from '@/components/language-switcher';
 import { getBilingualText, DEFAULT_LOCALE, type Locale } from '@/lib/locale';
 import { getLocaleFromCookie } from '@/lib/locale-client';
+import { normalizeImageUrl } from '@/lib/image-utils';
 
 // Removed CatalogMenuEntry - not currently used
 
@@ -78,59 +79,30 @@ function getLocaleFromDOM(): Locale {
 
 interface SiteHeaderProps {
   initialSettings?: SettingsResponse | null;
+  initialLocale?: Locale;
 }
 
-// Helper function to normalize image URLs
-function normalizeImageUrl(url: string | null | undefined): string {
-  if (!url) return '';
-  if (url.startsWith('http://') || url.startsWith('https://')) {
-    return url;
-  }
-  if (url.startsWith('/uploads/')) {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:3001';
-    return `${baseUrl}${url}`;
-  }
-  return url;
-}
-
-export default function SiteHeader({ initialSettings = null }: SiteHeaderProps = {}) {
+export default function SiteHeader({ initialSettings = null, initialLocale }: SiteHeaderProps = {}) {
   const queryClient = useQueryClient();
   
-  // CRITICAL: Read initial locale from DOM synchronously - this must match server render
-  // The server sets data-locale="ru" on <html>, which is available BEFORE React hydrates
-  // We MUST read it synchronously here to avoid hydration mismatch
-  const getInitialLocale = (): Locale => {
-    if (typeof window === 'undefined' || typeof document === 'undefined') {
-      return DEFAULT_LOCALE; // SSR fallback
-    }
-    
-    // Read from data-locale attribute (set by server) - this is the source of truth
-    // It's set in layout.tsx before React loads, so it's always available
-    const htmlLocale = document.documentElement.getAttribute('data-locale');
-    if (htmlLocale === 'ru' || htmlLocale === 'uz') {
-      console.log('[SiteHeader] ✅ Initial locale from data-locale:', htmlLocale);
-      return htmlLocale as Locale;
-    }
-    
-    // Fallback to window.__NEXT_LOCALE__ (set by inline script)
-    if ((window as any).__NEXT_LOCALE__) {
-      const windowLocale = (window as any).__NEXT_LOCALE__;
-      if (windowLocale === 'ru' || windowLocale === 'uz') {
-        console.log('[SiteHeader] ✅ Initial locale from window.__NEXT_LOCALE__:', windowLocale);
-        return windowLocale as Locale;
-      }
-    }
-    
-    // Last resort: cookie (but this should rarely be needed)
-    const cookieLocale = getLocaleFromCookie();
-    console.log('[SiteHeader] ⚠️ Using fallback locale from cookie:', cookieLocale);
-    return cookieLocale;
-  };
-  
-  const [displayLocale, setDisplayLocale] = useState<Locale>(getInitialLocale);
+  // Use initialLocale from props (server-provided) to match SSR, then update from DOM if needed
+  const [displayLocale, setDisplayLocale] = useState<Locale>(initialLocale || DEFAULT_LOCALE);
+  const [mounted, setMounted] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuRefreshKey, setMenuRefreshKey] = useState(0);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [mobileOpenDropdown, setMobileOpenDropdown] = useState<string | null>(null);
+  
+  // Update locale from DOM after mount if it differs from server-provided locale
+  useEffect(() => {
+    setMounted(true);
+    if (typeof document !== 'undefined') {
+      const htmlLocale = document.documentElement.getAttribute('data-locale');
+      if ((htmlLocale === 'ru' || htmlLocale === 'uz') && htmlLocale !== displayLocale) {
+        setDisplayLocale(htmlLocale as Locale);
+      }
+    }
+  }, []); // Only run once on mount
 
   // Track if we've successfully switched locale to prevent reverting
   const [localeChangeInProgress, setLocaleChangeInProgress] = useState(false);
@@ -252,9 +224,9 @@ export default function SiteHeader({ initialSettings = null }: SiteHeaderProps =
       return result;
     },
     enabled: !!displayLocale, // Don't run query until locale is set
-    staleTime: 0, // Always refetch when locale changes
-    gcTime: 300000, // Keep cache for 5 minutes to preserve data during refetch
-    refetchOnMount: 'always', // Always refetch on mount
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes - improves performance
+    gcTime: 10 * 60 * 1000, // Keep cache for 10 minutes
+    refetchOnMount: false, // Don't refetch on mount if data is fresh (locale in queryKey handles this)
     refetchOnWindowFocus: false, // Don't refetch on window focus (avoid unnecessary requests)
     retry: false,
     throwOnError: false, // Don't throw errors - handle gracefully to prevent menu from disappearing
@@ -262,7 +234,16 @@ export default function SiteHeader({ initialSettings = null }: SiteHeaderProps =
     placeholderData: (previousData) => previousData, // Keep previous data while loading to prevent menu from disappearing
   });
 
-  const catalogMenuItems = useMemo(() => {
+  // Use useState + useEffect instead of useMemo to prevent hydration mismatch
+  const [catalogMenuItems, setCatalogMenuItems] = useState<Array<{ href: string; label: string }>>([]);
+  
+  useEffect(() => {
+    // Only update catalog menu items after component is mounted to prevent hydration mismatch
+    if (!mounted) {
+      setCatalogMenuItems([]);
+      return;
+    }
+    
     const mainSections = [
       {
         href: '/catalog?productType=hearing-aids',
@@ -301,8 +282,8 @@ export default function SiteHeader({ initialSettings = null }: SiteHeaderProps =
       },
     ];
 
-    return [...mainSections, ...otherSections];
-  }, [displayLocale]);
+    setCatalogMenuItems([...mainSections, ...otherSections]);
+  }, [displayLocale, mounted]);
 
   const { data: headerMenu, refetch: refetchMenu, isLoading: isLoadingMenu } = useQuery({
     queryKey: ['menu', 'header', displayLocale, menuRefreshKey],
@@ -320,9 +301,9 @@ export default function SiteHeader({ initialSettings = null }: SiteHeaderProps =
       return result;
     },
     enabled: !!displayLocale, // Don't run query until locale is set
-    staleTime: 0, // Always refetch when locale changes
-    gcTime: 300000, // Keep cache for 5 minutes to preserve data during refetch
-    refetchOnMount: 'always', // Always refetch on mount
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes - improves performance
+    gcTime: 10 * 60 * 1000, // Keep cache for 10 minutes
+    refetchOnMount: false, // Don't refetch on mount if data is fresh (locale in queryKey handles this)
     refetchOnWindowFocus: false, // Don't refetch on window focus (avoid unnecessary requests)
     retry: false,
     throwOnError: false, // Don't throw errors - handle gracefully to prevent menu from disappearing
@@ -337,35 +318,33 @@ export default function SiteHeader({ initialSettings = null }: SiteHeaderProps =
     }
   }, [headerMenu]);
   
-  // Force menu refetch when displayLocale changes
-  // This ensures menu updates immediately when locale changes
-  // Use a ref to prevent multiple simultaneous refetches
+  // Optimized: Only refetch when locale actually changes
+  // Since locale is in queryKey, React Query will automatically use different cache entries
   const refetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
     if (displayLocale && !localeChangeInProgress) {
-      console.log('[SiteHeader] 🔄 displayLocale changed to:', displayLocale, '- invalidating and refetching menu and categories');
-      
       // Clear any pending refetch
       if (refetchTimeoutRef.current) {
         clearTimeout(refetchTimeoutRef.current);
       }
       
-      // Force menu refresh key increment to trigger refetch
-      setMenuRefreshKey(prev => prev + 1);
-      // Remove ALL old cached queries for ALL locales
-      queryClient.removeQueries({ queryKey: ['menu'] });
-      queryClient.removeQueries({ queryKey: ['product-categories'] });
+      // Only invalidate queries for the OLD locale, not all queries
+      // This preserves cache for other locales and improves performance
+      const oldLocale = displayLocale === 'uz' ? 'ru' : 'uz';
+      queryClient.invalidateQueries({ queryKey: ['menu', 'header', oldLocale] });
+      queryClient.invalidateQueries({ queryKey: ['catalogs', oldLocale] });
       
-      // Force immediate refetch with new locale after a brief delay
-      // This ensures the query key has updated with the new menuRefreshKey
+      // Increment refresh key to trigger refetch with new locale
+      setMenuRefreshKey(prev => prev + 1);
+      
+      // Refetch with new locale (queryKey includes displayLocale, so it will fetch fresh data)
       refetchTimeoutRef.current = setTimeout(() => {
-        const currentLocale = displayLocale;
-        console.log('[SiteHeader] ✅ Refetching menu with locale:', currentLocale);
+        console.log('[SiteHeader] ✅ Refetching menu with locale:', displayLocale);
         refetchMenu();
-        queryClient.refetchQueries({ queryKey: ['catalogs', currentLocale] });
+        queryClient.refetchQueries({ queryKey: ['catalogs', displayLocale] });
         refetchTimeoutRef.current = null;
-      }, 100);
+      }, 50); // Reduced delay for faster response
     }
     
     return () => {
@@ -376,14 +355,26 @@ export default function SiteHeader({ initialSettings = null }: SiteHeaderProps =
     };
   }, [displayLocale, refetchMenu, queryClient, localeChangeInProgress]);
 
-  const headerMenuItems = useMemo<MenuItemResponse[]>(() => {
-    if (headerMenu?.items?.length) {
-      return [...headerMenu.items].sort((a, b) => a.order - b.order);
+  // Use useState + useEffect instead of useMemo to prevent hydration mismatch
+  const [headerMenuItems, setHeaderMenuItems] = useState<MenuItemResponse[]>([]);
+  
+  useEffect(() => {
+    // Only update menu items after component is mounted to prevent hydration mismatch
+    if (!mounted) {
+      setHeaderMenuItems([]);
+      return;
     }
-
-    // No fallback - return empty array if backend is unavailable
-    return [];
-  }, [headerMenu, displayLocale]); // Add displayLocale to dependencies to ensure recalculation
+    
+    if (headerMenu?.items?.length) {
+      const sortedItems = [...headerMenu.items].sort((a, b) => a.order - b.order);
+      console.log('[SiteHeader] Setting headerMenuItems:', sortedItems.length, 'items');
+      setHeaderMenuItems(sortedItems);
+    } else {
+      // No fallback - return empty array if backend is unavailable
+      console.log('[SiteHeader] No menu items available, setting empty array');
+      setHeaderMenuItems([]);
+    }
+  }, [headerMenu, displayLocale, mounted]);
 
   const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
     '/services': Stethoscope,
@@ -404,7 +395,16 @@ export default function SiteHeader({ initialSettings = null }: SiteHeaderProps =
     return <IconComponent className="h-4 w-4" />;
   };
 
-  const navItems: NavItem[] = useMemo(() => {
+  // Track navItems state - mounted state already declared above
+  const [navItems, setNavItems] = useState<NavItem[]>([]);
+  
+  useEffect(() => {
+    // Don't build navItems until mounted to prevent hydration mismatch
+    if (!mounted) {
+      setNavItems([]);
+      return;
+    }
+    
     console.log('[SiteHeader] Building navItems with locale:', displayLocale);
     const items = headerMenuItems.map((item) => {
       const label = getBilingualText(item.title_uz, item.title_ru, displayLocale);
@@ -441,8 +441,8 @@ export default function SiteHeader({ initialSettings = null }: SiteHeaderProps =
       };
     });
     console.log('[SiteHeader] navItems built with locale:', displayLocale, 'Items count:', items.length);
-    return items;
-  }, [headerMenuItems, catalogMenuItems, displayLocale]);
+    setNavItems(items);
+  }, [headerMenuItems, catalogMenuItems, displayLocale, mounted]);
 
   // Log current state for debugging
   useEffect(() => {
@@ -456,9 +456,9 @@ export default function SiteHeader({ initialSettings = null }: SiteHeaderProps =
   }, [displayLocale, menuRefreshKey, headerMenu, navItems.length]);
 
   return (
-    <header className="border-b shadow-sm" key={`header-${displayLocale}-${menuRefreshKey}`}>
-      <div className="bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 md:px-6">
+    <header className="border-b shadow-sm" key={`header-${displayLocale}-${menuRefreshKey}`} suppressHydrationWarning>
+      <div className="bg-white" suppressHydrationWarning>
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 md:px-6" suppressHydrationWarning>
           {/* Logo - Left */}
           <div className="flex items-center">
             <Link href="/" className="flex items-center">
@@ -525,13 +525,20 @@ export default function SiteHeader({ initialSettings = null }: SiteHeaderProps =
               <Phone size={16} /> {settings?.phonePrimary || '1385'}
             </Link>
             
-            <LanguageSwitcher />
+            <LanguageSwitcher initialLocale={displayLocale} />
             
             {/* Mobile Menu Button */}
             <button
               type="button"
               className="inline-flex items-center rounded-full border border-border p-2 text-muted-foreground lg:hidden"
-              onClick={() => setMobileOpen((prev) => !prev)}
+              onClick={() => {
+                const newValue = !mobileOpen;
+                setMobileOpen(newValue);
+                if (!newValue) {
+                  // Close dropdown when closing mobile menu
+                  setMobileOpenDropdown(null);
+                }
+              }}
               aria-label="Toggle navigation"
             >
               <Menu size={20} />
@@ -566,15 +573,16 @@ export default function SiteHeader({ initialSettings = null }: SiteHeaderProps =
         </div>
       </div>
 
-      <div className="bg-brand-primary">
-        <div className="mx-auto hidden max-w-6xl items-center px-4 md:px-6 lg:flex">
-          <nav key={`nav-${displayLocale}`} className="flex w-full items-stretch min-h-[52px]">
-            {navItems.length === 0 && (isLoadingMenu || isLoadingCatalogs) && !headerMenu ? (
+      <div className="bg-brand-primary" suppressHydrationWarning>
+        <div className="mx-auto hidden max-w-6xl items-center px-4 md:px-6 lg:flex" suppressHydrationWarning>
+          <nav key={`nav-${displayLocale}`} className="flex w-full items-stretch min-h-[52px]" suppressHydrationWarning>
+            {!mounted || (navItems.length === 0 && (isLoadingMenu || isLoadingCatalogs) && !headerMenu) ? (
               // Show skeleton menu items while loading to maintain layout (only if no cached data)
               Array.from({ length: 6 }).map((_, index) => (
                 <div
                   key={`skeleton-${index}`}
                   className={`flex-1 animate-pulse ${index > 0 ? 'border-l border-white/20' : ''}`}
+                  suppressHydrationWarning
                 >
                   <div className="flex h-full w-full items-center justify-center gap-2 px-4 py-3">
                     <div className="h-4 w-20 rounded bg-white/20"></div>
@@ -641,18 +649,19 @@ export default function SiteHeader({ initialSettings = null }: SiteHeaderProps =
         </div>
 
         {mobileOpen && (
-          <nav key={`mobile-nav-${displayLocale}`} className="space-y-2 border-t border-white/20 bg-brand-primary px-4 py-4 md:px-6 lg:hidden">
+          <nav key={`mobile-nav-${displayLocale}`} className="space-y-2 border-t border-white/20 bg-brand-primary px-4 py-4 md:px-6 lg:hidden" suppressHydrationWarning>
             <Link
               href="tel:+998712021441"
               className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/40 bg-white/10 px-4 py-2 text-sm font-semibold text-white transition hover:bg-white/20"
               onClick={() => setMobileOpen(false)}
+              suppressHydrationWarning
             >
               <Phone size={16} /> 1385
             </Link>
-            {navItems.length === 0 && (isLoadingMenu || isLoadingCatalogs) && !headerMenu ? (
+            {!mounted || (navItems.length === 0 && (isLoadingMenu || isLoadingCatalogs) && !headerMenu) ? (
               // Show skeleton menu items while loading for mobile (only if no cached data)
               Array.from({ length: 5 }).map((_, index) => (
-                <div key={`mobile-skeleton-${index}`} className="space-y-2 rounded-lg border border-white/20 p-3 animate-pulse">
+                <div key={`mobile-skeleton-${index}`} className="space-y-2 rounded-lg border border-white/20 p-3 animate-pulse" suppressHydrationWarning>
                   <div className="h-5 w-32 rounded bg-white/20"></div>
                 </div>
               ))
@@ -661,35 +670,40 @@ export default function SiteHeader({ initialSettings = null }: SiteHeaderProps =
               // Use locale in key to force remount when locale changes
               return item.type === 'dropdown' ? (
                 <div key={`${item.href}-${displayLocale}`} className="space-y-2 rounded-lg border border-white/20 p-3">
-                  <Link
-                    href={item.href}
-                    onClick={() => setMobileOpen(false)}
-                    className="flex items-center justify-between gap-2 text-sm font-semibold text-white"
+                  <button
+                    type="button"
+                    onClick={() => setMobileOpenDropdown(mobileOpenDropdown === item.href ? null : item.href)}
+                    className="flex w-full items-center justify-between gap-2 text-sm font-semibold text-white"
                   >
                     <span className="flex items-center gap-2">
                       {item.icon}
                       <span suppressHydrationWarning>{item.label}</span>
                     </span>
-                    <ChevronDown className="h-3 w-3" />
-                  </Link>
-                  <div className="space-y-1 pl-6">
-                    {item.children.length > 0 ? (
-                      item.children.map((child) => (
-                        <Link
-                          key={`${child.href}-${displayLocale}`}
-                          href={child.href}
-                          onClick={() => setMobileOpen(false)}
-                          className="block rounded-md px-2 py-1 text-xs text-white/80 transition hover:bg-white/10"
-                        >
-                          <span suppressHydrationWarning>{child.label}</span>
-                        </Link>
-                      ))
-                    ) : (
-                      <span className="block text-xs text-white/60" suppressHydrationWarning>
-                        {displayLocale === 'ru' ? 'Разделы скоро будут добавлены.' : "Bo'limlar tez orada qo'shiladi."}
-                      </span>
-                    )}
-                  </div>
+                    <ChevronDown className={`h-3 w-3 transition-transform ${mobileOpenDropdown === item.href ? 'rotate-180' : ''}`} />
+                  </button>
+                  {mobileOpenDropdown === item.href && (
+                    <div className="space-y-1 pl-6">
+                      {item.children.length > 0 ? (
+                        item.children.map((child) => (
+                          <Link
+                            key={`${child.href}-${displayLocale}`}
+                            href={child.href}
+                            onClick={() => {
+                              setMobileOpen(false);
+                              setMobileOpenDropdown(null);
+                            }}
+                            className="block rounded-md px-2 py-1 text-xs text-white/80 transition hover:bg-white/10"
+                          >
+                            <span suppressHydrationWarning>{child.label}</span>
+                          </Link>
+                        ))
+                      ) : (
+                        <span className="block text-xs text-white/60" suppressHydrationWarning>
+                          {displayLocale === 'ru' ? 'Разделы скоро будут добавлены.' : "Bo'limlar tez orada qo'shiladi."}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <Link
@@ -704,7 +718,7 @@ export default function SiteHeader({ initialSettings = null }: SiteHeaderProps =
               );
             })
             )}
-            <LanguageSwitcherMobile />
+            <LanguageSwitcherMobile initialLocale={displayLocale} />
           </nav>
         )}
       </div>

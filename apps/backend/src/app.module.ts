@@ -30,6 +30,7 @@ import { MenusModule } from './menus/menus.module';
 import { AuditLogModule } from './audit-log/audit-log.module';
 import { HomepageModule } from './homepage/homepage.module';
 import { DoctorsModule } from './doctors/doctors.module';
+import { HearingTestModule } from './hearing-test/hearing-test.module';
 import { LocaleCacheInterceptor } from './common/interceptors/locale-cache.interceptor';
 
 @Module({
@@ -101,6 +102,7 @@ import { LocaleCacheInterceptor } from './common/interceptors/locale-cache.inter
     AuditLogModule,
     HomepageModule,
     DoctorsModule,
+    HearingTestModule,
   ],
   providers: [
     {

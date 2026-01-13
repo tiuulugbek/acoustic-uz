@@ -34,6 +34,7 @@ import {
   ApiError,
 } from '../lib/api';
 import MediaLibraryModal from '../components/MediaLibraryModal';
+import ImageSizeHint from '../components/ImageSizeHint';
 import { normalizeImageUrl } from '../utils/image';
 import { compressImage } from '../utils/image-compression';
 
@@ -395,6 +396,7 @@ export default function BannersPage() {
             <Input placeholder="https://example.com yoki tel:+998712021441" />
           </Form.Item>
           
+          <ImageSizeHint type="banner" />
           <Form.Item 
             label="Rasm" 
             name="imageId"

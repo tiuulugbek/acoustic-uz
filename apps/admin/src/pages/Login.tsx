@@ -1,27 +1,11 @@
 import { Form, Input, Button, Card, message } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { login, getCurrentUser, ApiError } from '../lib/api';
-import { useEffect } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { login, ApiError } from '../lib/api';
 
 export default function Login() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-
-  // Check if user is already logged in
-  const { data: currentUser } = useQuery({
-    queryKey: ['auth', 'me'],
-    queryFn: getCurrentUser,
-    retry: false,
-    staleTime: 0,
-  });
-
-  // Redirect to dashboard if already logged in
-  useEffect(() => {
-    if (currentUser) {
-      navigate('/', { replace: true });
-    }
-  }, [currentUser, navigate]);
 
   const { mutateAsync, isPending } = useMutation<{ user: unknown }, ApiError, { email: string; password: string }>({
     mutationFn: login,

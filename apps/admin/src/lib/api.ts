@@ -1,4 +1,18 @@
-const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api';
+// Use production API URL as default (fallback to localhost only in development)
+// Check if we're in production mode
+let API_BASE = 'https://a.acoustic.uz/api'; // Default to production (a.acoustic.uz is the backend domain)
+
+// Try to get from window object first (injected by plugin)
+if (typeof window !== 'undefined' && (window as any).__VITE_API_URL__) {
+  API_BASE = (window as any).__VITE_API_URL__;
+} else if (import.meta.env.VITE_API_URL) {
+  // Try to get from Vite env
+  API_BASE = import.meta.env.VITE_API_URL;
+} else {
+  // Fallback: check if we're in development
+  const isProduction = import.meta.env.PROD || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && !window.location.hostname.includes('localhost'));
+  API_BASE = isProduction ? 'https://a.acoustic.uz/api' : 'http://localhost:3001/api';
+}
 
 interface RequestOptions extends RequestInit {
   auth?: boolean;
@@ -146,7 +160,26 @@ export const logout = () =>
 
 export const getCurrentUser = () => request<UserDto>('/auth/me');
 
-export const getPosts = () => request<PostDto[]>('/posts');
+export const getPosts = async (): Promise<PostDto[]> => {
+  console.log('[API] Fetching posts from:', `${API_BASE}/posts`);
+  try {
+    const result = await request<PostDto[]>('/posts');
+    console.log('[API] Posts fetched:', result?.length || 0);
+    if (result && result.length > 0) {
+      console.log('[API] Sample post:', {
+        id: result[0].id,
+        title_uz: result[0].title_uz,
+        postType: result[0].postType,
+        categoryId: result[0].categoryId,
+        status: result[0].status,
+      });
+    }
+    return result || [];
+  } catch (error) {
+    console.error('[API] Error fetching posts:', error);
+    throw error;
+  }
+};
 export const createPost = (payload: CreatePostPayload) =>
   request<PostDto>('/posts', {
     method: 'POST',
@@ -170,6 +203,9 @@ export interface PostCategoryDto {
   slug: string;
   description_uz?: string | null;
   description_ru?: string | null;
+  section?: string | null; // "patients" or "children"
+  imageId?: string | null;
+  image?: MediaDto | null;
   order: number;
   status: string;
   createdAt: string;
@@ -179,7 +215,10 @@ export interface PostCategoryDto {
 export type CreatePostCategoryPayload = Omit<PostCategoryDto, 'id' | 'createdAt' | 'updatedAt'>;
 export type UpdatePostCategoryPayload = Partial<CreatePostCategoryPayload>;
 
-export const getPostCategories = () => request<PostCategoryDto[]>('/post-categories');
+export const getPostCategories = (section?: string) => {
+  const params = section ? `?section=${section}` : '';
+  return request<PostCategoryDto[]>(`/post-categories${params}`);
+};
 export const createPostCategory = (payload: CreatePostCategoryPayload) =>
   request<PostCategoryDto>('/post-categories', {
     method: 'POST',
@@ -291,6 +330,8 @@ export type CreateDoctorPayload = {
   description_ru?: string | null;
   slug: string;
   imageId?: string | null;
+  branchIds?: string[];
+  patientTypes?: string[];
   order?: number;
   status?: DoctorDto['status'];
 };
@@ -549,6 +590,290 @@ export const deleteHomepageService = (id: string) =>
     method: 'DELETE',
   });
 
+// Homepage Sections
+export interface HomepageSectionDto {
+  id: string;
+  key: string;
+  title_uz?: string | null;
+  title_ru?: string | null;
+  subtitle_uz?: string | null;
+  subtitle_ru?: string | null;
+  description_uz?: string | null;
+  description_ru?: string | null;
+  showTitle: boolean;
+  showSubtitle: boolean;
+  showDescription: boolean;
+  order: number;
+  status: 'published' | 'draft' | 'hidden';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CreateHomepageSectionPayload = {
+  key: string;
+  title_uz?: string | null;
+  title_ru?: string | null;
+  subtitle_uz?: string | null;
+  subtitle_ru?: string | null;
+  description_uz?: string | null;
+  description_ru?: string | null;
+  showTitle?: boolean;
+  showSubtitle?: boolean;
+  showDescription?: boolean;
+  order?: number;
+  status?: HomepageSectionDto['status'];
+};
+
+export type UpdateHomepageSectionPayload = Partial<CreateHomepageSectionPayload>;
+
+export const getHomepageSections = () => request<HomepageSectionDto[]>('/homepage/sections');
+export const createHomepageSection = (payload: CreateHomepageSectionPayload) =>
+  request<HomepageSectionDto>('/homepage/sections', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+export const updateHomepageSection = (key: string, payload: UpdateHomepageSectionPayload) =>
+  request<HomepageSectionDto>(`/homepage/sections/${key}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+export const deleteHomepageSection = (key: string) =>
+  request<void>(`/homepage/sections/${key}`, {
+    method: 'DELETE',
+  });
+
+// Homepage Links
+export interface HomepageLinkDto {
+  id: string;
+  sectionKey: string;
+  text_uz: string;
+  text_ru: string;
+  href: string;
+  icon?: string | null;
+  position: 'bottom' | 'header' | 'inline';
+  order: number;
+  status: 'published' | 'draft';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CreateHomepageLinkPayload = {
+  sectionKey: string;
+  text_uz: string;
+  text_ru: string;
+  href: string;
+  icon?: string | null;
+  position: 'bottom' | 'header' | 'inline';
+  order?: number;
+  status?: HomepageLinkDto['status'];
+};
+
+export type UpdateHomepageLinkPayload = Partial<CreateHomepageLinkPayload>;
+
+export const getHomepageLinks = () => request<HomepageLinkDto[]>('/homepage/links');
+export const createHomepageLink = (payload: CreateHomepageLinkPayload) =>
+  request<HomepageLinkDto>('/homepage/links', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+export const updateHomepageLink = (id: string, payload: UpdateHomepageLinkPayload) =>
+  request<HomepageLinkDto>(`/homepage/links/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+export const deleteHomepageLink = (id: string) =>
+  request<void>(`/homepage/links/${id}`, {
+    method: 'DELETE',
+  });
+
+// Homepage Placeholders
+export interface HomepagePlaceholderDto {
+  id: string;
+  sectionKey: string;
+  text_uz?: string | null;
+  text_ru?: string | null;
+  backgroundColor?: string | null;
+  textColor?: string | null;
+  fontSize?: string | null;
+  fontWeight?: string | null;
+  imageId?: string | null;
+  image?: {
+    id: string;
+    url: string;
+  } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CreateHomepagePlaceholderPayload = {
+  sectionKey: string;
+  text_uz?: string | null;
+  text_ru?: string | null;
+  backgroundColor?: string | null;
+  textColor?: string | null;
+  fontSize?: string | null;
+  fontWeight?: string | null;
+  imageId?: string | null;
+};
+
+export type UpdateHomepagePlaceholderPayload = Partial<CreateHomepagePlaceholderPayload>;
+
+export const getHomepagePlaceholders = () => request<HomepagePlaceholderDto[]>('/homepage/placeholders');
+export const createHomepagePlaceholder = (payload: CreateHomepagePlaceholderPayload) =>
+  request<HomepagePlaceholderDto>('/homepage/placeholders', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+export const updateHomepagePlaceholder = (sectionKey: string, payload: UpdateHomepagePlaceholderPayload) =>
+  request<HomepagePlaceholderDto>(`/homepage/placeholders/${sectionKey}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+export const deleteHomepagePlaceholder = (sectionKey: string) =>
+  request<void>(`/homepage/placeholders/${sectionKey}`, {
+    method: 'DELETE',
+  });
+
+// Homepage Empty States
+export interface HomepageEmptyStateDto {
+  id: string;
+  sectionKey: string;
+  message_uz: string;
+  message_ru: string;
+  icon?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CreateHomepageEmptyStatePayload = {
+  sectionKey: string;
+  message_uz: string;
+  message_ru: string;
+  icon?: string | null;
+};
+
+export type UpdateHomepageEmptyStatePayload = Partial<CreateHomepageEmptyStatePayload>;
+
+export const getHomepageEmptyStates = () => request<HomepageEmptyStateDto[]>('/homepage/empty-states');
+export const createHomepageEmptyState = (payload: CreateHomepageEmptyStatePayload) =>
+  request<HomepageEmptyStateDto>('/homepage/empty-states', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+export const updateHomepageEmptyState = (sectionKey: string, payload: UpdateHomepageEmptyStatePayload) =>
+  request<HomepageEmptyStateDto>(`/homepage/empty-states/${sectionKey}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+export const deleteHomepageEmptyState = (sectionKey: string) =>
+  request<void>(`/homepage/empty-states/${sectionKey}`, {
+    method: 'DELETE',
+  });
+
+// Catalog Page Config
+export interface CatalogPageConfigDto {
+  id: string;
+  hearingAidsTitle_uz?: string | null;
+  hearingAidsTitle_ru?: string | null;
+  interacousticsTitle_uz?: string | null;
+  interacousticsTitle_ru?: string | null;
+  accessoriesTitle_uz?: string | null;
+  accessoriesTitle_ru?: string | null;
+  updatedAt: string;
+}
+
+export type UpdateCatalogPageConfigPayload = Partial<{
+  hearingAidsTitle_uz?: string | null;
+  hearingAidsTitle_ru?: string | null;
+  interacousticsTitle_uz?: string | null;
+  interacousticsTitle_ru?: string | null;
+  accessoriesTitle_uz?: string | null;
+  accessoriesTitle_ru?: string | null;
+}>;
+
+export const getCatalogPageConfig = () => request<CatalogPageConfigDto>('/catalog-page-config');
+export const updateCatalogPageConfig = (payload: UpdateCatalogPageConfigPayload) =>
+  request<CatalogPageConfigDto>('/catalog-page-config', {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+
+// Common Texts
+export interface CommonTextDto {
+  id: string;
+  key: string;
+  text_uz: string;
+  text_ru: string;
+  category?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CreateCommonTextPayload = {
+  key: string;
+  text_uz: string;
+  text_ru: string;
+  category?: string | null;
+};
+
+export type UpdateCommonTextPayload = Partial<CreateCommonTextPayload>;
+
+export const getCommonTexts = () => request<CommonTextDto[]>('/common-texts');
+export const createCommonText = (payload: CreateCommonTextPayload) =>
+  request<CommonTextDto>('/common-texts', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+export const updateCommonText = (key: string, payload: UpdateCommonTextPayload) =>
+  request<CommonTextDto>(`/common-texts/${key}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+export const deleteCommonText = (key: string) =>
+  request<void>(`/common-texts/${key}`, {
+    method: 'DELETE',
+  });
+
+// Availability Statuses
+export interface AvailabilityStatusDto {
+  id: string;
+  key: string;
+  label_uz: string;
+  label_ru: string;
+  schema?: string | null;
+  colorClass?: string | null;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CreateAvailabilityStatusPayload = {
+  key: string;
+  label_uz: string;
+  label_ru: string;
+  schema?: string | null;
+  colorClass?: string | null;
+  order?: number;
+};
+
+export type UpdateAvailabilityStatusPayload = Partial<CreateAvailabilityStatusPayload>;
+
+export const getAvailabilityStatuses = () => request<AvailabilityStatusDto[]>('/availability-statuses');
+export const createAvailabilityStatus = (payload: CreateAvailabilityStatusPayload) =>
+  request<AvailabilityStatusDto>('/availability-statuses', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+export const updateAvailabilityStatus = (key: string, payload: UpdateAvailabilityStatusPayload) =>
+  request<AvailabilityStatusDto>(`/availability-statuses/${key}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+export const deleteAvailabilityStatus = (key: string) =>
+  request<void>(`/availability-statuses/${key}`, {
+    method: 'DELETE',
+  });
+
 export interface BannerDto {
   id: string;
   title_uz: string;
@@ -614,33 +939,70 @@ export interface MediaDto {
 }
 
 export const getMedia = () => request<MediaDto[]>('/media');
-export const uploadMedia = async (file: File, alt_uz?: string, alt_ru?: string): Promise<MediaDto> => {
+export const uploadMedia = async (file: File, alt_uz?: string, alt_ru?: string, skipWebp?: boolean): Promise<MediaDto> => {
   const formData = new FormData();
   formData.append('file', file);
   if (alt_uz) formData.append('alt_uz', alt_uz);
   if (alt_ru) formData.append('alt_ru', alt_ru);
+  if (skipWebp) formData.append('skipWebp', 'true');
 
-  const response = await fetch(`${API_BASE}/media`, {
-    method: 'POST',
-    credentials: 'include',
-    body: formData,
+  console.log('📤 Uploading to:', `${API_BASE}/media`);
+  console.log('📦 File info:', {
+    name: file.name,
+    size: (file.size / 1024).toFixed(1) + 'KB',
+    type: file.type,
   });
 
-  if (!response.ok) {
-    const text = await response.text();
-    let message = text || response.statusText;
-    try {
-      const parsed = text ? JSON.parse(text) : null;
-      if (parsed?.message) {
-        message = Array.isArray(parsed.message) ? parsed.message.join(', ') : parsed.message;
-      }
-    } catch (error) {
-      // ignore JSON parse errors
-    }
-    throw new ApiError(message || `Upload failed with status ${response.status}`, response.status);
-  }
+  try {
+    const response = await fetch(`${API_BASE}/media`, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
 
-  return response.json();
+    console.log('📡 Response status:', response.status, response.statusText);
+
+    if (!response.ok) {
+      const text = await response.text();
+      console.error('❌ Upload failed:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: text,
+      });
+      
+      let message = text || response.statusText;
+      try {
+        const parsed = text ? JSON.parse(text) : null;
+        if (parsed?.message) {
+          message = Array.isArray(parsed.message) ? parsed.message.join(', ') : parsed.message;
+        }
+      } catch (error) {
+        // ignore JSON parse errors
+      }
+      
+      // 401 - Authentication muammosi
+      if (response.status === 401) {
+        throw new ApiError('Sessiya tugadi. Iltimos, qayta kiring.', 401);
+      }
+      
+      // 403 - Permission muammosi
+      if (response.status === 403) {
+        throw new ApiError('Rasm yuklash uchun ruxsat yo\'q.', 403);
+      }
+      
+      throw new ApiError(message || `Rasm yuklashda xatolik (${response.status})`, response.status);
+    }
+
+    const result = await response.json();
+    console.log('✅ Upload successful:', result);
+    return result;
+  } catch (error) {
+    console.error('❌ Upload error:', error);
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    throw new ApiError(error instanceof Error ? error.message : 'Rasm yuklashda noma\'lum xatolik', 500);
+  }
 };
 export const deleteMedia = (id: string) =>
   request<void>(`/media/${id}`, {
@@ -902,11 +1264,12 @@ export type CreateProductPayload = {
 
 export type UpdateProductPayload = Partial<CreateProductPayload>;
 
-export const getProductsAdmin = (filters?: { limit?: number; offset?: number; status?: string }) => {
+export const getProductsAdmin = (filters?: { limit?: number; offset?: number; status?: string; productType?: string }) => {
   const params = new URLSearchParams();
   if (filters?.limit) params.append('limit', String(filters.limit));
   if (filters?.offset) params.append('offset', String(filters.offset));
   if (filters?.status) params.append('status', filters.status);
+  if (filters?.productType) params.append('productType', filters.productType);
   const query = params.toString();
   return request<{ items: ProductDto[]; total: number; page: number; pageSize: number }>(`/products/admin${query ? `?${query}` : ''}`);
 };
@@ -1060,9 +1423,10 @@ export type CreatePagePayload = {
 export type UpdatePagePayload = Partial<CreatePagePayload>;
 
 export const getPages = () => request<PageDto[]>('/pages');
-export const getPageBySlug = async (slug: string): Promise<PageDto | null> => {
+export const getPageBySlug = async (slug: string, includeDraft = true): Promise<PageDto | null> => {
   try {
-    return await request<PageDto>(`/pages/slug/${slug}`);
+    const params = includeDraft ? '?includeDraft=true' : '';
+    return await request<PageDto>(`/pages/slug/${slug}${params}`);
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) {
       return null;
@@ -1209,6 +1573,10 @@ export interface SettingsDto {
   email?: string | null;
   telegramBotToken?: string | null;
   telegramChatId?: string | null;
+  telegramButtonBotToken?: string | null;
+  telegramButtonBotUsername?: string | null;
+  telegramButtonMessage_uz?: string | null;
+  telegramButtonMessage_ru?: string | null;
   brandPrimary?: string | null;
   brandAccent?: string | null;
   featureFlags?: unknown;
@@ -1227,6 +1595,13 @@ export interface SettingsDto {
     alt_uz?: string | null;
     alt_ru?: string | null;
   } | null;
+  faviconId?: string | null;
+  favicon?: {
+    id: string;
+    url: string;
+    alt_uz?: string | null;
+    alt_ru?: string | null;
+  } | null;
   // Sidebar settings
   sidebarSections?: SidebarSection[] | null;
   sidebarBrandIds?: string[];
@@ -1236,14 +1611,6 @@ export interface SettingsDto {
     services?: { sections?: SidebarSection[]; brandIds?: string[] };
     posts?: { sections?: SidebarSection[]; brandIds?: string[] };
   } | null;
-  // AmoCRM settings
-  amocrmDomain?: string | null;
-  amocrmClientId?: string | null;
-  amocrmClientSecret?: string | null;
-  amocrmAccessToken?: string | null;
-  amocrmRefreshToken?: string | null;
-  amocrmPipelineId?: string | null;
-  amocrmStatusId?: string | null;
   updatedAt: string;
 }
 
@@ -1253,12 +1620,19 @@ export type UpdateSettingsPayload = {
   email?: string;
   telegramBotToken?: string;
   telegramChatId?: string;
+  telegramButtonBotToken?: string;
+  telegramButtonBotUsername?: string;
+  telegramButtonMessage_uz?: string;
+  telegramButtonMessage_ru?: string;
   brandPrimary?: string;
   brandAccent?: string;
   featureFlags?: unknown;
   socialLinks?: unknown;
   catalogHeroImageId?: string | null;
   logoId?: string | null;
+  faviconId?: string | null;
+  googleAnalyticsId?: string | null;
+  yandexMetrikaId?: string | null;
   // Sidebar settings
   sidebarSections?: SidebarSection[];
   sidebarBrandIds?: string[];
@@ -1268,14 +1642,6 @@ export type UpdateSettingsPayload = {
     services?: { sections?: SidebarSection[]; brandIds?: string[] };
     posts?: { sections?: SidebarSection[]; brandIds?: string[] };
   };
-  // AmoCRM settings
-  amocrmDomain?: string;
-  amocrmClientId?: string;
-  amocrmClientSecret?: string;
-  amocrmAccessToken?: string;
-  amocrmRefreshToken?: string;
-  amocrmPipelineId?: string;
-  amocrmStatusId?: string;
 };
 
 export const getSettings = () =>
@@ -1286,24 +1652,46 @@ export const updateSettings = (payload: UpdateSettingsPayload) =>
     body: JSON.stringify(payload),
   });
 
-// AmoCRM API
-export interface AmoCRMAuthUrlResponse {
-  authUrl: string;
+// Leads interfaces and functions
+export interface LeadDto {
+  id: string;
+  name: string;
+  phone: string;
+  email?: string | null;
+  source?: string | null;
+  message?: string | null;
+  productId?: string | null;
+  status?: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface AmoCRMTestResponse {
-  success: boolean;
-  message: string;
-  account?: {
-    id: number;
-    name: string;
-  };
-}
+export type UpdateLeadPayload = {
+  status?: string;
+};
 
-export const getAmoCRMAuthUrl = () =>
-  request<AmoCRMAuthUrlResponse>('/amocrm/authorize');
-
-export const testAmoCRMConnection = () =>
-  request<AmoCRMTestResponse>('/amocrm/test', {
-    method: 'POST',
+export const getLeads = () => request<LeadDto[]>('/leads', { auth: true });
+export const getLead = (id: string) => request<LeadDto>(`/leads/${id}`, { auth: true });
+export const updateLead = (id: string, payload: UpdateLeadPayload) =>
+  request<LeadDto>(`/leads/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+    auth: true,
   });
+export const deleteLead = (id: string) =>
+  request<void>(`/leads/${id}`, {
+    method: 'DELETE',
+    auth: true,
+  });
+
+export interface TelegramButtonStats {
+  total: number;
+  today: number;
+  thisWeek: number;
+  thisMonth: number;
+}
+
+export const getTelegramButtonStats = () =>
+  request<TelegramButtonStats>('/leads/stats/telegram-button', { auth: true });
+
+// AmoCRM API - REMOVED (no longer used)

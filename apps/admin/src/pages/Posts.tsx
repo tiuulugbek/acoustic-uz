@@ -19,7 +19,7 @@ import {
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { TabsProps } from 'antd';
-import { UploadOutlined, FolderOutlined } from '@ant-design/icons';
+import { UploadOutlined, FolderOutlined, EyeOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import {
   useQuery,
@@ -46,6 +46,7 @@ import {
   DoctorDto,
 } from '../lib/api';
 import { createSlug } from '../utils/slug';
+import ImageSizeHint from '../components/ImageSizeHint';
 import { normalizeImageUrl } from '../utils/image';
 import { compressImage } from '../utils/image-compression';
 import { ApiError } from '../lib/api';
@@ -68,12 +69,16 @@ function formatDate(date?: string) {
   return dayjs(date).format('DD.MM.YYYY');
 }
 
-// Posts Tab Component
+// Posts Tab Component - Only shows news (postType='news')
 function PostsTab() {
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery<PostDto[], ApiError>({
-    queryKey: ['posts'],
-    queryFn: getPosts,
+    queryKey: ['posts', 'news'],
+    queryFn: async () => {
+      const allPosts = await getPosts();
+      // Filter only news posts (not articles)
+      return allPosts.filter(post => post.postType === 'news');
+    },
     retry: false,
   });
 
@@ -157,22 +162,25 @@ function PostsTab() {
       return [];
     }
     
-    // Show all categories (not just published) for admin panel
-    const options = categories
+    // Filter: ONLY show "news" section categories for news posts
+    const newsCategories = categories.filter(cat => cat.section === 'news');
+    
+    // Show only news section categories (not just published) for admin panel
+    const options = newsCategories
       .sort((a, b) => a.order - b.order) // Sort by order
       .map(cat => ({
         label: `${cat.name_uz}${cat.name_ru ? ` (${cat.name_ru})` : ''}${cat.status !== 'published' ? ' [Qoralama]' : ''}`,
         value: cat.id,
       }));
     
-    console.log('Category options created:', options);
+    console.log('Category options created (news section only):', options);
     return options;
   }, [categories, categoriesError, isLoadingCategories]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<PostDto | null>(null);
   const [form] = Form.useForm();
-  const [postType, setPostType] = useState<'article' | 'news'>('article');
+  const [postType, setPostType] = useState<'article' | 'news'>('news');
   const [uploadingCover, setUploadingCover] = useState(false);
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [coverModalOpen, setCoverModalOpen] = useState(false);
@@ -183,6 +191,8 @@ function PostsTab() {
     mutationFn: createPost,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['posts'] });
+      queryClient.invalidateQueries({ queryKey: ['posts', 'news'] });
+      queryClient.invalidateQueries({ queryKey: ['posts', 'news'] });
       message.success('Maqola saqlandi');
     },
     onError: (error) => message.error(error.message || 'Saqlashda xatolik'),
@@ -192,6 +202,8 @@ function PostsTab() {
     mutationFn: ({ id, payload }) => updatePost(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['posts'] });
+      queryClient.invalidateQueries({ queryKey: ['posts', 'news'] });
+      queryClient.invalidateQueries({ queryKey: ['posts', 'news'] });
       message.success('Maqola yangilandi');
     },
     onError: (error) => message.error(error.message || 'Yangilashda xatolik'),
@@ -201,6 +213,8 @@ function PostsTab() {
     mutationFn: deletePost,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['posts'] });
+      queryClient.invalidateQueries({ queryKey: ['posts', 'news'] });
+      queryClient.invalidateQueries({ queryKey: ['posts', 'news'] });
       message.success('Maqola o‘chirildi');
     },
     onError: (error) => message.error(error.message || "O'chirishda xatolik"),
@@ -208,11 +222,11 @@ function PostsTab() {
 
   const openCreateModal = () => {
     setEditingPost(null);
-    setPostType('article');
+    setPostType('news');
     setCoverPreview(null);
     form.resetFields();
     form.setFieldsValue({
-      postType: 'article',
+      postType: 'news', // Default to news
       status: 'draft',
       publishAt: dayjs(),
       categoryId: undefined, // Reset category
@@ -223,7 +237,7 @@ function PostsTab() {
 
   const openEditModal = (post: PostDto) => {
     setEditingPost(post);
-    const postTypeValue = (post as any).postType || 'article';
+    const postTypeValue = (post as any).postType || 'news';
     setPostType(postTypeValue);
     setCoverPreview(post.cover?.url ? normalizeImageUrl(post.cover.url) : null);
     
@@ -262,9 +276,12 @@ function PostsTab() {
       const media = await uploadMedia(compressedFile);
       form.setFieldsValue({ coverId: media.id });
       setCoverPreview(normalizeImageUrl(media.url));
+      // Invalidate media query to refresh media library
+      queryClient.invalidateQueries({ queryKey: ['media'] });
       message.success('Rasm yuklandi');
     } catch (error) {
-      message.error('Rasm yuklashda xatolik');
+      const apiError = error as ApiError;
+      message.error(apiError.message || 'Rasm yuklashda xatolik');
     } finally {
       setUploadingCover(false);
     }
@@ -287,7 +304,7 @@ function PostsTab() {
         body_uz: values.body_uz,
         body_ru: values.body_ru,
         slug: values.slug,
-        postType: values.postType || 'article',
+        postType: values.postType || 'news',
         categoryId: values.categoryId || null,
         authorId: values.authorId || null,
         excerpt_uz: values.excerpt_uz,
@@ -331,7 +348,7 @@ function PostsTab() {
               color={type === 'news' ? 'blue' : 'green'} 
               style={{ fontWeight: 'bold' }}
             >
-              {type === 'news' ? '📰 Yangilik' : '📄 Maqola'}
+              {type === 'news' ? '📰 Yangilik' : '📄 Maqola (eski)'}
             </Tag>
           );
         },
@@ -372,27 +389,64 @@ function PostsTab() {
       {
         title: 'Amallar',
         key: 'actions',
-        render: (_, record) => (
-          <Space>
-            <Button size="small" onClick={() => openEditModal(record)}>
-              Tahrirlash
-            </Button>
-            <Popconfirm
-              title="Maqolani o'chirish"
-              description="Haqiqatan ham o'chirilsinmi?"
-              onConfirm={() => handleDelete(record)}
-              okText="Ha"
-              cancelText="Yo'q"
-            >
-              <Button danger size="small" loading={isDeleting}>
-                O'chirish
+        render: (_, record) => {
+          // Helper function to get post URL based on section and post type
+          const getPostUrl = (post: PostDto): string => {
+            const frontendUrl = import.meta.env.VITE_FRONTEND_URL || 'https://acoustic.uz';
+            
+            // If post is news, use /news/{slug}
+            if (post.postType === 'news') {
+              return `${frontendUrl}/news/${post.slug}`;
+            }
+            
+            // If post has a category, check its section
+            if (post.categoryId) {
+              const postCategory = categories?.find(c => c.id === post.categoryId);
+              if (postCategory) {
+                if (postCategory.section === 'patients') {
+                  return `${frontendUrl}/post/patients/${post.slug}`;
+                } else if (postCategory.section === 'children') {
+                  return `${frontendUrl}/post/children-hearing/${post.slug}`;
+                }
+              }
+            }
+            
+            // Default to /posts/{slug} (will redirect automatically)
+            return `${frontendUrl}/posts/${post.slug}`;
+          };
+
+          return (
+            <Space>
+              {record.status === 'published' && (
+                <Button 
+                  size="small" 
+                  icon={<EyeOutlined />}
+                  onClick={() => window.open(getPostUrl(record), '_blank')}
+                  title="Frontend'da ko'rish"
+                >
+                  Ko'rish
+                </Button>
+              )}
+              <Button size="small" onClick={() => openEditModal(record)}>
+                Tahrirlash
               </Button>
-            </Popconfirm>
-          </Space>
-        ),
+              <Popconfirm
+                title="Maqolani o'chirish"
+                description="Haqiqatan ham o'chirilsinmi?"
+                onConfirm={() => handleDelete(record)}
+                okText="Ha"
+                cancelText="Yo'q"
+              >
+                <Button danger size="small" loading={isDeleting}>
+                  O'chirish
+                </Button>
+              </Popconfirm>
+            </Space>
+          );
+        },
       },
     ],
-    [isDeleting, categories],
+    [isDeleting, categories, isDeleting],
   );
 
   return (
@@ -464,6 +518,7 @@ function PostsTab() {
             label="Thumbnail rasm"
             name="coverId"
           >
+            <ImageSizeHint type="post" showAsAlert={false} />
             <Space direction="vertical" style={{ width: '100%' }}>
               {coverPreview && (
                 <Image
@@ -498,43 +553,41 @@ function PostsTab() {
             </Space>
           </Form.Item>
 
-          {postType === 'article' && (
-            <Form.Item 
-              label="Kategoriya" 
-              name="categoryId"
-              help={
+          <Form.Item 
+            label="Kategoriya" 
+            name="categoryId"
+            help={
+              isLoadingCategories 
+                ? 'Kategoriyalar yuklanmoqda...' 
+                : categoriesError 
+                  ? `Xatolik: ${categoriesError.message || 'Kategoriyalarni yuklashda xatolik'}` 
+                  : categoryOptions.length === 0 
+                    ? 'Kategoriyalar mavjud emas. "Kategoriyalar" tabida yangi kategoriya yarating.' 
+                    : undefined
+            }
+            validateStatus={categoriesError ? 'error' : undefined}
+          >
+            <Select 
+              options={categoryOptions} 
+              placeholder={
                 isLoadingCategories 
-                  ? 'Kategoriyalar yuklanmoqda...' 
-                  : categoriesError 
-                    ? `Xatolik: ${categoriesError.message || 'Kategoriyalarni yuklashda xatolik'}` 
+                  ? "Yuklanmoqda..." 
+                  : categoriesError
+                    ? "Xatolik yuz berdi"
                     : categoryOptions.length === 0 
-                      ? 'Kategoriyalar mavjud emas. "Kategoriyalar" tabida yangi kategoriya yarating.' 
-                      : undefined
+                      ? "Kategoriyalar mavjud emas" 
+                      : "Kategoriyani tanlang (ixtiyoriy)"
+              } 
+              allowClear 
+              loading={isLoadingCategories}
+              disabled={isLoadingCategories}
+              showSearch
+              filterOption={(input, option) =>
+                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
               }
-              validateStatus={categoriesError ? 'error' : undefined}
-            >
-              <Select 
-                options={categoryOptions} 
-                placeholder={
-                  isLoadingCategories 
-                    ? "Yuklanmoqda..." 
-                    : categoriesError
-                      ? "Xatolik yuz berdi"
-                      : categoryOptions.length === 0 
-                        ? "Kategoriyalar mavjud emas" 
-                        : "Kategoriyani tanlang"
-                } 
-                allowClear 
-                loading={isLoadingCategories}
-                disabled={isLoadingCategories}
-                showSearch
-                filterOption={(input, option) =>
-                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                }
-                notFoundContent={isLoadingCategories ? 'Yuklanmoqda...' : categoryOptions.length === 0 ? 'Kategoriyalar mavjud emas' : 'Kategoriya topilmadi'}
-              />
-            </Form.Item>
-          )}
+              notFoundContent={isLoadingCategories ? 'Yuklanmoqda...' : categoryOptions.length === 0 ? 'Kategoriyalar mavjud emas' : 'Kategoriya topilmadi'}
+            />
+          </Form.Item>
 
           <Form.Item 
             label="Muallif (ixtiyoriy)" 
@@ -620,18 +673,29 @@ function PostsTab() {
   );
 }
 
-// Categories Tab Component
+// Categories Tab Component - Only shows "news" section categories
 function CategoriesTab() {
   const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery<PostCategoryDto[], ApiError>({
+  const { data: allCategories, isLoading } = useQuery<PostCategoryDto[], ApiError>({
     queryKey: ['post-categories'],
-    queryFn: getPostCategories,
+    queryFn: () => getPostCategories(),
     retry: false,
+  });
+
+  // Filter: ONLY show "news" section categories
+  const data = allCategories?.filter(cat => cat.section === 'news') || [];
+
+  const { data: mediaList } = useQuery({
+    queryKey: ['media'],
+    queryFn: getMedia,
   });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<PostCategoryDto | null>(null);
   const [form] = Form.useForm();
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
 
   const { mutateAsync: createCategoryMutation, isPending: isCreating } = useMutation({
     mutationFn: createPostCategory,
@@ -660,24 +724,53 @@ function CategoriesTab() {
     onError: (error: any) => message.error(error.message || "O'chirishda xatolik"),
   });
 
+  const handleImageUpload = async (file: File) => {
+    setUploadingImage(true);
+    try {
+      const compressedFile = await compressImage(file);
+      const media = await uploadMedia(compressedFile);
+      form.setFieldsValue({ imageId: media.id });
+      setImagePreview(normalizeImageUrl(media.url));
+      message.success('Rasm yuklandi');
+    } catch (error) {
+      message.error('Rasm yuklashda xatolik');
+    } finally {
+      setUploadingImage(false);
+    }
+    return false;
+  };
+
+  const handleSelectImageFromMedia = (media: MediaDto) => {
+    form.setFieldsValue({ imageId: media.id });
+    setImagePreview(normalizeImageUrl(media.url));
+    setImageModalOpen(false);
+    message.success('Rasm tanlandi');
+  };
+
   const openCreateModal = () => {
     setEditingCategory(null);
+    setImagePreview(null);
     form.resetFields();
     form.setFieldsValue({
       status: 'published',
       order: 0,
+      section: 'news', // Always "news" section for this tab
+      imageId: null,
     });
     setIsModalOpen(true);
   };
 
   const openEditModal = (category: PostCategoryDto) => {
     setEditingCategory(category);
+    setImagePreview(category.image?.url ? normalizeImageUrl(category.image.url) : null);
     form.setFieldsValue({
       name_uz: category.name_uz,
       name_ru: category.name_ru,
       slug: category.slug,
       description_uz: category.description_uz,
       description_ru: category.description_ru,
+      section: 'news', // Always "news" for this tab
+      imageId: category.imageId || null,
       order: category.order,
       status: category.status,
     });
@@ -697,6 +790,8 @@ function CategoriesTab() {
         slug: values.slug || createSlug(values.name_uz),
         description_uz: values.description_uz || null,
         description_ru: values.description_ru || null,
+        section: 'news', // Always "news" for this tab
+        imageId: values.imageId || null,
         order: values.order || 0,
         status: values.status,
       };
@@ -709,6 +804,7 @@ function CategoriesTab() {
 
       setIsModalOpen(false);
       form.resetFields();
+      setImagePreview(null);
     } catch (error) {
       // validation error handled by antd
     }
@@ -730,6 +826,19 @@ function CategoriesTab() {
       title: 'Slug',
       dataIndex: 'slug',
       key: 'slug',
+    },
+    {
+      title: 'Bo\'lim',
+      dataIndex: 'section',
+      key: 'section',
+      render: (value: string | null) => {
+        if (!value) return <Tag>Umumiy</Tag>;
+        const labels: Record<string, string> = {
+          patients: 'Bemorlar',
+          children: 'Bolalar',
+        };
+        return <Tag color="blue">{labels[value] || value}</Tag>;
+      },
     },
     {
       title: 'Tartib',
@@ -824,6 +933,60 @@ function CategoriesTab() {
           <Form.Item label="Tavsif (ru)" name="description_ru">
             <Input.TextArea rows={2} placeholder="Описание категории (необязательно)" />
           </Form.Item>
+          <Form.Item 
+            label="Bo'lim" 
+            name="section"
+            help="Bu bo'limda faqat 'Yangiliklar' bo'limi kategoriyalari ko'rsatiladi."
+            rules={[{ required: false }]}
+            initialValue="news"
+          >
+            <Select 
+              placeholder="Bo'limni tanlang"
+              disabled={true} // Always "news" for this tab
+              options={[
+                { label: 'Yangiliklar', value: 'news' },
+              ]}
+            />
+          </Form.Item>
+          <Form.Item
+            label="Rasm"
+            name="imageId"
+            extra="Kategoriya rasmi (bo'lim sahifasida ko'rsatiladi)"
+          >
+            <ImageSizeHint type="category" showAsAlert={false} />
+            <Space direction="vertical" style={{ width: '100%' }}>
+              {imagePreview && (
+                <Image
+                  src={imagePreview}
+                  alt="Category preview"
+                  style={{ maxWidth: 200, maxHeight: 200, objectFit: 'cover' }}
+                  preview={false}
+                />
+              )}
+              <Space>
+                <Upload
+                  beforeUpload={handleImageUpload}
+                  showUploadList={false}
+                  accept="image/*"
+                >
+                  <Button icon={<UploadOutlined />} loading={uploadingImage}>
+                    Rasm yuklash
+                  </Button>
+                </Upload>
+                <Button 
+                  icon={<FolderOutlined />} 
+                  onClick={() => setImageModalOpen(true)}
+                >
+                  Mavjud rasmdan tanlash
+                </Button>
+              </Space>
+              {form.getFieldValue('imageId') && (
+                <div style={{ fontSize: 12, color: '#666' }}>
+                  Tanlangan: {mediaList?.find(m => m.id === form.getFieldValue('imageId'))?.filename || 'Noma\'lum'}
+                </div>
+              )}
+            </Space>
+          </Form.Item>
           <Form.Item label="Tartib" name="order">
             <InputNumber min={0} style={{ width: '100%' }} />
           </Form.Item>
@@ -831,6 +994,14 @@ function CategoriesTab() {
             <Select options={statusOptions} />
           </Form.Item>
         </Form>
+
+        {/* Media Library Modal */}
+        <MediaLibraryModal
+          open={imageModalOpen}
+          onCancel={() => setImageModalOpen(false)}
+          onSelect={handleSelectImageFromMedia}
+          fileType="image"
+        />
       </Modal>
     </div>
   );
@@ -840,7 +1011,7 @@ export default function PostsPage() {
   const tabItems: TabsProps['items'] = [
     {
       key: 'posts',
-      label: 'Maqolalar va Yangiliklar',
+      label: 'Yangiliklar',
       children: <PostsTab />,
     },
     {

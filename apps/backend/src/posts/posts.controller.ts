@@ -13,8 +13,21 @@ export class PostsController {
 
   @Public()
   @Get()
-  findAll(@Query('public') publicOnly?: string, @Query('categoryId') categoryId?: string) {
-    return this.service.findAll(publicOnly === 'true', categoryId);
+  async findAll(
+    @Query('public') publicOnly?: string, 
+    @Query('categoryId') categoryId?: string,
+    @Query('postType') postType?: string
+  ) {
+    try {
+      const result = await this.service.findAll(publicOnly === 'true', categoryId, postType);
+      return result;
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      // Return empty array instead of throwing to prevent 500 error
+      // This allows the frontend to handle the error gracefully
+      return [];
+    }
   }
 
   @Public()
@@ -26,8 +39,13 @@ export class PostsController {
   @UseGuards(JwtAuthGuard, RbacGuard)
   @Post()
   @RequirePermissions('content.write')
-  create(@Body() dto: unknown) {
-    return this.service.create(dto);
+  async create(@Body() dto: unknown) {
+    try {
+      return await this.service.create(dto);
+    } catch (error) {
+      console.error('Error creating post:', error);
+      throw error;
+    }
   }
 
   @UseGuards(JwtAuthGuard, RbacGuard)

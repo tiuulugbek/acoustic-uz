@@ -4,14 +4,16 @@ import type { Metadata } from 'next';
 import { getServiceBySlug, getServiceCategoryBySlug, getBrands, getSettings } from '@/lib/api-server';
 import { detectLocale } from '@/lib/locale-server';
 import { getBilingualText } from '@/lib/locale';
+import { normalizeImageUrl } from '@/lib/image-utils';
+import { optimizeMetaDescription, optimizeTitle, generateSeoDescription } from '@/lib/seo-utils';
 import ServiceContent from '@/components/service-content';
 import ServiceTableOfContents from '@/components/service-table-of-contents';
 import PageHeader from '@/components/page-header';
 import AppointmentForm from '@/components/appointment-form';
 import Sidebar from '@/components/sidebar';
 
-// ISR: Revalidate every hour
-export const revalidate = 3600;
+// ISR: Revalidate every 5 minutes to ensure category and description updates are reflected quickly
+export const revalidate = 300;
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
@@ -28,36 +30,42 @@ export async function generateMetadata({ params }: ServicePageProps): Promise<Me
   const category = await getServiceCategoryBySlug(params.slug, locale);
   if (category) {
     const title = getBilingualText(category.name_uz, category.name_ru, locale);
+    const rawDescription = getBilingualText(category.description_uz, category.description_ru, locale);
     return {
-      title: `${title} — Acoustic.uz`,
-      description: getBilingualText(category.description_uz, category.description_ru, locale) || undefined,
+      title: optimizeTitle(title),
+      description: optimizeMetaDescription(rawDescription),
     };
   }
   
   // Try to get service
   const service = await getServiceBySlug(params.slug, locale);
   if (!service) {
+    const fallbackTitle = optimizeTitle(
+      locale === 'ru' ? 'Услуга' : 'Xizmat'
+    );
     return {
-      title: locale === 'ru' ? 'Услуга — Acoustic.uz' : 'Xizmat — Acoustic.uz',
-      description: locale === 'ru' 
-        ? 'Услуги по диагностике и подбору слуховых аппаратов'
-        : 'Eshitish diagnostikasi va apparatlarni tanlash xizmatlari',
+      title: fallbackTitle,
+      description: generateSeoDescription(
+        null,
+        [locale === 'ru' ? 'слуховые аппараты' : 'eshitish apparatlari'],
+        locale
+      ),
     };
   }
 
   const title = getBilingualText(service.title_uz, service.title_ru, locale);
-  const description = getBilingualText(service.excerpt_uz, service.excerpt_ru, locale) || undefined;
+  const rawDescription = getBilingualText(service.excerpt_uz, service.excerpt_ru, locale);
+  const optimizedTitle = optimizeTitle(title);
+  const optimizedDescription = optimizeMetaDescription(rawDescription);
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
   const serviceUrl = `${baseUrl}/services/${params.slug}`;
   const imageUrl = service.cover?.url 
-    ? (service.cover.url.startsWith('http') 
-        ? service.cover.url 
-        : `${baseUrl}${service.cover.url}`)
+    ? normalizeImageUrl(service.cover.url)
     : `${baseUrl}/logo.png`;
 
   return {
-    title: `${title} — Acoustic.uz`,
-    description,
+    title: optimizedTitle,
+    description: optimizedDescription,
     alternates: {
       canonical: serviceUrl,
       languages: {
@@ -67,8 +75,8 @@ export async function generateMetadata({ params }: ServicePageProps): Promise<Me
       },
     },
     openGraph: {
-      title: `${title} — Acoustic.uz`,
-      description,
+      title: optimizedTitle,
+      description: optimizedDescription,
       url: serviceUrl,
       siteName: 'Acoustic.uz',
       images: [
@@ -84,8 +92,8 @@ export async function generateMetadata({ params }: ServicePageProps): Promise<Me
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${title} — Acoustic.uz`,
-      description,
+      title: optimizedTitle,
+      description: optimizedDescription,
       images: [imageUrl],
     },
   };
@@ -107,12 +115,8 @@ export default async function ServiceSlugPage({ params }: ServicePageProps) {
       service.status === 'published'
     );
     
-    // Build category image URL
-    let categoryImage = category.image?.url || '';
-    if (categoryImage && categoryImage.startsWith('/') && !categoryImage.startsWith('//')) {
-      const baseUrl = API_BASE_URL.replace('/api', '');
-      categoryImage = `${baseUrl}${categoryImage}`;
-    }
+    // Build category image URL (normalize it)
+    const categoryImage = normalizeImageUrl(category.image?.url || '');
     
     return (
       <main className="min-h-screen bg-background">
@@ -148,17 +152,13 @@ export default async function ServiceSlugPage({ params }: ServicePageProps) {
         <section className="bg-white py-12">
           <div className="mx-auto max-w-6xl px-4 md:px-6">
             {services.length > 0 ? (
-              <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              <div className="grid gap-4 grid-cols-2 sm:gap-6 md:grid-cols-3 lg:grid-cols-4">
                 {services.map((service) => {
                   const serviceTitle = getBilingualText(service.title_uz, service.title_ru, locale);
                   const serviceExcerpt = getBilingualText(service.excerpt_uz, service.excerpt_ru, locale);
                   
-                  // Build service image URL
-                  let serviceImage = service.cover?.url || '';
-                  if (serviceImage && serviceImage.startsWith('/') && !serviceImage.startsWith('//')) {
-                    const baseUrl = API_BASE_URL.replace('/api', '');
-                    serviceImage = `${baseUrl}${serviceImage}`;
-                  }
+                  // Build service image URL (normalize it)
+                  const serviceImage = normalizeImageUrl(service.cover?.url || '');
                   
                   return (
                     <Link
@@ -173,35 +173,24 @@ export default async function ServiceSlugPage({ params }: ServicePageProps) {
                             alt={serviceTitle}
                             fill
                             className="object-cover transition-transform duration-300 group-hover:scale-105"
-                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                             suppressHydrationWarning
                           />
                         ) : (
                           <div className="flex h-full items-center justify-center bg-brand-primary">
-                            <span className="text-white text-lg font-bold">Acoustic</span>
+                            <span className="text-white text-sm sm:text-lg font-bold">Acoustic</span>
                           </div>
                         )}
                       </div>
-                      <div className="flex flex-1 flex-col p-5">
-                        <h3 className="mb-2 text-lg font-semibold text-foreground group-hover:text-brand-primary transition-colors" suppressHydrationWarning>
+                      <div className="flex flex-1 flex-col p-3 sm:p-5">
+                        <h3 className="mb-1 sm:mb-2 text-sm sm:text-lg font-semibold text-foreground group-hover:text-brand-primary transition-colors line-clamp-2" suppressHydrationWarning>
                           {serviceTitle}
                         </h3>
                         {serviceExcerpt && (
-                          <p className="mb-4 flex-1 text-sm leading-relaxed text-muted-foreground line-clamp-3" suppressHydrationWarning>
+                          <p className="flex-1 text-xs sm:text-sm leading-relaxed text-muted-foreground line-clamp-2 sm:line-clamp-3" suppressHydrationWarning>
                             {serviceExcerpt}
                           </p>
                         )}
-                        <span className="inline-flex items-center gap-1 text-sm font-medium text-brand-primary group-hover:gap-2 transition-all" suppressHydrationWarning>
-                          {locale === 'ru' ? 'Подробнее' : 'Batafsil'}
-                          <svg
-                            className="h-4 w-4 transition-transform group-hover:translate-x-1"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </span>
                       </div>
                     </Link>
                   );
@@ -340,11 +329,21 @@ export default async function ServiceSlugPage({ params }: ServicePageProps) {
     }
   }
 
-  // Build cover image URL
-  let coverImageUrl = service.cover?.url || '';
-  if (coverImageUrl && coverImageUrl.startsWith('/') && !coverImageUrl.startsWith('//')) {
-    const baseUrl = API_BASE_URL.replace('/api', '');
-    coverImageUrl = `${baseUrl}${coverImageUrl}`;
+  // Build cover image URL - prioritize category image, fallback to service cover
+  let coverImageUrl = '';
+  let coverImageAlt = coverAlt;
+  
+  // Get category image if available (category.image is already included in service response)
+  if (service.category?.image?.url) {
+    coverImageUrl = normalizeImageUrl(service.category.image.url);
+    const categoryTitle = getBilingualText(service.category.name_uz, service.category.name_ru, locale);
+    coverImageAlt = getBilingualText(service.category.image.alt_uz, service.category.image.alt_ru, locale) || categoryTitle;
+  }
+  
+  // Fallback to service cover if category image is not available
+  if (!coverImageUrl && service.cover?.url) {
+    coverImageUrl = normalizeImageUrl(service.cover.url);
+    coverImageAlt = coverAlt;
   }
 
   return (
@@ -361,7 +360,7 @@ export default async function ServiceSlugPage({ params }: ServicePageProps) {
 
       {/* Main Content with Sidebar */}
       <div className="mx-auto max-w-6xl px-4 pt-8 pb-10 md:px-6">
-        <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
+        <div className="grid gap-4 sm:gap-6 md:gap-8 grid-cols-1 sm:grid-cols-[1fr_280px] lg:grid-cols-[1fr_320px]">
           {/* Main Content */}
           <article className="min-w-0">
             <div className="mb-6 space-y-4">
@@ -376,7 +375,7 @@ export default async function ServiceSlugPage({ params }: ServicePageProps) {
                 <div className="relative aspect-[21/9] w-full">
                   <Image 
                     src={coverImageUrl} 
-                    alt={coverAlt} 
+                    alt={coverImageAlt} 
                     fill 
                     className="object-cover" 
                     priority
@@ -400,12 +399,12 @@ export default async function ServiceSlugPage({ params }: ServicePageProps) {
                     : 'Bizning mutaxassislarimiz barcha savollaringizga javob berishga va eshitishingiz uchun eng yaxshi yechimni topishga tayyor.'}
                 </p>
               </div>
-              <AppointmentForm locale={locale} doctorId={null} />
+              <AppointmentForm locale={locale} doctorId={null} source={`service-${service.slug}`} />
             </div>
           </article>
 
           {/* Sidebar */}
-          <aside className="sticky top-6 h-fit space-y-6">
+          <aside className="sticky top-6 h-fit space-y-4 sm:space-y-6">
             {/* Sidebar Component */}
             <Sidebar locale={locale} settingsData={settings} brandsData={brands} pageType="services" />
             
@@ -421,11 +420,7 @@ export default async function ServiceSlugPage({ params }: ServicePageProps) {
                 <ul className="space-y-4">
                   {relatedServices.map((relatedService) => {
                     const relatedTitle = getBilingualText(relatedService.title_uz, relatedService.title_ru, locale);
-                    let relatedImageUrl = relatedService.cover?.url || '';
-                    if (relatedImageUrl && relatedImageUrl.startsWith('/') && !relatedImageUrl.startsWith('//')) {
-                      const baseUrl = API_BASE_URL.replace('/api', '');
-                      relatedImageUrl = `${baseUrl}${relatedImageUrl}`;
-                    }
+                    const relatedImageUrl = normalizeImageUrl(relatedService.cover?.url || '');
                     return (
                       <li key={relatedService.id}>
                         <Link

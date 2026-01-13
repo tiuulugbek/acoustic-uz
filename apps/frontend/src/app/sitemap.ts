@@ -1,113 +1,206 @@
 import { MetadataRoute } from 'next';
-import { getProducts, getPublicServices, getPosts, getCatalogs, getServiceCategories } from '@/lib/api-server';
+import { getProducts, getPosts, getBranches, getServices, getServiceCategories, getPostCategories } from '@/lib/api-server';
 
-const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
+
+// Static pages that should be included in sitemap
+const staticPages = [
+  '',
+  'catalog',
+  'contact',
+  'faq',
+  'branches',
+  'patients',
+  'children-hearing',
+  'posts',
+  'news',
+  'services',
+  'doctors',
+  'about',
+];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const urls: MetadataRoute.Sitemap = [];
+  const sitemapEntries: MetadataRoute.Sitemap = [];
 
-  // Homepage
-  urls.push({
-    url: BASE_URL,
-    lastModified: new Date(),
-    changeFrequency: 'daily',
-    priority: 1.0,
-  });
+  // Helper function to add URL with hreflang support
+  const addUrl = (
+    url: string,
+    lastModified?: Date,
+    changeFrequency: 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never' = 'weekly',
+    priority: number = 0.8,
+    alternates?: { languages: Record<string, string> },
+  ) => {
+    const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url.startsWith('/') ? url : `/${url}`}`;
+    
+    sitemapEntries.push({
+      url: fullUrl,
+      lastModified,
+      changeFrequency,
+      priority,
+      alternates,
+    });
+  };
 
-  // Catalog page
-  urls.push({
-    url: `${BASE_URL}/catalog`,
-    lastModified: new Date(),
-    changeFrequency: 'daily',
-    priority: 0.9,
-  });
-
-  // Services page
-  urls.push({
-    url: `${BASE_URL}/services`,
-    lastModified: new Date(),
-    changeFrequency: 'weekly',
-    priority: 0.8,
+  // Add static pages with hreflang
+  staticPages.forEach((page) => {
+    const priority = page === '' ? 1.0 : page === 'catalog' ? 0.9 : 0.8;
+    const urlPath = page === '' ? '' : `/${page}`;
+    addUrl(urlPath, new Date(), 'daily', priority, {
+      languages: {
+        uz: `${baseUrl}${urlPath}`,
+        ru: `${baseUrl}/ru${urlPath}`,
+        'x-default': `${baseUrl}${urlPath}`,
+      },
+    });
   });
 
   try {
-    // Products
-    const productsResponse = await getProducts('uz', { limit: 1000, status: 'published' });
-    if (productsResponse?.items) {
-      productsResponse.items.forEach((product) => {
-        urls.push({
-          url: `${BASE_URL}/products/${product.slug}`,
-          lastModified: product.updatedAt ? new Date(product.updatedAt) : new Date(),
-          changeFrequency: 'weekly',
-          priority: 0.8,
+    // Add products
+    const productsResponse = await getProducts({ page: 1, limit: 1000 }, 'uz');
+    const products = Array.isArray(productsResponse) ? productsResponse : productsResponse.items || [];
+    
+    products.forEach((product) => {
+      if (product.status === 'published') {
+        addUrl(`/products/${product.slug}`, product.updatedAt ? new Date(product.updatedAt) : undefined, 'weekly', 0.7, {
+          languages: {
+            uz: `${baseUrl}/products/${product.slug}`,
+            ru: `${baseUrl}/ru/products/${product.slug}`,
+            'x-default': `${baseUrl}/products/${product.slug}`,
+          },
         });
-      });
-    }
-
-    // Services
-    const services = await getPublicServices('uz');
-    if (services) {
-      services.forEach((service) => {
-        if (service.status === 'published') {
-          urls.push({
-            url: `${BASE_URL}/services/${service.slug}`,
-            lastModified: service.updatedAt ? new Date(service.updatedAt) : new Date(),
-            changeFrequency: 'monthly',
-            priority: 0.7,
-          });
-        }
-      });
-    }
-
-    // Service Categories
-    const serviceCategories = await getServiceCategories('uz');
-    if (serviceCategories?.items) {
-      serviceCategories.items.forEach((category) => {
-        if (category.status === 'published') {
-          urls.push({
-            url: `${BASE_URL}/services/${category.slug}`,
-            lastModified: new Date(),
-            changeFrequency: 'monthly',
-            priority: 0.7,
-          });
-        }
-      });
-    }
-
-    // Posts
-    const posts = await getPosts('uz', true);
-    if (posts) {
-      posts.forEach((post) => {
-        if (post.status === 'published') {
-          urls.push({
-            url: `${BASE_URL}/posts/${post.slug}`,
-            lastModified: post.updatedAt ? new Date(post.updatedAt) : new Date(),
-            changeFrequency: 'weekly',
-            priority: 0.6,
-          });
-        }
-      });
-    }
-
-    // Catalogs
-    const catalogs = await getCatalogs('uz');
-    if (catalogs) {
-      catalogs.forEach((catalog) => {
-        if (catalog.status === 'published') {
-          urls.push({
-            url: `${BASE_URL}/catalog/${catalog.slug}`,
-            lastModified: new Date(),
-            changeFrequency: 'weekly',
-            priority: 0.7,
-          });
-        }
-      });
-    }
+      }
+    });
   } catch (error) {
-    console.error('[Sitemap] Error generating sitemap:', error);
-    // Continue with basic URLs even if API fails
+    console.error('[Sitemap] Failed to fetch products:', error);
   }
 
-  return urls;
+  try {
+    // Add posts listing page
+    addUrl('/posts', new Date(), 'daily', 0.8, {
+      languages: {
+        uz: `${baseUrl}/posts`,
+        ru: `${baseUrl}/ru/posts`,
+        'x-default': `${baseUrl}/posts`,
+      },
+    });
+    
+    // Add news listing page
+    addUrl('/news', new Date(), 'daily', 0.8, {
+      languages: {
+        uz: `${baseUrl}/news`,
+        ru: `${baseUrl}/ru/news`,
+        'x-default': `${baseUrl}/news`,
+      },
+    });
+    
+    // Add post category pages
+    const postCategories = await getPostCategories('uz');
+    postCategories.forEach((category) => {
+      if (category.status === 'published') {
+        addUrl(`/posts?category=${category.slug}`, undefined, 'weekly', 0.7, {
+          languages: {
+            uz: `${baseUrl}/posts?category=${category.slug}`,
+            ru: `${baseUrl}/ru/posts?category=${category.slug}`,
+            'x-default': `${baseUrl}/posts?category=${category.slug}`,
+          },
+        });
+      }
+    });
+    
+    // Add posts (articles and news)
+    const posts = await getPosts('uz', true);
+    const publishedPosts = posts.filter((post) => post.status === 'published');
+    
+    publishedPosts.forEach((post) => {
+      const priority = post.postType === 'news' ? 0.6 : 0.7;
+      
+      // Determine correct URL based on post type and category section
+      let postUrl = `/posts/${post.slug}`;
+      if (post.postType === 'news') {
+        postUrl = `/news/${post.slug}`;
+      } else if (post.categoryId) {
+        const postCategory = postCategories.find(cat => cat.id === post.categoryId);
+        if (postCategory?.section === 'patients') {
+          postUrl = `/post/patients/${post.slug}`;
+        } else if (postCategory?.section === 'children') {
+          postUrl = `/post/children-hearing/${post.slug}`;
+        }
+      }
+      
+      addUrl(postUrl, post.updatedAt ? new Date(post.updatedAt) : undefined, 'weekly', priority, {
+        languages: {
+          uz: `${baseUrl}${postUrl}`,
+          ru: `${baseUrl}/ru${postUrl}`,
+          'x-default': `${baseUrl}${postUrl}`,
+        },
+      });
+    });
+  } catch (error) {
+    console.error('[Sitemap] Failed to fetch posts:', error);
+  }
+
+  try {
+    // Add branches
+    const branches = await getBranches('uz');
+    const publishedBranches = branches.filter((branch) => branch.status === 'published');
+    
+    publishedBranches.forEach((branch) => {
+      if (branch.slug) {
+        addUrl(`/branches/${branch.slug}`, branch.updatedAt ? new Date(branch.updatedAt) : undefined, 'monthly', 0.6, {
+          languages: {
+            uz: `${baseUrl}/branches/${branch.slug}`,
+            ru: `${baseUrl}/ru/branches/${branch.slug}`,
+            'x-default': `${baseUrl}/branches/${branch.slug}`,
+          },
+        });
+      }
+    });
+  } catch (error) {
+    console.error('[Sitemap] Failed to fetch branches:', error);
+  }
+
+  try {
+    // Add services
+    const services = await getServices('uz');
+    const publishedServices = services.filter((service) => service.status === 'published');
+    
+    publishedServices.forEach((service) => {
+      addUrl(`/services/${service.slug}`, service.updatedAt ? new Date(service.updatedAt) : undefined, 'weekly', 0.7, {
+        languages: {
+          uz: `${baseUrl}/services/${service.slug}`,
+          ru: `${baseUrl}/ru/services/${service.slug}`,
+          'x-default': `${baseUrl}/services/${service.slug}`,
+        },
+      });
+    });
+  } catch (error) {
+    console.error('[Sitemap] Failed to fetch services:', error);
+  }
+
+  try {
+    // Add service categories (these are also accessible via /services/[slug])
+    const serviceCategories = await getServiceCategories('uz');
+    const publishedCategories = serviceCategories.filter((cat) => cat.status === 'published');
+    
+    publishedCategories.forEach((category) => {
+      // Only add if not already added as a service
+      addUrl(`/services/${category.slug}`, undefined, 'weekly', 0.6, {
+        languages: {
+          uz: `${baseUrl}/services/${category.slug}`,
+          ru: `${baseUrl}/ru/services/${category.slug}`,
+          'x-default': `${baseUrl}/services/${category.slug}`,
+        },
+      });
+    });
+  } catch (error) {
+    console.error('[Sitemap] Failed to fetch service categories:', error);
+  }
+
+  // Remove duplicates (in case same URL appears multiple times)
+  const uniqueEntries = sitemapEntries.filter((entry, index, self) =>
+    index === self.findIndex((e) => e.url === entry.url)
+  );
+
+  return uniqueEntries;
 }
 

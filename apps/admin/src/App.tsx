@@ -17,6 +17,7 @@ import MenusPage from './pages/Menus';
 import FAQPage from './pages/FAQ';
 import SettingsPage from './pages/Settings';
 import MediaPage from './pages/Media';
+import LeadsPage from './pages/Leads';
 
 function App() {
   return (
@@ -34,11 +35,13 @@ function App() {
           <Route path="children-hearing" element={<ChildrenHearingPage />} />
           <Route path="about" element={<AboutPage />} />
           <Route path="branches" element={<BranchesPage />} />
-          <Route path="posts" element={<PostsPage />} />
+          <Route path="news" element={<PostsPage />} />
+          <Route path="posts" element={<Navigate to="/news" replace />} />
           <Route path="banners" element={<BannersPage />} />
           <Route path="menus" element={<MenusPage />} />
           <Route path="faq" element={<FAQPage />} />
           <Route path="media" element={<MediaPage />} />
+          <Route path="leads" element={<LeadsPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

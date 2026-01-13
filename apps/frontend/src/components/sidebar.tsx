@@ -3,8 +3,7 @@ import Link from 'next/link';
 import { getSettings, getBrands } from '@/lib/api-server';
 import type { SettingsResponse, BrandResponse, SidebarSection } from '@/lib/api';
 import { detectLocale } from '@/lib/locale-server';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { normalizeImageUrl } from '@/lib/image-utils';
 
 interface SidebarProps {
   locale: 'uz' | 'ru';
@@ -43,10 +42,8 @@ export default async function Sidebar({ locale, settingsData, brandsData, pageTy
       })
     : [];
 
-  // Don't render sidebar if there's no content
-  if (otherSections.length === 0 && sortedBrands.length === 0) {
-    return null;
-  }
+  // Show sidebar even if empty - use fallback content for services page
+  const hasContent = otherSections.length > 0 || sortedBrands.length > 0;
 
   return (
     <aside className="lg:col-span-1 space-y-8">
@@ -93,11 +90,7 @@ export default async function Sidebar({ locale, settingsData, brandsData, pageTy
               const brandName = brand.name || '';
               const brandSlug = brand.slug || '';
               const brandLogo = brand.logo?.url || '';
-              let logoUrl = brandLogo;
-              if (logoUrl && logoUrl.startsWith('/') && !logoUrl.startsWith('//')) {
-                const baseUrl = API_BASE_URL.replace('/api', '');
-                logoUrl = `${baseUrl}${logoUrl}`;
-              }
+              const logoUrl = normalizeImageUrl(brandLogo);
               const brandLink = brandSlug ? `/catalog/${brandSlug}` : '#';
               return (
                 <Link
@@ -124,6 +117,41 @@ export default async function Sidebar({ locale, settingsData, brandsData, pageTy
                 </Link>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Fallback content for services page when no config */}
+      {!hasContent && pageType === 'services' && (
+        <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+          <h3 className="text-lg font-semibold text-foreground mb-4" suppressHydrationWarning>
+            {locale === 'ru' ? 'Контакты' : 'Kontaktlar'}
+          </h3>
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm text-muted-foreground mb-2" suppressHydrationWarning>
+                {locale === 'ru' ? 'Телефон' : 'Telefon'}
+              </p>
+              <a href="tel:1385" className="text-base font-semibold text-brand-primary hover:underline">
+                1385
+              </a>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground mb-2" suppressHydrationWarning>
+                {locale === 'ru' ? 'Адрес' : 'Manzil'}
+              </p>
+              <p className="text-sm text-foreground">
+                {locale === 'ru' 
+                  ? 'Ташкент, ул. Амира Темура, 1'
+                  : 'Toshkent, Amir Temur ko\'chasi, 1'}
+              </p>
+            </div>
+            <Link
+              href="/branches"
+              className="inline-flex items-center gap-2 text-sm font-medium text-brand-primary hover:underline"
+            >
+              {locale === 'ru' ? 'Все филиалы →' : 'Barcha filiallar →'}
+            </Link>
           </div>
         </div>
       )}

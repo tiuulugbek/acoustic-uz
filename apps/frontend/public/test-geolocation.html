@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geolocation Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background: #F07E22;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #d66a1a;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .coordinates {
+            font-size: 18px;
+            font-weight: bold;
+            color: #F07E22;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📍 Geolocation Test</h1>
+        
+        <div id="status" class="status info">
+            Geolocation test sahifasi yuklanmoqda...
+        </div>
+
+        <div>
+            <button onclick="testGeolocation()">Geolocation'ni Test Qilish</button>
+            <button onclick="clearCache()">Cache'ni Tozalash</button>
+            <button onclick="checkBrowserSupport()">Browser Support Tekshirish</button>
+        </div>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+        }
+
+        function addResult(title, content, type = 'info') {
+            const resultsDiv = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.innerHTML = `<strong>${title}</strong><br>${content}`;
+            resultsDiv.appendChild(div);
+        }
+
+        function checkBrowserSupport() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
+
+            // Check if geolocation is supported
+            if (!navigator.geolocation) {
+                addResult('❌ Browser Support', 'Geolocation API qo\'llab-quvvatlanmaydi', 'error');
+                return;
+            }
+
+            addResult('✅ Browser Support', 'Geolocation API qo\'llab-quvvatlanadi', 'success');
+
+            // Check HTTPS
+            const isSecure = window.location.protocol === 'https:' || 
+                           window.location.hostname === 'localhost' || 
+                           window.location.hostname === '127.0.0.1';
+            
+            if (isSecure) {
+                addResult('✅ HTTPS', 'HTTPS yoki localhost - Geolocation ishlashi mumkin', 'success');
+            } else {
+                addResult('❌ HTTPS', 'HTTPS kerak! Geolocation ishlamaydi', 'error');
+            }
+
+            // Check cached location
+            const cachedLocation = localStorage.getItem('user_location');
+            const cachedTimestamp = localStorage.getItem('user_location_timestamp');
+            
+            if (cachedLocation && cachedTimestamp) {
+                const timestamp = parseInt(cachedTimestamp, 10);
+                const now = Date.now();
+                const age = Math.floor((now - timestamp) / 1000 / 60); // minutes
+                
+                try {
+                    const location = JSON.parse(cachedLocation);
+                    addResult('📦 Cached Location', 
+                        `Lat: ${location.latitude}, Lng: ${location.longitude}<br>Yoshi: ${age} daqiqa`, 
+                        'info');
+                } catch (e) {
+                    addResult('❌ Cached Location', 'Cache noto\'g\'ri formatda', 'error');
+                }
+            } else {
+                addResult('📦 Cached Location', 'Cache mavjud emas', 'info');
+            }
+        }
+
+        function testGeolocation() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
+
+            if (!navigator.geolocation) {
+                addResult('❌ Xatolik', 'Geolocation API qo\'llab-quvvatlanmaydi', 'error');
+                return;
+            }
+
+            updateStatus('Geolocation so\'ralmoqda...', 'info');
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const location = {
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude,
+                        accuracy: position.coords.accuracy,
+                    };
+
+                    updateStatus('✅ Geolocation muvaffaqiyatli olingan!', 'success');
+                    
+                    addResult('✅ Muvaffaqiyatli', 
+                        `<div class="coordinates">
+                            Latitude: ${location.latitude.toFixed(6)}<br>
+                            Longitude: ${location.longitude.toFixed(6)}<br>
+                            Aniqlik: ${Math.round(location.accuracy)} metr
+                        </div>`, 
+                        'success');
+
+                    // Cache location
+                    localStorage.setItem('user_location', JSON.stringify({
+                        latitude: location.latitude,
+                        longitude: location.longitude,
+                    }));
+                    localStorage.setItem('user_location_timestamp', Date.now().toString());
+                    
+                    addResult('💾 Cache', 'Joylashuv cache\'ga saqlandi', 'success');
+
+                    // Show on map link
+                    const mapUrl = `https://www.google.com/maps?q=${location.latitude},${location.longitude}`;
+                    addResult('🗺️ Xarita', `<a href="${mapUrl}" target="_blank">Google Maps'da ko'rish</a>`, 'info');
+                },
+                (error) => {
+                    let errorMessage = '';
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage = 'Foydalanuvchi geolocation ruxsatini rad etdi';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage = 'Joylashuv ma\'lumotlari mavjud emas';
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage = 'Geolocation so\'rovi vaqt tugadi';
+                            break;
+                        default:
+                            errorMessage = 'Noma\'lum xatolik';
+                            break;
+                    }
+
+                    updateStatus('❌ Geolocation olinmadi', 'error');
+                    addResult('❌ Xatolik', 
+                        `${errorMessage}<br>Kod: ${error.code}<br>Xabar: ${error.message}`, 
+                        'error');
+                },
+                {
+                    enableHighAccuracy: false,
+                    timeout: 10000,
+                    maximumAge: 0, // Don't use cache for test
+                }
+            );
+        }
+
+        function clearCache() {
+            localStorage.removeItem('user_location');
+            localStorage.removeItem('user_location_timestamp');
+            updateStatus('✅ Cache tozalandi', 'success');
+            
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
+            addResult('💾 Cache', 'Cache tozalandi. Endi yangi geolocation so\'raladi.', 'success');
+        }
+
+        // Auto-check on load
+        window.addEventListener('load', () => {
+            checkBrowserSupport();
+        });
+    </script>
+</body>
+</html>
+

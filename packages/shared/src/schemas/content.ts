@@ -161,6 +161,8 @@ export const leadSchema = z.object({
   source: z.string().optional(),
   message: z.string().optional(),
   productId: z.string().cuid().optional().nullable(),
+  pageUrl: z.string().url().optional().nullable(),
+  referer: z.string().optional().nullable(),
 });
 
 export const pageSchema = z.object({
@@ -220,6 +222,8 @@ export const homepageServiceSchema = z.object({
 });
 
 export const doctorSchema = z.object({
+  branchIds: z.array(z.string().cuid()).default([]),
+  patientTypes: z.array(z.string()).default([]),
   name_uz: z.string().min(1),
   name_ru: z.string().min(1),
   position_uz: z.string().optional().nullable(),
@@ -232,5 +236,22 @@ export const doctorSchema = z.object({
   imageId: z.string().cuid().optional().nullable(),
   order: z.number().int().default(0),
   status: z.enum(['published', 'draft', 'archived']).default('published'),
+});
+
+export const hearingTestSchema = z.object({
+  name: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().email().optional(),
+  deviceType: z.enum(['speaker', 'headphone']),
+  volumeLevel: z.number().min(0).max(1).optional(),
+  leftEarResults: z.record(z.string(), z.number().min(0).max(1)), // Volume levels (0-1)
+  rightEarResults: z.record(z.string(), z.number().min(0).max(1)), // Volume levels (0-1)
+  leftEarScore: z.number().int().min(0).max(100).optional(),
+  rightEarScore: z.number().int().min(0).max(100).optional(),
+  overallScore: z.number().int().min(0).max(100).optional(),
+  leftEarLevel: z.enum(['normal', 'mild', 'moderate', 'severe', 'profound']).optional(),
+  rightEarLevel: z.enum(['normal', 'mild', 'moderate', 'severe', 'profound']).optional(),
+  source: z.string().default('hearing_test'),
+  notes: z.string().optional(),
 });
 

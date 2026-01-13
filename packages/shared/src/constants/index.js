@@ -111,8 +111,8 @@ exports.DEFAULT_MENUS = {
         },
         {
             id: 'menu-doctors',
-            title_uz: 'Shifokorlar',
-            title_ru: 'Врачи',
+            title_uz: 'Mutahassislar',
+            title_ru: 'Специалисты',
             href: '/doctors',
             order: 30,
         },

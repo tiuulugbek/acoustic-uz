@@ -7,7 +7,7 @@ import Underline from '@tiptap/extension-underline';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import { useState, useEffect } from 'react';
-import { Button, Space, message } from 'antd';
+import { Button, Space, message, Modal, Input } from 'antd';
 import {
   BoldOutlined,
   ItalicOutlined,
@@ -23,9 +23,13 @@ import {
   UndoOutlined,
   RedoOutlined,
   FolderOutlined,
+  TableOutlined,
+  AppstoreOutlined,
+  PlayCircleOutlined,
 } from '@ant-design/icons';
 import { uploadMedia, type MediaDto } from '../lib/api';
 import MediaLibraryModal from './MediaLibraryModal';
+import { normalizeImageUrl } from '../utils/image';
 import './RichTextEditor.css';
 
 interface RichTextEditorProps {
@@ -36,20 +40,11 @@ interface RichTextEditorProps {
 
 export default function RichTextEditor({ value, onChange, placeholder }: RichTextEditorProps) {
   const [mediaModalOpen, setMediaModalOpen] = useState(false);
-
-  // Helper function to normalize image URLs
-  const normalizeImageUrl = (url: string | null | undefined): string => {
-    if (!url) return '';
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      return url;
-    }
-    if (url.startsWith('/uploads/')) {
-      const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-      const baseUrl = apiBase.replace('/api', '');
-      return `${baseUrl}${url}`;
-    }
-    return url;
-  };
+  const [imageLayoutModalOpen, setImageLayoutModalOpen] = useState(false);
+  const [youtubeModalOpen, setYoutubeModalOpen] = useState(false);
+  const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [selectedImages, setSelectedImages] = useState<MediaDto[]>([]);
+  const [isMultipleSelectionMode, setIsMultipleSelectionMode] = useState(false);
 
   const editor = useEditor({
     extensions: [
@@ -122,9 +117,38 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
   };
 
   const handleSelectMediaFromLibrary = (media: MediaDto) => {
-    insertImage(media.url);
-    setMediaModalOpen(false);
-    message.success('Rasm qo\'shildi');
+    if (isMultipleSelectionMode) {
+      // Multiple selection mode - add to selected images
+      setSelectedImages(prev => {
+        const exists = prev.find(img => img.id === media.id);
+        if (exists) {
+          // Remove if already selected
+          return prev.filter(img => img.id !== media.id);
+        } else {
+          // Add if not selected
+          return [...prev, media];
+        }
+      });
+    } else {
+      // Single image selection - insert directly
+      insertImage(media.url);
+      setMediaModalOpen(false);
+      message.success('Rasm qo\'shildi');
+    }
+  };
+
+  const insertImageLayout = (layout: string, images: MediaDto[]) => {
+    if (!editor || images.length === 0) return;
+    
+    const imagesHtml = images.map(img => 
+      `<img src="${normalizeImageUrl(img.url)}" alt="${img.alt_uz || img.filename || 'Rasm'}" />`
+    ).join('\n');
+    
+    const shortcode = `[images layout="${layout}"]${imagesHtml}[/images]`;
+    editor.chain().focus().insertContent(shortcode).run();
+    setImageLayoutModalOpen(false);
+    setSelectedImages([]);
+    message.success(`${images.length} ta rasm qo'shildi (${layout})`);
   };
 
   const addLink = () => {
@@ -143,6 +167,108 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
     }
 
     editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+  };
+
+  const addTable = () => {
+    if (!editor) return;
+    
+    const position = window.prompt(
+      'Jadval pozitsiyasini tanlang:\n1 - left (chap)\n2 - center (markaz)\n3 - right (o\'ng)\n4 - full (to\'liq)',
+      '2'
+    );
+
+    if (position === null) return;
+
+    const positions: Record<string, string> = {
+      '1': 'left',
+      '2': 'center',
+      '3': 'right',
+      '4': 'full',
+    };
+
+    const selectedPosition = positions[position] || 'center';
+    const tableHtml = `
+      <table border="1" style="border-collapse: collapse; width: 100%;">
+        <tr>
+          <th style="padding: 8px;">Ustun 1</th>
+          <th style="padding: 8px;">Ustun 2</th>
+        </tr>
+        <tr>
+          <td style="padding: 8px;">Ma\'lumot 1</td>
+          <td style="padding: 8px;">Ma\'lumot 2</td>
+        </tr>
+      </table>
+    `;
+    
+    const shortcode = `[table position="${selectedPosition}"]${tableHtml}[/table]`;
+    
+    editor.chain().focus().insertContent(shortcode).run();
+    message.success(`Jadval qo'shildi (pozitsiya: ${selectedPosition})`);
+  };
+
+  const addImageLayout = () => {
+    if (!editor) return;
+    
+    // Open media library in multiple selection mode
+    setSelectedImages([]);
+    setIsMultipleSelectionMode(true);
+    setMediaModalOpen(true);
+  };
+
+  const handleConfirmMultipleSelection = () => {
+    if (selectedImages.length === 0) {
+      message.warning('Kamida bitta rasm tanlang');
+      return;
+    }
+    setMediaModalOpen(false);
+    setIsMultipleSelectionMode(false);
+    setImageLayoutModalOpen(true);
+  };
+
+  const handleCancelMultipleSelection = () => {
+    setMediaModalOpen(false);
+    setIsMultipleSelectionMode(false);
+    setSelectedImages([]);
+  };
+
+  // Extract YouTube video ID from URL
+  const extractYouTubeId = (url: string): string | null => {
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+      /youtube\.com\/watch\?.*v=([^&\n?#]+)/,
+    ];
+    
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match && match[1]) {
+        return match[1];
+      }
+    }
+    
+    return null;
+  };
+
+  const addYouTubeVideo = () => {
+    if (!editor) return;
+    
+    if (!youtubeUrl.trim()) {
+      message.warning('YouTube video URL kiriting');
+      return;
+    }
+
+    const videoId = extractYouTubeId(youtubeUrl.trim());
+    if (!videoId) {
+      message.error('Noto\'g\'ri YouTube URL. Masalan: https://www.youtube.com/watch?v=VIDEO_ID yoki https://youtu.be/VIDEO_ID');
+      return;
+    }
+
+    // Insert YouTube shortcode
+    const shortcode = `[youtube id="${videoId}"]`;
+    editor.chain().focus().insertContent(shortcode).run();
+    
+    setYoutubeUrl('');
+    setYoutubeModalOpen(false);
+    message.success('YouTube video qo\'shildi');
   };
 
 
@@ -255,8 +381,31 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
           />
           <Button
             icon={<PictureOutlined />}
-            onClick={imageHandler}
+            onClick={() => setMediaModalOpen(true)}
             size="small"
+            title="Media library'dan rasm tanlash"
+          />
+
+          <div className="editor-divider" />
+
+          {/* Table & Image Layout */}
+          <Button
+            icon={<TableOutlined />}
+            onClick={addTable}
+            size="small"
+            title="Jadval qo'shish (pozitsiya bilan)"
+          />
+          <Button
+            icon={<AppstoreOutlined />}
+            onClick={addImageLayout}
+            size="small"
+            title="Rasm layout qo'shish"
+          />
+          <Button
+            icon={<PlayCircleOutlined />}
+            onClick={() => setYoutubeModalOpen(true)}
+            size="small"
+            title="YouTube video qo'shish"
           />
 
           <div className="editor-divider" />
@@ -293,10 +442,109 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
 
       <MediaLibraryModal
         open={mediaModalOpen}
-        onCancel={() => setMediaModalOpen(false)}
+        onCancel={isMultipleSelectionMode ? handleCancelMultipleSelection : () => setMediaModalOpen(false)}
         onSelect={handleSelectMediaFromLibrary}
         fileType="image"
+        multiple={isMultipleSelectionMode}
+        selectedMediaIds={selectedImages.map(img => img.id)}
+        onConfirm={(selectedIds) => {
+          // Filter selected images based on selectedIds
+          const confirmedImages = selectedImages.filter(img => selectedIds.includes(img.id));
+          if (confirmedImages.length === 0) {
+            message.warning('Kamida bitta rasm tanlang');
+            return;
+          }
+          setMediaModalOpen(false);
+          setIsMultipleSelectionMode(false);
+          setSelectedImages(confirmedImages);
+          setImageLayoutModalOpen(true);
+        }}
       />
+
+      {/* Image Layout Selection Modal */}
+      <Modal
+        title="Rasm layout'ini tanlang"
+        open={imageLayoutModalOpen}
+        onCancel={() => {
+          setImageLayoutModalOpen(false);
+          setSelectedImages([]);
+        }}
+        footer={null}
+        width={500}
+      >
+        <div style={{ padding: '20px 0' }}>
+          <p style={{ marginBottom: 16 }}>
+            {selectedImages.length} ta rasm tanlandi. Layout'ni tanlang:
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <Button
+              block
+              onClick={() => insertImageLayout('grid-2', selectedImages)}
+              disabled={selectedImages.length < 2}
+            >
+              Grid 2 (2 ta bir qatorga)
+            </Button>
+            <Button
+              block
+              onClick={() => insertImageLayout('grid-3', selectedImages)}
+              disabled={selectedImages.length < 3}
+            >
+              Grid 3 (3 ta bir qatorga)
+            </Button>
+            <Button
+              block
+              onClick={() => insertImageLayout('left-right', selectedImages)}
+              disabled={selectedImages.length < 2}
+            >
+              Chap-O'ng
+            </Button>
+            <Button
+              block
+              onClick={() => insertImageLayout('right-left', selectedImages)}
+              disabled={selectedImages.length < 2}
+            >
+              O'ng-Chap
+            </Button>
+          </div>
+          <div style={{ marginTop: 16, padding: 12, background: '#f5f5f5', borderRadius: 4 }}>
+            <p style={{ margin: 0, fontSize: 12, color: '#666' }}>
+              Tanlangan rasmlar: {selectedImages.map(img => img.filename || img.alt_uz || 'Rasm').join(', ')}
+            </p>
+          </div>
+        </div>
+      </Modal>
+
+      {/* YouTube Video Modal */}
+      <Modal
+        title="YouTube video qo'shish"
+        open={youtubeModalOpen}
+        onOk={addYouTubeVideo}
+        onCancel={() => {
+          setYoutubeModalOpen(false);
+          setYoutubeUrl('');
+        }}
+        okText="Qo'shish"
+        cancelText="Bekor qilish"
+      >
+        <div style={{ marginTop: 16 }}>
+          <p style={{ marginBottom: 8 }}>YouTube video URL kiriting:</p>
+          <Input
+            placeholder="Masalan: https://www.youtube.com/watch?v=dQw4w9WgXcQ yoki https://youtu.be/dQw4w9WgXcQ"
+            value={youtubeUrl}
+            onChange={(e) => setYoutubeUrl(e.target.value)}
+            onPressEnter={addYouTubeVideo}
+          />
+          <p style={{ marginTop: 8, fontSize: 12, color: '#666' }}>
+            Qo'llab-quvvatlanadigan formatlar:
+            <br />
+            • https://www.youtube.com/watch?v=VIDEO_ID
+            <br />
+            • https://youtu.be/VIDEO_ID
+            <br />
+            • https://www.youtube.com/embed/VIDEO_ID
+          </p>
+        </div>
+      </Modal>
     </div>
   );
 }

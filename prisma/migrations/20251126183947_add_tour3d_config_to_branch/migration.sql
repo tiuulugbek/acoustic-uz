@@ -1,36 +1,36 @@
--- AlterTable - Add columns if they don't exist
+-- AlterTable
+ALTER TABLE "Branch" ADD COLUMN     "serviceIds" TEXT[] DEFAULT ARRAY[]::TEXT[],
+ADD COLUMN     "tour3d_config" JSONB,
+ADD COLUMN     "workingHours_ru" TEXT,
+ADD COLUMN     "workingHours_uz" TEXT;
+
+-- AlterTable - Skip CatalogPageConfig if it doesn't exist yet (it will be created in a later migration)
+-- This migration runs before CatalogPageConfig table is created, so we skip this alteration
 DO $$ 
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'Branch' AND column_name = 'serviceIds') THEN
-        ALTER TABLE "Branch" ADD COLUMN "serviceIds" TEXT[] DEFAULT ARRAY[]::TEXT[];
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'Branch' AND column_name = 'tour3d_config') THEN
-        ALTER TABLE "Branch" ADD COLUMN "tour3d_config" JSONB;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'Branch' AND column_name = 'workingHours_ru') THEN
-        ALTER TABLE "Branch" ADD COLUMN "workingHours_ru" TEXT;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'Branch' AND column_name = 'workingHours_uz') THEN
-        ALTER TABLE "Branch" ADD COLUMN "workingHours_uz" TEXT;
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'CatalogPageConfig') THEN
+        ALTER TABLE "CatalogPageConfig" ALTER COLUMN "updatedAt" DROP DEFAULT;
     END IF;
 END $$;
 
--- AlterTable
-ALTER TABLE "CatalogPageConfig" ALTER COLUMN "updatedAt" DROP DEFAULT;
-
--- AlterTable - Add columns if they don't exist
+-- AlterTable - Add categoryId if not exists
 DO $$ 
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'Post' AND column_name = 'categoryId') THEN
         ALTER TABLE "Post" ADD COLUMN "categoryId" TEXT;
     END IF;
+END $$;
+
+-- AlterTable - Add postType if not exists
+DO $$ 
+BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'Post' AND column_name = 'postType') THEN
         ALTER TABLE "Post" ADD COLUMN "postType" TEXT NOT NULL DEFAULT 'article';
     END IF;
 END $$;
 
 -- CreateTable
-CREATE TABLE IF NOT EXISTS "PostCategory" (
+CREATE TABLE "PostCategory" (
     "id" TEXT NOT NULL,
     "name_uz" TEXT NOT NULL,
     "name_ru" TEXT NOT NULL,
@@ -46,15 +46,15 @@ CREATE TABLE IF NOT EXISTS "PostCategory" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX IF NOT EXISTS "PostCategory_slug_key" ON "PostCategory"("slug");
+CREATE UNIQUE INDEX "PostCategory_slug_key" ON "PostCategory"("slug");
 
 -- CreateIndex
-CREATE INDEX IF NOT EXISTS "PostCategory_slug_idx" ON "PostCategory"("slug");
+CREATE INDEX "PostCategory_slug_idx" ON "PostCategory"("slug");
 
 -- CreateIndex
-CREATE INDEX IF NOT EXISTS "PostCategory_status_order_idx" ON "PostCategory"("status", "order");
+CREATE INDEX "PostCategory_status_order_idx" ON "PostCategory"("status", "order");
 
--- CreateIndex
+-- CreateIndex - Create indexes if not exists
 CREATE INDEX IF NOT EXISTS "Post_categoryId_idx" ON "Post"("categoryId");
 
 -- CreateIndex
@@ -63,7 +63,7 @@ CREATE INDEX IF NOT EXISTS "Post_categoryId_status_idx" ON "Post"("categoryId", 
 -- CreateIndex
 CREATE INDEX IF NOT EXISTS "Post_postType_idx" ON "Post"("postType");
 
--- AddForeignKey
+-- AddForeignKey - Add foreign key if not exists
 DO $$ 
 BEGIN
     IF NOT EXISTS (

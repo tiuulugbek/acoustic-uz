@@ -1,5 +1,5 @@
-import PageEditor from '../components/PageEditor';
+import SectionPostsPage from './SectionPosts';
 
 export default function ChildrenHearingPage() {
-  return <PageEditor slug="children-hearing" defaultTitleUz="Bolalar va eshitish" defaultTitleRu="Дети и слух" />;
+  return <SectionPostsPage section="children" sectionName={{ uz: 'Bolalar', ru: 'Дети' }} />;
 }

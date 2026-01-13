@@ -4,26 +4,98 @@ import './globals.css';
 import { Providers } from './providers';
 import SiteHeader from '@/components/site-header';
 import SiteFooter from '@/components/site-footer';
+import TelegramButton from '@/components/telegram-button';
+import DebugHydration from '@/app/debug-hydration';
 import { detectLocale } from '@/lib/locale-server';
 import { getSettings } from '@/lib/api-server';
 import type { SettingsResponse } from '@/lib/api';
+import { normalizeImageUrl } from '@/lib/image-utils';
 
 // Force dynamic rendering to ensure locale is always read from cookies
 // This prevents Next.js from caching the layout with a stale locale
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export const metadata: Metadata = {
-  title: 'Acoustic.uz - Eshitish markazi',
-  description: 'Eshitish qobiliyatini tiklash va yaxshilash markazi',
-  alternates: {
-    languages: {
-      uz: 'uz',
-      ru: 'ru',
-      'x-default': 'uz',
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = detectLocale();
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
+  
+  // Get favicon from settings
+  let faviconUrl: string | null = null;
+  try {
+    const settings = await getSettings(locale);
+    if (settings?.favicon?.url) {
+      const normalizedUrl = normalizeImageUrl(settings.favicon.url);
+      if (normalizedUrl) {
+        // If normalized URL is absolute, use it directly
+        if (normalizedUrl.startsWith('http://') || normalizedUrl.startsWith('https://')) {
+          faviconUrl = normalizedUrl;
+        } else if (normalizedUrl.startsWith('/')) {
+          // If relative URL, make it absolute
+          faviconUrl = `${baseUrl}${normalizedUrl}`;
+        } else {
+          // If relative URL without leading slash, add it
+          faviconUrl = `${baseUrl}/${normalizedUrl}`;
+        }
+      }
+    }
+  } catch (error) {
+    // Use default favicon if settings fetch fails
+    console.error('[Layout] Failed to fetch favicon:', error);
+  }
+  
+  // Fallback to default favicon if no favicon from settings
+  if (!faviconUrl) {
+    faviconUrl = `${baseUrl}/favicon.ico`;
+  }
+  
+  // Ensure faviconUrl is always absolute
+  if (faviconUrl && !faviconUrl.startsWith('http://') && !faviconUrl.startsWith('https://')) {
+    if (faviconUrl.startsWith('/')) {
+      faviconUrl = `${baseUrl}${faviconUrl}`;
+    } else {
+      faviconUrl = `${baseUrl}/${faviconUrl}`;
+    }
+  }
+
+  return {
+    title: 'Acoustic.uz - Eshitish markazi',
+    description: 'Eshitish qobiliyatini tiklash va yaxshilash markazi',
+    alternates: {
+      canonical: baseUrl,
+      languages: {
+        uz: baseUrl,
+        ru: baseUrl, // Same URL since we use cookie-based locale detection
+        'x-default': baseUrl,
+      },
     },
-  },
-};
+    icons: {
+      icon: [
+        { url: faviconUrl, sizes: 'any' },
+        { url: faviconUrl, type: 'image/x-icon' },
+      ],
+      shortcut: faviconUrl,
+      apple: faviconUrl,
+    },
+    viewport: {
+      width: 'device-width',
+      initialScale: 1,
+      maximumScale: 5,
+      userScalable: true,
+      viewportFit: 'cover',
+    },
+    other: {
+      'apple-mobile-web-app-capable': 'yes',
+      'apple-mobile-web-app-status-bar-style': 'default',
+      'apple-mobile-web-app-title': 'Acoustic.uz',
+      'mobile-web-app-capable': 'yes',
+      'format-detection': 'telephone=no',
+      'theme-color': '#F07E22',
+      'msapplication-TileColor': '#F07E22',
+      'msapplication-config': '/browserconfig.xml',
+    },
+  };
+}
 
 export default async function RootLayout({
   children,
@@ -60,6 +132,17 @@ export default async function RootLayout({
         ? settings.logo.url 
         : `${baseUrl}${settings.logo.url}`)
     : `${baseUrl}/logo.png`;
+  // Normalize favicon URL using normalizeImageUrl utility
+  const faviconUrl = settings?.favicon?.url 
+    ? normalizeImageUrl(settings.favicon.url) || `${baseUrl}/favicon.ico`
+    : `${baseUrl}/favicon.ico`;
+  
+  // Ensure faviconUrl is always absolute
+  const finalFaviconUrl = faviconUrl.startsWith('http') 
+    ? faviconUrl 
+    : faviconUrl.startsWith('/')
+    ? `${baseUrl}${faviconUrl}`
+    : `${baseUrl}/${faviconUrl}`;
 
   // Organization structured data
   const organizationSchema = {
@@ -85,17 +168,147 @@ export default async function RootLayout({
     ],
   };
 
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://a.acoustic.uz';
+  const apiDomain = apiUrl.replace(/^https?:\/\//, '').split('/')[0];
+
   return (
     <html lang={locale} suppressHydrationWarning data-locale={locale}>
       <head>
+        {/* Mobile optimization meta tags */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="Acoustic.uz" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="format-detection" content="telephone=no" />
+        <meta name="theme-color" content="#F07E22" />
+        <meta name="msapplication-TileColor" content="#F07E22" />
+        <meta name="msapplication-config" content="/browserconfig.xml" />
+        
+        {/* DNS Prefetch and Preconnect for API and external resources */}
+        <link rel="dns-prefetch" href={`https://${apiDomain}`} />
+        <link rel="preconnect" href={`https://${apiDomain}`} crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+        <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+        
+        {/* Preload critical resources */}
+        {/* Favicon link - use faviconUrl from settings or fallback to /favicon.ico */}
+        <link rel="icon" href={finalFaviconUrl} type="image/x-icon" />
+        <link rel="shortcut icon" href={finalFaviconUrl} type="image/x-icon" />
+        
+        {/* Apple Touch Icons for better mobile experience */}
+        <link rel="apple-touch-icon" href={finalFaviconUrl} />
+        <link rel="apple-touch-icon" sizes="180x180" href={finalFaviconUrl} />
+        
         <Script
           id="organization-jsonld"
           type="application/ld+json"
+          strategy="lazyOnload"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
         />
+        {/* Suppress hydration warnings globally - but keep for debugging */}
+        {/* CRITICAL: This script MUST run before React hydrates to catch errors */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                // Suppress React hydration warnings globally
+                // This is a temporary measure while we fix all hydration mismatches
+                // Run immediately, before React loads
+                if (typeof window !== 'undefined') {
+                  const originalError = console.error;
+                  const originalWarn = console.warn;
+                  
+                  // Helper function to check if error is hydration-related
+                  function isHydrationError(args) {
+                    try {
+                      const errorStr = args[0]?.toString?.() || '';
+                      const allArgsStr = args.map(a => {
+                        try {
+                          return a?.toString?.() || '';
+                        } catch {
+                          return '';
+                        }
+                      }).join(' ');
+                      
+                      // Check for hydration errors in multiple ways - be very permissive
+                      return (
+                        errorStr.includes('Hydration') || 
+                        errorStr.includes('hydration') ||
+                        errorStr.includes('306') || 
+                        errorStr.includes('310') ||
+                        errorStr.includes('Minified React error #306') ||
+                        errorStr.includes('Minified React error #310') ||
+                        errorStr.includes('react.dev/errors/306') ||
+                        errorStr.includes('react.dev/errors/310') ||
+                        errorStr.includes('visit https://react.dev/errors/306') ||
+                        errorStr.includes('visit https://react.dev/errors/310') ||
+                        allArgsStr.includes('Hydration') ||
+                        allArgsStr.includes('hydration') ||
+                        allArgsStr.includes('306') ||
+                        allArgsStr.includes('310') ||
+                        allArgsStr.includes('Minified React error #306') ||
+                        allArgsStr.includes('Minified React error #310') ||
+                        allArgsStr.includes('react.dev/errors/306') ||
+                        allArgsStr.includes('react.dev/errors/310') ||
+                        allArgsStr.includes('visit https://react.dev/errors/306') ||
+                        allArgsStr.includes('visit https://react.dev/errors/310')
+                      );
+                    } catch (e) {
+                      return false;
+                    }
+                  }
+                  
+                  // Override console.error to catch hydration errors
+                  console.error = function(...args) {
+                    if (isHydrationError(args)) {
+                      // Suppress hydration warnings - they are expected in some cases
+                      // Log to console.warn for debugging but don't show as error
+                      originalWarn.call(console, '[Hydration Warning Suppressed]', ...args);
+                      return;
+                    }
+                    originalError.apply(console, args);
+                  };
+                  
+                  // Also override window.onerror to catch unhandled errors
+                  const originalOnError = window.onerror;
+                  window.onerror = function(message, source, lineno, colno, error) {
+                    const messageStr = message?.toString?.() || '';
+                    if (messageStr.includes('306') || messageStr.includes('310') || messageStr.includes('Hydration')) {
+                      originalWarn.call(console, '[Hydration Error Suppressed]', message, source, lineno, colno, error);
+                      return true; // Suppress the error
+                    }
+                    if (originalOnError) {
+                      return originalOnError.call(window, message, source, lineno, colno, error);
+                    }
+                    return false;
+                  };
+                  
+                  // Also override window.addEventListener('error') to catch all errors
+                  const originalAddEventListener = window.addEventListener;
+                  window.addEventListener = function(type, listener, options) {
+                    if (type === 'error') {
+                      const wrappedListener = function(event) {
+                        const messageStr = event?.message?.toString?.() || '';
+                        if (messageStr.includes('306') || messageStr.includes('310') || messageStr.includes('Hydration')) {
+                          originalWarn.call(console, '[Hydration Error Suppressed (addEventListener)]', event);
+                          event.preventDefault();
+                          event.stopPropagation();
+                          return false;
+                        }
+                        return listener.call(this, event);
+                      };
+                      return originalAddEventListener.call(this, type, wrappedListener, options);
+                    }
+                    return originalAddEventListener.call(this, type, listener, options);
+                  };
+                }
+              })();
+            `,
+          }}
+        />
       </head>
-      <body className="font-sans">
-        <Providers>
+      <body className="font-sans bg-white text-gray-900" suppressHydrationWarning style={{ backgroundColor: '#ffffff', color: '#111827' }}>
+        <Providers settings={settings}>
           {/* Set locale in window before children render - this script runs synchronously */}
           {/* CRITICAL: This value MUST be set before React hydrates to prevent hydration mismatch */}
           <script
@@ -106,10 +319,20 @@ export default async function RootLayout({
               `,
             }}
           />
-          <div className="flex min-h-screen flex-col bg-muted/20">
-            <SiteHeader initialSettings={settings} />
-            <main className="flex-1">{children}</main>
-            <SiteFooter />
+          <div className="flex min-h-screen flex-col bg-gray-50" suppressHydrationWarning style={{ backgroundColor: '#f9fafb', minHeight: '100vh' }}>
+            <DebugHydration />
+            {/* Skip to main content link for accessibility */}
+            <a 
+              href="#main-content" 
+              className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-brand-primary focus:text-white focus:rounded-md focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-brand-primary focus:ring-offset-2"
+              suppressHydrationWarning
+            >
+              {locale === 'ru' ? 'Перейти к основному содержимому' : 'Asosiy kontentga o\'tish'}
+            </a>
+            <SiteHeader initialSettings={settings} initialLocale={locale as 'uz' | 'ru'} />
+            <main id="main-content" className="flex-1" suppressHydrationWarning role="main">{children}</main>
+            <SiteFooter initialLocale={locale as 'uz' | 'ru'} />
+            <TelegramButton initialLocale={locale as 'uz' | 'ru'} />
           </div>
         </Providers>
       </body>

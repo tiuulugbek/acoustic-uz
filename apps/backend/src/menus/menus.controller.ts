@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { MenusService } from './menus.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -22,6 +22,20 @@ export class MenusController {
   @RequirePermissions('content.write')
   update(@Param('name') name: string, @Body() dto: { items: unknown }) {
     return this.service.update(name, dto.items);
+  }
+}
+
+// Legacy route support: /api/menu -> /api/menus/header
+@ApiTags('public', 'admin')
+@Controller('menu')
+export class MenuLegacyController {
+  constructor(private readonly service: MenusService) {}
+
+  @Public()
+  @Get()
+  findOne(@Query('name') name?: string) {
+    // Default to 'header' if no name provided
+    return this.service.findOne(name || 'header');
   }
 }
 

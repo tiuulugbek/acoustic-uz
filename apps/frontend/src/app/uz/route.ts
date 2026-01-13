@@ -3,6 +3,11 @@ import { type NextRequest } from 'next/server';
 import { LOCALE_COOKIE_NAME, LOCALE_COOKIE_MAX_AGE } from '@/lib/locale';
 
 export async function GET(request: NextRequest) {
+  // Get the actual hostname from Host header (not from nextUrl.origin which might be 0.0.0.0:3000)
+  const hostHeader = request.headers.get('host') || request.headers.get('x-forwarded-host');
+  const protocol = request.headers.get('x-forwarded-proto') || (request.nextUrl.protocol === 'https:' ? 'https' : 'http');
+  const baseUrl = `${protocol}://${hostHeader || 'localhost:3000'}`;
+  
   // Get redirect path from query param or default to homepage
   const redirectPath = request.nextUrl.searchParams.get('redirect') || '/';
   let redirectUrl: URL;
@@ -12,19 +17,21 @@ export async function GET(request: NextRequest) {
     if (redirectPath.startsWith('http://') || redirectPath.startsWith('https://')) {
       redirectUrl = new URL(redirectPath);
       // Ensure it's from the same origin for security
-      if (redirectUrl.origin !== request.nextUrl.origin) {
-        redirectUrl = new URL('/', request.nextUrl.origin);
+      const redirectOrigin = redirectUrl.origin;
+      const baseOrigin = new URL(baseUrl).origin;
+      if (redirectOrigin !== baseOrigin) {
+        redirectUrl = new URL('/', baseUrl);
       }
     } else {
-      // For relative URLs, create a new URL with the origin
-      redirectUrl = new URL(redirectPath, request.nextUrl.origin);
+      // For relative URLs, create a new URL with the baseUrl (not nextUrl.origin)
+      redirectUrl = new URL(redirectPath, baseUrl);
     }
   } catch (error) {
     // If URL parsing fails, default to homepage
     if (process.env.NODE_ENV === 'development') {
       console.error(`[Locale Route /uz] Failed to parse redirect path: ${redirectPath}`, error);
     }
-    redirectUrl = new URL('/', request.nextUrl.origin);
+    redirectUrl = new URL('/', baseUrl);
   }
   
   // Calculate expiration date
@@ -53,6 +60,7 @@ export async function GET(request: NextRequest) {
   // Log for debugging
   if (process.env.NODE_ENV === 'development') {
     console.log(`[Locale Route /uz] ✅ Setting cookie ${LOCALE_COOKIE_NAME}=uz`);
+    console.log(`[Locale Route /uz] Base URL: ${baseUrl}`);
     console.log(`[Locale Route /uz] Redirecting to: ${redirectUrl.toString()}`);
   }
   

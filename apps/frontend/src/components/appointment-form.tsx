@@ -2,13 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { Phone, MapPin, CheckCircle, User } from 'lucide-react';
-import { getBranches } from '@/lib/api';
+import { getBranches, createLead } from '@/lib/api';
 import { getBilingualText } from '@/lib/locale';
 import type { BranchResponse } from '@/lib/api';
 
 interface AppointmentFormProps {
   locale: 'uz' | 'ru';
   doctorId?: string | null;
+  doctorName?: string | null; // Doctor name for message
+  source?: string; // Source identifier (e.g., 'post-{slug}', 'service-{slug}', 'product-{slug}')
+  onSuccess?: () => void; // Callback when form is successfully submitted
 }
 
 // Phone number mask function for Uzbekistan (+998)
@@ -34,7 +37,7 @@ const getPhoneDigits = (formatted: string): string => {
   return formatted.replace(/\D/g, '');
 };
 
-export default function AppointmentForm({ locale, doctorId }: AppointmentFormProps) {
+export default function AppointmentForm({ locale, doctorId, doctorName, source, onSuccess }: AppointmentFormProps) {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('+998 ');
   const [selectedBranch, setSelectedBranch] = useState<string>('');
@@ -101,30 +104,54 @@ export default function AppointmentForm({ locale, doctorId }: AppointmentFormPro
     setIsSubmitting(true);
 
     try {
-      // TODO: Integrate with AmoCRM API
-      // For now, just simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // In production, this would be:
-      // await fetch('/api/appointments', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({
-      //     fullName,
-      //     phone: phoneDigits,
-      //     branchId: selectedBranch,
-      //     source: 'article',
-      //   }),
-      // });
+      const selectedBranchData = branches.find(b => b.id === selectedBranch);
+      const branchName = selectedBranchData 
+        ? getBilingualText(selectedBranchData.name_uz, selectedBranchData.name_ru, locale)
+        : '';
+
+      // Build source string: use provided source or default format
+      const sourceString = source 
+        ? `${source}_branch_${selectedBranch}${doctorId ? `_doctor_${doctorId}` : ''}`
+        : `appointment_form${doctorId ? `_doctor_${doctorId}` : ''}_branch_${selectedBranch}`;
+
+      // Build message with doctor and branch info
+      const messageParts: string[] = [];
+      if (branchName) {
+        messageParts.push(`${locale === 'ru' ? 'Филиал' : 'Filial'}: ${branchName}`);
+      }
+      if (doctorName) {
+        messageParts.push(`${locale === 'ru' ? 'Специалист' : 'Mutaxassis'}: ${doctorName}`);
+      }
+      const message = messageParts.length > 0 ? messageParts.join(', ') : undefined;
+
+      // Get current page URL and referer
+      const pageUrl = typeof window !== 'undefined' ? window.location.href : null;
+      const referer = typeof document !== 'undefined' ? document.referrer || null : null;
+
+      await createLead({
+        name: fullName.trim(),
+        phone: phoneDigits,
+        source: sourceString,
+        message,
+        pageUrl,
+        referer,
+      }, locale);
 
       setIsSubmitted(true);
       setFullName('');
       setPhone('+998 ');
       setConsent(false);
       
-      setTimeout(() => {
-        setIsSubmitted(false);
-      }, 5000);
+      // Call onSuccess callback if provided
+      if (onSuccess) {
+        setTimeout(() => {
+          onSuccess();
+        }, 1000);
+      } else {
+        setTimeout(() => {
+          setIsSubmitted(false);
+        }, 5000);
+      }
     } catch (error) {
       console.error('Failed to submit appointment:', error);
       alert(locale === 'ru' ? 'Ошибка при отправке. Попробуйте позже.' : 'Xatolik yuz berdi. Keyinroq urinib ko\'ring.');

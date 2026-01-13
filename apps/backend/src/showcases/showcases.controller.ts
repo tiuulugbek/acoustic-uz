@@ -20,11 +20,8 @@ export class ShowcasesController {
   @UseGuards(JwtAuthGuard, RbacGuard)
   @Post(':type')
   @RequirePermissions('content.write')
-  update(
-    @Param('type') type: 'interacoustics' | 'cochlear',
-    @Body() dto: { productIds: string[]; productMetadata?: Record<string, { description_uz?: string; description_ru?: string; imageId?: string }> }
-  ) {
-    return this.service.update(type, dto.productIds, dto.productMetadata);
+  update(@Param('type') type: 'interacoustics' | 'cochlear', @Body() dto: { productIds: string[] }) {
+    return this.service.update(type, dto.productIds);
   }
 }
 
