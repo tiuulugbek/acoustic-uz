@@ -17,7 +17,7 @@ echo -e "${BLUE}=======================================${NC}"
 
 PROJECT_DIR="/var/www/acoustic.uz"
 ADMIN_DIR="$PROJECT_DIR/apps/admin"
-NGINX_ROOT="/var/www/acoustic.uz/apps/admin/dist"
+NGINX_ROOT="/var/www/admin.acoustic.uz/build"
 
 # Check if we're in the right directory
 if [ ! -f "$ADMIN_DIR/package.json" ]; then
@@ -42,17 +42,15 @@ echo -e "${BLUE}   Current directory: $(pwd)${NC}"
 export VITE_API_URL="https://a.acoustic.uz/api"
 export VITE_FRONTEND_URL="https://acoustic.uz"
 
-# Remove old dist if exists
-if [ -d "dist" ]; then
-    echo -e "${YELLOW}   Removing old dist directory...${NC}"
-    rm -rf dist
-fi
+# Remove old dist if exists (bu yangi hash olish uchun zarur)
+echo -e "${YELLOW}   Removing old dist directory...${NC}"
+rm -rf dist
 
 # Build
-echo -e "${BLUE}   Running pnpm build...${NC}"
-pnpm build
+echo -e "${BLUE}   Running pnpm exec vite build...${NC}"
+pnpm exec vite build
 
-# Check if build succeeded - use current directory
+# Check if build succeeded
 BUILD_DIR="$(pwd)/dist"
 if [ ! -d "$BUILD_DIR" ]; then
     echo -e "${RED}❌ Error: Build failed - dist directory not found${NC}"
@@ -61,53 +59,41 @@ if [ ! -d "$BUILD_DIR" ]; then
     exit 1
 fi
 
+# Check if HTML editor code exists in build
+if grep -q "HTML kod yozish" "$BUILD_DIR/assets"/*.js 2>/dev/null; then
+    echo -e "${GREEN}✅ HTML editor code found in build${NC}"
+else
+    echo -e "${YELLOW}⚠️  Warning: HTML editor code not found in build${NC}"
+fi
+
+# Get new JS file name
+NEW_JS=$(grep -o 'assets/index-[^"]*\.js' "$BUILD_DIR/index.html" | head -1)
+echo -e "${BLUE}   New JavaScript file: $NEW_JS${NC}"
+
 echo -e "${GREEN}✅ Build completed - dist directory created at $BUILD_DIR${NC}"
 
 # 2. Copy dist to Nginx root
 echo ""
 echo -e "${BLUE}2️⃣ Copying dist to Nginx root...${NC}"
 
-# Use BUILD_DIR from previous step (current directory/dist)
-ADMIN_DIST="$BUILD_DIR"
+# Remove old Nginx root completely
+echo -e "${BLUE}   Removing old Nginx root: $NGINX_ROOT${NC}"
+sudo rm -rf "$NGINX_ROOT"/*
 
-# Verify dist exists
-if [ ! -d "$ADMIN_DIST" ]; then
-    echo -e "${RED}❌ Error: dist directory not found at $ADMIN_DIST${NC}"
-    echo -e "${YELLOW}   Current directory: $(pwd)${NC}"
-    echo -e "${YELLOW}   Checking if dist exists in current directory...${NC}"
-    if [ -d "dist" ]; then
-        ADMIN_DIST="$(pwd)/dist"
-        echo -e "${GREEN}   Found dist in current directory: $ADMIN_DIST${NC}"
-    else
-        echo -e "${RED}❌ dist directory not found anywhere${NC}"
-        exit 1
-    fi
+# Create directory if doesn't exist
+sudo mkdir -p "$NGINX_ROOT"
+
+# Copy dist to Nginx root
+echo -e "${BLUE}   Copying from $BUILD_DIR to $NGINX_ROOT...${NC}"
+sudo cp -r "$BUILD_DIR"/* "$NGINX_ROOT/"
+
+# Verify copy succeeded
+if [ ! -f "$NGINX_ROOT/index.html" ]; then
+    echo -e "${RED}❌ Error: Copy failed - index.html not found at $NGINX_ROOT${NC}"
+    exit 1
 fi
 
-# Check if source and destination are the same
-if [ "$ADMIN_DIST" = "$NGINX_ROOT" ]; then
-    echo -e "${YELLOW}   Source and destination are the same - no copy needed${NC}"
-    echo -e "${GREEN}✅ Dist is already in the correct location${NC}"
-else
-    # Remove old Nginx root (only if different from source)
-    echo -e "${BLUE}   Removing old Nginx root: $NGINX_ROOT${NC}"
-    sudo rm -rf "$NGINX_ROOT"
-    sudo mkdir -p "$(dirname "$NGINX_ROOT")"
-
-    # Copy dist to Nginx root
-    echo -e "${BLUE}   Copying from $ADMIN_DIST to $(dirname "$NGINX_ROOT")...${NC}"
-    sudo cp -r "$ADMIN_DIST" "$(dirname "$NGINX_ROOT")/"
-
-    # Verify copy succeeded
-    if [ ! -d "$NGINX_ROOT" ]; then
-        echo -e "${RED}❌ Error: Copy failed - $NGINX_ROOT not found${NC}"
-        echo -e "${YELLOW}   Source: $ADMIN_DIST${NC}"
-        echo -e "${YELLOW}   Destination parent: $(dirname "$NGINX_ROOT")${NC}"
-        exit 1
-    fi
-
-    echo -e "${GREEN}✅ Copy completed${NC}"
-fi
+echo -e "${GREEN}✅ Copy completed${NC}"
 
 # 3. Fix permissions
 echo ""
@@ -117,9 +103,15 @@ sudo chmod -R 755 "$NGINX_ROOT"
 
 echo -e "${GREEN}✅ Permissions fixed${NC}"
 
-# 4. Reload Nginx
+# 4. Clear Nginx cache
 echo ""
-echo -e "${BLUE}4️⃣ Reloading Nginx...${NC}"
+echo -e "${BLUE}4️⃣ Clearing Nginx cache...${NC}"
+sudo rm -rf /var/cache/nginx/* 2>/dev/null || true
+echo -e "${GREEN}✅ Nginx cache cleared${NC}"
+
+# 5. Reload Nginx
+echo ""
+echo -e "${BLUE}5️⃣ Reloading Nginx...${NC}"
 sudo nginx -t && sudo systemctl reload nginx
 
 if [ $? -eq 0 ]; then
@@ -129,15 +121,24 @@ else
     exit 1
 fi
 
-# 5. Test admin panel
+# 6. Test admin panel
 echo ""
-echo -e "${BLUE}5️⃣ Testing admin panel...${NC}"
+echo -e "${BLUE}6️⃣ Testing admin panel...${NC}"
 HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" https://admin.acoustic.uz/ 2>/dev/null || echo "000")
 
 if [ "$HTTP_CODE" = "200" ]; then
     echo -e "${GREEN}✅ Admin panel is accessible (HTTP $HTTP_CODE)${NC}"
 else
     echo -e "${YELLOW}⚠️  Admin panel returned HTTP $HTTP_CODE${NC}"
+fi
+
+# 7. Show version info
+echo ""
+echo -e "${BLUE}7️⃣ Version information:${NC}"
+if [ -f "$NGINX_ROOT/version.json" ]; then
+    cat "$NGINX_ROOT/version.json"
+else
+    echo -e "${YELLOW}⚠️  version.json not found${NC}"
 fi
 
 echo ""
@@ -147,7 +148,7 @@ echo -e "${BLUE}=======================================${NC}"
 echo ""
 echo -e "${GREEN}📋 Next steps:${NC}"
 echo "   1. Visit: https://admin.acoustic.uz"
-echo "   2. Check browser console for errors"
-echo "   3. If issues persist, check Nginx logs:"
-echo "      sudo tail -50 /var/log/nginx/admin.acoustic.uz.error.log"
-
+echo "   2. Hard refresh browser: Ctrl+Shift+R (Windows) or Cmd+Shift+R (Mac)"
+echo "   3. Check browser console for errors"
+echo "   4. If issues persist, check Nginx logs:"
+echo "      sudo tail -50 /var/log/nginx/error.log"
