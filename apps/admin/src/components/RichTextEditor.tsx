@@ -438,12 +438,13 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
 
           <div className="editor-divider" />
 
-          {/* HTML Source Editor */}
+          {/* HTML Source Editor - Cache busting v4 */}
           <Button
             icon={<CodeOutlined />}
             onClick={openHtmlSourceEditor}
             size="small"
             title="HTML kod yozish"
+            type="default"
           >
             HTML
           </Button>
