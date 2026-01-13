@@ -8,6 +8,8 @@ import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import { useState, useEffect } from 'react';
 import { Button, Space, message, Modal, Input } from 'antd';
+
+const { TextArea } = Input;
 import {
   BoldOutlined,
   ItalicOutlined,
@@ -26,6 +28,7 @@ import {
   TableOutlined,
   AppstoreOutlined,
   PlayCircleOutlined,
+  CodeOutlined,
 } from '@ant-design/icons';
 import { uploadMedia, type MediaDto } from '../lib/api';
 import MediaLibraryModal from './MediaLibraryModal';
@@ -42,6 +45,8 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
   const [mediaModalOpen, setMediaModalOpen] = useState(false);
   const [imageLayoutModalOpen, setImageLayoutModalOpen] = useState(false);
   const [youtubeModalOpen, setYoutubeModalOpen] = useState(false);
+  const [htmlSourceModalOpen, setHtmlSourceModalOpen] = useState(false);
+  const [htmlSource, setHtmlSource] = useState('');
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [selectedImages, setSelectedImages] = useState<MediaDto[]>([]);
   const [isMultipleSelectionMode, setIsMultipleSelectionMode] = useState(false);
@@ -271,6 +276,28 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
     message.success('YouTube video qo\'shildi');
   };
 
+  const openHtmlSourceEditor = () => {
+    if (!editor) return;
+    // Get current HTML content
+    const currentHtml = editor.getHTML();
+    setHtmlSource(currentHtml);
+    setHtmlSourceModalOpen(true);
+  };
+
+  const applyHtmlSource = () => {
+    if (!editor) return;
+    
+    try {
+      // Set HTML content directly
+      editor.commands.setContent(htmlSource);
+      onChange?.(htmlSource);
+      setHtmlSourceModalOpen(false);
+      message.success('HTML kod qo\'shildi');
+    } catch (error) {
+      message.error('HTML kodda xatolik bor. Iltimos, tekshirib ko\'ring.');
+    }
+  };
+
 
   if (!editor) {
     return null;
@@ -410,6 +437,18 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
 
           <div className="editor-divider" />
 
+          {/* HTML Source Editor */}
+          <Button
+            icon={<CodeOutlined />}
+            onClick={openHtmlSourceEditor}
+            size="small"
+            title="HTML kod yozish"
+          >
+            HTML
+          </Button>
+
+          <div className="editor-divider" />
+
           {/* Undo/Redo */}
           <Button
             icon={<UndoOutlined />}
@@ -543,6 +582,55 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
             <br />
             • https://www.youtube.com/embed/VIDEO_ID
           </p>
+        </div>
+      </Modal>
+
+      {/* HTML Source Editor Modal */}
+      <Modal
+        title="HTML kod yozish"
+        open={htmlSourceModalOpen}
+        onOk={applyHtmlSource}
+        onCancel={() => {
+          setHtmlSourceModalOpen(false);
+          setHtmlSource('');
+        }}
+        okText="Qo'shish"
+        cancelText="Bekor qilish"
+        width={900}
+        style={{ top: 20 }}
+      >
+        <div style={{ marginTop: 16 }}>
+          <p style={{ marginBottom: 8, fontSize: 14, color: '#666' }}>
+            HTML kod yozing. Bu kod to'g'ridan-to'g'ri sahifaga qo'shiladi.
+            <br />
+            <strong>Eslatma:</strong> <code>&lt;style&gt;</code> taglar, jadvallar va boshqa HTML elementlar qo'llab-quvvatlanadi.
+          </p>
+          <TextArea
+            value={htmlSource}
+            onChange={(e) => setHtmlSource(e.target.value)}
+            placeholder="Masalan:&#10;&lt;style&gt;...&lt;/style&gt;&#10;&lt;table&gt;...&lt;/table&gt;"
+            rows={20}
+            style={{ 
+              fontFamily: 'monospace', 
+              fontSize: '13px',
+              lineHeight: '1.5'
+            }}
+          />
+          <div style={{ marginTop: 12, padding: 12, background: '#f5f5f5', borderRadius: 4 }}>
+            <p style={{ margin: 0, fontSize: 12, color: '#666' }}>
+              <strong>Masalan:</strong> Jadval va style bilan HTML kod yozishingiz mumkin:
+              <br />
+              <code style={{ fontSize: 11, display: 'block', marginTop: 8, whiteSpace: 'pre-wrap' }}>
+{`<style>
+  .my-table { width: 100%; }
+</style>
+<table class="my-table">
+  <tr><th>Ustun 1</th></tr>
+  <tr><td>Ma'lumot</td></tr>
+</table>`}
+              </code>
+            </p>
+          </div>
         </div>
       </Modal>
     </div>
