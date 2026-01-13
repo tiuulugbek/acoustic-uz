@@ -42,6 +42,7 @@ interface RichTextEditorProps {
 }
 
 export default function RichTextEditor({ value, onChange, placeholder }: RichTextEditorProps) {
+  // HTML editor with cache busting - v2
   const [mediaModalOpen, setMediaModalOpen] = useState(false);
   const [imageLayoutModalOpen, setImageLayoutModalOpen] = useState(false);
   const [youtubeModalOpen, setYoutubeModalOpen] = useState(false);
