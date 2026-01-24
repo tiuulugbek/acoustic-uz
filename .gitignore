@@ -69,6 +69,9 @@ docker-compose.override.yml
 uploads/
 storage/
 public/uploads/
+# Backend storage module (source) — ignore dan istisno
+!apps/backend/src/media/storage/
+!apps/backend/src/media/storage/*
 
 # Temporary files
 tmp/
