@@ -10,22 +10,39 @@ import DeviceSelection from './device-selection';
 import VolumeCalibration from './volume-calibration';
 import TestReady from './test-ready';
 import FrequencyTest from './frequency-test';
+import DigitsInNoiseTest from './digits-in-noise-test';
 import TestResults from './test-results';
 import ContactForm from './contact-form';
+// New design components
+import WelcomePageNew from './welcome-page-new';
+import SetupPageNew from './setup-page-new';
+import TestStartPageNew from './test-start-page-new';
+import CalibrationPageNew from './calibration-page-new';
+import ResultsPageNew from './results-page-new';
 
 type TestStep = 'intro' | 'device' | 'volume' | 'ready-left' | 'left-ear' | 'ready-right' | 'right-ear' | 'results' | 'contact';
+type TestMethod = 'frequency' | 'digits-in-noise';
+type DesignVersion = 'old' | 'new';
 
 const FREQUENCIES = [250, 500, 1000, 2000, 4000, 8000];
 
 export default function HearingTest() {
   const [step, setStep] = useState<TestStep>('intro');
   const [locale, setLocale] = useState<Locale>('uz');
+  const [designVersion, setDesignVersion] = useState<DesignVersion>('new'); // New design by default
+  const [testMethod, setTestMethod] = useState<TestMethod>('digits-in-noise'); // New method by default
   const [deviceType, setDeviceType] = useState<'speaker' | 'headphone' | null>(null);
   const [volumeLevel, setVolumeLevel] = useState<number>(1);
   const [leftEarResults, setLeftEarResults] = useState<Record<string, number>>({});
   const [rightEarResults, setRightEarResults] = useState<Record<string, number>>({});
+  // Digits-in-Noise results
+  const [leftEarSINResults, setLeftEarSINResults] = useState<any>(null);
+  const [rightEarSINResults, setRightEarSINResults] = useState<any>(null);
   const [testResult, setTestResult] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Current frequency for calibration
+  const [currentFrequency, setCurrentFrequency] = useState<number>(1000);
+  const [currentFrequencyIndex, setCurrentFrequencyIndex] = useState<number>(0);
 
   const { playTone, stopTone, cleanup, updateVolume, isPlaying } = useAudioTest();
 
@@ -45,11 +62,78 @@ export default function HearingTest() {
     // Volume calibration'da foydalanuvchi qurilma ovozini sozlaydi
     // Test ovozini doim maksimal balandlikda ijro etamiz
     setVolumeLevel(1.0); // Maksimal volume
+    setCurrentFrequencyIndex(0);
+    setCurrentFrequency(FREQUENCIES[0]);
     setStep('ready-left');
   };
 
+  const handleFrequencyComplete = (results: Record<string, number>, ear: 'left' | 'right') => {
+    if (ear === 'left') {
+      setLeftEarResults(results);
+      setStep('ready-right');
+    } else {
+      setRightEarResults(results);
+      handleRightEarComplete(results);
+    }
+  };
+
+  const handleCalibrationContinue = (ear: 'left' | 'right') => {
+    // Save current frequency result
+    const currentResults = ear === 'left' ? leftEarResults : rightEarResults;
+    const newResults = {
+      ...currentResults,
+      [currentFrequency.toString()]: volumeLevel,
+    };
+    
+    if (ear === 'left') {
+      setLeftEarResults(newResults);
+    } else {
+      setRightEarResults(newResults);
+    }
+    
+    if (currentFrequencyIndex < FREQUENCIES.length - 1) {
+      // Move to next frequency
+      const nextIndex = currentFrequencyIndex + 1;
+      setCurrentFrequencyIndex(nextIndex);
+      setCurrentFrequency(FREQUENCIES[nextIndex]);
+      setVolumeLevel(0); // Reset volume for next frequency
+      // Stay on calibration page for next frequency
+    } else {
+      // All frequencies done, move to next step
+      if (ear === 'left') {
+        setStep('ready-right');
+        setCurrentFrequencyIndex(0);
+        setCurrentFrequency(FREQUENCIES[0]);
+        setVolumeLevel(0);
+      } else {
+        // Right ear complete
+        handleRightEarComplete(newResults);
+      }
+    }
+  };
+
   const handleLeftEarComplete = (results: Record<string, number>) => {
-    setLeftEarResults(results);
+    const newResults = {
+      ...leftEarResults,
+      ...results,
+    };
+    setLeftEarResults(newResults);
+    setStep('ready-right');
+  };
+
+  const handleLeftEarSINComplete = (results: {
+    srt50: number;
+    reversals: number[];
+    trialCount: number;
+    responses: Array<{
+      trial: number;
+      presented: string[];
+      response: string[];
+      correct: boolean;
+      snr: number;
+    }>;
+  }) => {
+    setLeftEarSINResults(results);
     setStep('ready-right');
   };
 
@@ -121,6 +205,86 @@ export default function HearingTest() {
     } catch (error) {
       console.error('Failed to submit test:', error);
       // Keep local results even if submission fails
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleRightEarSINComplete = async (results: {
+    srt50: number;
+    reversals: number[];
+    trialCount: number;
+    responses: Array<{
+      trial: number;
+      presented: string[];
+      response: string[];
+      correct: boolean;
+      snr: number;
+    }>;
+  }) => {
+    setRightEarSINResults(results);
+    
+    // Calculate SRT-50 scores
+    const leftSRT = leftEarSINResults?.srt50 || 0;
+    const rightSRT = results.srt50 || 0;
+    const overallSRT = (leftSRT + rightSRT) / 2;
+    
+    // Convert SRT to score (lower SRT = better hearing)
+    // SRT range: -10 to 15 dB, normalize to 0-100
+    const normalizeSRT = (srt: number) => {
+      const minSRT = -10;
+      const maxSRT = 15;
+      const normalized = ((srt - minSRT) / (maxSRT - minSRT)) * 100;
+      return Math.max(0, Math.min(100, 100 - normalized)); // Invert: lower SRT = higher score
+    };
+    
+    const leftScore = Math.round(normalizeSRT(leftSRT));
+    const rightScore = Math.round(normalizeSRT(rightSRT));
+    const overallScore = Math.round((leftScore + rightScore) / 2);
+    
+    const getLevel = (score: number) => {
+      if (score >= 90) return 'normal';
+      if (score >= 70) return 'mild';
+      if (score >= 50) return 'moderate';
+      if (score >= 30) return 'severe';
+      return 'profound';
+    };
+    
+    const localResult = {
+      leftEarScore: leftScore,
+      rightEarScore: rightScore,
+      overallScore,
+      leftEarLevel: getLevel(leftScore),
+      rightEarLevel: getLevel(rightScore),
+      leftEarSRT: leftSRT,
+      rightEarSRT: rightSRT,
+      overallSRT,
+      testMethod: 'digits-in-noise',
+      leftEarResults: leftEarSINResults,
+      rightEarResults: results,
+      deviceType: deviceType!,
+      volumeLevel,
+    };
+    
+    setTestResult(localResult);
+    setStep('results');
+    
+    // Submit test results in background
+    setIsSubmitting(true);
+    try {
+      const result = await submitHearingTest(
+        {
+          deviceType: deviceType!,
+          volumeLevel,
+          leftEarResults: leftEarSINResults as any,
+          rightEarResults: results as any,
+          testMethod: 'digits-in-noise',
+        },
+        locale
+      );
+      setTestResult({ ...localResult, ...result });
+    } catch (error) {
+      console.error('Failed to submit test:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -221,95 +385,219 @@ export default function HearingTest() {
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 py-8">
         {step === 'intro' && (
-          <TestIntro
-            locale={locale}
-            onContinue={() => setStep('device')}
-          />
+          designVersion === 'new' ? (
+            <WelcomePageNew
+              locale={locale}
+              onContinue={() => setStep('device')}
+            />
+          ) : (
+            <TestIntro
+              locale={locale}
+              onContinue={() => setStep('device')}
+            />
+          )
         )}
 
         {step === 'device' && (
-          <DeviceSelection
-            locale={locale}
-            onSelect={handleDeviceSelect}
-            onBack={handleBack}
-          />
+          designVersion === 'new' ? (
+            <SetupPageNew
+              locale={locale}
+              onBack={handleBack}
+              onContinue={() => setStep('volume')}
+              playTone={() => playTone({ frequency: 1000, volume: 0.5, duration: 2000 })}
+              stopTone={stopTone}
+              isPlaying={isPlaying}
+            />
+          ) : (
+            <DeviceSelection
+              locale={locale}
+              onSelect={handleDeviceSelect}
+              onBack={handleBack}
+            />
+          )
         )}
 
         {step === 'volume' && (
-          <VolumeCalibration
-            locale={locale}
-            volume={volumeLevel}
-            onVolumeChange={setVolumeLevel}
-            onContinue={handleVolumeSet}
-            onBack={handleBack}
-            playTone={playTone}
-            stopTone={stopTone}
-            isPlaying={isPlaying}
-          />
+          designVersion === 'new' ? (
+            <CalibrationPageNew
+              locale={locale}
+              ear="left"
+              frequency={currentFrequency}
+              onBack={handleBack}
+              onContinue={() => {
+                setCurrentFrequencyIndex(0);
+                setCurrentFrequency(FREQUENCIES[0]);
+                setStep('ready-left');
+              }}
+              playTone={playTone}
+              stopTone={stopTone}
+              updateVolume={updateVolume}
+              isPlaying={isPlaying}
+            />
+          ) : (
+            <VolumeCalibration
+              locale={locale}
+              volume={volumeLevel}
+              onVolumeChange={setVolumeLevel}
+              onContinue={handleVolumeSet}
+              onBack={handleBack}
+              playTone={playTone}
+              stopTone={stopTone}
+              isPlaying={isPlaying}
+            />
+          )
         )}
 
         {step === 'ready-left' && (
-          <TestReady
-            locale={locale}
-            ear="left"
-            onContinue={() => setStep('left-ear')}
-            onBack={handleBack}
-          />
+          designVersion === 'new' ? (
+            <TestStartPageNew
+              locale={locale}
+              ear="left"
+              onBack={handleBack}
+              onContinue={() => setStep('left-ear')}
+            />
+          ) : (
+            <TestReady
+              locale={locale}
+              ear="left"
+              onContinue={() => setStep('left-ear')}
+              onBack={handleBack}
+            />
+          )
         )}
 
         {step === 'left-ear' && (
-          <FrequencyTest
-            locale={locale}
-            ear="left"
-            frequencies={FREQUENCIES}
-            onComplete={handleLeftEarComplete}
-            onBack={handleBack}
-            playTone={playTone}
-            stopTone={stopTone}
-            updateVolume={updateVolume}
-            isPlaying={isPlaying}
-            volume={volumeLevel}
-          />
+          designVersion === 'new' ? (
+            <CalibrationPageNew
+              locale={locale}
+              ear="left"
+              frequency={currentFrequency}
+              onBack={() => {
+                if (currentFrequencyIndex > 0) {
+                  const prevIndex = currentFrequencyIndex - 1;
+                  setCurrentFrequencyIndex(prevIndex);
+                  setCurrentFrequency(FREQUENCIES[prevIndex]);
+                } else {
+                  handleBack();
+                }
+              }}
+              onContinue={() => handleCalibrationContinue('left')}
+              playTone={playTone}
+              stopTone={stopTone}
+              updateVolume={updateVolume}
+              isPlaying={isPlaying}
+            />
+          ) : testMethod === 'digits-in-noise' ? (
+            <DigitsInNoiseTest
+              locale={locale}
+              ear="left"
+              onComplete={handleLeftEarSINComplete}
+              onBack={handleBack}
+            />
+          ) : (
+            <FrequencyTest
+              locale={locale}
+              ear="left"
+              frequencies={FREQUENCIES}
+              onComplete={handleLeftEarComplete}
+              onBack={handleBack}
+              playTone={playTone}
+              stopTone={stopTone}
+              updateVolume={updateVolume}
+              isPlaying={isPlaying}
+              volume={volumeLevel}
+            />
+          )
         )}
 
         {step === 'ready-right' && (
-          <TestReady
-            locale={locale}
-            ear="right"
-            onContinue={() => setStep('right-ear')}
-            onBack={handleBack}
-          />
+          designVersion === 'new' ? (
+            <TestStartPageNew
+              locale={locale}
+              ear="right"
+              onBack={handleBack}
+              onContinue={() => setStep('right-ear')}
+            />
+          ) : (
+            <TestReady
+              locale={locale}
+              ear="right"
+              onContinue={() => setStep('right-ear')}
+              onBack={handleBack}
+            />
+          )
         )}
 
         {step === 'right-ear' && (
-          <FrequencyTest
-            locale={locale}
-            ear="right"
-            frequencies={FREQUENCIES}
-            onComplete={handleRightEarComplete}
-            onBack={handleBack}
-            playTone={playTone}
-            stopTone={stopTone}
-            updateVolume={updateVolume}
-            isPlaying={isPlaying}
-            volume={volumeLevel}
-            isSubmitting={isSubmitting}
-          />
+          designVersion === 'new' ? (
+            <CalibrationPageNew
+              locale={locale}
+              ear="right"
+              frequency={currentFrequency}
+              onBack={() => {
+                if (currentFrequencyIndex > 0) {
+                  const prevIndex = currentFrequencyIndex - 1;
+                  setCurrentFrequencyIndex(prevIndex);
+                  setCurrentFrequency(FREQUENCIES[prevIndex]);
+                } else {
+                  handleBack();
+                }
+              }}
+              onContinue={() => handleCalibrationContinue('right')}
+              playTone={playTone}
+              stopTone={stopTone}
+              updateVolume={updateVolume}
+              isPlaying={isPlaying}
+            />
+          ) : testMethod === 'digits-in-noise' ? (
+            <DigitsInNoiseTest
+              locale={locale}
+              ear="right"
+              onComplete={handleRightEarSINComplete}
+              onBack={handleBack}
+            />
+          ) : (
+            <FrequencyTest
+              locale={locale}
+              ear="right"
+              frequencies={FREQUENCIES}
+              onComplete={handleRightEarComplete}
+              onBack={handleBack}
+              playTone={playTone}
+              stopTone={stopTone}
+              updateVolume={updateVolume}
+              isPlaying={isPlaying}
+              volume={volumeLevel}
+              isSubmitting={isSubmitting}
+            />
+          )
         )}
 
         {step === 'results' && (
-          <TestResults
-            locale={locale}
-            result={testResult || {
-              leftEarScore: 0,
-              rightEarScore: 0,
-              overallScore: 0,
-              leftEarLevel: 'normal',
-              rightEarLevel: 'normal',
-            }}
-            onContact={() => setStep('contact')}
-            onRestart={handleRestart}
-          />
+          designVersion === 'new' ? (
+            <ResultsPageNew
+              locale={locale}
+              leftEarResult={testResult?.leftEarLevel || 'normal'}
+              rightEarResult={testResult?.rightEarLevel || 'normal'}
+              leftEarScore={testResult?.leftEarScore || 0}
+              rightEarScore={testResult?.rightEarScore || 0}
+              overallScore={testResult?.overallScore || 0}
+              onRestart={handleRestart}
+            />
+          ) : (
+            <TestResults
+              locale={locale}
+              result={testResult || {
+                leftEarScore: 0,
+                rightEarScore: 0,
+                overallScore: 0,
+                leftEarLevel: 'normal',
+                rightEarLevel: 'normal',
+              }}
+              onContact={() => setStep('contact')}
+              onRestart={handleRestart}
+            />
+          )
         )}
 
         {step === 'contact' && testResult && (

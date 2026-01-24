@@ -311,6 +311,20 @@ export async function getPostCategoryBySlug(
 }
 
 /**
+ * Get useful articles (posts) - returns empty array if backend is down
+ * Alias for getPosts for backward compatibility
+ */
+export async function getUsefulArticles(
+  locale?: string,
+): Promise<PostResponse[]> {
+  return safeApiCall(
+    () => getPostsApi(locale, true),
+    [],
+    'Failed to fetch useful articles',
+  );
+}
+
+/**
  * Get posts - returns empty array if backend is down
  */
 export async function getPosts(

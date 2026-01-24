@@ -1,0 +1,292 @@
+{
+  "header": {
+    "uz": [
+      {
+        "id": "menu-services",
+        "title_uz": "Xizmatlar",
+        "title_ru": "Услуги",
+        "href": "/services",
+        "order": 10
+      },
+      {
+        "id": "menu-catalog",
+        "title_uz": "Katalog",
+        "title_ru": "Каталог",
+        "href": "/catalog",
+        "order": 20,
+        "children": [
+          {
+            "id": "menu-catalog-hearing-aids",
+            "title_uz": "Eshitish moslamalari",
+            "title_ru": "Слуховые аппараты",
+            "href": "/catalog?productType=hearing-aids",
+            "order": 10
+          },
+          {
+            "id": "menu-catalog-children",
+            "title_uz": "Bolalar uchun",
+            "title_ru": "Детские",
+            "href": "/catalog?productType=hearing-aids&filter=children",
+            "order": 20
+          },
+          {
+            "id": "menu-catalog-wireless",
+            "title_uz": "Simsiz aksessuarlar",
+            "title_ru": "Беспроводные аксессуары",
+            "href": "/catalog?productType=accessories&filter=wireless",
+            "order": 30
+          },
+          {
+            "id": "menu-catalog-interacoustics",
+            "title_uz": "Interacoustics",
+            "title_ru": "Interacoustics",
+            "href": "/catalog?productType=interacoustics",
+            "order": 40
+          },
+          {
+            "id": "menu-catalog-accessories",
+            "title_uz": "Aksessuarlar",
+            "title_ru": "Аксессуары",
+            "href": "/catalog?productType=accessories",
+            "order": 50
+          },
+          {
+            "id": "menu-catalog-earmolds",
+            "title_uz": "Quloq qo'shimchalari",
+            "title_ru": "Ушные вкладыши",
+            "href": "/catalog/earmolds",
+            "order": 60
+          },
+          {
+            "id": "menu-catalog-batteries",
+            "title_uz": "Batareyalar",
+            "title_ru": "Батарейки",
+            "href": "/catalog/batteries",
+            "order": 70
+          },
+          {
+            "id": "menu-catalog-care",
+            "title_uz": "Parvarish vositalari",
+            "title_ru": "Средства ухода",
+            "href": "/catalog/care",
+            "order": 80
+          }
+        ]
+      },
+      {
+        "id": "menu-doctors",
+        "title_uz": "Mutaxassislar",
+        "title_ru": "Специалисты",
+        "href": "/doctors",
+        "order": 30
+      },
+      {
+        "id": "menu-patients",
+        "title_uz": "Bemorlar",
+        "title_ru": "Пациентам",
+        "href": "/patients",
+        "order": 40
+      },
+      {
+        "id": "menu-children",
+        "title_uz": "Bolalar",
+        "title_ru": "Дети и слух",
+        "href": "/children-hearing",
+        "order": 50
+      },
+      {
+        "id": "menu-about",
+        "title_uz": "Biz haqimizda",
+        "title_ru": "О нас",
+        "href": "/about",
+        "order": 60
+      },
+      {
+        "id": "menu-branches",
+        "title_uz": "Manzillar",
+        "title_ru": "Наши адреса",
+        "href": "/branches",
+        "order": 70
+      }
+    ],
+    "ru": [
+      {
+        "id": "menu-services",
+        "title_uz": "Xizmatlar",
+        "title_ru": "Услуги",
+        "href": "/services",
+        "order": 10
+      },
+      {
+        "id": "menu-catalog",
+        "title_uz": "Katalog",
+        "title_ru": "Каталог",
+        "href": "/catalog",
+        "order": 20,
+        "children": [
+          {
+            "id": "menu-catalog-hearing-aids",
+            "title_uz": "Eshitish moslamalari",
+            "title_ru": "Слуховые аппараты",
+            "href": "/catalog?productType=hearing-aids",
+            "order": 10
+          },
+          {
+            "id": "menu-catalog-children",
+            "title_uz": "Bolalar uchun",
+            "title_ru": "Детские",
+            "href": "/catalog?productType=hearing-aids&filter=children",
+            "order": 20
+          },
+          {
+            "id": "menu-catalog-wireless",
+            "title_uz": "Simsiz aksessuarlar",
+            "title_ru": "Беспроводные аксессуары",
+            "href": "/catalog?productType=accessories&filter=wireless",
+            "order": 30
+          },
+          {
+            "id": "menu-catalog-interacoustics",
+            "title_uz": "Interacoustics",
+            "title_ru": "Interacoustics",
+            "href": "/catalog?productType=interacoustics",
+            "order": 40
+          },
+          {
+            "id": "menu-catalog-accessories",
+            "title_uz": "Aksessuarlar",
+            "title_ru": "Аксессуары",
+            "href": "/catalog?productType=accessories",
+            "order": 50
+          },
+          {
+            "id": "menu-catalog-earmolds",
+            "title_uz": "Quloq qo'shimchalari",
+            "title_ru": "Ушные вкладыши",
+            "href": "/catalog/earmolds",
+            "order": 60
+          },
+          {
+            "id": "menu-catalog-batteries",
+            "title_uz": "Batareyalar",
+            "title_ru": "Батарейки",
+            "href": "/catalog/batteries",
+            "order": 70
+          },
+          {
+            "id": "menu-catalog-care",
+            "title_uz": "Parvarish vositalari",
+            "title_ru": "Средства ухода",
+            "href": "/catalog/care",
+            "order": 80
+          }
+        ]
+      },
+      {
+        "id": "menu-doctors",
+        "title_uz": "Mutaxassislar",
+        "title_ru": "Специалисты",
+        "href": "/doctors",
+        "order": 30
+      },
+      {
+        "id": "menu-patients",
+        "title_uz": "Bemorlar",
+        "title_ru": "Пациентам",
+        "href": "/patients",
+        "order": 40
+      },
+      {
+        "id": "menu-children",
+        "title_uz": "Bolalar",
+        "title_ru": "Дети и слух",
+        "href": "/children-hearing",
+        "order": 50
+      },
+      {
+        "id": "menu-about",
+        "title_uz": "Biz haqimizda",
+        "title_ru": "О нас",
+        "href": "/about",
+        "order": 60
+      },
+      {
+        "id": "menu-branches",
+        "title_uz": "Manzillar",
+        "title_ru": "Наши адреса",
+        "href": "/branches",
+        "order": 70
+      }
+    ]
+  },
+  "catalog": {
+    "uz": [
+      {
+        "href": "/catalog?productType=hearing-aids",
+        "label": "Eshitish moslamalari"
+      },
+      {
+        "href": "/catalog?productType=hearing-aids&filter=children",
+        "label": "Bolalar uchun"
+      },
+      {
+        "href": "/catalog?productType=accessories&filter=wireless",
+        "label": "Simsiz aksessuarlar"
+      },
+      {
+        "href": "/catalog?productType=interacoustics",
+        "label": "Interacoustics"
+      },
+      {
+        "href": "/catalog?productType=accessories",
+        "label": "Aksessuarlar"
+      },
+      {
+        "href": "/catalog/earmolds",
+        "label": "Quloq qo'shimchalari"
+      },
+      {
+        "href": "/catalog/batteries",
+        "label": "Batareyalar"
+      },
+      {
+        "href": "/catalog/care",
+        "label": "Parvarish vositalari"
+      }
+    ],
+    "ru": [
+      {
+        "href": "/catalog?productType=hearing-aids",
+        "label": "Слуховые аппараты"
+      },
+      {
+        "href": "/catalog?productType=hearing-aids&filter=children",
+        "label": "Детские"
+      },
+      {
+        "href": "/catalog?productType=accessories&filter=wireless",
+        "label": "Беспроводные аксессуары"
+      },
+      {
+        "href": "/catalog?productType=interacoustics",
+        "label": "Interacoustics"
+      },
+      {
+        "href": "/catalog?productType=accessories",
+        "label": "Аксессуары"
+      },
+      {
+        "href": "/catalog/earmolds",
+        "label": "Ушные вкладыши"
+      },
+      {
+        "href": "/catalog/batteries",
+        "label": "Батарейки"
+      },
+      {
+        "href": "/catalog/care",
+        "label": "Средства ухода"
+      }
+    ]
+  }
+}

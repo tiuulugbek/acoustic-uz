@@ -975,10 +975,12 @@ function ProductManager({ productTypeFilter }: { productTypeFilter?: string }) {
 
   const openCreateModal = () => {
     setEditing(null);
+    setSelectedProductType(undefined);
     form.resetFields();
     form.setFieldsValue({
       status: 'published',
       stock: 0,
+      price: undefined,
       audience: [],
       formFactors: undefined, // Changed to single select, so undefined instead of []
       smartphoneCompatibility: [],
@@ -1114,7 +1116,7 @@ function ProductManager({ productTypeFilter }: { productTypeFilter?: string }) {
         description_uz: normalizeRichTextField(values.description_uz),
         description_ru: normalizeRichTextField(values.description_ru),
         price:
-          values.price === undefined || values.price === null || values.price === ''
+          values.price === undefined || values.price === null || values.price === '' || (typeof values.price === 'string' && values.price.trim() === '')
             ? undefined
             : Number(values.price),
         stock:
@@ -1429,8 +1431,19 @@ function ProductManager({ productTypeFilter }: { productTypeFilter?: string }) {
                     style={{ width: '100%' }} 
                     placeholder="Masalan, 15000000" 
                     min={0}
-                    formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                    parser={(value) => value!.replace(/\$\s?|(,*)/g, '')}
+                    formatter={(value) => {
+                      if (!value && value !== 0) return '';
+                      const str = String(value);
+                      return str.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                    }}
+                    parser={(value) => {
+                      if (!value) return '';
+                      // Remove all non-numeric characters except decimal point
+                      const cleaned = value.replace(/[^\d]/g, '');
+                      return cleaned;
+                    }}
+                    controls={true}
+                    precision={0}
                   />
                 </Form.Item>
               </div>
@@ -1469,8 +1482,19 @@ function ProductManager({ productTypeFilter }: { productTypeFilter?: string }) {
                     style={{ width: '100%' }} 
                     placeholder="Masalan, 15000000" 
                     min={0}
-                    formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                    parser={(value) => value!.replace(/\$\s?|(,*)/g, '')}
+                    formatter={(value) => {
+                      if (!value && value !== 0) return '';
+                      const str = String(value);
+                      return str.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                    }}
+                    parser={(value) => {
+                      if (!value) return '';
+                      // Remove all non-numeric characters except decimal point
+                      const cleaned = value.replace(/[^\d]/g, '');
+                      return cleaned;
+                    }}
+                    controls={true}
+                    precision={0}
                   />
                 </Form.Item>
                 <Form.Item 

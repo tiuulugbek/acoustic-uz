@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import type { FilterOption } from '@/lib/filter-utils';
+
 
 interface FilterOption {
   value: string;
@@ -35,7 +36,7 @@ function FilterCheckbox({ id: _id, label, checked, url, count }: FilterCheckboxP
   return (
     <Link href={url} className="flex items-center justify-between gap-2 cursor-pointer text-sm text-muted-foreground hover:text-brand-accent">
       <div className="flex items-center gap-2">
-        <input type="checkbox" checked={checked} readOnly className="rounded border-border/60 text-brand-primary focus:ring-brand-primary pointer-events-none" />
+        <input type="checkbox" checked={checked} readOnly className="rounded border-border/60 text-brand-primary focus:ring-brand-primary pointer-events-none" tabIndex={-1} />
         <span>{label}</span>
       </div>
       {count !== undefined && count > 0 && <span className="text-xs text-muted-foreground">({count})</span>}
@@ -44,7 +45,8 @@ function FilterCheckbox({ id: _id, label, checked, url, count }: FilterCheckboxP
 }
 
 interface CatalogFiltersProps {
-  categorySlug: string;
+  categorySlug?: string;
+  productType?: string;
   locale: 'uz' | 'ru';
   brands: Array<{ id: string; name: string; slug: string; count?: number }>;
   selectedBrands: string[];
@@ -57,12 +59,35 @@ interface CatalogFiltersProps {
   formCounts?: Record<string, number>;
   powerCounts?: Record<string, number>;
   lossCounts?: Record<string, number>;
+  audienceOptions?: FilterOption[];
+  formFactorOptions?: FilterOption[];
+  powerLevelOptions?: FilterOption[];
+  hearingLossOptions?: FilterOption[];
+};
+
+interface ExtendedCatalogFiltersProps extends CatalogFiltersProps {
+  searchParams?: Record<string, string | string[] | undefined>;
 }
 
-function buildFilterUrl(slug: string, currentParams: URLSearchParams, updates: Record<string, string | undefined>) {
-  const params = new URLSearchParams(currentParams);
+function buildFilterUrl(
+  slugOrType: string | undefined,
+  baseParams: Record<string, string | undefined>,
+  updates: Record<string, string | undefined>,
+  isProductType: boolean = false
+) {
+  const params = new URLSearchParams();
+  
+  // Add base params
+  Object.entries(baseParams).forEach(([key, value]) => {
+    if (value && value !== '') {
+      params.set(key, value);
+    }
+  });
+  
   // Remove page when filters change
   params.delete('page');
+  
+  // Apply updates
   Object.entries(updates).forEach(([key, value]) => {
     if (value && value !== '') {
       params.set(key, value);
@@ -70,14 +95,25 @@ function buildFilterUrl(slug: string, currentParams: URLSearchParams, updates: R
       params.delete(key);
     }
   });
-  const queryString = params.toString();
-  return `/catalog/${slug}${queryString ? `?${queryString}` : ''}`;
+  
+  if (isProductType && slugOrType) {
+    params.set('productType', slugOrType);
+    const queryString = params.toString();
+    return `/catalog${queryString ? `?${queryString}` : ''}`;
+  } else if (slugOrType) {
+    const queryString = params.toString();
+    return `/catalog/${slugOrType}${queryString ? `?${queryString}` : ''}`;
+  } else {
+    const queryString = params.toString();
+    return `/catalog${queryString ? `?${queryString}` : ''}`;
+  }
 }
 
 export default function CatalogFilters({
   categorySlug,
+  productType,
   locale,
-  brands,
+  brands = [],
   selectedBrands,
   selectedBrandName,
   selectedAudience,
@@ -88,44 +124,37 @@ export default function CatalogFilters({
   formCounts = {},
   powerCounts = {},
   lossCounts = {},
-}: CatalogFiltersProps) {
-  const searchParams = useSearchParams();
-  const audienceOptions: FilterOption[] = [
-    { value: 'children', label_uz: 'Bolalar', label_ru: 'Детям' },
-    { value: 'adults', label_uz: 'Kattalar', label_ru: 'Взрослым' },
-    { value: 'elderly', label_uz: 'Keksalar', label_ru: 'Пожилым' },
-  ];
+  audienceOptions = [],
+  formFactorOptions = [],
+  powerLevelOptions = [],
+  hearingLossOptions = [],
+  searchParams = {},
+}: ExtendedCatalogFiltersProps) {
+  // Create base params from searchParams for buildFilterUrl
+  const baseParams: Record<string, string | undefined> = {};
+  if (searchParams) {
+    Object.entries(searchParams).forEach(([key, value]) => {
+      if (value && typeof value === 'string') {
+        baseParams[key] = value;
+      } else if (Array.isArray(value) && value.length > 0) {
+        baseParams[key] = value[0];
+      }
+    });
+  }
+  
+  // audienceOptions now comes from props (generated from product data)
 
-  const formFactorOptions: FilterOption[] = [
-    { value: 'bte', label_uz: 'BTE', label_ru: 'BTE' },
-    { value: 'mini-bte', label_uz: 'Mini BTE', label_ru: 'Mini BTE' },
-    { value: 'ric', label_uz: 'RIC', label_ru: 'RIC' },
-    { value: 'rite', label_uz: 'RITE', label_ru: 'RITE' },
-    { value: 'ite', label_uz: 'ITE', label_ru: 'ITE' },
-    { value: 'cic', label_uz: 'CIC', label_ru: 'CIC' },
-    { value: 'cic-iic', label_uz: 'CIC/IIC', label_ru: 'CIC/IIC' },
-    { value: 'iic', label_uz: 'IIC', label_ru: 'IIC' },
-    { value: 'power-bte', label_uz: 'Power BTE', label_ru: 'Power BTE' },
-  ];
+  // formFactorOptions now comes from props (generated from product data)
 
-  const hearingLossOptions: FilterOption[] = [
-    { value: 'mild', label_uz: 'I daraja', label_ru: 'I степень' },
-    { value: 'moderate', label_uz: 'II daraja', label_ru: 'II степень' },
-    { value: 'severe', label_uz: 'III daraja', label_ru: 'III степень' },
-    { value: 'profound', label_uz: 'IV daraja', label_ru: 'IV степень' },
-  ];
+  // hearingLossOptions now comes from props (generated from product data)
 
-  const powerLevelOptions: FilterOption[] = [
-    { value: 'Standard', label_uz: 'Standart', label_ru: 'Стандартная' },
-    { value: 'Power', label_uz: 'Kuchli', label_ru: 'Мощная' },
-    { value: 'Super Power', label_uz: 'Super kuchli', label_ru: 'Супермощная' },
-  ];
+  // powerLevelOptions now comes from props (generated from product data)
 
   const hasActiveFilters =
     selectedBrands.length > 0 || selectedAudience.length > 0 || selectedForms.length > 0 || selectedPower.length > 0 || selectedLoss.length > 0;
 
   return (
-    <div className="sticky top-24 space-y-6 rounded-2xl border border-border/60 bg-white p-6 shadow-sm">
+    <div className="space-y-6 rounded-2xl border border-border/60 bg-white p-6 shadow-sm">
       <h2 className="text-lg font-semibold text-brand-accent">{locale === 'ru' ? 'Фильтры' : 'Filtrlar'}</h2>
 
       {/* Brand Filter */}
@@ -135,14 +164,15 @@ export default function CatalogFilters({
             <span>{selectedBrandName}</span>
           </div>
         </FilterSection>
-      ) : brands.length > 0 ? (
+      ) : (brands && brands.length > 0) ? (
         <FilterSection title={locale === 'ru' ? 'Бренд' : 'Brend'}>
           {brands
             .filter((brand) => (brand.count ?? 0) > 0)
             .map((brand) => {
               const isSelected = selectedBrands.includes(brand.slug);
               const newBrands = isSelected ? selectedBrands.filter((b) => b !== brand.slug) : [...selectedBrands, brand.slug];
-              const url = buildFilterUrl(categorySlug, searchParams, { brand: newBrands.length > 0 ? newBrands.join(',') : undefined });
+              const filterKey = productType ? 'brandId' : 'brand';
+              const url = buildFilterUrl(productType || categorySlug, baseParams, { [filterKey]: newBrands.length > 0 ? newBrands.join(',') : undefined }, !!productType);
               return <FilterCheckbox key={brand.id} id={`brand-${brand.id}`} label={brand.name} checked={isSelected} url={url} count={brand.count} />;
             })}
         </FilterSection>
@@ -156,7 +186,7 @@ export default function CatalogFilters({
             .map((option) => {
               const isSelected = selectedAudience.includes(option.value);
               const newAudience = isSelected ? selectedAudience.filter((a) => a !== option.value) : [...selectedAudience, option.value];
-              const url = buildFilterUrl(categorySlug, searchParams, { audience: newAudience.length > 0 ? newAudience.join(',') : undefined });
+              const url = buildFilterUrl(productType || categorySlug, baseParams, { audience: newAudience.length > 0 ? newAudience.join(',') : undefined }, !!productType);
               return (
                 <FilterCheckbox
                   key={option.value}
@@ -179,7 +209,8 @@ export default function CatalogFilters({
             .map((option) => {
               const isSelected = selectedForms.includes(option.value);
               const newForms = isSelected ? selectedForms.filter((f) => f !== option.value) : [...selectedForms, option.value];
-              const url = buildFilterUrl(categorySlug, searchParams, { form: newForms.length > 0 ? newForms.join(',') : undefined });
+              const filterKey = productType ? 'formFactor' : 'form';
+              const url = buildFilterUrl(productType || categorySlug, baseParams, { [filterKey]: newForms.length > 0 ? newForms.join(',') : undefined }, !!productType);
               return (
                 <FilterCheckbox
                   key={option.value}
@@ -202,7 +233,8 @@ export default function CatalogFilters({
             .map((option) => {
               const isSelected = selectedLoss.includes(option.value);
               const newLoss = isSelected ? selectedLoss.filter((l) => l !== option.value) : [...selectedLoss, option.value];
-              const url = buildFilterUrl(categorySlug, searchParams, { loss: newLoss.length > 0 ? newLoss.join(',') : undefined });
+              const filterKey = productType ? 'hearingLossLevel' : 'loss';
+              const url = buildFilterUrl(productType || categorySlug, baseParams, { [filterKey]: newLoss.length > 0 ? newLoss.join(',') : undefined }, !!productType);
               return (
                 <FilterCheckbox
                   key={option.value}
@@ -225,7 +257,8 @@ export default function CatalogFilters({
             .map((option) => {
               const isSelected = selectedPower.includes(option.value);
               const newPower = isSelected ? selectedPower.filter((p) => p !== option.value) : [...selectedPower, option.value];
-              const url = buildFilterUrl(categorySlug, searchParams, { power: newPower.length > 0 ? newPower.join(',') : undefined });
+              const filterKey = productType ? 'powerLevel' : 'power';
+              const url = buildFilterUrl(productType || categorySlug, baseParams, { [filterKey]: newPower.length > 0 ? newPower.join(',') : undefined }, !!productType);
               return (
                 <FilterCheckbox
                   key={option.value}
@@ -243,7 +276,7 @@ export default function CatalogFilters({
       {/* Clear Filters */}
       {hasActiveFilters && (
         <Link
-          href={`/catalog/${categorySlug}`}
+          href={buildFilterUrl(productType || categorySlug, {}, {}, !!productType)}
           className="inline-block w-full rounded-full border border-brand-primary/30 bg-white px-4 py-2 text-center text-sm font-semibold text-brand-primary transition hover:bg-brand-primary/10"
         >
           {locale === 'ru' ? 'Сбросить фильтры' : 'Filtrlarni tozalash'}

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Param, UseGuards, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { MenusService } from './menus.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -18,7 +18,7 @@ export class MenusController {
   }
 
   @UseGuards(JwtAuthGuard, RbacGuard)
-  @Post(':name')
+  @Patch(':name')
   @RequirePermissions('content.write')
   update(@Param('name') name: string, @Body() dto: { items: unknown }) {
     return this.service.update(name, dto.items);

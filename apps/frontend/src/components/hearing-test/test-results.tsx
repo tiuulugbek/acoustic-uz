@@ -12,6 +12,11 @@ interface TestResultsProps {
     overallScore?: number | null;
     leftEarLevel?: string | null;
     rightEarLevel?: string | null;
+    // Digits-in-Noise test results
+    testMethod?: string | null;
+    leftEarSRT?: number | null;
+    rightEarSRT?: number | null;
+    overallSRT?: number | null;
   };
   onContact: () => void;
   onRestart: () => void;
@@ -71,6 +76,11 @@ export default function TestResults({ locale, result, onContact, onRestart }: Te
           <div className="text-7xl font-bold text-brand-primary mb-4">
             {result.overallScore ?? 0}%
           </div>
+          {result.testMethod === 'digits-in-noise' && result.overallSRT !== null && result.overallSRT !== undefined && (
+            <div className="text-xl text-gray-600 mb-4">
+              {isRu ? 'SRT-50:' : 'SRT-50:'} <span className="font-bold">{result.overallSRT.toFixed(1)} dB</span>
+            </div>
+          )}
           <div className={`inline-block px-6 py-3 rounded-full text-lg font-bold ${getLevelColor(result.leftEarLevel)}`}>
             <span>
               {result.leftEarLevel
@@ -98,6 +108,14 @@ export default function TestResults({ locale, result, onContact, onRestart }: Te
                 {result.leftEarScore ?? 0}%
               </span>
             </div>
+            {result.testMethod === 'digits-in-noise' && result.leftEarSRT !== null && result.leftEarSRT !== undefined && (
+              <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                <span className="text-base text-gray-600 font-medium">{isRu ? 'SRT-50' : 'SRT-50'}</span>
+                <span className="text-xl font-bold text-gray-900">
+                  {result.leftEarSRT.toFixed(1)} dB
+                </span>
+              </div>
+            )}
             <div className="flex items-center justify-between pt-2 border-t border-gray-200">
               <span className="text-base text-gray-600 font-medium">{isRu ? 'Уровень' : 'Daraja'}</span>
               <span className={`px-4 py-2 rounded-full text-base font-bold ${getLevelColor(result.leftEarLevel)}`}>
@@ -124,6 +142,14 @@ export default function TestResults({ locale, result, onContact, onRestart }: Te
                 {result.rightEarScore ?? 0}%
               </span>
             </div>
+            {result.testMethod === 'digits-in-noise' && result.rightEarSRT !== null && result.rightEarSRT !== undefined && (
+              <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                <span className="text-base text-gray-600 font-medium">{isRu ? 'SRT-50' : 'SRT-50'}</span>
+                <span className="text-xl font-bold text-gray-900">
+                  {result.rightEarSRT.toFixed(1)} dB
+                </span>
+              </div>
+            )}
             <div className="flex items-center justify-between pt-2 border-t border-gray-200">
               <span className="text-base text-gray-600 font-medium">{isRu ? 'Уровень' : 'Daraja'}</span>
               <span className={`px-4 py-2 rounded-full text-base font-bold ${getLevelColor(result.rightEarLevel)}`}>

@@ -1,0 +1,11 @@
+[Unit]
+Description=PM2 Acoustic Service Monitor Timer
+After=network.target
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=30min
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target

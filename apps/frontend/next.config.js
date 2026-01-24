@@ -17,6 +17,12 @@ const nextConfig = {
   // Enable source maps in production for debugging hydration errors
   productionBrowserSourceMaps: true,
   
+  // Use relative URLs for static assets to avoid domain issues
+  // This ensures static assets are loaded from the same domain as the page
+  // undefined means Next.js will use relative URLs based on the current page URL
+  // Don't set assetPrefix to avoid absolute URL issues with reverse proxy
+  // assetPrefix: undefined, // Let Next.js handle it automatically
+  
   // Webpack configuration for path resolution
   webpack: (config, { isServer }) => {
     // Add alias for @ path

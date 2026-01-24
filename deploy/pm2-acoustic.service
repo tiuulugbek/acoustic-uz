@@ -1,0 +1,28 @@
+[Unit]
+Description=PM2 process manager for Acoustic.uz
+Documentation=https://pm2.keymetrics.io/
+After=network.target postgresql.service
+
+[Service]
+Type=forking
+User=acoustic
+Group=acoustic
+LimitNOFILE=infinity
+LimitNPROC=infinity
+LimitCORE=infinity
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+Environment=PM2_HOME=/home/acoustic/.pm2
+PIDFile=/home/acoustic/.pm2/pm2.pid
+Restart=always
+RestartSec=10
+StartLimitInterval=0
+StartLimitBurst=0
+
+# Service o'chib yonishini kuzatish
+ExecStart=/usr/lib/node_modules/pm2/bin/pm2 resurrect
+ExecReload=/usr/lib/node_modules/pm2/bin/pm2 reload all
+ExecStop=/usr/lib/node_modules/pm2/bin/pm2 kill
+
+
+[Install]
+WantedBy=multi-user.target

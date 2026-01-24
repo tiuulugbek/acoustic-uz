@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { MapPin } from 'lucide-react';
 import type { BranchResponse } from '@/lib/api';
 import { getBilingualText } from '@/lib/locale';
+import { normalizeImageUrl } from '@/lib/image-utils';
 import BranchPhoneLink from '@/components/branch-phone-link';
 
 interface UserLocation {
@@ -262,11 +263,7 @@ export default function BranchesList({ branches, selectedRegion, locale, onClear
           filteredBranches.map((branch) => {
             const name = getBilingualText(branch.name_uz, branch.name_ru, locale);
             const address = getBilingualText(branch.address_uz, branch.address_ru, locale);
-            let imageUrl = branch.image?.url || '';
-            if (imageUrl && imageUrl.startsWith('/') && !imageUrl.startsWith('//')) {
-              const baseUrl = API_BASE_URL.replace('/api', '');
-              imageUrl = `${baseUrl}${imageUrl}`;
-            }
+            const imageUrl = branch.image?.url ? normalizeImageUrl(branch.image.url) : '';
 
             // Calculate distance if user location is available
             let distance: number | null = null;

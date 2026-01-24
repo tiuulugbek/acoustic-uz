@@ -3,7 +3,7 @@ import Link from 'next/link';
 // Removed notFound import - we never crash, always show UI
 import type { Metadata } from 'next';
 import { type ProductResponse, type BrandResponse, type ProductCategoryResponse } from '@/lib/api';
-import { getProducts, getCategoryBySlug, getCatalogBySlug, getBrands, type ProductListResponse, type CatalogResponse } from '@/lib/api-server';
+import { getProducts, getCategoryBySlug, getCatalogBySlug, getBrands, getPosts, type ProductListResponse, type CatalogResponse } from '@/lib/api-server';
 import CatalogFilters from '@/components/catalog-filters';
 import CatalogSort from '@/components/catalog-sort';
 import CatalogBrandChips from '@/components/catalog-brand-chips';
@@ -138,7 +138,10 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
   const locale = detectLocale();
   
   // Check if slug is a brand slug
-  const brands = await getBrands(locale);
+  const [brands, postsData] = await Promise.all([
+    getBrands(locale),
+    getPosts(locale, true), // getUsefulArticles o'rniga getPosts ishlatilmoqda
+  ]);
   let brand = brands.find(b => b.slug === params.slug);
   
   // If Signia is not found in backend, add it manually (same as in catalog/page.tsx)
@@ -293,7 +296,7 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
           <div className="mx-auto max-w-6xl px-4 md:px-6">
             <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
               {/* Filter Sidebar */}
-              <aside className="hidden lg:block">
+              <aside className="hidden lg:block space-y-6">
                 <CatalogFilters
                   categorySlug={params.slug}
                   locale={locale}
@@ -334,7 +337,7 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
                 {/* Products Grid */}
                 {paginatedProducts.length > 0 ? (
                   <>
-                    <div className="grid gap-4 grid-cols-2 sm:gap-6 lg:grid-cols-3">
+                    <div className="grid grid-cols-2 gap-3 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
                       {paginatedProducts.map((product) => {
                         const rawImage = product.galleryUrls?.[0] ?? product.brand?.logo?.url ?? '';
                         const mainImage = rawImage ? normalizeImageUrl(rawImage) : placeholderImage;
@@ -346,30 +349,43 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
                           <Link
                             key={product.id}
                             href={`/products/${product.slug}`}
-                            className="group flex flex-col gap-3 sm:gap-4 rounded-2xl border border-border/60 bg-white p-3 sm:p-5 shadow-sm transition hover:-translate-y-1 hover:border-brand-primary/50 hover:shadow-lg"
+                            className="group flex flex-col gap-2 sm:gap-3 rounded-lg border-[0.5px] border-brand-accent/40 bg-white p-2 sm:p-4 shadow-sm transition hover:border-brand-accent/60 hover:shadow-md"
                           >
-                            <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-brand-primary/5">
-                              <Image
-                                src={mainImage}
-                                alt={productName}
-                                fill
-                                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 33vw"
-                                className="object-contain p-2 sm:p-4 transition-transform duration-300 group-hover:scale-105"
-                              />
+                            {/* Product Image - Top, Large */}
+                            <div className="relative aspect-square w-full overflow-hidden rounded-lg border border-brand-accent/60 bg-white">
+                              {mainImage ? (
+                                <Image
+                                  src={mainImage}
+                                  alt={productName}
+                                  fill
+                                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 33vw"
+                                  className="object-contain p-2 sm:p-4 transition-transform duration-300 group-hover:scale-105"
+                                  suppressHydrationWarning
+                                  unoptimized
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center bg-brand-primary">
+                                  <span className="text-white text-lg font-bold">Acoustic</span>
+                                </div>
+                              )}
                             </div>
-                            <div className="space-y-1.5 sm:space-y-2">
-                              <h3 className="text-sm sm:text-lg font-semibold text-brand-accent group-hover:text-brand-primary line-clamp-2">{productName}</h3>
-                              {product.brand && <p className="text-xs text-muted-foreground">{product.brand.name}</p>}
-                              {priceFormatted && <p className="text-base sm:text-xl font-semibold text-brand-primary">{priceFormatted}</p>}
+                            
+                            {/* Product Info */}
+                            <div className="flex flex-col gap-1 sm:gap-2">
+                              <h3 className="text-sm sm:text-base font-semibold text-foreground line-clamp-2 group-hover:text-brand-primary" suppressHydrationWarning>
+                                {productName}
+                              </h3>
                               {availability && (
-                                <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold ${availability.color}`}>
+                                <p className="text-xs sm:text-sm text-emerald-600 font-medium" suppressHydrationWarning>
                                   {locale === 'ru' ? availability.ru : availability.uz}
+                                </p>
+                              )}
+                              {priceFormatted && (
+                                <span className="inline-flex items-center text-xs sm:text-sm font-medium text-brand-primary mt-auto" suppressHydrationWarning>
+                                  <span className="font-bold">{locale === 'ru' ? 'Цена' : 'Narxi'}: </span>{priceFormatted}
                                 </span>
                               )}
                             </div>
-                            <span className="mt-auto inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-brand-primary group-hover:text-brand-accent" suppressHydrationWarning>
-                              {locale === 'ru' ? 'Подробнее' : 'Batafsil'} →
-                            </span>
                           </Link>
                         );
                       })}
@@ -495,7 +511,7 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
           <div className="mx-auto max-w-6xl px-4 md:px-6">
             <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
               {/* Filter Sidebar */}
-              <aside className="hidden lg:block">
+              <aside className="hidden lg:block space-y-6">
                 <CatalogFilters
                   categorySlug={params.slug}
                   locale={locale}
@@ -510,6 +526,51 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
                   powerCounts={powerCounts}
                   lossCounts={lossCounts}
                 />
+
+                {/* Useful Articles */}
+                {postsData && postsData.length > 0 && (
+                  <div className="sticky top-24 space-y-6 rounded-2xl border border-border/60 bg-white p-6 shadow-sm">
+                    <h2 className="text-lg font-semibold text-brand-accent">{locale === 'ru' ? 'Полезные статьи' : 'Foydali maqolalar'}</h2>
+                    <div className="space-y-3">
+                      {postsData.slice(0, 5).map((post) => {
+                        const title = locale === 'ru' ? (post.title_ru || '') : (post.title_uz || '');
+                        const rawCoverImage = (post as any).cover?.url || '';
+                        const coverImage = normalizeImageUrl(rawCoverImage);
+                        return (
+                          <Link
+                            key={post.id}
+                            href={`/posts/${post.slug}`}
+                            className="group flex items-start gap-3 rounded-lg transition hover:opacity-80"
+                          >
+                            {coverImage ? (
+                              <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded bg-muted/30">
+                                <Image
+                                  src={coverImage}
+                                  alt={title}
+                                  fill
+                                  sizes="64px"
+                                  className="object-cover"
+                                  suppressHydrationWarning
+                                />
+                              </div>
+                            ) : (
+                              <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded bg-muted/30">
+                                <div className="flex h-full w-full items-center justify-center">
+                                  <span className="text-muted-foreground text-xs">📄</span>
+                                </div>
+                              </div>
+                            )}
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium text-foreground group-hover:text-brand-primary line-clamp-2">
+                                {title}
+                              </p>
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </aside>
 
               {/* Product Grid */}
@@ -535,7 +596,7 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
                 {/* Products Grid */}
                 {paginatedProducts.length > 0 ? (
                   <>
-                    <div className="grid gap-4 grid-cols-2 sm:gap-6 lg:grid-cols-3">
+                    <div className="grid grid-cols-2 gap-3 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
                       {paginatedProducts.map((product) => {
                         const rawImage = product.galleryUrls?.[0] ?? product.brand?.logo?.url ?? '';
                         const mainImage = rawImage ? normalizeImageUrl(rawImage) : placeholderImage;
@@ -547,30 +608,40 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
                           <Link
                             key={product.id}
                             href={`/products/${product.slug}`}
-                            className="group flex flex-col gap-3 sm:gap-4 rounded-2xl border border-border/60 bg-white p-3 sm:p-5 shadow-sm transition hover:-translate-y-1 hover:border-brand-primary/50 hover:shadow-lg"
+                            className="group flex flex-col gap-2 sm:gap-3 rounded-lg border-[0.5px] border-brand-accent/40 bg-white p-2 sm:p-4 shadow-sm transition hover:border-brand-accent/60 hover:shadow-md"
                           >
-                            <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-brand-primary/5">
-                              <Image
-                                src={mainImage}
-                                alt={productName}
-                                fill
-                                className="object-contain p-2 sm:p-4 transition-transform group-hover:scale-105"
-                                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 33vw"
-                              />
+                            {/* Product Image - Top, Large */}
+                            <div className="relative aspect-square w-full overflow-hidden rounded-lg border border-brand-accent/60 bg-white">
+                              {mainImage ? (
+                                <Image
+                                  src={mainImage}
+                                  alt={productName}
+                                  fill
+                                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 33vw"
+                                  className="object-contain p-2 sm:p-4 transition-transform duration-300 group-hover:scale-105"
+                                  suppressHydrationWarning
+                                  unoptimized
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center bg-brand-primary">
+                                  <span className="text-white text-lg font-bold">Acoustic</span>
+                                </div>
+                              )}
                             </div>
-                            <div className="flex flex-col gap-1.5 sm:gap-2">
-                              {product.brand && (
-                                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                  {product.brand.name}
+                            
+                            {/* Product Info */}
+                            <div className="flex flex-col gap-1 sm:gap-2">
+                              <h3 className="text-sm sm:text-base font-semibold text-foreground line-clamp-2 group-hover:text-brand-primary" suppressHydrationWarning>
+                                {productName}
+                              </h3>
+                              {availability && (
+                                <p className="text-xs sm:text-sm text-emerald-600 font-medium" suppressHydrationWarning>
+                                  {locale === 'ru' ? availability.ru : availability.uz}
                                 </p>
                               )}
-                              <h3 className="line-clamp-2 text-sm sm:text-base font-semibold leading-tight" suppressHydrationWarning>{productName}</h3>
                               {priceFormatted && (
-                                <p className="text-base sm:text-lg font-bold text-brand-primary" suppressHydrationWarning>{priceFormatted}</p>
-                              )}
-                              {availability && (
-                                <span className={`inline-block w-fit rounded-full px-2 py-1 text-xs font-medium ${availability.color}`} suppressHydrationWarning>
-                                  {locale === 'ru' ? availability.ru : availability.uz}
+                                <span className="inline-flex items-center text-xs sm:text-sm font-medium text-brand-primary mt-auto" suppressHydrationWarning>
+                                  <span className="font-bold">{locale === 'ru' ? 'Цена' : 'Narxi'}: </span>{priceFormatted}
                                 </span>
                               )}
                             </div>
@@ -869,7 +940,7 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
         <div className="mx-auto max-w-6xl px-4 md:px-6">
           <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
             {/* Filter Sidebar */}
-            <aside className="hidden lg:block">
+            <aside className="hidden lg:block space-y-6">
               <CatalogFilters
                 categorySlug={params.slug}
                 locale={locale}
@@ -884,6 +955,51 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
                 powerCounts={powerCounts}
                 lossCounts={lossCounts}
               />
+
+              {/* Useful Articles */}
+              {postsData && postsData.length > 0 && (
+                <div className="sticky top-24 space-y-6 rounded-2xl border border-border/60 bg-white p-6 shadow-sm">
+                  <h2 className="text-lg font-semibold text-brand-accent">{locale === 'ru' ? 'Полезные статьи' : 'Foydali maqolalar'}</h2>
+                  <div className="space-y-3">
+                    {postsData.slice(0, 5).map((post) => {
+                      const title = locale === 'ru' ? (post.title_ru || '') : (post.title_uz || '');
+                      const rawCoverImage = (post as any).cover?.url || '';
+                      const coverImage = normalizeImageUrl(rawCoverImage);
+                      return (
+                        <Link
+                          key={post.id}
+                          href={`/posts/${post.slug}`}
+                          className="group flex items-start gap-3 rounded-lg transition hover:opacity-80"
+                        >
+                          {coverImage ? (
+                            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded bg-muted/30">
+                              <Image
+                                src={coverImage}
+                                alt={title}
+                                fill
+                                sizes="64px"
+                                className="object-cover"
+                                suppressHydrationWarning
+                              />
+                            </div>
+                          ) : (
+                            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded bg-muted/30">
+                              <div className="flex h-full w-full items-center justify-center">
+                                <span className="text-muted-foreground text-xs">📄</span>
+                              </div>
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-foreground group-hover:text-brand-primary line-clamp-2">
+                              {title}
+                            </p>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </aside>
 
             {/* Product Grid */}
@@ -909,41 +1025,68 @@ export default async function CatalogCategoryPage({ params, searchParams }: Cata
               {/* Products Grid */}
               {paginatedProducts.length > 0 ? (
                 <>
-                  <div className="grid gap-4 grid-cols-2 sm:gap-6 lg:grid-cols-3">
+                  <div className="grid grid-cols-2 gap-3 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3">
                     {paginatedProducts.map((product) => {
-                      const mainImage = product.galleryUrls?.[0] ?? product.brand?.logo?.url ?? placeholderImage;
-                      const priceFormatted = formatPrice(product.price);
-                      const availability = product.availabilityStatus ? availabilityMap[product.availabilityStatus] : undefined;
+                      // Try to get image from galleryUrls, thumbnail, or brand logo
+                      let mainImage = '';
+                      if (product.galleryUrls && product.galleryUrls.length > 0) {
+                        mainImage = normalizeImageUrl(product.galleryUrls[0]);
+                      } else if (product.brand?.logo?.url) {
+                        mainImage = normalizeImageUrl(product.brand.logo.url);
+                      } else {
+                        mainImage = placeholderImage;
+                      }
+                      
+                      const priceFormatted = product.price && product.price !== null && product.price !== undefined && product.price !== ''
+                        ? `${new Intl.NumberFormat('uz-UZ').format(Number(product.price))} so'm`
+                        : null;
+                      
+                      const availability = product.availabilityStatus 
+                        ? availabilityMap[product.availabilityStatus] 
+                        : null;
                       const productName = getBilingualText(product.name_uz, product.name_ru, locale);
 
                       return (
                         <Link
                           key={product.id}
                           href={`/products/${product.slug}`}
-                          className="group flex flex-col gap-3 sm:gap-4 rounded-2xl border border-border/60 bg-white p-3 sm:p-5 shadow-sm transition hover:-translate-y-1 hover:border-brand-primary/50 hover:shadow-lg"
+                          className="group flex flex-col gap-2 sm:gap-3 rounded-lg border-[0.5px] border-brand-accent/40 bg-white p-2 sm:p-4 shadow-sm transition hover:border-brand-accent/60 hover:shadow-md"
                         >
-                          <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-brand-primary/5">
-                            <Image
-                              src={mainImage}
-                              alt={productName}
-                              fill
-                              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 33vw"
-                              className="object-contain p-2 sm:p-4 transition-transform duration-300 group-hover:scale-105"
-                            />
+                          {/* Product Image - Top, Large */}
+                          <div className="relative aspect-square w-full overflow-hidden rounded-lg border border-brand-accent/60 bg-white">
+                            {mainImage ? (
+                              <Image
+                                src={mainImage}
+                                alt={productName}
+                                fill
+                                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 50vw, 33vw"
+                                className="object-contain p-2 sm:p-4 transition-transform duration-300 group-hover:scale-105"
+                                suppressHydrationWarning
+                                unoptimized
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center bg-brand-primary">
+                                <span className="text-white text-lg font-bold">Acoustic</span>
+                              </div>
+                            )}
                           </div>
-                          <div className="space-y-1.5 sm:space-y-2">
-                            <h3 className="text-sm sm:text-lg font-semibold text-brand-accent group-hover:text-brand-primary line-clamp-2" suppressHydrationWarning>{productName}</h3>
-                            {product.brand && <p className="text-xs text-muted-foreground">{product.brand.name}</p>}
-                            {priceFormatted && <p className="text-base sm:text-xl font-semibold text-brand-primary">{priceFormatted}</p>}
+                          
+                          {/* Product Info */}
+                          <div className="flex flex-col gap-1 sm:gap-2">
+                            <h3 className="text-sm sm:text-base font-semibold text-foreground line-clamp-2 group-hover:text-brand-primary" suppressHydrationWarning>
+                              {productName}
+                            </h3>
                             {availability && (
-                              <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold ${availability.color}`} suppressHydrationWarning>
+                              <p className="text-xs sm:text-sm text-emerald-600 font-medium" suppressHydrationWarning>
                                 {locale === 'ru' ? availability.ru : availability.uz}
+                              </p>
+                            )}
+                            {priceFormatted && (
+                              <span className="inline-flex items-center text-xs sm:text-sm font-medium text-brand-primary mt-auto" suppressHydrationWarning>
+                                <span className="font-bold">{locale === 'ru' ? 'Цена' : 'Narxi'}: </span>{priceFormatted}
                               </span>
                             )}
                           </div>
-                          <span className="mt-auto inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-brand-primary group-hover:text-brand-accent" suppressHydrationWarning>
-                            {locale === 'ru' ? 'Подробнее' : 'Batafsil'} →
-                          </span>
                         </Link>
                       );
                     })}

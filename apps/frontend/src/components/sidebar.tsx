@@ -90,7 +90,7 @@ export default async function Sidebar({ locale, settingsData, brandsData, pageTy
               const brandName = brand.name || '';
               const brandSlug = brand.slug || '';
               const brandLogo = brand.logo?.url || '';
-              const logoUrl = normalizeImageUrl(brandLogo);
+              const logoUrl = brandLogo ? normalizeImageUrl(brandLogo) : '';
               const brandLink = brandSlug ? `/catalog/${brandSlug}` : '#';
               return (
                 <Link
@@ -98,14 +98,14 @@ export default async function Sidebar({ locale, settingsData, brandsData, pageTy
                   href={brandLink}
                   className="flex items-center justify-center p-4 border border-gray-200 rounded-lg hover:border-brand-primary/50 transition-colors bg-gray-50 group"
                 >
-                  {logoUrl ? (
-                    <div className="relative h-10 w-full flex items-center justify-center">
+                  {logoUrl && logoUrl.trim() !== '' ? (
+                    <div className="relative h-24 w-full flex items-center justify-center">
                       <Image
                         src={logoUrl}
-                        alt={brandName}
+                        alt={brandName || 'Brand logo'}
                         fill
-                        sizes="120px"
-                        className="object-contain"
+                        sizes="(max-width: 768px) 100vw, 200px"
+                        className="object-contain p-1 sm:p-2 transition-transform group-hover:scale-105"
                         suppressHydrationWarning
                       />
                     </div>

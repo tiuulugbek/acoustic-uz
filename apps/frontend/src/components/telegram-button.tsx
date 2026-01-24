@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { getSettings } from '@/lib/api';
 import { getLocaleFromDOM } from '@/lib/locale-client';
 import type { SettingsResponse } from '@/lib/api';
@@ -23,7 +23,12 @@ export default function TelegramButton({ initialLocale }: TelegramButtonProps = 
   const [locale, setLocale] = useState<Locale>(initialLocale || DEFAULT_LOCALE);
   const [mounted, setMounted] = useState(false);
   
+  // Use ref to track if component is mounted and prevent race conditions
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const isMountedRef = useRef(true);
+  
   useEffect(() => {
+    isMountedRef.current = true;
     console.log('[TelegramButton] Setting mounted to true');
     setMounted(true);
     // Only update locale on client-side after hydration
@@ -33,6 +38,10 @@ export default function TelegramButton({ initialLocale }: TelegramButtonProps = 
       console.log('[TelegramButton] Updating locale from', locale, 'to', domLocale);
       setLocale(domLocale);
     }
+    
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -44,12 +53,33 @@ export default function TelegramButton({ initialLocale }: TelegramButtonProps = 
       return;
     }
     
+    // Cancel any pending fetch
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
+    // Create new abort controller for this fetch
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+    
     console.log('[TelegramButton] Starting fetchSettings with locale:', locale, 'mounted:', mounted);
     
     const fetchSettings = async () => {
+      // Set loading state at the start
+      if (isMountedRef.current) {
+        setIsLoading(true);
+      }
+      
       try {
         console.log('[TelegramButton] Fetching settings with locale:', locale);
         const settings = await getSettings(locale);
+        
+        // Check if component is still mounted and fetch wasn't aborted
+        if (!isMountedRef.current || abortController.signal.aborted) {
+          console.log('[TelegramButton] Component unmounted or fetch aborted, skipping state update');
+          return;
+        }
+        
         console.log('[TelegramButton] Settings received:', settings ? 'success' : 'null');
         console.log('[TelegramButton] Settings received:', {
           hasBotUsername: !!settings?.telegramButtonBotUsername,
@@ -80,18 +110,38 @@ export default function TelegramButton({ initialLocale }: TelegramButtonProps = 
           console.log('[TelegramButton] Message set:', messageText);
         } else {
           console.warn('[TelegramButton] No bot username in settings. Component will not render.');
+          setBotUsername(null);
         }
       } catch (error) {
+        // Check if error is due to abort
+        if (abortController.signal.aborted) {
+          console.log('[TelegramButton] Fetch aborted');
+          return;
+        }
+        
         console.error('[TelegramButton] Failed to fetch Telegram bot settings:', error);
-        // Set loading to false even on error to prevent infinite loading
-        setIsLoading(false);
+        // Set bot username to null on error so component doesn't render
+        if (isMountedRef.current) {
+          setBotUsername(null);
+        }
       } finally {
-        setIsLoading(false);
-        console.log('[TelegramButton] Loading complete. isLoading:', false, 'botUsername:', botUsername);
+        // Only update loading state if component is still mounted and fetch wasn't aborted
+        if (isMountedRef.current && !abortController.signal.aborted) {
+          setIsLoading(false);
+          console.log('[TelegramButton] Loading complete. isLoading:', false);
+        }
       }
     };
 
     fetchSettings();
+    
+    // Cleanup function to abort fetch if component unmounts or dependencies change
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+    };
   }, [locale, mounted]);
 
   // Debug logging

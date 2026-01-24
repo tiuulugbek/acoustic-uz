@@ -23,7 +23,6 @@ let resizeTimeout: NodeJS.Timeout | null = null;
 export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
   const tooltipRefsRef = useRef<Map<HTMLElement, TooltipRef>>(new Map());
   const cleanupRef = useRef<(() => void) | null>(null);
-  const cleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     // Helper function to get container dynamically
@@ -470,19 +469,21 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
     document.addEventListener('mouseout', handleDocumentMouseOut, true);
     
     // Also add to container as backup (if container exists)
-    const container = getContainer();
+    const backupContainer = getContainer();
     if (container) {
-      container.addEventListener('mouseover', handleMouseOver, true);
-      container.addEventListener('mouseout', handleMouseOut, true);
-      container.addEventListener('mouseover', handleMouseOver, false);
-      container.addEventListener('mouseout', handleMouseOut, false);
+      backupContainer.addEventListener('mouseover', handleMouseOver, true);
+      backupContainer.addEventListener('mouseout', handleMouseOut, true);
+      backupContainer.addEventListener('mouseover', handleMouseOver, false);
+      backupContainer.addEventListener('mouseout', handleMouseOut, false);
     }
     
     // Debug: Log when container is ready
-    const container = getContainer();
-    if (container) {
-      const initialTriggers = container.querySelectorAll('[data-tooltip-keyword]');
-      console.log('[Tooltip] ✅ Container ready:', container, 'Triggers found:', initialTriggers.length);
+    const debugContainer = getContainer();
+    let observer: MutationObserver | null = null;
+    
+    if (debugContainer) {
+      const initialTriggers = debugContainer.querySelectorAll('[data-tooltip-keyword]');
+      console.log('[Tooltip] ✅ Container ready:', debugContainer, 'Triggers found:', initialTriggers.length);
       if (initialTriggers.length > 0) {
         console.log('[Tooltip] Sample trigger:', initialTriggers[0]);
         console.log('[Tooltip] Sample trigger HTML:', initialTriggers[0].outerHTML);
@@ -490,7 +491,7 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
 
       // Use MutationObserver with throttling to watch for new tooltip triggers
       let mutationTimeout: NodeJS.Timeout | null = null;
-      const observer = new MutationObserver((mutations) => {
+      observer = new MutationObserver((mutations) => {
         // Check if any new tooltip triggers were added
         let hasNewTriggers = false;
         mutations.forEach((mutation) => {
@@ -518,15 +519,13 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
         subtree: true,
         attributes: false, // Don't watch attributes - too expensive
       });
-      
-      // Store observer for cleanup
-      (cleanupRef as any).current.observer = observer;
     }
 
       const cleanupFn = () => {
         const container = getContainer();
-        if ((cleanupFn as any).observer) {
-          (cleanupFn as any).observer.disconnect();
+        // Disconnect observer if it exists
+        if (observer) {
+          observer.disconnect();
         }
         document.removeEventListener('mouseover', handleDocumentMouseOver, true);
         document.removeEventListener('mouseout', handleDocumentMouseOut, true);
@@ -540,7 +539,6 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
       };
       
       cleanupRef.current = cleanupFn;
-      isSetupRef.current = true;
       return cleanupFn;
     };
 
@@ -552,7 +550,6 @@ export function useTooltipManager(containerRef: React.RefObject<HTMLElement>) {
         cleanupRef.current();
         cleanupRef.current = null;
       }
-      isSetupRef.current = false;
     };
   }, [containerRef]);
 }

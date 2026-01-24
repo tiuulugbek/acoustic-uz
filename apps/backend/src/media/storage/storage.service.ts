@@ -34,24 +34,10 @@ export class StorageService {
 
   constructor(private configService: ConfigService) {
     this.driver = this.configService.get<'local' | 's3'>('STORAGE_DRIVER', 'local');
-    
-    // Use explicit uploads directory path to avoid symlink issues
-    // Try to use backend/uploads if we're in a monorepo structure
-    const backendUploads = path.join(process.cwd(), 'apps', 'backend', 'uploads');
-    const rootUploads = path.join(process.cwd(), 'uploads');
-    
-    // Prefer backend/uploads if it exists or if we're in apps/backend directory
-    if (process.cwd().includes('apps/backend') || fsSync.existsSync(path.join(process.cwd(), 'apps', 'backend'))) {
-      this.uploadDir = backendUploads;
-    } else {
-      this.uploadDir = rootUploads;
-    }
-    
-    // Allow override via environment variable
+    // Faqat bitta joy: UPLOADS_DIR yoki backend/uploads (__dirname — dist/media/storage -> ../../../uploads)
     const envUploadDir = this.configService.get<string>('UPLOADS_DIR');
-    if (envUploadDir) {
-      this.uploadDir = envUploadDir;
-    }
+    const defaultDir = path.join(__dirname, '..', '..', '..', 'uploads');
+    this.uploadDir = envUploadDir || defaultDir;
 
     if (this.driver === 's3') {
       this.s3Bucket = this.configService.get<string>('S3_BUCKET', 'acoustic');

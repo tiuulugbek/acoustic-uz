@@ -14,7 +14,7 @@ export class ServicesService {
     }
     return this.prisma.service.findMany({
       where,
-      include: { cover: true, category: true },
+      include: { cover: true, alternativeCover: true, category: true },
       orderBy: { order: 'asc' },
     });
   }
@@ -22,7 +22,7 @@ export class ServicesService {
   async findOne(id: string) {
     const service = await this.prisma.service.findUnique({
       where: { id },
-      include: { cover: true, category: true },
+      include: { cover: true, alternativeCover: true, category: true },
     });
 
     if (!service) {
@@ -35,7 +35,7 @@ export class ServicesService {
   async findBySlug(slug: string) {
     const service = await this.prisma.service.findUnique({
       where: { slug, status: 'published' },
-      include: { cover: true, category: true },
+      include: { cover: true, alternativeCover: true, category: true },
     });
 
     if (!service) {
@@ -51,9 +51,10 @@ export class ServicesService {
       data: {
         ...validated,
         coverId: validated.coverId ?? undefined,
+        alternativeCoverId: validated.alternativeCoverId ?? undefined,
         categoryId: validated.categoryId ?? undefined,
       } as Prisma.ServiceUncheckedCreateInput,
-      include: { cover: true, category: true },
+      include: { cover: true, alternativeCover: true, category: true },
     });
   }
 
@@ -62,13 +63,14 @@ export class ServicesService {
     const updateData: Prisma.ServiceUncheckedUpdateInput = {
       ...validated,
       ...(validated.coverId !== undefined ? { coverId: validated.coverId } : {}),
+      ...(validated.alternativeCoverId !== undefined ? { alternativeCoverId: validated.alternativeCoverId } : {}),
       ...(validated.categoryId !== undefined ? { categoryId: validated.categoryId } : {}),
     };
 
     return this.prisma.service.update({
       where: { id },
       data: updateData,
-      include: { cover: true, category: true },
+      include: { cover: true, alternativeCover: true, category: true },
     });
   }
 

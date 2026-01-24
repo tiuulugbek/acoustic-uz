@@ -8,6 +8,7 @@ import { AppModule } from './app.module';
 import { Logger } from 'nestjs-pino';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
+import * as fsSync from 'fs';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
@@ -75,13 +76,18 @@ async function bootstrap() {
   });
 
   // Serve static files from uploads directory - BEFORE global prefix
-  // This allows /uploads/ to work without /api prefix
-  // Use explicit path: if cwd is project root, use apps/backend/uploads
-  // If cwd is backend root, use uploads
-  const uploadsPath = process.cwd().endsWith('backend')
-    ? join(process.cwd(), 'uploads')
-    : join(process.cwd(), 'apps', 'backend', 'uploads');
-  
+  // Faqat bitta joy: UPLOADS_DIR (.env) yoki backend/uploads (__dirname orqali)
+  const envUploadsDir = configService.get<string>('UPLOADS_DIR');
+  const defaultUploads = join(__dirname, '..', 'uploads'); // dist -> backend
+  const uploadsPath = (envUploadsDir && fsSync.existsSync(envUploadsDir))
+    ? envUploadsDir
+    : defaultUploads;
+
+  try {
+    fsSync.mkdirSync(uploadsPath, { recursive: true });
+  } catch {
+    // ignore
+  }
   logger.log(`📁 Serving static files from: ${uploadsPath}`);
   
   app.useStaticAssets(uploadsPath, {

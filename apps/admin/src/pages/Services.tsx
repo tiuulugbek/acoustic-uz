@@ -102,6 +102,8 @@ function ServicesManager() {
   const [form] = Form.useForm();
   const [uploading, setUploading] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [uploadingAlternative, setUploadingAlternative] = useState(false);
+  const [previewAlternativeImage, setPreviewAlternativeImage] = useState<string | null>(null);
 
   const { mutateAsync: createServiceMutation, isPending: isCreating } = useMutation<ServiceDto, ApiError, CreateServicePayload>({
     mutationFn: createService,
@@ -135,6 +137,7 @@ function ServicesManager() {
     setEditingService(null);
     form.resetFields();
     setPreviewImage(null);
+    setPreviewAlternativeImage(null);
     form.setFieldsValue({
       status: 'published',
       order: 0,
@@ -153,6 +156,7 @@ function ServicesManager() {
     setTimeout(() => {
       setEditingService(service);
       setPreviewImage(service.cover?.url ? normalizeImageUrl(service.cover.url) : null);
+      setPreviewAlternativeImage((service as any).alternativeCover?.url ? normalizeImageUrl((service as any).alternativeCover.url) : null);
       
       // Handle categoryId - convert to array for multiple select
       // Explicitly check if categoryId exists and is not null/undefined
@@ -169,6 +173,7 @@ function ServicesManager() {
         status: service.status || 'published',
         order: service.order ?? 0,
         coverId: service.cover?.id || undefined,
+        alternativeCoverId: (service as any).alternativeCover?.id || undefined,
         categoryId: categoryId ? [categoryId] : [], // Always use array, empty if no category
       });
       
@@ -197,17 +202,51 @@ function ServicesManager() {
     }
   };
 
+  const handleUploadAlternative: UploadProps['customRequest'] = async (options) => {
+    const { file, onSuccess, onError } = options;
+    setUploadingAlternative(true);
+    try {
+      // Rasmni yuklashdan oldin siqish
+      const compressedFile = await compressImage(file as File);
+      const media = await uploadMedia(compressedFile);
+      form.setFieldsValue({ alternativeCoverId: media.id });
+      setPreviewAlternativeImage(normalizeImageUrl(media.url));
+      message.success('Alternativ rasm yuklandi');
+      queryClient.invalidateQueries({ queryKey: ['media'] });
+      onSuccess?.(media);
+    } catch (error) {
+      const apiError = error as ApiError;
+      message.error(apiError.message || 'Rasm yuklashda xatolik');
+      onError?.(error as Error);
+    } finally {
+      setUploadingAlternative(false);
+    }
+  };
+
   const handleRemoveImage = () => {
     form.setFieldsValue({ coverId: undefined });
     setPreviewImage(null);
   };
 
+  const handleRemoveAlternativeImage = () => {
+    form.setFieldsValue({ alternativeCoverId: undefined });
+    setPreviewAlternativeImage(null);
+  };
+
   const handleSelectExistingMedia = (mediaId: string, mediaUrl: string) => {
     form.setFieldsValue({ coverId: mediaId });
     setPreviewImage(normalizeImageUrl(mediaUrl));
+    message.success('Rasm tanlandi');
+  };
+
+  const handleSelectExistingAlternativeMedia = (mediaId: string, mediaUrl: string) => {
+    form.setFieldsValue({ alternativeCoverId: mediaId });
+    setPreviewAlternativeImage(normalizeImageUrl(mediaUrl));
+    message.success('Alternativ rasm tanlandi');
   };
 
   const currentImageId = Form.useWatch('coverId', form);
+  const currentAlternativeImageId = Form.useWatch('alternativeCoverId', form);
 
   const handleDelete = async (service: ServiceDto) => {
     await deleteServiceMutation(service.id);
@@ -232,6 +271,7 @@ function ServicesManager() {
         order: typeof values.order === 'number' ? values.order : Number(values.order ?? 0),
         status: values.status,
         coverId: values.coverId || undefined,
+        alternativeCoverId: values.alternativeCoverId || undefined,
         categoryId: categoryId || undefined,
       };
 
@@ -244,6 +284,7 @@ function ServicesManager() {
       setIsModalOpen(false);
       form.resetFields();
       setPreviewImage(null);
+      setPreviewAlternativeImage(null);
       setEditingService(null);
     } catch (error) {
       // validation handled by antd
@@ -348,6 +389,7 @@ function ServicesManager() {
           setIsModalOpen(false);
           form.resetFields();
           setPreviewImage(null);
+          setPreviewAlternativeImage(null);
           setEditingService(null);
         }}
         onOk={handleSubmit}
@@ -446,19 +488,14 @@ function ServicesManager() {
               </Upload>
               {mediaList && mediaList.length > 0 && (
                 <div style={{ marginTop: 16 }}>
-                  <div style={{ marginBottom: 8, fontSize: 12, color: '#666' }}>
-                    Yoki mavjud rasmni tanlang:
-                  </div>
+                  <div style={{ marginBottom: 8, fontWeight: 500 }}>Mavjud rasmlar (tanlash uchun bosing):</div>
                   <div
                     style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))',
+                      display: 'flex',
+                      flexWrap: 'wrap',
                       gap: 8,
                       maxHeight: 200,
                       overflowY: 'auto',
-                      padding: 8,
-                      border: '1px solid #d9d9d9',
-                      borderRadius: 4,
                     }}
                   >
                     {mediaList.slice(0, 20).map((media) => (
@@ -466,14 +503,86 @@ function ServicesManager() {
                         key={media.id}
                         onClick={() => handleSelectExistingMedia(media.id, media.url)}
                         style={{
-                          width: '100%',
-                          aspectRatio: '1',
-                          border: currentImageId === media.id ? '2px solid #1890ff' : '1px solid #d9d9d9',
+                          width: 80,
+                          height: 80,
+                          border: currentImageId === media.id ? '2px solid #F07E22' : '1px solid #d9d9d9',
                           borderRadius: 4,
                           cursor: 'pointer',
                           overflow: 'hidden',
                           position: 'relative',
-                          backgroundColor: currentImageId === media.id ? '#e6f7ff' : '#fff',
+                          backgroundColor: currentImageId === media.id ? '#fff7ed' : '#fff',
+                        }}
+                      >
+                        <img
+                          src={normalizeImageUrl(media.url)}
+                          alt={media.alt_uz || media.filename}
+                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </Form.Item>
+          <Form.Item label="Alternativ Cover rasm" name="alternativeCoverId" extra="Xizmat uchun alternativ rasm (tiniqroq variant, asosiy rasm o'rniga ishlatiladi)">
+            <div>
+              {previewAlternativeImage ? (
+                <div style={{ marginBottom: 16, position: 'relative', display: 'inline-block' }}>
+                  <Image
+                    src={previewAlternativeImage}
+                    alt="Alternative Preview"
+                    width={200}
+                    height={150}
+                    style={{ objectFit: 'cover', borderRadius: 8 }}
+                    preview={false}
+                  />
+                  <Button
+                    type="text"
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={handleRemoveAlternativeImage}
+                    style={{ position: 'absolute', top: 8, right: 8 }}
+                  >
+                    O'chirish
+                  </Button>
+                </div>
+              ) : null}
+              <Upload
+                customRequest={handleUploadAlternative}
+                showUploadList={false}
+                accept="image/*"
+                disabled={uploadingAlternative}
+              >
+                <Button icon={<UploadOutlined />} loading={uploadingAlternative}>
+                  {previewAlternativeImage ? 'Rasmni almashtirish' : 'Alternativ rasm yuklash'}
+                </Button>
+              </Upload>
+              {mediaList && mediaList.length > 0 && (
+                <div style={{ marginTop: 16 }}>
+                  <div style={{ marginBottom: 8, fontWeight: 500 }}>Mavjud rasmlar (tanlash uchun bosing):</div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: 8,
+                      maxHeight: 200,
+                      overflowY: 'auto',
+                    }}
+                  >
+                    {mediaList.slice(0, 20).map((media) => (
+                      <div
+                        key={media.id}
+                        onClick={() => handleSelectExistingAlternativeMedia(media.id, media.url)}
+                        style={{
+                          width: 80,
+                          height: 80,
+                          border: currentAlternativeImageId === media.id ? '2px solid #F07E22' : '1px solid #d9d9d9',
+                          borderRadius: 4,
+                          cursor: 'pointer',
+                          overflow: 'hidden',
+                          position: 'relative',
+                          backgroundColor: currentAlternativeImageId === media.id ? '#fff7ed' : '#fff',
                         }}
                       >
                         <img

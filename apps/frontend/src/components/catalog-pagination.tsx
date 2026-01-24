@@ -12,9 +12,9 @@ interface CatalogPaginationProps {
   totalItems: number;
 }
 
-function buildPageUrl(slug: string, currentParams: URLSearchParams, page: number) {
+function buildPageUrl(slug: string, currentParams: URLSearchParams, page: number | null) {
   const params = new URLSearchParams(currentParams);
-  if (page === 1) {
+  if (!page || page === 1) {
     params.delete('page');
   } else {
     params.set('page', page.toString());
@@ -99,6 +99,7 @@ export default function CatalogPagination({ categorySlug, locale, currentPage, t
               );
             }
 
+            if (typeof page !== 'number') return null;
             const pageNum = page as number;
             const isCurrent = pageNum === currentPage;
 

@@ -594,6 +594,26 @@ export default function SettingsPage() {
       console.error('Social links save error:', error);
     }
   };
+  const handleAnalyticsSave = async () => {
+    try {
+      const payload: UpdateSettingsPayload = {
+        integrations: {
+          analytics: {
+            enabled: analyticsEnabled,
+            googleAnalyticsId: googleAnalyticsId || undefined,
+            yandexMetrikaId: yandexMetrikaId || undefined,
+          },
+        },
+      };
+      
+      await updateMutation.mutateAsync(payload);
+      message.success('Analytics sozlamalari saqlandi');
+    } catch (error) {
+      const apiError = error as ApiError;
+      message.error(apiError.message || 'Xatolik yuz berdi');
+    }
+  };
+
 
 
   return (
@@ -1070,6 +1090,7 @@ export default function SettingsPage() {
                     <Button
                       type="primary"
                       icon={<SaveOutlined />}
+
                       onClick={handleAnalyticsSave}
                       loading={updateMutation.isPending}
                       size="large"

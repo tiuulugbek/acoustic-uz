@@ -59,9 +59,32 @@ export async function generateMetadata({ params }: ServicePageProps): Promise<Me
   const optimizedDescription = optimizeMetaDescription(rawDescription);
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://acoustic.uz';
   const serviceUrl = `${baseUrl}/services/${params.slug}`;
-  const imageUrl = service.cover?.url 
-    ? normalizeImageUrl(service.cover.url)
-    : `${baseUrl}/logo.png`;
+  // Use alternative cover if available, otherwise use cover with higher quality variant
+  let imageUrl = `${baseUrl}/logo.png`;
+  
+  // First, try alternative cover
+  if ((service as any).alternativeCover) {
+    const altCover = (service as any).alternativeCover as any;
+    if (altCover.formats?.large?.url) {
+      imageUrl = normalizeImageUrl(altCover.formats.large.url);
+    } else if (altCover.formats?.medium?.url) {
+      imageUrl = normalizeImageUrl(altCover.formats.medium.url);
+    } else if (altCover.url) {
+      imageUrl = normalizeImageUrl(altCover.url);
+    }
+  }
+  
+  // If no alternative cover, use regular cover
+  if (imageUrl === `${baseUrl}/logo.png` && service.cover) {
+    const cover = service.cover as any;
+    if (cover.formats?.large?.url) {
+      imageUrl = normalizeImageUrl(cover.formats.large.url);
+    } else if (cover.formats?.medium?.url) {
+      imageUrl = normalizeImageUrl(cover.formats.medium.url);
+    } else if (cover.url) {
+      imageUrl = normalizeImageUrl(cover.url);
+    }
+  }
 
   return {
     title: optimizedTitle,
@@ -116,7 +139,18 @@ export default async function ServiceSlugPage({ params }: ServicePageProps) {
     );
     
     // Build category image URL (normalize it)
-    const categoryImage = normalizeImageUrl(category.image?.url || '');
+    // Use higher quality variant if available
+    let categoryImage = '';
+    if (category.image) {
+      const img = category.image as any;
+      if (img.formats?.large?.url) {
+        categoryImage = normalizeImageUrl(img.formats.large.url);
+      } else if (img.formats?.medium?.url) {
+        categoryImage = normalizeImageUrl(img.formats.medium.url);
+      } else if (img.url) {
+        categoryImage = normalizeImageUrl(img.url);
+      }
+    }
     
     return (
       <main className="min-h-screen bg-background">
@@ -158,7 +192,18 @@ export default async function ServiceSlugPage({ params }: ServicePageProps) {
                   const serviceExcerpt = getBilingualText(service.excerpt_uz, service.excerpt_ru, locale);
                   
                   // Build service image URL (normalize it)
-                  const serviceImage = normalizeImageUrl(service.cover?.url || '');
+                  // Use higher quality variant if available
+                  let serviceImage = '';
+                  if (service.cover) {
+                    const cover = service.cover as any;
+                    if (cover.formats?.large?.url) {
+                      serviceImage = normalizeImageUrl(cover.formats.large.url);
+                    } else if (cover.formats?.medium?.url) {
+                      serviceImage = normalizeImageUrl(cover.formats.medium.url);
+                    } else if (cover.url) {
+                      serviceImage = normalizeImageUrl(cover.url);
+                    }
+                  }
                   
                   return (
                     <Link
@@ -330,7 +375,47 @@ export default async function ServiceSlugPage({ params }: ServicePageProps) {
   }
 
   // Build cover image URL (normalize it)
-  const coverImageUrl = normalizeImageUrl(service.cover?.url || '');
+  // Use alternative cover if available, otherwise use cover with higher quality variant
+  let coverImageUrl = '';
+  
+  // First, try alternative cover (if user uploaded a clearer image)
+  if ((service as any).alternativeCover) {
+    const altCover = (service as any).alternativeCover as any;
+    if (altCover.formats?.large?.url) {
+      coverImageUrl = normalizeImageUrl(altCover.formats.large.url);
+    } else if (altCover.formats?.medium?.url) {
+      coverImageUrl = normalizeImageUrl(altCover.formats.medium.url);
+    } else if (altCover.url) {
+      coverImageUrl = normalizeImageUrl(altCover.url);
+    }
+  }
+  
+  // If no alternative cover, use regular cover with higher quality variant
+  if (!coverImageUrl && service.cover) {
+    const cover = service.cover as any;
+    if (cover.formats?.large?.url) {
+      coverImageUrl = normalizeImageUrl(cover.formats.large.url);
+    } else if (cover.formats?.medium?.url) {
+      coverImageUrl = normalizeImageUrl(cover.formats.medium.url);
+    } else if (cover.url) {
+      coverImageUrl = normalizeImageUrl(cover.url);
+    }
+  }
+  
+  // Fallback to category image if no cover available
+  if (!coverImageUrl && service.category) {
+    const category = await getServiceCategoryBySlug(service.category.slug, locale);
+    if (category?.image) {
+      const catImage = category.image as any;
+      if (catImage.formats?.large?.url) {
+        coverImageUrl = normalizeImageUrl(catImage.formats.large.url);
+      } else if (catImage.formats?.medium?.url) {
+        coverImageUrl = normalizeImageUrl(catImage.formats.medium.url);
+      } else if (catImage.url) {
+        coverImageUrl = normalizeImageUrl(catImage.url);
+      }
+    }
+  }
 
   return (
     <main className="min-h-screen bg-background">
@@ -406,7 +491,18 @@ export default async function ServiceSlugPage({ params }: ServicePageProps) {
                 <ul className="space-y-4">
                   {relatedServices.map((relatedService) => {
                     const relatedTitle = getBilingualText(relatedService.title_uz, relatedService.title_ru, locale);
-                    const relatedImageUrl = normalizeImageUrl(relatedService.cover?.url || '');
+                    // Use higher quality variant if available
+                    let relatedImageUrl = '';
+                    if (relatedService.cover) {
+                      const cover = relatedService.cover as any;
+                      if (cover.formats?.large?.url) {
+                        relatedImageUrl = normalizeImageUrl(cover.formats.large.url);
+                      } else if (cover.formats?.medium?.url) {
+                        relatedImageUrl = normalizeImageUrl(cover.formats.medium.url);
+                      } else if (cover.url) {
+                        relatedImageUrl = normalizeImageUrl(cover.url);
+                      }
+                    }
                     return (
                       <li key={relatedService.id}>
                         <Link

@@ -11,7 +11,13 @@ if (typeof window !== 'undefined' && (window as any).__VITE_API_URL__) {
 } else {
   // Fallback: check if we're in development
   const isProduction = import.meta.env.PROD || (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && !window.location.hostname.includes('localhost'));
-  API_BASE = isProduction ? 'https://a.acoustic.uz/api' : 'http://localhost:3001/api';
+  
+  // If served from admin.acoustic.uz, use relative path (nginx will proxy to backend)
+  if (typeof window !== 'undefined' && window.location.hostname === 'admin.acoustic.uz') {
+    API_BASE = '/api';
+  } else {
+    API_BASE = isProduction ? 'https://a.acoustic.uz/api' : 'http://localhost:3001/api';
+  }
 }
 
 interface RequestOptions extends RequestInit {
@@ -27,7 +33,10 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+// Track if refresh is in progress to avoid multiple simultaneous refresh attempts
+let refreshPromise: Promise<boolean> | null = null;
+
+async function request<T>(path: string, options: RequestOptions = {}, isRetry = false): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {
     headers: {
       'Content-Type': 'application/json',
@@ -49,8 +58,47 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
       // ignore JSON parse errors
     }
     
-    // Handle 401 Unauthorized - session expired
-    if (response.status === 401) {
+    // Handle 401 Unauthorized - try to refresh token first
+    if (response.status === 401 && !isRetry) {
+      // Don't try to refresh on login or refresh endpoints
+      if (path !== '/auth/login' && path !== '/auth/refresh') {
+        // Try to refresh token if not already refreshing
+        if (!refreshPromise) {
+          refreshPromise = (async () => {
+            try {
+              const refreshResponse = await fetch(`${API_BASE}/auth/refresh`, {
+                method: 'PATCH',
+                credentials: 'include',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+              });
+
+              return refreshResponse.ok;
+            } catch (error) {
+              return false;
+            } finally {
+              // Clear refresh promise after a short delay
+              setTimeout(() => {
+                refreshPromise = null;
+              }, 1000);
+            }
+          })();
+        }
+
+        try {
+          // Wait for refresh to complete
+          const refreshSuccess = await refreshPromise;
+          if (refreshSuccess) {
+            // Token refreshed successfully, retry original request
+            return request<T>(path, options, true);
+          }
+        } catch (error) {
+          // Refresh failed, continue to redirect
+        }
+      }
+
+      // Refresh failed or not applicable - redirect to login
       // Clear user data from localStorage
       try {
         localStorage.removeItem('admin_user');
@@ -148,14 +196,14 @@ export const login = (payload: { email: string; password: string }) =>
   request<{ user: UserDto }>(
     '/auth/login',
     {
-      method: 'POST',
+      method: 'PATCH',
       body: JSON.stringify(payload),
     }
   );
 
 export const logout = () =>
   request<void>('/auth/logout', {
-    method: 'POST',
+    method: 'PATCH',
   });
 
 export const getCurrentUser = () => request<UserDto>('/auth/me');
@@ -163,7 +211,7 @@ export const getCurrentUser = () => request<UserDto>('/auth/me');
 export const getPosts = () => request<PostDto[]>('/posts');
 export const createPost = (payload: CreatePostPayload) =>
   request<PostDto>('/posts', {
-    method: 'POST',
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
 export const updatePost = (id: string, payload: UpdatePostPayload) =>
@@ -202,7 +250,7 @@ export const getPostCategories = (section?: string) => {
 };
 export const createPostCategory = (payload: CreatePostCategoryPayload) =>
   request<PostCategoryDto>('/post-categories', {
-    method: 'POST',
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
 export const updatePostCategory = (id: string, payload: UpdatePostCategoryPayload) =>
@@ -260,7 +308,7 @@ export type UpdateServicePayload = Partial<CreateServicePayload>;
 export const getServices = () => request<ServiceDto[]>('/services/admin');
 export const createService = (payload: CreateServicePayload) =>
   request<ServiceDto>('/services', {
-    method: 'POST',
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
 export const updateService = (id: string, payload: UpdateServicePayload) =>
@@ -320,7 +368,7 @@ export type UpdateDoctorPayload = Partial<CreateDoctorPayload>;
 export const getDoctors = () => request<DoctorDto[]>('/doctors/admin');
 export const createDoctor = (payload: CreateDoctorPayload) =>
   request<DoctorDto>('/doctors', {
-    method: 'POST',
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
 export const updateDoctor = (id: string, payload: UpdateDoctorPayload) =>
@@ -375,7 +423,7 @@ export type UpdateServiceCategoryPayload = Partial<CreateServiceCategoryPayload>
 export const getServiceCategoriesAdmin = () => request<ServiceCategoryDto[]>('/service-categories/admin');
 export const createServiceCategory = (payload: CreateServiceCategoryPayload) =>
   request<ServiceCategoryDto>('/service-categories', {
-    method: 'POST',
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
 export const updateServiceCategory = (id: string, payload: UpdateServiceCategoryPayload) =>
@@ -421,7 +469,7 @@ export type UpdateHomepageHearingAidPayload = Partial<CreateHomepageHearingAidPa
 export const getHomepageHearingAids = () => request<HomepageHearingAidDto[]>('/homepage/hearing-aids/admin');
 export const createHomepageHearingAid = (payload: CreateHomepageHearingAidPayload) =>
   request<HomepageHearingAidDto>('/homepage/hearing-aids', {
-    method: 'POST',
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
 export const updateHomepageHearingAid = (id: string, payload: UpdateHomepageHearingAidPayload) =>
@@ -460,7 +508,7 @@ export type UpdateHomepageJourneyPayload = Partial<CreateHomepageJourneyPayload>
 export const getHomepageJourneySteps = () => request<HomepageJourneyStepDto[]>('/homepage/journey/admin');
 export const createHomepageJourneyStep = (payload: CreateHomepageJourneyPayload) =>
   request<HomepageJourneyStepDto>('/homepage/journey', {
-    method: 'POST',
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
 export const updateHomepageJourneyStep = (id: string, payload: UpdateHomepageJourneyPayload) =>
@@ -510,7 +558,7 @@ export type UpdateHomepageNewsPayload = Partial<CreateHomepageNewsPayload>;
 export const getHomepageNewsItems = () => request<HomepageNewsItemDto[]>('/homepage/news/admin');
 export const createHomepageNewsItem = (payload: CreateHomepageNewsPayload) =>
   request<HomepageNewsItemDto>('/homepage/news', {
-    method: 'POST',
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
 export const updateHomepageNewsItem = (id: string, payload: UpdateHomepageNewsPayload) =>
@@ -556,7 +604,7 @@ export type UpdateHomepageServicePayload = Partial<CreateHomepageServicePayload>
 export const getHomepageServices = () => request<HomepageServiceDto[]>('/homepage/services/admin');
 export const createHomepageService = (payload: CreateHomepageServicePayload) =>
   request<HomepageServiceDto>('/homepage/services', {
-    method: 'POST',
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
 export const updateHomepageService = (id: string, payload: UpdateHomepageServicePayload) =>
@@ -608,7 +656,7 @@ export type UpdateHomepageSectionPayload = Partial<CreateHomepageSectionPayload>
 export const getHomepageSections = () => request<HomepageSectionDto[]>('/homepage/sections');
 export const createHomepageSection = (payload: CreateHomepageSectionPayload) =>
   request<HomepageSectionDto>('/homepage/sections', {
-    method: 'POST',
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
 export const updateHomepageSection = (key: string, payload: UpdateHomepageSectionPayload) =>
@@ -652,7 +700,7 @@ export type UpdateHomepageLinkPayload = Partial<CreateHomepageLinkPayload>;
 export const getHomepageLinks = () => request<HomepageLinkDto[]>('/homepage/links');
 export const createHomepageLink = (payload: CreateHomepageLinkPayload) =>
   request<HomepageLinkDto>('/homepage/links', {
-    method: 'POST',
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
 export const updateHomepageLink = (id: string, payload: UpdateHomepageLinkPayload) =>
@@ -700,7 +748,7 @@ export type UpdateHomepagePlaceholderPayload = Partial<CreateHomepagePlaceholder
 export const getHomepagePlaceholders = () => request<HomepagePlaceholderDto[]>('/homepage/placeholders');
 export const createHomepagePlaceholder = (payload: CreateHomepagePlaceholderPayload) =>
   request<HomepagePlaceholderDto>('/homepage/placeholders', {
-    method: 'POST',
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
 export const updateHomepagePlaceholder = (sectionKey: string, payload: UpdateHomepagePlaceholderPayload) =>
@@ -736,7 +784,7 @@ export type UpdateHomepageEmptyStatePayload = Partial<CreateHomepageEmptyStatePa
 export const getHomepageEmptyStates = () => request<HomepageEmptyStateDto[]>('/homepage/empty-states');
 export const createHomepageEmptyState = (payload: CreateHomepageEmptyStatePayload) =>
   request<HomepageEmptyStateDto>('/homepage/empty-states', {
-    method: 'POST',
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
 export const updateHomepageEmptyState = (sectionKey: string, payload: UpdateHomepageEmptyStatePayload) =>
@@ -800,7 +848,7 @@ export type UpdateCommonTextPayload = Partial<CreateCommonTextPayload>;
 export const getCommonTexts = () => request<CommonTextDto[]>('/common-texts');
 export const createCommonText = (payload: CreateCommonTextPayload) =>
   request<CommonTextDto>('/common-texts', {
-    method: 'POST',
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
 export const updateCommonText = (key: string, payload: UpdateCommonTextPayload) =>
@@ -840,7 +888,7 @@ export type UpdateAvailabilityStatusPayload = Partial<CreateAvailabilityStatusPa
 export const getAvailabilityStatuses = () => request<AvailabilityStatusDto[]>('/availability-statuses');
 export const createAvailabilityStatus = (payload: CreateAvailabilityStatusPayload) =>
   request<AvailabilityStatusDto>('/availability-statuses', {
-    method: 'POST',
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
 export const updateAvailabilityStatus = (key: string, payload: UpdateAvailabilityStatusPayload) =>
@@ -891,7 +939,7 @@ export type UpdateBannerPayload = Partial<CreateBannerPayload>;
 export const getBannersAdmin = () => request<BannerDto[]>('/banners/admin');
 export const createBanner = (payload: CreateBannerPayload) =>
   request<BannerDto>('/banners', {
-    method: 'POST',
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
 export const updateBanner = (id: string, payload: UpdateBannerPayload) =>
@@ -934,7 +982,7 @@ export const uploadMedia = async (file: File, alt_uz?: string, alt_ru?: string, 
 
   try {
     const response = await fetch(`${API_BASE}/media`, {
-      method: 'POST',
+      method: 'PATCH',
       credentials: 'include',
       body: formData,
     });
@@ -1012,7 +1060,7 @@ export interface MenuDto {
 export const getMenu = (name: string) => request<MenuDto>(`/menus/${name}`);
 export const updateMenu = (name: string, items: MenuItemDto[]) =>
   request<MenuDto>(`/menus/${name}`, {
-    method: 'POST',
+    method: 'PATCH',
     body: JSON.stringify({ items }),
   });
 
@@ -1049,7 +1097,7 @@ export type UpdateProductCategoryPayload = Partial<CreateProductCategoryPayload>
 export const getProductCategoriesAdmin = () => request<ProductCategoryDto[]>('/product-categories');
 export const createProductCategory = (payload: CreateProductCategoryPayload) =>
   request<ProductCategoryDto>('/product-categories', {
-    method: 'POST',
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
 export const updateProductCategory = (id: string, payload: UpdateProductCategoryPayload) =>
@@ -1101,7 +1149,7 @@ export const getCatalogsAdmin = () => request<CatalogDto[]>('/catalogs/admin');
 export const getCatalogs = () => request<CatalogDto[]>('/catalogs?public=true');
 export const createCatalog = (payload: CreateCatalogPayload) =>
   request<CatalogDto>('/catalogs', {
-    method: 'POST',
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
 export const updateCatalog = (id: string, payload: UpdateCatalogPayload) =>
@@ -1139,7 +1187,7 @@ export type UpdateBrandPayload = Partial<CreateBrandPayload>;
 
 export const createBrand = (payload: CreateBrandPayload) =>
   request<BrandDto>('/brands', {
-    method: 'POST',
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
 
@@ -1254,7 +1302,7 @@ export const getProductsAdmin = (filters?: { limit?: number; offset?: number; st
 };
 export const createProduct = (payload: CreateProductPayload) =>
   request<ProductDto>('/products', {
-    method: 'POST',
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
 export const updateProduct = (id: string, payload: UpdateProductPayload) =>
@@ -1278,7 +1326,7 @@ export const importProductsFromExcel = async (file: File): Promise<ImportExcelRe
   formData.append('file', file);
 
   const response = await fetch(`${API_BASE}/products/import/excel`, {
-    method: 'POST',
+    method: 'PATCH',
     credentials: 'include',
     body: formData,
   });
@@ -1350,7 +1398,7 @@ export type UpdateFaqPayload = Partial<CreateFaqPayload>;
 export const getFaqsAdmin = () => request<FaqDto[]>('/faq');
 export const createFaq = (payload: CreateFaqPayload) =>
   request<FaqDto>('/faq', {
-    method: 'POST',
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
 export const updateFaq = (id: string, payload: UpdateFaqPayload) =>
@@ -1415,7 +1463,7 @@ export const getPageBySlug = async (slug: string, includeDraft = true): Promise<
 };
 export const createPage = (payload: CreatePagePayload) =>
   request<PageDto>('/pages', {
-    method: 'POST',
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
 export const updatePage = (id: string, payload: UpdatePagePayload) =>
@@ -1483,7 +1531,7 @@ export type UpdateBranchPayload = Partial<CreateBranchPayload>;
 export const getBranches = () => request<BranchDto[]>('/branches');
 export const createBranch = (payload: CreateBranchPayload) =>
   request<BranchDto>('/branches', {
-    method: 'POST',
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
 export const updateBranch = (id: string, payload: UpdateBranchPayload) =>
@@ -1530,7 +1578,7 @@ export const getShowcase = (type: 'interacoustics' | 'cochlear') =>
   request<ShowcaseDto>(`/showcases/${type}`);
 export const updateShowcase = (type: 'interacoustics' | 'cochlear', payload: UpdateShowcasePayload) =>
   request<ShowcaseDto>(`/showcases/${type}`, {
-    method: 'POST',
+    method: 'PATCH',
     body: JSON.stringify(payload),
   });
 

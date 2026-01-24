@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
+import { normalizeImageUrl } from '@/lib/image-utils';
 
 interface Brand {
   id: string;
@@ -33,7 +34,7 @@ function buildFilterUrl(slug: string, currentParams: URLSearchParams, updates: R
   return `/catalog/${slug}${queryString ? `?${queryString}` : ''}`;
 }
 
-export default function CatalogBrandChips({ categorySlug, locale, brands, selectedBrands }: CatalogBrandChipsProps) {
+export default function CatalogBrandChips({ categorySlug, locale, brands = [], selectedBrands = [] }: CatalogBrandChipsProps) {
   const searchParams = useSearchParams();
 
   if (brands.length === 0) return null;
@@ -68,16 +69,20 @@ export default function CatalogBrandChips({ categorySlug, locale, brands, select
                 : 'border-border/60 bg-white text-brand-accent hover:border-brand-primary/50 hover:bg-brand-primary/5'
             }`}
           >
-            {brand.logo?.url && (
-              <Image
-                src={brand.logo.url}
-                alt={brand.name}
-                width={20}
-                height={20}
-                className="h-5 w-5 object-contain"
-                unoptimized
-              />
-            )}
+            {brand.logo?.url && (() => {
+              const logoUrl = normalizeImageUrl(brand.logo.url);
+              if (!logoUrl) return null;
+              return (
+                <Image
+                  src={logoUrl}
+                  alt={brand.name || 'Brand logo'}
+                  width={20}
+                  height={20}
+                  className="h-5 w-5 object-contain"
+                  unoptimized
+                />
+              );
+            })()}
             <span>{brand.name}</span>
           </Link>
         );

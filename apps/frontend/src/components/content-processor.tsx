@@ -12,17 +12,41 @@ import { useTooltipManager } from './tooltip-manager';
 export function processContentShortcodes(content: string): string {
   let processed = content;
 
-  // Process tooltips: [tooltip keyword="..." content="..."]
-  const tooltipRegex = /\[tooltip\s+keyword\s*=\s*["']([^"']+)["']\s+content\s*=\s*["']([^"']+)["']\]/gi;
-  processed = processed.replace(tooltipRegex, (match, keyword, tooltipContent) => {
-    const escapedContent = tooltipContent
+  // Process tooltips: [tooltip keyword="..." content="..."] or [tooltips keyword="..." content="..."]
+  // Support both single and double quotes, and handle content with quotes inside
+  // Use a more flexible approach: match everything between the opening and closing brackets
+  // Then parse the attributes manually
+  const tooltipRegex = /\[tooltips?\s+([^\]]+)\]/gi;
+  processed = processed.replace(tooltipRegex, (match, attributes) => {
+    // Parse attributes: keyword="..." content="..."
+    const keywordMatch = attributes.match(/keyword\s*=\s*["']([^"']+)["']/i);
+    const contentMatch = attributes.match(/content\s*=\s*["']((?:[^"']|\\["'])*)["']/i);
+    
+    if (!keywordMatch || !contentMatch) {
+      // If parsing fails, return the original match
+      return match;
+    }
+    
+    const keyword = keywordMatch[1];
+    let tooltipContent = contentMatch[1];
+    
+    // Handle escaped quotes in content
+    const unescapedContent = tooltipContent
+      .replace(/\\"/g, '"')
+      .replace(/\\'/g, "'");
+    
+    const escapedContent = unescapedContent
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
     
-    return `<span data-tooltip-keyword="${keyword.replace(/"/g, '&quot;')}" data-tooltip-content="${escapedContent}">${keyword}</span>`;
+    const escapedKeyword = keyword
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+    
+    return `<span data-tooltip-keyword="${escapedKeyword}" data-tooltip-content="${escapedContent}">${keyword}</span>`;
   });
 
   // Process table positions: [table position="left|center|right|full"]...[/table]

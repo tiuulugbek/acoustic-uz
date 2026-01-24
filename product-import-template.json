@@ -1,0 +1,47 @@
+[
+  {
+    "name_uz": "Mahsulot nomi o'zbek tilida",
+    "name_ru": "Название продукта на русском",
+    "slug": "mahsulot-slug",
+    "description_uz": "To'liq tavsif o'zbek tilida (ixtiyoriy)",
+    "description_ru": "Полное описание на русском (опционально)",
+    "price": 1000000,
+    "productType": "hearing-aids",
+    "brandName": "Brand nomi",
+    "intro_uz": "Qisqa kirish matni o'zbek tilida (ixtiyoriy)",
+    "intro_ru": "Краткое введение на русском (опционально)",
+    "features_uz": [
+      "Xususiyat 1",
+      "Xususiyat 2"
+    ],
+    "features_ru": [
+      "Характеристика 1",
+      "Характеристика 2"
+    ],
+    "benefits_uz": [
+      "Afzallik 1",
+      "Afzallik 2"
+    ],
+    "benefits_ru": [
+      "Преимущество 1",
+      "Преимущество 2"
+    ],
+    "tech_uz": "Texnik ma'lumotlar o'zbek tilida (ixtiyoriy)",
+    "tech_ru": "Техническая информация на русском (опционально)",
+    "fittingRange_uz": "Fitting range o'zbek tilida (ixtiyoriy)",
+    "fittingRange_ru": "Диапазон настройки на русском (опционально)",
+    "specsText": "Texnik xususiyatlar matni (ixtiyoriy)",
+    "galleryUrls": [],
+    "thumbnailUrl": null,
+    "audience": ["adults"],
+    "formFactors": ["BTE"],
+    "signalProcessing": "digital",
+    "powerLevel": "standard",
+    "hearingLossLevels": ["moderate"],
+    "smartphoneCompatibility": [],
+    "paymentOptions": ["cash", "installment"],
+    "availabilityStatus": "in-stock",
+    "tinnitusSupport": false,
+    "catalogIds": []
+  }
+]

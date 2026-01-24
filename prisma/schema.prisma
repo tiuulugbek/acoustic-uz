@@ -47,7 +47,8 @@ model Media {
   updatedAt DateTime @updatedAt
 
   banners             Banner[]
-  services            Service[]
+  services            Service[]       @relation("ServiceCover")
+  servicesAlternative Service[]       @relation("ServiceAlternativeCover")
   brands              Brand[]
   posts               Post[]
   branches            Branch[]
@@ -142,22 +143,24 @@ model ServiceCategory {
 }
 
 model Service {
-  id         String           @id @default(cuid())
-  title_uz   String
-  title_ru   String
-  excerpt_uz String?
-  excerpt_ru String?
-  body_uz    String?
-  body_ru    String?
-  slug       String           @unique
-  categoryId String?
-  category   ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  coverId    String?
-  cover      Media?           @relation(fields: [coverId], references: [id], onDelete: SetNull)
-  order      Int              @default(0)
-  status     String           @default("published")
-  createdAt  DateTime         @default(now())
-  updatedAt  DateTime         @updatedAt
+  id                String           @id @default(cuid())
+  title_uz          String
+  title_ru          String
+  excerpt_uz        String?
+  excerpt_ru        String?
+  body_uz           String?
+  body_ru           String?
+  slug              String           @unique
+  categoryId        String?
+  category          ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  coverId           String?
+  cover             Media?           @relation("ServiceCover", fields: [coverId], references: [id], onDelete: SetNull)
+  alternativeCoverId String?
+  alternativeCover  Media?           @relation("ServiceAlternativeCover", fields: [alternativeCoverId], references: [id], onDelete: SetNull)
+  order             Int              @default(0)
+  status            String           @default("published")
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
 
   @@index([slug])
   @@index([categoryId])
@@ -421,10 +424,18 @@ model HearingTest {
   // Test sozlamalari
   deviceType      String   // "speaker" yoki "headphone"
   volumeLevel     Float?   // Ovoz balandligi (0-1)
+  testMethod      String?  @default("frequency") // "frequency" yoki "digits-in-noise"
   
-  // Test natijalari
-  leftEarResults  Json     // { "250": true/false, "500": true/false, ... }
-  rightEarResults Json     // { "250": true/false, "500": true/false, ... }
+  // Frequency test natijalari (eski metod)
+  leftEarResults  Json?    // { "250": 0.5, "500": 0.3, ... } - volume levels
+  rightEarResults Json?    // { "250": 0.5, "500": 0.3, ... } - volume levels
+  
+  // Digits-in-Noise test natijalari (yangi metod)
+  leftEarSRT      Float?   // SRT-50 in dB (chap quloq)
+  rightEarSRT     Float?   // SRT-50 in dB (o'ng quloq)
+  overallSRT      Float?   // Umumiy SRT-50 in dB
+  leftEarSINResults  Json? // To'liq SIN test natijalari (reversals, responses, etc.)
+  rightEarSINResults Json? // To'liq SIN test natijalari (reversals, responses, etc.)
   
   // Hisoblangan natijalar
   leftEarScore    Int?     // 0-100 (foiz)
@@ -445,6 +456,7 @@ model HearingTest {
 
   @@index([status, createdAt])
   @@index([source])
+  @@index([testMethod])
 }
 
 model AuditLog {

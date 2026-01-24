@@ -50,15 +50,25 @@ const availabilityMap: Record<string, { uz: string; ru: string; schema: string; 
 };
 
 function formatPrice(price: string | number | null | undefined): string | null {
-  if (!price) return null;
-  const numPrice = typeof price === 'string' ? parseFloat(price) : price;
-  if (isNaN(numPrice)) return null;
-  return new Intl.NumberFormat('uz-UZ', {
+  // Debug: Log price for troubleshooting
+  console.log('[formatPrice] Input price:', price, 'Type:', typeof price);
+  
+  if (price === null || price === undefined || price === '') return null;
+  
+  const numPrice = typeof price === 'string' ? parseFloat(price) : Number(price);
+  console.log('[formatPrice] Parsed price:', numPrice, 'IsNaN:', isNaN(numPrice));
+  
+  if (isNaN(numPrice) || numPrice <= 0) return null;
+  
+  const formatted = new Intl.NumberFormat('uz-UZ', {
     style: 'currency',
     currency: 'UZS',
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(numPrice);
+  
+  console.log('[formatPrice] Formatted price:', formatted);
+  return formatted;
 }
 
 function combineBilingual(text1?: string | null, text2?: string | null): string {
@@ -158,8 +168,8 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
       },
     },
     openGraph: {
-      title,
-      description: description || undefined,
+      title: productName,
+      description: productDescription || undefined,
       url: productUrl,
       siteName: 'Acoustic.uz',
       images: [
@@ -167,7 +177,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
           url: imageUrl,
           width: 1200,
           height: 630,
-          alt: title,
+          alt: productName,
         },
       ],
       locale: locale === 'ru' ? 'ru_RU' : 'uz_UZ',
@@ -175,8 +185,8 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
     },
     twitter: {
       card: 'summary_large_image',
-      title,
-      description: description || undefined,
+      title: productName,
+      description: productDescription || undefined,
       images: [imageUrl],
     },
   };
@@ -355,20 +365,58 @@ export default async function ProductPage({ params }: ProductPageProps) {
     );
   }
   const priceFormatted = formatPrice(product.price);
+  // Debug: Log price for troubleshooting
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[ProductPage] Product price:', product.price, 'Formatted:', priceFormatted);
+  }
   const availability = product.availabilityStatus ? availabilityMap[product.availabilityStatus] : undefined;
   
   // Helper function to normalize image URL with placeholder fallback
   const normalizeImageUrlWithPlaceholder = (url: string | null | undefined): string => {
+    // Early return for empty/null/undefined URLs
+    if (!url || url.trim() === '') {
+      return placeholderImage;
+    }
+    
+    // Normalize the URL
     const normalized = normalizeImageUrl(url);
-    return normalized || placeholderImage;
+    
+    // Check if normalized URL is valid
+    if (normalized && normalized.trim() && normalized.trim() !== '' && !normalized.startsWith("data:")) {
+      // Final check: ensure it's not acoustic.uz (should be a.acoustic.uz)
+      if (normalized.includes('acoustic.uz') && !normalized.includes('a.acoustic.uz')) {
+        // Force fix: replace any acoustic.uz with a.acoustic.uz
+        const fixed = normalized.replace(/https?:\/\/([^\/]*\.)?acoustic\.uz(\/|$)/g, 'https://a.acoustic.uz$2');
+        return fixed;
+      }
+      return normalized;
+    }
+    
+    // Return placeholder if normalization failed
+    return placeholderImage;
   };
   
-  const mainImage = normalizeImageUrlWithPlaceholder(product.galleryUrls?.[0] ?? product.brand?.logo?.url);
+  // Try multiple image sources: galleryUrls, image field, images array, brand logo
+  const rawMainImage = product.galleryUrls?.[0] 
+    || (product as any)?.image?.url 
+    || ((product as any)?.images?.[0]?.url)
+    || product.brand?.logo?.url 
+    || null;
+  console.log("[ProductPage] product.galleryUrls (raw from API):", product.galleryUrls);
+  console.log("[ProductPage] product.brand?.logo?.url (raw from API):", product.brand?.logo?.url);
+  console.log("[ProductPage] rawMainImage:", rawMainImage);
+  const mainImage = rawMainImage ? normalizeImageUrlWithPlaceholder(rawMainImage) : placeholderImage;
+  console.log("[ProductPage] mainImage after normalization:", mainImage);
+  // Build gallery from multiple sources
   const gallery = product.galleryUrls?.length 
     ? product.galleryUrls.map(normalizeImageUrlWithPlaceholder)
-    : product.brand?.logo?.url 
-      ? [normalizeImageUrlWithPlaceholder(product.brand.logo.url)] 
-      : [];
+    : (product as any)?.images?.length
+      ? (product as any).images.map((img: any) => normalizeImageUrlWithPlaceholder(img?.url || img))
+      : (product as any)?.image?.url
+        ? [normalizeImageUrlWithPlaceholder((product as any).image.url)]
+        : product.brand?.logo?.url 
+          ? [normalizeImageUrlWithPlaceholder(product.brand.logo.url)] 
+          : [];
   const features = product.features_uz?.length || product.features_ru?.length 
     ? [...(product.features_uz || []), ...(product.features_ru || [])].join('\n')
     : '';
@@ -457,12 +505,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   // Description tab - use full HTML content (including tables)
   // This will be shown in the "Tavsif" tab
+  // Only show content in the current locale, no fallback to other language
   const descriptionPrimary = isRu 
-    ? product.description_ru ?? product.description_uz ?? null
-    : product.description_uz ?? product.description_ru ?? null;
-  const descriptionSecondary = isRu 
-    ? product.description_uz ?? null
-    : product.description_ru ?? null;
+    ? product.description_ru ?? null
+    : product.description_uz ?? null;
+  const descriptionSecondary = null; // Don't show secondary language content
   const hasDescription = Boolean(descriptionPrimary || descriptionSecondary);
   
   // For tech tab, combine specsText with tech fields (but NOT description tables)
@@ -491,14 +538,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
       primary: isRu
         ? product.tech_ru ?? techTables ?? null
         : product.tech_uz ?? techTables ?? null,
-      secondary: isRu ? product.tech_uz ?? null : product.tech_ru ?? null,
+      secondary: null, // Don't show secondary language content
     },
     // Fitting range tab
     {
       key: 'fitting',
       title: tabTitles.fitting,
       primary: isRu ? product.fittingRange_ru ?? null : product.fittingRange_uz ?? null,
-      secondary: isRu ? product.fittingRange_uz ?? null : product.fittingRange_ru ?? null,
+      secondary: null, // Don't show secondary language content
     },
   ];
 
@@ -564,7 +611,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   {/* Main Image */}
                   <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-white border border-border/40">
                     <Image
-                      src={mainImage}
+                      src={mainImage || placeholderImage}
                       alt={locale === 'ru' 
                         ? `${getBilingualText(product.name_uz, product.name_ru, locale)} — Слуховой аппарат`
                         : `${getBilingualText(product.name_uz, product.name_ru, locale)} — Eshitish moslamasi`}
@@ -616,15 +663,17 @@ export default async function ProductPage({ params }: ProductPageProps) {
                       </span>
                     </p>
                   )}
-                  {priceFormatted && (
-                    <p className="text-base font-semibold text-foreground">
-                      <span className="font-bold">{isRu ? 'Цена' : 'Narx'}:</span> {priceFormatted}
-                    </p>
-                  )}
                   <p className="text-sm text-muted-foreground">
                     <span className="font-bold">{isRu ? 'Способ оплаты' : 'To\'lov turi'}:</span>{' '}
                     {isRu ? 'Наличными, картой Visa/MasterCard' : 'Naqd pul, Visa/MasterCard kartasi'}
                   </p>
+                  {priceFormatted && (
+                    <div className="border-2 border-red-500 bg-red-50 rounded-lg p-3 mt-2">
+                      <p className="text-base font-semibold text-foreground">
+                        <span className="font-bold">{isRu ? 'Цена' : 'Narxi'}: </span> {priceFormatted}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 

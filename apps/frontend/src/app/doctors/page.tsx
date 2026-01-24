@@ -4,6 +4,7 @@ import { getBilingualText } from '@/lib/locale';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getDoctors, getBranches, type DoctorResponse } from '@/lib/api-server';
+import { normalizeImageUrl } from '@/lib/image-utils';
 import BranchesSidebar from '@/components/branches-sidebar';
 import PageHeader from '@/components/page-header';
 
@@ -62,12 +63,7 @@ export default async function DoctorsPage() {
                         <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-lg bg-muted/20">
                           {specialist.image?.url ? (
                             (() => {
-                              const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-                              let imageUrl = specialist.image.url;
-                              if (imageUrl && imageUrl.startsWith('/') && !imageUrl.startsWith('//')) {
-                                const baseUrl = API_BASE_URL.replace('/api', '');
-                                imageUrl = `${baseUrl}${imageUrl}`;
-                              }
+                              const imageUrl = specialist.image?.url ? normalizeImageUrl(specialist.image.url) : '';
                               return (
                                 <Image
                                   src={imageUrl}

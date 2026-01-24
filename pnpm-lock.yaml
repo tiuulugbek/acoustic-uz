@@ -341,6 +341,9 @@ importers:
       clsx:
         specifier: ^2.1.0
         version: 2.1.1
+      dayjs:
+        specifier: ^1.11.19
+        version: 1.11.19
       i18next:
         specifier: ^23.7.6
         version: 23.16.8

@@ -4,6 +4,7 @@ import { getBilingualText } from '@/lib/locale';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getDoctorBySlug } from '@/lib/api-server';
+import { normalizeImageUrl } from '@/lib/image-utils';
 import PageHeader from '@/components/page-header';
 
 // Force dynamic rendering
@@ -51,12 +52,7 @@ export default async function DoctorSlugPage({ params }: DoctorPageProps) {
   const experience = getBilingualText(specialist.experience_uz, specialist.experience_ru, locale);
   const description = getBilingualText(specialist.description_uz, specialist.description_ru, locale);
   
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-  let imageUrl = specialist.image?.url || '';
-  if (imageUrl && imageUrl.startsWith('/') && !imageUrl.startsWith('//')) {
-    const baseUrl = API_BASE_URL.replace('/api', '');
-    imageUrl = `${baseUrl}${imageUrl}`;
-  }
+  const imageUrl = specialist.image?.url ? normalizeImageUrl(specialist.image.url) : '';
 
   return (
     <main className="min-h-screen bg-background">

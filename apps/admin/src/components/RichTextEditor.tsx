@@ -7,7 +7,7 @@ import Underline from '@tiptap/extension-underline';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { Color } from '@tiptap/extension-color';
 import { useState, useEffect } from 'react';
-import { Button, Space, message, Modal } from 'antd';
+import { Button, Space, message, Modal, Input } from 'antd';
 import {
   BoldOutlined,
   ItalicOutlined,
@@ -25,6 +25,8 @@ import {
   FolderOutlined,
   TableOutlined,
   AppstoreOutlined,
+  CodeOutlined,
+  EyeOutlined,
 } from '@ant-design/icons';
 import { uploadMedia, type MediaDto } from '../lib/api';
 import MediaLibraryModal from './MediaLibraryModal';
@@ -42,6 +44,8 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
   const [imageLayoutModalOpen, setImageLayoutModalOpen] = useState(false);
   const [selectedImages, setSelectedImages] = useState<MediaDto[]>([]);
   const [isMultipleSelectionMode, setIsMultipleSelectionMode] = useState(false);
+  const [isHtmlMode, setIsHtmlMode] = useState(false);
+  const [htmlCode, setHtmlCode] = useState('');
 
   const editor = useEditor({
     extensions: [
@@ -84,7 +88,37 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
     if (editor && value !== undefined && editor.getHTML() !== value) {
       editor.commands.setContent(value);
     }
+    if (value !== undefined) {
+      setHtmlCode(value);
+    }
   }, [value, editor]);
+
+  // Toggle between HTML code view and visual editor
+  const toggleHtmlMode = () => {
+    if (editor) {
+      if (isHtmlMode) {
+        // Switching from HTML mode to visual mode
+        try {
+          editor.commands.setContent(htmlCode);
+          onChange?.(htmlCode);
+          setIsHtmlMode(false);
+          message.success('HTML kod yuklandi');
+        } catch (error) {
+          message.error('HTML kod xatosi. Iltimos, kodni tekshiring.');
+        }
+      } else {
+        // Switching from visual mode to HTML mode
+        const currentHtml = editor.getHTML();
+        setHtmlCode(currentHtml);
+        setIsHtmlMode(true);
+      }
+    }
+  };
+
+  // Handle HTML code changes in code view
+  const handleHtmlCodeChange = (newCode: string) => {
+    setHtmlCode(newCode);
+  };
 
   const insertImage = (imageUrl: string) => {
     if (editor) {
@@ -244,24 +278,28 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
             icon={<BoldOutlined />}
             onClick={() => editor.chain().focus().toggleBold().run()}
             size="small"
+            disabled={isHtmlMode}
           />
           <Button
             type={editor.isActive('italic') ? 'primary' : 'default'}
             icon={<ItalicOutlined />}
             onClick={() => editor.chain().focus().toggleItalic().run()}
             size="small"
+            disabled={isHtmlMode}
           />
           <Button
             type={editor.isActive('underline') ? 'primary' : 'default'}
             icon={<UnderlineOutlined />}
             onClick={() => editor.chain().focus().toggleUnderline().run()}
             size="small"
+            disabled={isHtmlMode}
           />
           <Button
             type={editor.isActive('strike') ? 'primary' : 'default'}
             icon={<StrikethroughOutlined />}
             onClick={() => editor.chain().focus().toggleStrike().run()}
             size="small"
+            disabled={isHtmlMode}
           />
 
           <div className="editor-divider" />
@@ -271,6 +309,7 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
             type={editor.isActive('heading', { level: 1 }) ? 'primary' : 'default'}
             onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
             size="small"
+            disabled={isHtmlMode}
           >
             H1
           </Button>
@@ -278,6 +317,7 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
             type={editor.isActive('heading', { level: 2 }) ? 'primary' : 'default'}
             onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
             size="small"
+            disabled={isHtmlMode}
           >
             H2
           </Button>
@@ -285,6 +325,7 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
             type={editor.isActive('heading', { level: 3 }) ? 'primary' : 'default'}
             onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
             size="small"
+            disabled={isHtmlMode}
           >
             H3
           </Button>
@@ -297,12 +338,14 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
             icon={<UnorderedListOutlined />}
             onClick={() => editor.chain().focus().toggleBulletList().run()}
             size="small"
+            disabled={isHtmlMode}
           />
           <Button
             type={editor.isActive('orderedList') ? 'primary' : 'default'}
             icon={<OrderedListOutlined />}
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
             size="small"
+            disabled={isHtmlMode}
           />
 
           <div className="editor-divider" />
@@ -313,18 +356,21 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
             icon={<AlignLeftOutlined />}
             onClick={() => editor.chain().focus().setTextAlign('left').run()}
             size="small"
+            disabled={isHtmlMode}
           />
           <Button
             type={editor.isActive({ textAlign: 'center' }) ? 'primary' : 'default'}
             icon={<AlignCenterOutlined />}
             onClick={() => editor.chain().focus().setTextAlign('center').run()}
             size="small"
+            disabled={isHtmlMode}
           />
           <Button
             type={editor.isActive({ textAlign: 'right' }) ? 'primary' : 'default'}
             icon={<AlignRightOutlined />}
             onClick={() => editor.chain().focus().setTextAlign('right').run()}
             size="small"
+            disabled={isHtmlMode}
           />
 
           <div className="editor-divider" />
@@ -335,12 +381,14 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
             icon={<LinkOutlined />}
             onClick={addLink}
             size="small"
+            disabled={isHtmlMode}
           />
           <Button
             icon={<PictureOutlined />}
             onClick={() => setMediaModalOpen(true)}
             size="small"
             title="Media library'dan rasm tanlash"
+            disabled={isHtmlMode}
           />
 
           <div className="editor-divider" />
@@ -351,12 +399,14 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
             onClick={addTable}
             size="small"
             title="Jadval qo'shish (pozitsiya bilan)"
+            disabled={isHtmlMode}
           />
           <Button
             icon={<AppstoreOutlined />}
             onClick={addImageLayout}
             size="small"
             title="Rasm layout qo'shish"
+            disabled={isHtmlMode}
           />
 
           <div className="editor-divider" />
@@ -365,31 +415,74 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
           <Button
             icon={<UndoOutlined />}
             onClick={() => editor.chain().focus().undo().run()}
-            disabled={!editor.can().undo()}
+            disabled={!editor.can().undo() || isHtmlMode}
             size="small"
           />
           <Button
             icon={<RedoOutlined />}
             onClick={() => editor.chain().focus().redo().run()}
-            disabled={!editor.can().redo()}
+            disabled={!editor.can().redo() || isHtmlMode}
             size="small"
           />
+
+          <div className="editor-divider" />
+
+          {/* HTML Code View Toggle */}
+          <Button
+            type={isHtmlMode ? 'primary' : 'default'}
+            icon={isHtmlMode ? <EyeOutlined /> : <CodeOutlined />}
+            onClick={toggleHtmlMode}
+            size="small"
+            title={isHtmlMode ? 'Vizual rejimga o\'tish' : 'HTML kod ko\'rinishiga o\'tish'}
+          >
+            {isHtmlMode ? 'Vizual' : 'HTML'}
+          </Button>
 
           {/* Media Library */}
           <Button
             icon={<FolderOutlined />}
             onClick={() => setMediaModalOpen(true)}
             size="small"
+            disabled={isHtmlMode}
           >
             Media
           </Button>
         </Space>
       </div>
 
-      {/* Editor Content */}
-      <div className="editor-content-wrapper">
-        <EditorContent editor={editor} />
-      </div>
+      {/* Editor Content or HTML Code View */}
+      {isHtmlMode ? (
+        <div className="editor-content-wrapper" style={{ padding: '16px' }}>
+          <Input.TextArea
+            value={htmlCode}
+            onChange={(e) => handleHtmlCodeChange(e.target.value)}
+            placeholder="HTML kodni bu yerga kiriting yoki yopishtiring..."
+            rows={15}
+            style={{ 
+              fontFamily: 'monospace', 
+              fontSize: '13px',
+              lineHeight: '1.5',
+            }}
+          />
+          <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
+            <Space>
+              <span>💡 HTML kodni kiriting yoki yopishtiring</span>
+              <Button 
+                type="primary" 
+                size="small" 
+                onClick={toggleHtmlMode}
+                icon={<EyeOutlined />}
+              >
+                Vizual rejimga o'tish
+              </Button>
+            </Space>
+          </div>
+        </div>
+      ) : (
+        <div className="editor-content-wrapper">
+          <EditorContent editor={editor} />
+        </div>
+      )}
 
       <MediaLibraryModal
         open={mediaModalOpen}

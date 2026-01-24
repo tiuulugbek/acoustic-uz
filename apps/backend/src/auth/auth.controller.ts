@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Patch,
   Body,
   HttpCode,
   HttpStatus,
@@ -36,7 +37,7 @@ export class AuthController {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 15 * 60 * 1000, // 15 minutes
+      maxAge: 60 * 60 * 1000, // 60 minutes (1 hour)
     });
 
     res.cookie('refresh_token', result.refresh_token, {
@@ -50,6 +51,17 @@ export class AuthController {
       user: result.user,
       access_token: result.access_token,
     };
+  }
+
+  @Public()
+  @Patch('login')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Login (PATCH method for compatibility)' })
+  @ApiResponse({ status: 200, description: 'Login successful' })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
+  async loginPatch(@Body() loginDto: LoginDto, @Res({ passthrough: true }) res: Response) {
+    // PATCH va POST bir xil ishlaydi
+    return this.login(loginDto, res);
   }
 
   @Public()
@@ -68,7 +80,7 @@ export class AuthController {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 15 * 60 * 1000,
+      maxAge: 60 * 60 * 1000, // 60 minutes (1 hour)
     });
 
     return { access_token: result.access_token };
@@ -83,6 +95,16 @@ export class AuthController {
     res.clearCookie('access_token');
     res.clearCookie('refresh_token');
     return { message: 'Logged out successfully' };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('logout')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Logout (PATCH method for compatibility)' })
+  @ApiBearerAuth()
+  async logoutPatch(@Res({ passthrough: true }) res: Response) {
+    // PATCH va POST bir xil ishlaydi
+    return this.logout(res);
   }
 
   @UseGuards(JwtAuthGuard)

@@ -10,7 +10,10 @@
  * Ensures all image URLs point to https://a.acoustic.uz/uploads/
  */
 export function normalizeImageUrl(url: string | null | undefined): string {
-  if (!url) return '';
+  // Early return for empty/null/undefined URLs
+  if (!url || url.trim() === '') {
+    return '';
+  }
   
   // Trim whitespace
   url = url.trim();
@@ -26,17 +29,28 @@ export function normalizeImageUrl(url: string | null | undefined): string {
         urlObj.protocol = 'https:';
       }
       
-      // Fix incorrect domain: acoustic.uz -> a.acoustic.uz
-      if (urlObj.hostname === 'acoustic.uz' || urlObj.hostname === 'www.acoustic.uz') {
+      // OPTIMIZED: Fix incorrect domain: acoustic.uz -> a.acoustic.uz
+      // Force fix: ANY acoustic.uz domain (except a.acoustic.uz) should be a.acoustic.uz
+      // This is the PRIMARY and MOST IMPORTANT fix - must catch ALL variants
+      if (urlObj.hostname && urlObj.hostname !== 'a.acoustic.uz' && urlObj.hostname.includes('acoustic.uz')) {
+        // Catch ALL acoustic.uz variants: acoustic.uz, www.acoustic.uz, api.acoustic.uz, subdomain.acoustic.uz, etc.
+        // Only exclude a.acoustic.uz (already checked above)
         urlObj.hostname = 'a.acoustic.uz';
         urlObj.protocol = 'https:';
       }
       
-      // Fix incorrect domain: localhost:3001 -> a.acoustic.uz (in production)
+      // Always use production URL in server-side rendering or production build
+      // In production or server-side rendering, always use production URL
       if (urlObj.hostname === 'localhost' || urlObj.hostname === '127.0.0.1') {
-        urlObj.hostname = 'a.acoustic.uz';
-        urlObj.port = '';
-        urlObj.protocol = 'https:';
+        const isServerSide = typeof window === 'undefined';
+        const isProduction = process.env.NODE_ENV === 'production';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+        // Always fix localhost in production build, server-side rendering, or if API URL points to production
+        if (isServerSide || isProduction || apiUrl.includes('a.acoustic.uz') || apiUrl.includes('acoustic.uz')) {
+          urlObj.hostname = 'a.acoustic.uz';
+          urlObj.port = '';
+          urlObj.protocol = 'https:';
+        }
       }
       
       // Fix api.acoustic.uz -> a.acoustic.uz (old API domain)
@@ -76,7 +90,8 @@ export function normalizeImageUrl(url: string | null | undefined): string {
         // Otherwise keep filename as is
       }
       
-      return urlObj.toString();
+      const finalUrl = urlObj.toString();
+      return finalUrl;
     } catch {
       // If URL parsing fails, try simple string replacement as fallback
       let fixedUrl = url;
@@ -88,15 +103,33 @@ export function normalizeImageUrl(url: string | null | undefined): string {
       fixedUrl = fixedUrl.replace(/https?:\/\/acoustic\.uz\/uploads\//g, 'https://a.acoustic.uz/uploads/');
       fixedUrl = fixedUrl.replace(/https?:\/\/www\.acoustic\.uz\/uploads\//g, 'https://a.acoustic.uz/uploads/');
       
+      // OPTIMIZED: Fix ANY acoustic.uz domain to a.acoustic.uz (comprehensive regex)
+      // This catches ALL variants: acoustic.uz, www.acoustic.uz, api.acoustic.uz, subdomain.acoustic.uz, etc.
+      // Single regex to catch all subdomains and main domain
+      fixedUrl = fixedUrl.replace(/https?:\/\/([^\/]*\.)?acoustic\.uz(\/|$)/g, 'https://a.acoustic.uz$2');
+      
+      // Final safety check: if URL still contains acoustic.uz (not a.acoustic.uz), force fix it
+      if (fixedUrl.includes('acoustic.uz') && !fixedUrl.includes('a.acoustic.uz')) {
+        fixedUrl = fixedUrl.replace(/https?:\/\/[^\/]*acoustic\.uz(\/|$)/g, 'https://a.acoustic.uz$1');
+      }
+      
       // Fix acoustic.uz/api/uploads/ -> a.acoustic.uz/uploads/
       fixedUrl = fixedUrl.replace(/https?:\/\/acoustic\.uz\/api\/uploads\//g, 'https://a.acoustic.uz/uploads/');
       fixedUrl = fixedUrl.replace(/https?:\/\/www\.acoustic\.uz\/api\/uploads\//g, 'https://a.acoustic.uz/uploads/');
       
-      // Fix localhost:3001 -> a.acoustic.uz
-      fixedUrl = fixedUrl.replace(/http:\/\/localhost:3001\/uploads\//g, 'https://a.acoustic.uz/uploads/');
-      fixedUrl = fixedUrl.replace(/http:\/\/localhost:3001\/api\/uploads\//g, 'https://a.acoustic.uz/uploads/');
-      fixedUrl = fixedUrl.replace(/http:\/\/127\.0\.0\.1:3001\/uploads\//g, 'https://a.acoustic.uz/uploads/');
-      fixedUrl = fixedUrl.replace(/http:\/\/127\.0\.0\.1:3001\/api\/uploads\//g, 'https://a.acoustic.uz/uploads/');
+      // Fix localhost:3001 -> a.acoustic.uz (always in production or server-side)
+      // Always convert localhost URLs during server-side rendering to prevent hydration mismatch
+      const isServerSide = typeof window === 'undefined';
+      const isProduction = process.env.NODE_ENV === 'production';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+      if (isServerSide || isProduction || apiUrl.includes('a.acoustic.uz') || apiUrl.includes('acoustic.uz')) {
+        fixedUrl = fixedUrl.replace(/http:\/\/localhost:3001\//g, 'https://a.acoustic.uz/');
+        fixedUrl = fixedUrl.replace(/http:\/\/localhost:3001\/uploads\//g, 'https://a.acoustic.uz/uploads/');
+        fixedUrl = fixedUrl.replace(/http:\/\/localhost:3001\/api\/uploads\//g, 'https://a.acoustic.uz/uploads/');
+        fixedUrl = fixedUrl.replace(/http:\/\/127\.0\.0\.1:3001\//g, 'https://a.acoustic.uz/');
+        fixedUrl = fixedUrl.replace(/http:\/\/127\.0\.0\.1:3001\/uploads\//g, 'https://a.acoustic.uz/uploads/');
+        fixedUrl = fixedUrl.replace(/http:\/\/127\.0\.0\.1:3001\/api\/uploads\//g, 'https://a.acoustic.uz/uploads/');
+      }
       
       // Fix api.acoustic.uz -> a.acoustic.uz (old API domain)
       fixedUrl = fixedUrl.replace(/https?:\/\/api\.acoustic\.uz\//g, 'https://a.acoustic.uz/');
@@ -107,21 +140,35 @@ export function normalizeImageUrl(url: string | null | undefined): string {
   }
   
   // If relative URL starting with /uploads/, make it absolute
+  // Always use production URL during server-side rendering to prevent hydration mismatch
   if (url.startsWith('/uploads/')) {
-    // In Next.js, NEXT_PUBLIC_* vars are inlined at build time
-    // If not set during build, fallback to production URL
-    const apiBase = process.env.NEXT_PUBLIC_API_URL || 'https://a.acoustic.uz/api';
+    // Determine base URL based on environment
+    let baseUrl: string;
     
-    // Properly extract base URL by removing /api from the end
-    let baseUrl = apiBase;
-    if (baseUrl.endsWith('/api')) {
-      baseUrl = baseUrl.slice(0, -4); // Remove '/api'
-    } else if (baseUrl.endsWith('/api/')) {
-      baseUrl = baseUrl.slice(0, -5); // Remove '/api/'
-    }
-    // Ensure baseUrl doesn't end with /
-    if (baseUrl.endsWith('/')) {
-      baseUrl = baseUrl.slice(0, -1);
+    const isServerSide = typeof window === 'undefined';
+    const isProduction = process.env.NODE_ENV === 'production';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+    
+    // Check if we're in browser and on localhost (client-side)
+    if (!isServerSide) {
+      const isLocalhost = window.location.hostname === 'localhost' || 
+                         window.location.hostname === '127.0.0.1' ||
+                         window.location.hostname.includes('localhost');
+      if (isLocalhost && !isProduction && !apiUrl.includes('a.acoustic.uz')) {
+        baseUrl = 'http://localhost:3001';
+      } else {
+        baseUrl = 'https://a.acoustic.uz';
+      }
+    } else {
+      // Server-side: always use production URL for images to avoid hydration mismatch
+      // This ensures server and client render the same URLs
+      // Always use production URL in production or if API URL points to production
+      if (isProduction || apiUrl.includes('a.acoustic.uz') || apiUrl.includes('acoustic.uz')) {
+        baseUrl = 'https://a.acoustic.uz';
+      } else {
+        // Even in development, use production URL during SSR to prevent hydration mismatch
+        baseUrl = 'https://a.acoustic.uz';
+      }
     }
     
     // Don't encode filename unless necessary (has spaces or special chars)

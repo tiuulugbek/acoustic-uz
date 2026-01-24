@@ -9,7 +9,9 @@ import type { CatalogResponse, PostResponse, BrandResponse, SettingsResponse } f
 import { detectLocale } from '@/lib/locale-server';
 import Sidebar from '@/components/sidebar';
 import MobileFilterDrawer from '@/components/mobile-filter-drawer';
+import CatalogFilters from '@/components/catalog-filters';
 import { normalizeImageUrl } from '@/lib/image-utils';
+import { generateAudienceOptions, generateFormFactorOptions, generateHearingLossOptions, generatePowerLevelOptions } from '@/lib/filter-utils';
 
 // ISR: Revalidate every 30 minutes
 export const revalidate = 1800;
@@ -64,6 +66,51 @@ export async function generateMetadata(): Promise<Metadata> {
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 // Redirect old query-based URLs to path-based
+
+// Calculate facet counts from products
+function calculateFacetCounts(products: any[]) {
+  const brandCounts: Record<string, number> = {};
+  const audienceCounts: Record<string, number> = {};
+  const formCounts: Record<string, number> = {};
+  const powerCounts: Record<string, number> = {};
+  const lossCounts: Record<string, number> = {};
+
+  products.forEach((product: any) => {
+    if (product.brand) {
+      brandCounts[product.brand.slug] = (brandCounts[product.brand.slug] || 0) + 1;
+    }
+    product.audience?.forEach((audience: string) => {
+      audienceCounts[audience] = (audienceCounts[audience] || 0) + 1;
+    });
+    product.formFactors?.forEach((form: string) => {
+      formCounts[form] = (formCounts[form] || 0) + 1;
+    });
+    if (product.powerLevel) {
+      powerCounts[product.powerLevel] = (powerCounts[product.powerLevel] || 0) + 1;
+    }
+    product.hearingLossLevels?.forEach((loss: string) => {
+      lossCounts[loss] = (lossCounts[loss] || 0) + 1;
+    });
+  });
+
+  const availableAudience = Object.keys(audienceCounts).filter(key => audienceCounts[key] > 0);
+  const availableForms = Object.keys(formCounts).filter(key => formCounts[key] > 0);
+  const availablePower = Object.keys(powerCounts).filter(key => powerCounts[key] > 0);
+  const availableLoss = Object.keys(lossCounts).filter(key => lossCounts[key] > 0);
+
+  return { 
+    brandCounts, 
+    audienceCounts, 
+    formCounts, 
+    powerCounts, 
+    lossCounts,
+    availableAudience,
+    availableForms,
+    availablePower,
+    availableLoss,
+  };
+}
+
 export default async function CatalogPage({
   searchParams,
 }: {
@@ -72,6 +119,7 @@ export default async function CatalogPage({
     productType?: string;
     filter?: string;
     brandId?: string;
+    brand?: string; // Brand slug for URL
     sort?: string;
     audience?: string;
     formFactor?: string;
@@ -97,11 +145,25 @@ export default async function CatalogPage({
     const pageSize = searchParams.productType === 'interacoustics' ? 6 : 12;
     const offset = (page - 1) * pageSize;
     
-    const [productsResponse, categoriesData, postsData, brandsData, settingsData] = await Promise.all([
+    // Fetch brands first to resolve brand slug to brandId
+    const [brandsData] = await Promise.all([
+      getBrands(locale),
+    ]);
+    
+    // Resolve brand slug to brandId if brand parameter is provided
+    let resolvedBrandId = searchParams.brandId;
+    if (searchParams.brand && !searchParams.brandId && brandsData) {
+      const brandBySlug = brandsData.find(b => b.slug === searchParams.brand || b.slug?.toLowerCase() === searchParams.brand?.toLowerCase());
+      if (brandBySlug) {
+        resolvedBrandId = brandBySlug.id;
+      }
+    }
+    
+    const [productsResponse, categoriesData, postsData, settingsData] = await Promise.all([
       getProducts({
       status: 'published',
       productType: searchParams.productType,
-        brandId: searchParams.brandId,
+        brandId: resolvedBrandId,
         audience: searchParams.audience,
         formFactor: searchParams.formFactor,
         signalProcessing: searchParams.signalProcessing,
@@ -129,6 +191,24 @@ export default async function CatalogPage({
       );
     }
     
+
+    // Calculate facet counts from filtered products for dynamic filters
+    const { 
+      audienceCounts, 
+      formCounts, 
+      powerCounts, 
+      lossCounts,
+      availableAudience,
+      availableForms,
+      availablePower,
+      availableLoss,
+    } = calculateFacetCounts(filteredProducts);
+    
+    // Generate dynamic filter options from available product data
+    const audienceOptions = generateAudienceOptions(availableAudience, locale);
+    const formFactorOptions = generateFormFactorOptions(availableForms, locale);
+    const powerLevelOptions = generatePowerLevelOptions(availablePower, locale);
+    const hearingLossOptions = generateHearingLossOptions(availableLoss, locale);
     // Filter by "wireless" if filter=wireless (legacy support)
     if (searchParams.filter === 'wireless') {
       filteredProducts = filteredProducts.filter((p) => 
@@ -231,378 +311,45 @@ export default async function CatalogPage({
           <div className="mx-auto max-w-6xl px-4 md:px-6">
             <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
               {/* Sidebar - Hidden on mobile, shown on desktop */}
-              <aside className="hidden lg:block space-y-6">
-                {/* Filter Panel - Hide for interacoustics */}
-                {searchParams.productType !== 'interacoustics' && (
-                  <div className="rounded-lg border border-border/60 bg-white p-4">
-                    <h3 className="mb-4 text-base font-semibold text-brand-primary">
-                      {locale === 'ru' ? 'Фильтр по параметрам' : 'Parametrlar bo\'yicha filter'}
-                    </h3>
-                    
-                    {/* Производитель (Manufacturer) - Hide for interacoustics */}
+              <aside className="hidden lg:block">
+                <div className="sticky top-24 space-y-6">
+                  {/* Filter Panel */}
                   {searchParams.productType !== 'interacoustics' && (
-                    <div className="mb-6">
-                      <h4 className="mb-3 text-sm font-semibold text-brand-primary">
-                        {locale === 'ru' ? 'Производитель' : 'Ishlab chiqaruvchi'}
-                      </h4>
-                      <div className="space-y-2">
-                        {brandTabs.map((brand) => {
-                          const isChecked = searchParams.brandId === brand.id;
-                          const params = new URLSearchParams();
-                          if (searchParams.productType) params.set('productType', searchParams.productType);
-                          if (searchParams.sort) params.set('sort', searchParams.sort);
-                          if (!isChecked) params.set('brandId', brand.id);
-                          // Preserve other filters
-                          if (searchParams.audience) params.set('audience', searchParams.audience);
-                          if (searchParams.formFactor) params.set('formFactor', searchParams.formFactor);
-                          if (searchParams.signalProcessing) params.set('signalProcessing', searchParams.signalProcessing);
-                          if (searchParams.powerLevel) params.set('powerLevel', searchParams.powerLevel);
-                          if (searchParams.hearingLossLevel) params.set('hearingLossLevel', searchParams.hearingLossLevel);
-                          if (searchParams.smartphoneCompatibility) params.set('smartphoneCompatibility', searchParams.smartphoneCompatibility);
-                          
-                          return (
-                            <Link
-                              key={brand.id}
-                              href={`/catalog?${params.toString()}`}
-                              className="flex items-center gap-2 hover:opacity-80"
-                            >
-                              <div className={`h-4 w-4 rounded border-2 flex items-center justify-center ${
-                                isChecked 
-                                  ? 'border-brand-primary bg-brand-primary' 
-                                  : 'border-border/60 bg-white'
-                              }`}>
-                                {isChecked && (
-                                  <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                  </svg>
-                                )}
-                              </div>
-                              <span className="text-sm text-foreground">{brand.name}</span>
-                            </Link>
-                          );
-                        })}
-                      </div>
+                    <div>
+                      <CatalogFilters
+                        categorySlug={undefined}
+                        productType={searchParams.productType}
+                        locale={locale}
+                        brands={brandTabs.map(b => ({ id: b.id, name: b.name, slug: b.slug || b.id, count: undefined }))}
+                        selectedBrands={searchParams.brand ? [searchParams.brand] : searchParams.brandId ? (() => {
+                          // Convert brandId to brand slug for CatalogFilters
+                          const brandIds = searchParams.brandId.split(',').filter(Boolean);
+                          return brandIds.map(id => {
+                            const brand = brandsData?.find(br => br.id === id);
+                            return brand?.slug || id;
+                          });
+                        })() : []}
+                        selectedAudience={searchParams.audience ? searchParams.audience.split(',').filter(Boolean) : []}
+                        selectedForms={searchParams.formFactor ? searchParams.formFactor.split(',').filter(Boolean) : []}
+                        selectedPower={searchParams.powerLevel ? searchParams.powerLevel.split(',').filter(Boolean) : []}
+                        selectedLoss={searchParams.hearingLossLevel ? searchParams.hearingLossLevel.split(',').filter(Boolean) : []}
+                        audienceCounts={audienceCounts}
+                        formCounts={formCounts}
+                        powerCounts={powerCounts}
+                        lossCounts={lossCounts}
+                        audienceOptions={audienceOptions}
+                        formFactorOptions={formFactorOptions}
+                        powerLevelOptions={powerLevelOptions}
+                        hearingLossOptions={hearingLossOptions}
+                        searchParams={searchParams}
+                      />
                     </div>
                   )}
 
-
-                  {/* Тип корпуса (Body type) - Hide for interacoustics */}
-                  {searchParams.productType !== 'interacoustics' && (
-                    <div className="mb-6">
-                    <h4 className="mb-3 text-sm font-semibold text-brand-primary">
-                      {locale === 'ru' ? 'Тип корпуса' : 'Korpus turi'}
-                    </h4>
-                    <div className="space-y-2">
-                      {[
-                        { value: 'BTE', label_ru: 'Заушные (BTE)', label_uz: 'Quloq orqasidagi (BTE)' },
-                        { value: 'miniRITE', label_ru: 'Минизаушные (miniRITE/miniBTE)', label_uz: 'Mini quloq orqasidagi (miniRITE/miniBTE)' },
-                        { value: 'ITC', label_ru: 'Внутриушные (ITC/ITE)', label_uz: 'Quloq ichidagi (ITC/ITE)' },
-                        { value: 'CIC', label_ru: 'Внутриканальные (CIC/IIC)', label_uz: 'Kanal ichidagi (CIC/IIC)' },
-                      ].map((option) => {
-                        const isChecked = searchParams.formFactor === option.value;
-                        const params = new URLSearchParams();
-                        if (searchParams.productType) params.set('productType', searchParams.productType);
-                        if (searchParams.sort) params.set('sort', searchParams.sort);
-                        if (searchParams.brandId) params.set('brandId', searchParams.brandId);
-                        if (searchParams.audience) params.set('audience', searchParams.audience);
-                        if (!isChecked) params.set('formFactor', option.value);
-                        // Preserve other filters
-                        if (searchParams.signalProcessing) params.set('signalProcessing', searchParams.signalProcessing);
-                        if (searchParams.powerLevel) params.set('powerLevel', searchParams.powerLevel);
-                        if (searchParams.hearingLossLevel) params.set('hearingLossLevel', searchParams.hearingLossLevel);
-                        if (searchParams.smartphoneCompatibility) params.set('smartphoneCompatibility', searchParams.smartphoneCompatibility);
-                        
-                        return (
-                          <Link
-                            key={option.value}
-                            href={`/catalog?${params.toString()}`}
-                            className="flex items-center gap-2 hover:opacity-80"
-                          >
-                            <div className={`h-4 w-4 rounded border-2 flex items-center justify-center ${
-                              isChecked 
-                                ? 'border-brand-primary bg-brand-primary' 
-                                : 'border-border/60 bg-white'
-                            }`}>
-                              {isChecked && (
-                                <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                              )}
-                            </div>
-                            <span className="text-sm text-foreground">
-                              {locale === 'ru' ? option.label_ru : option.label_uz}
-                            </span>
-                          </Link>
-                        );
-                      })}
-                    </div>
-                    </div>
-                  )}
-
-                  {/* Тип обработки сигнала (Signal processing) - Hide for interacoustics */}
-                  {searchParams.productType !== 'interacoustics' && (
-                    <div className="mb-6">
-                    <h4 className="mb-3 text-sm font-semibold text-brand-primary">
-                      {locale === 'ru' ? 'Тип обработки сигнала' : 'Signal qayta ishlash turi'}
-                    </h4>
-                    <div className="space-y-2">
-                      {[
-                        { value: 'digital', label_ru: 'Цифровой', label_uz: 'Raqamli' },
-                        { value: 'digital-trimmer', label_ru: 'Цифровой триммерный', label_uz: 'Raqamli trimmer' },
-                      ].map((option) => {
-                        const isChecked = searchParams.signalProcessing === option.value;
-                        const params = new URLSearchParams();
-                        if (searchParams.productType) params.set('productType', searchParams.productType);
-                        if (searchParams.sort) params.set('sort', searchParams.sort);
-                        if (searchParams.brandId) params.set('brandId', searchParams.brandId);
-                        if (searchParams.audience) params.set('audience', searchParams.audience);
-                        if (searchParams.formFactor) params.set('formFactor', searchParams.formFactor);
-                        if (!isChecked) params.set('signalProcessing', option.value);
-                        // Preserve other filters
-                        if (searchParams.powerLevel) params.set('powerLevel', searchParams.powerLevel);
-                        if (searchParams.hearingLossLevel) params.set('hearingLossLevel', searchParams.hearingLossLevel);
-                        if (searchParams.smartphoneCompatibility) params.set('smartphoneCompatibility', searchParams.smartphoneCompatibility);
-                        
-                        return (
-                          <Link
-                            key={option.value}
-                            href={`/catalog?${params.toString()}`}
-                            className="flex items-center gap-2 hover:opacity-80"
-                          >
-                            <div className={`h-4 w-4 rounded border-2 flex items-center justify-center ${
-                              isChecked 
-                                ? 'border-brand-primary bg-brand-primary' 
-                                : 'border-border/60 bg-white'
-                            }`}>
-                              {isChecked && (
-                                <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                              )}
-                            </div>
-                            <span className="text-sm text-foreground">
-                              {locale === 'ru' ? option.label_ru : option.label_uz}
-                            </span>
-                          </Link>
-                        );
-                      })}
-                    </div>
-                    </div>
-                  )}
-
-                  {/* Мощность (Power) - Hide for interacoustics */}
-                  {searchParams.productType !== 'interacoustics' && (
-                    <div className="mb-6">
-                    <h4 className="mb-3 text-sm font-semibold text-brand-primary">
-                      {locale === 'ru' ? 'Мощность' : 'Quvvat'}
-                    </h4>
-                    <div className="space-y-2">
-                      {[
-                        { value: 'powerful', label_ru: 'Мощные', label_uz: 'Kuchli' },
-                        { value: 'super-powerful', label_ru: 'Сверхмощные', label_uz: 'O\'ta kuchli' },
-                        { value: 'medium', label_ru: 'Средней мощности', label_uz: 'O\'rtacha quvvat' },
-                      ].map((option) => {
-                        const isChecked = searchParams.powerLevel === option.value;
-                        const params = new URLSearchParams();
-                        if (searchParams.productType) params.set('productType', searchParams.productType);
-                        if (searchParams.sort) params.set('sort', searchParams.sort);
-                        if (searchParams.brandId) params.set('brandId', searchParams.brandId);
-                        if (searchParams.audience) params.set('audience', searchParams.audience);
-                        if (searchParams.formFactor) params.set('formFactor', searchParams.formFactor);
-                        if (searchParams.signalProcessing) params.set('signalProcessing', searchParams.signalProcessing);
-                        if (!isChecked) params.set('powerLevel', option.value);
-                        // Preserve other filters
-                        if (searchParams.hearingLossLevel) params.set('hearingLossLevel', searchParams.hearingLossLevel);
-                        if (searchParams.smartphoneCompatibility) params.set('smartphoneCompatibility', searchParams.smartphoneCompatibility);
-                        
-                        return (
-                          <Link
-                            key={option.value}
-                            href={`/catalog?${params.toString()}`}
-                            className="flex items-center gap-2 hover:opacity-80"
-                          >
-                            <div className={`h-4 w-4 rounded border-2 flex items-center justify-center ${
-                              isChecked 
-                                ? 'border-brand-primary bg-brand-primary' 
-                                : 'border-border/60 bg-white'
-                            }`}>
-                              {isChecked && (
-                                <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                              )}
-                            </div>
-                            <span className="text-sm text-foreground">
-                              {locale === 'ru' ? option.label_ru : option.label_uz}
-                            </span>
-                          </Link>
-                        );
-                      })}
-                    </div>
-                    </div>
-                  )}
-
-                  {/* Степень снижения слуха (Hearing loss level) - Hide for interacoustics */}
-                  {searchParams.productType !== 'interacoustics' && (
-                    <div className="mb-6">
-                    <h4 className="mb-3 text-sm font-semibold text-brand-primary">
-                      {locale === 'ru' ? 'Степень снижения слуха' : 'Eshitish qobiliyatining pasayish darajasi'}
-                    </h4>
-                    <div className="space-y-2">
-                      {[
-                        { value: 'I', label_ru: 'I степень (Слабая)', label_uz: 'I daraja (Zaif)' },
-                        { value: 'II', label_ru: 'II степень (Умеренная)', label_uz: 'II daraja (O\'rtacha)' },
-                        { value: 'III', label_ru: 'III степень (Тяжелая)', label_uz: 'III daraja (Og\'ir)' },
-                        { value: 'IV', label_ru: 'IV степень (Глубокая)', label_uz: 'IV daraja (Chuqur)' },
-                      ].map((option) => {
-                        const isChecked = searchParams.hearingLossLevel === option.value;
-                        const params = new URLSearchParams();
-                        if (searchParams.productType) params.set('productType', searchParams.productType);
-                        if (searchParams.sort) params.set('sort', searchParams.sort);
-                        if (searchParams.brandId) params.set('brandId', searchParams.brandId);
-                        if (searchParams.audience) params.set('audience', searchParams.audience);
-                        if (searchParams.formFactor) params.set('formFactor', searchParams.formFactor);
-                        if (searchParams.signalProcessing) params.set('signalProcessing', searchParams.signalProcessing);
-                        if (searchParams.powerLevel) params.set('powerLevel', searchParams.powerLevel);
-                        if (!isChecked) params.set('hearingLossLevel', option.value);
-                        // Preserve other filters
-                        if (searchParams.smartphoneCompatibility) params.set('smartphoneCompatibility', searchParams.smartphoneCompatibility);
-                        
-                        return (
-                          <Link
-                            key={option.value}
-                            href={`/catalog?${params.toString()}`}
-                            className="flex items-center gap-2 hover:opacity-80"
-                          >
-                            <div className={`h-4 w-4 rounded border-2 flex items-center justify-center ${
-                              isChecked 
-                                ? 'border-brand-primary bg-brand-primary' 
-                                : 'border-border/60 bg-white'
-                            }`}>
-                              {isChecked && (
-                                <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                              )}
-                            </div>
-                            <span className="text-sm text-foreground">
-                              {locale === 'ru' ? option.label_ru : option.label_uz}
-                            </span>
-                          </Link>
-                        );
-                      })}
-                    </div>
-                    </div>
-                  )}
-
-                  {/* Совместимость со смартфонами (Smartphone compatibility) - Hide for interacoustics */}
-                  {searchParams.productType !== 'interacoustics' && (
-                    <div className="mb-6">
-                    <h4 className="mb-3 text-sm font-semibold text-brand-primary">
-                      {locale === 'ru' ? 'Совместимость со смартфонами' : 'Smartfonlar bilan mos kelishi'}
-                    </h4>
-                    <div className="space-y-2">
-                      {[
-                        { value: 'iphone', label_ru: 'Полная совместимость с iPhone', label_uz: 'iPhone bilan to\'liq mos keladi' },
-                        { value: 'android', label_ru: 'Совместимость при помощи доп. устройств', label_uz: 'Qo\'shimcha qurilmalar yordamida mos keladi' },
-                      ].map((option) => {
-                        const isChecked = searchParams.smartphoneCompatibility === option.value;
-                        const params = new URLSearchParams();
-                        if (searchParams.productType) params.set('productType', searchParams.productType);
-                        if (searchParams.sort) params.set('sort', searchParams.sort);
-                        if (searchParams.brandId) params.set('brandId', searchParams.brandId);
-                        if (searchParams.audience) params.set('audience', searchParams.audience);
-                        if (searchParams.formFactor) params.set('formFactor', searchParams.formFactor);
-                        if (searchParams.signalProcessing) params.set('signalProcessing', searchParams.signalProcessing);
-                        if (searchParams.powerLevel) params.set('powerLevel', searchParams.powerLevel);
-                        if (searchParams.hearingLossLevel) params.set('hearingLossLevel', searchParams.hearingLossLevel);
-                        if (!isChecked) params.set('smartphoneCompatibility', option.value);
-                        
-                        return (
-                          <Link
-                            key={option.value}
-                            href={`/catalog?${params.toString()}`}
-                            className="flex items-center gap-2 hover:opacity-80"
-                          >
-                            <div className={`h-4 w-4 rounded border-2 flex items-center justify-center ${
-                              isChecked 
-                                ? 'border-brand-primary bg-brand-primary' 
-                                : 'border-border/60 bg-white'
-                            }`}>
-                              {isChecked && (
-                                <svg className="h-3 w-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                              )}
-                            </div>
-                            <span className="text-sm text-foreground">
-                              {locale === 'ru' ? option.label_ru : option.label_uz}
-                            </span>
-                          </Link>
-                        );
-                      })}
-                    </div>
-                    </div>
-                  )}
-                  </div>
-                )}
-
-                {/* Categories */}
-                <div className="space-y-3">
-                  <div className="space-y-2">
-                    <Link
-                      href="/catalog?productType=hearing-aids"
-                      className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/30 p-3 transition hover:border-brand-primary/50 hover:bg-white"
-                    >
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-white border border-border/40">
-                        <ArrowRight className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                      <span className="text-sm text-foreground">
-                        {locale === 'ru' ? 'Слуховые аппараты' : 'Eshitish moslamalari'}
-                      </span>
-                    </Link>
-                    <Link
-                      href="/catalog?categoryId=batteries"
-                      className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/30 p-3 transition hover:border-brand-primary/50 hover:bg-white"
-                    >
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-white border border-border/40">
-                        <div className="h-6 w-4 rounded-sm border-2 border-foreground/30"></div>
-                      </div>
-                      <span className="text-sm text-foreground">
-                        {locale === 'ru' ? 'Батарейки для слуховых аппаратов' : 'Eshitish apparatlari uchun batareyalar'}
-                      </span>
-                    </Link>
-                    <Link
-                      href="/catalog?categoryId=care"
-                      className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/30 p-3 transition hover:border-brand-primary/50 hover:bg-white"
-                    >
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-white border border-border/40">
-                        <div className="h-5 w-5 rounded border border-foreground/30"></div>
-                      </div>
-                      <span className="text-sm text-foreground">
-                        {locale === 'ru' ? 'Средства по уходу' : 'Parvarish vositalari'}
-                      </span>
-                    </Link>
-                    <Link
-                      href="/catalog?categoryId=accessories"
-                      className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/30 p-3 transition hover:border-brand-primary/50 hover:bg-white"
-                    >
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-white border border-border/40">
-                        <div className="h-6 w-4 rounded border border-foreground/30"></div>
-                      </div>
-                      <span className="text-sm text-foreground">
-                        {locale === 'ru' ? 'Беспроводные аксессуары' : 'Simsiz aksessuarlar'}
-                      </span>
-                    </Link>
-                  </div>
-                </div>
-
-                {/* Useful Articles */}
-                {postsData && postsData.length > 0 && (
-                  <div className="space-y-3">
-                    <h3 className="text-sm font-semibold text-foreground border-b border-border/60 pb-2">
-                      {locale === 'ru' ? 'Полезные статьи' : 'Foydali maqolalar'}
-                    </h3>
+                  {/* Useful Articles */}
+                  {postsData && postsData.length > 0 && (
+                    <div className="space-y-6 rounded-2xl border border-border/60 bg-white p-6 shadow-sm">
+                    <h2 className="text-lg font-semibold text-brand-accent">{locale === 'ru' ? 'Полезные статьи' : 'Foydali maqolalar'}</h2>
                     <div className="space-y-3">
                       {postsData.slice(0, 5).map((post) => {
                         const title = locale === 'ru' ? (post.title_ru || '') : (post.title_uz || '');
@@ -642,7 +389,8 @@ export default async function CatalogPage({
                       })}
                     </div>
                   </div>
-                )}
+                  )}
+                </div>
               </aside>
 
               {/* Main Content - Banner and Brand Filter First */}
@@ -669,7 +417,7 @@ export default async function CatalogPage({
                     <Link
                       href={`/catalog?productType=${searchParams.productType}`}
                       className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                        !searchParams.brandId
+                        !searchParams.brand && !searchParams.brandId
                           ? 'bg-brand-primary text-white'
                           : 'bg-muted/30 text-foreground hover:bg-muted/50'
                       }`}
@@ -679,7 +427,8 @@ export default async function CatalogPage({
                     {brandTabs.map((brand) => {
                       const params = new URLSearchParams();
                       if (searchParams.productType) params.set('productType', searchParams.productType);
-                      params.set('brandId', brand.id);
+                      // Use brand slug instead of brandId in URL
+                      params.set('brand', brand.slug || brand.id);
                       if (searchParams.sort) params.set('sort', searchParams.sort);
                       // Preserve filters
                       if (searchParams.audience) params.set('audience', searchParams.audience);
@@ -689,12 +438,15 @@ export default async function CatalogPage({
                       if (searchParams.hearingLossLevel) params.set('hearingLossLevel', searchParams.hearingLossLevel);
                       if (searchParams.smartphoneCompatibility) params.set('smartphoneCompatibility', searchParams.smartphoneCompatibility);
                       
+                      // Check if this brand is selected (by slug or id for backward compatibility)
+                      const isSelected = searchParams.brand === (brand.slug || brand.id) || searchParams.brandId === brand.id;
+                      
                       return (
                         <Link
                           key={brand.id}
                           href={`/catalog?${params.toString()}`}
                           className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-                            searchParams.brandId === brand.id
+                            isSelected
                               ? 'bg-brand-primary text-white'
                               : 'bg-muted/30 text-foreground hover:bg-muted/50'
                           }`}
@@ -710,7 +462,7 @@ export default async function CatalogPage({
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <span>{locale === 'ru' ? 'Сортировать по:' : 'Saralash:'}</span>
                   <Link
-                    href={`/catalog?productType=${searchParams.productType}&sort=price_asc${searchParams.brandId ? `&brandId=${searchParams.brandId}` : ''}`}
+                    href={`/catalog?productType=${searchParams.productType}&sort=price_asc${searchParams.brand ? `&brand=${searchParams.brand}` : searchParams.brandId ? `&brandId=${searchParams.brandId}` : ''}`}
                     className={`hover:text-brand-primary ${searchParams.sort === 'price_asc' ? 'text-brand-primary font-medium' : ''}`}
                   >
                     {locale === 'ru' ? 'цене' : 'narx'}
@@ -732,9 +484,14 @@ export default async function CatalogPage({
                           mainImage = normalizeImageUrl(product.brand.logo.url);
                         }
                         
-                        const priceFormatted = product.price 
+                        // Debug: Log price for troubleshooting
+                        console.log('[Catalog] Product price:', product.price, 'Type:', typeof product.price);
+                        
+                        const priceFormatted = product.price && product.price !== null && product.price !== undefined && product.price !== ''
                           ? `${new Intl.NumberFormat('uz-UZ').format(Number(product.price))} so'm`
                           : null;
+                        
+                        console.log('[Catalog] Formatted price:', priceFormatted);
                         const availability = product.availabilityStatus 
                           ? availabilityMap[product.availabilityStatus] 
                           : null;
@@ -769,20 +526,16 @@ export default async function CatalogPage({
                               <h3 className="text-sm sm:text-base font-semibold text-foreground line-clamp-2 group-hover:text-brand-primary" suppressHydrationWarning>
                                 {productName}
                               </h3>
-                              {priceFormatted && (
-                                <p className="text-base sm:text-lg font-semibold text-brand-primary" suppressHydrationWarning>
-                                  {priceFormatted}
-                                </p>
-                              )}
                               {availability && (
                                 <p className="text-xs sm:text-sm text-emerald-600 font-medium" suppressHydrationWarning>
                                   {locale === 'ru' ? availability.ru : availability.uz}
                                 </p>
                               )}
-                              <span className="inline-flex items-center gap-1 text-xs sm:text-sm font-medium text-brand-primary group-hover:gap-2 transition-all mt-auto" suppressHydrationWarning>
-                                {locale === 'ru' ? 'Подробнее' : 'Batafsil'}
-                                <ArrowRight size={12} className="sm:w-3.5 sm:h-3.5 transition-transform group-hover:translate-x-1" />
-                              </span>
+                              {priceFormatted && (
+                                <span className="inline-flex items-center text-xs sm:text-sm font-medium text-brand-primary mt-auto" suppressHydrationWarning>
+                                  <span className="font-bold">{locale === 'ru' ? 'Цена' : 'Narxi'}: </span>{priceFormatted}
+                                </span>
+                              )}
                             </div>
                           </Link>
                         );
@@ -794,7 +547,7 @@ export default async function CatalogPage({
                       <div className="flex items-center justify-center gap-2 pt-6">
                         {page > 1 && (
                           <Link
-                            href={`/catalog?productType=${searchParams.productType}&page=${page - 1}${searchParams.brandId ? `&brandId=${searchParams.brandId}` : ''}${searchParams.sort ? `&sort=${searchParams.sort}` : ''}${searchParams.audience ? `&audience=${searchParams.audience}` : ''}${searchParams.formFactor ? `&formFactor=${searchParams.formFactor}` : ''}${searchParams.signalProcessing ? `&signalProcessing=${searchParams.signalProcessing}` : ''}${searchParams.powerLevel ? `&powerLevel=${searchParams.powerLevel}` : ''}${searchParams.hearingLossLevel ? `&hearingLossLevel=${searchParams.hearingLossLevel}` : ''}${searchParams.smartphoneCompatibility ? `&smartphoneCompatibility=${searchParams.smartphoneCompatibility}` : ''}`}
+                            href={`/catalog?productType=${searchParams.productType}&page=${page - 1}${searchParams.brand ? `&brand=${searchParams.brand}` : searchParams.brandId ? `&brandId=${searchParams.brandId}` : ''}${searchParams.sort ? `&sort=${searchParams.sort}` : ''}${searchParams.audience ? `&audience=${searchParams.audience}` : ''}${searchParams.formFactor ? `&formFactor=${searchParams.formFactor}` : ''}${searchParams.signalProcessing ? `&signalProcessing=${searchParams.signalProcessing}` : ''}${searchParams.powerLevel ? `&powerLevel=${searchParams.powerLevel}` : ''}${searchParams.hearingLossLevel ? `&hearingLossLevel=${searchParams.hearingLossLevel}` : ''}${searchParams.smartphoneCompatibility ? `&smartphoneCompatibility=${searchParams.smartphoneCompatibility}` : ''}`}
                             className="px-4 py-2 rounded-lg border border-border/60 bg-white text-sm font-medium text-foreground transition hover:border-brand-primary/50 hover:bg-muted/20"
                           >
                             {locale === 'ru' ? 'Назад' : 'Orqaga'}
@@ -816,7 +569,8 @@ export default async function CatalogPage({
                             const isActive = pageNum === page;
                             const pageParams = new URLSearchParams();
                             if (searchParams.productType) pageParams.set('productType', searchParams.productType);
-                            if (searchParams.brandId) pageParams.set('brandId', searchParams.brandId);
+                            if (searchParams.brand) pageParams.set('brand', searchParams.brand);
+                            else if (searchParams.brandId) pageParams.set('brandId', searchParams.brandId);
                             if (searchParams.sort) pageParams.set('sort', searchParams.sort);
                             if (searchParams.audience) pageParams.set('audience', searchParams.audience);
                             if (searchParams.formFactor) pageParams.set('formFactor', searchParams.formFactor);
@@ -843,7 +597,7 @@ export default async function CatalogPage({
                         </div>
                         {page < totalPages && (
                           <Link
-                            href={`/catalog?productType=${searchParams.productType}&page=${page + 1}${searchParams.brandId ? `&brandId=${searchParams.brandId}` : ''}${searchParams.sort ? `&sort=${searchParams.sort}` : ''}${searchParams.audience ? `&audience=${searchParams.audience}` : ''}${searchParams.formFactor ? `&formFactor=${searchParams.formFactor}` : ''}${searchParams.signalProcessing ? `&signalProcessing=${searchParams.signalProcessing}` : ''}${searchParams.powerLevel ? `&powerLevel=${searchParams.powerLevel}` : ''}${searchParams.hearingLossLevel ? `&hearingLossLevel=${searchParams.hearingLossLevel}` : ''}${searchParams.smartphoneCompatibility ? `&smartphoneCompatibility=${searchParams.smartphoneCompatibility}` : ''}`}
+                            href={`/catalog?productType=${searchParams.productType}&page=${page + 1}${searchParams.brand ? `&brand=${searchParams.brand}` : searchParams.brandId ? `&brandId=${searchParams.brandId}` : ''}${searchParams.sort ? `&sort=${searchParams.sort}` : ''}${searchParams.audience ? `&audience=${searchParams.audience}` : ''}${searchParams.formFactor ? `&formFactor=${searchParams.formFactor}` : ''}${searchParams.signalProcessing ? `&signalProcessing=${searchParams.signalProcessing}` : ''}${searchParams.powerLevel ? `&powerLevel=${searchParams.powerLevel}` : ''}${searchParams.hearingLossLevel ? `&hearingLossLevel=${searchParams.hearingLossLevel}` : ''}${searchParams.smartphoneCompatibility ? `&smartphoneCompatibility=${searchParams.smartphoneCompatibility}` : ''}`}
                             className="px-4 py-2 rounded-lg border border-border/60 bg-white text-sm font-medium text-foreground transition hover:border-brand-primary/50 hover:bg-muted/20"
                           >
                             {locale === 'ru' ? 'Вперед' : 'Keyingi'}
@@ -987,22 +741,8 @@ export default async function CatalogPage({
     const title = locale === 'ru' ? (catalog.name_ru || '') : (catalog.name_uz || '');
     const description = locale === 'ru' ? (catalog.description_ru || '') : (catalog.description_uz || '');
     
-    // Build image URL
-    let image = catalog.image?.url || '';
-    if (image && image.startsWith('/') && !image.startsWith('//')) {
-      // Properly extract base URL by removing /api from the end
-      let baseUrl = API_BASE_URL;
-      if (baseUrl.endsWith('/api')) {
-        baseUrl = baseUrl.slice(0, -4); // Remove '/api'
-      } else if (baseUrl.endsWith('/api/')) {
-        baseUrl = baseUrl.slice(0, -5); // Remove '/api/'
-      }
-      // Ensure baseUrl doesn't end with /
-      if (baseUrl.endsWith('/')) {
-        baseUrl = baseUrl.slice(0, -1);
-      }
-      image = `${baseUrl}${image}`;
-    }
+    // Build image URL - use normalizeImageUrl to ensure production URL
+    const image = catalog.image?.url ? normalizeImageUrl(catalog.image.url) : '';
     
     // Use catalog slug for link
     const link = catalog.slug ? `/catalog/${catalog.slug}` : '/catalog';

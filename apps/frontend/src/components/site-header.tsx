@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Menu,
@@ -18,14 +18,195 @@ import {
   Info,
   MapPin,
 } from 'lucide-react';
-import { getCatalogs, getMenu, getSettings, type MenuItemResponse, type CatalogResponse, type SettingsResponse } from '@/lib/api';
-// Removed DEFAULT_MENUS fallback - frontend fully depends on backend
+import { getCatalogs, getSettings, search, type MenuItemResponse, type CatalogResponse, type SettingsResponse, type SearchResponse } from '@/lib/api';
+import { getHeaderMenuFromJSON, getCatalogMenuFromJSON, hasMenuData, type MenuItem } from '@/lib/menu-data';
 import LanguageSwitcher, { LanguageSwitcherMobile } from '@/components/language-switcher';
 import { getBilingualText, DEFAULT_LOCALE, type Locale } from '@/lib/locale';
 import { getLocaleFromCookie } from '@/lib/locale-client';
 import { normalizeImageUrl } from '@/lib/image-utils';
 
 // Removed CatalogMenuEntry - not currently used
+
+// Search Autocomplete Component
+function SearchAutocomplete({ locale, isMobile = false }: { locale: Locale; isMobile?: boolean }) {
+  const [query, setQuery] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const { data: searchResults, isLoading } = useQuery<SearchResponse>({
+    queryKey: ['search-autocomplete', query],
+    queryFn: () => search(query, locale),
+    enabled: query.length >= 3, // Start searching after 3 characters
+    staleTime: 30000, // Cache for 30 seconds
+  });
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Show dropdown when query is 3+ characters and has results
+  useEffect(() => {
+    setIsOpen(query.length >= 3 && !!searchResults && !isLoading);
+  }, [query, searchResults, isLoading]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setQuery(value);
+    setSelectedIndex(-1);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (query.trim()) {
+      window.location.href = `/search?q=${encodeURIComponent(query.trim())}`;
+    }
+  };
+
+  const handleSelect = (selectedQuery: string) => {
+    setQuery(selectedQuery);
+    setIsOpen(false);
+    window.location.href = `/search?q=${encodeURIComponent(selectedQuery.trim())}`;
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!isOpen || !searchResults) return;
+
+    const results = [
+      ...(searchResults.products || []).slice(0, 5),
+      ...(searchResults.posts || []).slice(0, 3),
+    ];
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev < results.length - 1 ? prev + 1 : prev));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1));
+    } else if (e.key === 'Enter' && selectedIndex >= 0) {
+      e.preventDefault();
+      const selected = results[selectedIndex];
+      if (selected) {
+        const selectedQuery = 'name' in selected ? selected.name : selected.title_uz || selected.title_ru || '';
+        handleSelect(selectedQuery);
+      }
+    } else if (e.key === 'Escape') {
+      setIsOpen(false);
+    }
+  };
+
+  const results = searchResults
+    ? [
+        ...(searchResults.products || []).slice(0, 5),
+        ...(searchResults.posts || []).slice(0, 3),
+      ]
+    : [];
+
+  return (
+    <div className={isMobile ? "w-full" : "hidden flex-1 md:block"}>
+      <div ref={searchRef} className={`relative ${isMobile ? 'w-full' : 'max-w-md mx-auto'}`}>
+        <form onSubmit={handleSubmit} className="relative">
+          <input
+            ref={inputRef}
+            type="search"
+            value={query}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            onFocus={() => query.length >= 3 && setIsOpen(true)}
+            placeholder={locale === 'ru' ? 'Поиск' : 'Qidiruv'}
+            className="w-full rounded-full border border-border/60 bg-white px-10 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/40"
+            suppressHydrationWarning
+          />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        </form>
+
+        {/* Dropdown Results */}
+        {isOpen && results.length > 0 && (
+          <div className="absolute z-50 mt-2 w-full rounded-lg border border-border/60 bg-white shadow-lg max-h-96 overflow-y-auto">
+            <div className="p-2">
+              {searchResults.products && searchResults.products.length > 0 && (
+                <>
+                  <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase">
+                    {locale === 'ru' ? 'Товары' : 'Mahsulotlar'}
+                  </div>
+                  {searchResults.products.slice(0, 5).map((product, index) => {
+                    const globalIndex = index;
+                    const isSelected = selectedIndex === globalIndex;
+                    return (
+                      <Link
+                        key={product.id}
+                        href={`/products/${product.slug}`}
+                        className={`block rounded-md px-3 py-2 text-sm transition hover:bg-muted/50 ${
+                          isSelected ? 'bg-muted/50' : ''
+                        }`}
+                        onClick={() => handleSelect(product.name_uz || product.name_ru || '')}
+                      >
+                        <div className="font-medium text-foreground">
+                          {locale === 'ru' ? product.name_ru : product.name_uz}
+                        </div>
+                        {product.description_uz || product.description_ru ? (
+                          <div className="mt-1 text-xs text-muted-foreground line-clamp-1">
+                            {locale === 'ru' ? product.description_ru : product.description_uz}
+                          </div>
+                        ) : null}
+                      </Link>
+                    );
+                  })}
+                </>
+              )}
+              {searchResults.posts && searchResults.posts.length > 0 && (
+                <>
+                  <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase mt-2">
+                    {locale === 'ru' ? 'Статьи' : 'Maqolalar'}
+                  </div>
+                  {searchResults.posts.slice(0, 3).map((post, index) => {
+                    const globalIndex = (searchResults.products?.length || 0) + index;
+                    const isSelected = selectedIndex === globalIndex;
+                    return (
+                      <Link
+                        key={post.id}
+                        href={`/posts/${post.slug}`}
+                        className={`block rounded-md px-3 py-2 text-sm transition hover:bg-muted/50 ${
+                          isSelected ? 'bg-muted/50' : ''
+                        }`}
+                        onClick={() => handleSelect(post.title_uz || post.title_ru || '')}
+                      >
+                        <div className="font-medium text-foreground">
+                          {locale === 'ru' ? post.title_ru : post.title_uz}
+                        </div>
+                        {post.excerpt_uz || post.excerpt_ru ? (
+                          <div className="mt-1 text-xs text-muted-foreground line-clamp-1">
+                            {locale === 'ru' ? post.excerpt_ru : post.excerpt_uz}
+                          </div>
+                        ) : null}
+                      </Link>
+                    );
+                  })}
+                </>
+              )}
+            </div>
+          </div>
+        )}
+        {isOpen && query.length >= 3 && isLoading && (
+          <div className="absolute z-50 mt-2 w-full rounded-lg border border-border/60 bg-white shadow-lg p-4">
+            <div className="text-sm text-muted-foreground text-center">
+              {locale === 'ru' ? 'Поиск...' : 'Qidirilmoqda...'}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 type NavItem =
   | {
@@ -89,7 +270,6 @@ export default function SiteHeader({ initialSettings = null, initialLocale }: Si
   const [displayLocale, setDisplayLocale] = useState<Locale>(initialLocale || DEFAULT_LOCALE);
   const [mounted, setMounted] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [menuRefreshKey, setMenuRefreshKey] = useState(0);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [mobileOpenDropdown, setMobileOpenDropdown] = useState<string | null>(null);
   
@@ -133,24 +313,19 @@ export default function SiteHeader({ initialSettings = null, initialLocale }: Si
         // Only update if we've seen the same new locale in multiple consecutive checks
         // OR if we're already in the middle of a locale change (to complete it)
         if (consecutiveChecksRef.current.count >= LOCALE_STABLE_CHECKS || localeChangeInProgress) {
-          console.log('[SiteHeader] 🔄 Locale changed from', displayLocale, 'to', domLocale, '- updating menu');
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[SiteHeader] 🔄 Locale changed from', displayLocale, 'to', domLocale, '- updating menu');
+          }
           setLocaleChangeInProgress(true);
           setDisplayLocale(domLocale);
-          // Force menu refresh with new locale
-          setMenuRefreshKey(prev => prev + 1);
-          // Remove ALL menu and catalog queries (including old locale caches)
-          queryClient.removeQueries({ queryKey: ['menu'] });
-          queryClient.removeQueries({ queryKey: ['catalogs'] });
-          // Small delay to ensure state update completes before refetch
-          setTimeout(() => {
-            queryClient.refetchQueries({ queryKey: ['menu', 'header', domLocale] });
-            queryClient.refetchQueries({ queryKey: ['catalogs', domLocale] });
-            setLocaleChangeInProgress(false);
-          }, 50);
+          // Menu is from JSON, so no need to refetch - it will update automatically
+          // Only refetch catalogs if needed
+          queryClient.refetchQueries({ queryKey: ['catalogs', domLocale] });
+          setLocaleChangeInProgress(false);
           // Reset counter after successful change
           consecutiveChecksRef.current.locale = null;
           consecutiveChecksRef.current.count = 0;
-        } else {
+        } else if (process.env.NODE_ENV === 'development') {
           console.log('[SiteHeader] 🔍 Locale change detected but waiting for confirmation:', domLocale, `(${consecutiveChecksRef.current.count}/${LOCALE_STABLE_CHECKS})`);
         }
       } else {
@@ -214,13 +389,17 @@ export default function SiteHeader({ initialSettings = null, initialLocale }: Si
   });
 
   const { data: catalogsData, isLoading: isLoadingCatalogs } = useQuery<CatalogResponse[]>({
-    queryKey: ['catalogs', displayLocale, menuRefreshKey],
+    queryKey: ['catalogs', displayLocale],
     queryFn: async () => {
-      const timestamp = new Date().toISOString();
       const currentLocale = displayLocale || getLocaleFromDOM(); // Ensure we always have a locale
-      console.log(`[SiteHeader] 🔄 [${timestamp}] Fetching catalogs with locale: ${currentLocale} (displayLocale: ${displayLocale})`);
+      if (process.env.NODE_ENV === 'development') {
+        const timestamp = new Date().toISOString();
+        console.log(`[SiteHeader] 🔄 [${timestamp}] Fetching catalogs with locale: ${currentLocale}`);
+      }
       const result = await getCatalogs(currentLocale);
-      console.log(`[SiteHeader] ✅ [${timestamp}] Received catalogs:`, result?.length || 0);
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`[SiteHeader] ✅ Received catalogs:`, result?.length || 0);
+      }
       return result;
     },
     enabled: !!displayLocale, // Don't run query until locale is set
@@ -234,14 +413,21 @@ export default function SiteHeader({ initialSettings = null, initialLocale }: Si
     placeholderData: (previousData) => previousData, // Keep previous data while loading to prevent menu from disappearing
   });
 
-  // Use useState + useEffect instead of useMemo to prevent hydration mismatch
-  const [catalogMenuItems, setCatalogMenuItems] = useState<Array<{ href: string; label: string }>>([]);
-  
-  useEffect(() => {
-    // Only update catalog menu items after component is mounted to prevent hydration mismatch
-    if (!mounted) {
-      setCatalogMenuItems([]);
-      return;
+  // Optimized: Get catalog menu items from JSON (faster and more reliable)
+  // Don't wait for mounted - JSON is available immediately
+  const catalogMenuItems = useMemo<Array<{ href: string; label: string }>>(() => {
+    // Try to get from JSON first (faster and more reliable)
+    const jsonItems = getCatalogMenuFromJSON(displayLocale);
+    if (jsonItems.length > 0) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[SiteHeader] Using catalog menu from JSON:', jsonItems.length, 'items');
+      }
+      return jsonItems;
+    }
+    
+    // Fallback to hardcoded items if JSON is not available
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[SiteHeader] Using fallback catalog menu items');
     }
     
     const mainSections = [
@@ -282,99 +468,44 @@ export default function SiteHeader({ initialSettings = null, initialLocale }: Si
       },
     ];
 
-    setCatalogMenuItems([...mainSections, ...otherSections]);
-  }, [displayLocale, mounted]);
+    return [...mainSections, ...otherSections];
+  }, [displayLocale]);
 
-  const { data: headerMenu, refetch: refetchMenu, isLoading: isLoadingMenu } = useQuery({
-    queryKey: ['menu', 'header', displayLocale, menuRefreshKey],
-    queryFn: async () => {
-      const timestamp = new Date().toISOString();
-      const currentLocale = displayLocale || getLocaleFromDOM(); // Ensure we always have a locale
-      console.log(`[SiteHeader] 🔄 [${timestamp}] Fetching menu with locale: ${currentLocale} (displayLocale: ${displayLocale})`);
-      const result = await getMenu('header', currentLocale);
-      console.log(`[SiteHeader] ✅ [${timestamp}] Received menu:`, result ? `${result.items?.length || 0} items` : 'null');
-      if (result?.items) {
-        result.items.forEach((item, i) => {
-          console.log(`[SiteHeader]   Menu item ${i + 1}: ${item.title_uz} / ${item.title_ru} (locale: ${currentLocale})`);
-        });
+  // Menu is now ONLY from JSON - no API calls needed
+  // This improves performance and ensures menu is always available
+  // Admin panel will update JSON file directly when menu changes
+  const isLoadingMenu = false; // No API call, so always false
+  
+  // Menu is from JSON only - no API calls needed
+  // Menu will automatically update when JSON file changes and frontend is rebuilt
+  // Admin panel will update JSON file directly when menu changes
+
+  // Menu ONLY from JSON (no API fallback for better performance and reliability)
+  // Don't wait for mounted - JSON is available immediately
+  const headerMenuItems = useMemo<MenuItemResponse[]>(() => {
+    // Get menu from JSON only (works on both server and client)
+    const jsonMenuItems = getHeaderMenuFromJSON(displayLocale);
+    if (jsonMenuItems.length > 0) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[SiteHeader] Using menu from JSON:', jsonMenuItems.length, 'items for locale:', displayLocale);
       }
-      return result;
-    },
-    enabled: !!displayLocale, // Don't run query until locale is set
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes - improves performance
-    gcTime: 10 * 60 * 1000, // Keep cache for 10 minutes
-    refetchOnMount: false, // Don't refetch on mount if data is fresh (locale in queryKey handles this)
-    refetchOnWindowFocus: false, // Don't refetch on window focus (avoid unnecessary requests)
-    retry: false,
-    throwOnError: false, // Don't throw errors - handle gracefully to prevent menu from disappearing
-    networkMode: 'online',
-    placeholderData: (previousData) => previousData, // Keep previous data while loading to prevent menu from disappearing
-  });
-  
-  // Log menu data when it changes
-  useEffect(() => {
-    if (headerMenu) {
-      console.log('[SiteHeader] Menu data received:', headerMenu);
-    }
-  }, [headerMenu]);
-  
-  // Optimized: Only refetch when locale actually changes
-  // Since locale is in queryKey, React Query will automatically use different cache entries
-  const refetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
-  useEffect(() => {
-    if (displayLocale && !localeChangeInProgress) {
-      // Clear any pending refetch
-      if (refetchTimeoutRef.current) {
-        clearTimeout(refetchTimeoutRef.current);
-      }
-      
-      // Only invalidate queries for the OLD locale, not all queries
-      // This preserves cache for other locales and improves performance
-      const oldLocale = displayLocale === 'uz' ? 'ru' : 'uz';
-      queryClient.invalidateQueries({ queryKey: ['menu', 'header', oldLocale] });
-      queryClient.invalidateQueries({ queryKey: ['catalogs', oldLocale] });
-      
-      // Increment refresh key to trigger refetch with new locale
-      setMenuRefreshKey(prev => prev + 1);
-      
-      // Refetch with new locale (queryKey includes displayLocale, so it will fetch fresh data)
-      refetchTimeoutRef.current = setTimeout(() => {
-        console.log('[SiteHeader] ✅ Refetching menu with locale:', displayLocale);
-        refetchMenu();
-        queryClient.refetchQueries({ queryKey: ['catalogs', displayLocale] });
-        refetchTimeoutRef.current = null;
-      }, 50); // Reduced delay for faster response
+      // Convert MenuItem to MenuItemResponse format
+      return jsonMenuItems.map((item: MenuItem) => ({
+        id: item.id,
+        title_uz: item.title_uz,
+        title_ru: item.title_ru,
+        href: item.href,
+        order: item.order,
+        children: item.children || [],
+      }));
     }
     
-    return () => {
-      if (refetchTimeoutRef.current) {
-        clearTimeout(refetchTimeoutRef.current);
-        refetchTimeoutRef.current = null;
-      }
-    };
-  }, [displayLocale, refetchMenu, queryClient, localeChangeInProgress]);
-
-  // Use useState + useEffect instead of useMemo to prevent hydration mismatch
-  const [headerMenuItems, setHeaderMenuItems] = useState<MenuItemResponse[]>([]);
-  
-  useEffect(() => {
-    // Only update menu items after component is mounted to prevent hydration mismatch
-    if (!mounted) {
-      setHeaderMenuItems([]);
-      return;
+    // If JSON is empty, return empty array (menu will not show)
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[SiteHeader] No menu items found in JSON for locale:', displayLocale);
     }
-    
-    if (headerMenu?.items?.length) {
-      const sortedItems = [...headerMenu.items].sort((a, b) => a.order - b.order);
-      console.log('[SiteHeader] Setting headerMenuItems:', sortedItems.length, 'items');
-      setHeaderMenuItems(sortedItems);
-    } else {
-      // No fallback - return empty array if backend is unavailable
-      console.log('[SiteHeader] No menu items available, setting empty array');
-      setHeaderMenuItems([]);
-    }
-  }, [headerMenu, displayLocale, mounted]);
+    return [];
+  }, [displayLocale]);
 
   const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
     '/services': Stethoscope,
@@ -386,29 +517,24 @@ export default function SiteHeader({ initialSettings = null, initialLocale }: Si
     '/branches': MapPin,
   };
 
-  const getIconForHref = (href: string) => {
+  // Optimized: Use useCallback to memoize icon getter
+  const getIconForHref = useCallback((href: string) => {
     const IconComponent = iconMap[href];
     if (!IconComponent) {
       return <MenuSquare className="h-4 w-4" />;
     }
 
     return <IconComponent className="h-4 w-4" />;
-  };
+  }, []);
 
-  // Track navItems state - mounted state already declared above
-  const [navItems, setNavItems] = useState<NavItem[]>([]);
-  
-  useEffect(() => {
-    // Don't build navItems until mounted to prevent hydration mismatch
-    if (!mounted) {
-      setNavItems([]);
-      return;
+  // Optimized: Use useMemo instead of useState + useEffect for better performance
+  const navItems = useMemo<NavItem[]>(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[SiteHeader] Building navItems with locale:', displayLocale, 'headerMenuItems:', headerMenuItems.length);
     }
     
-    console.log('[SiteHeader] Building navItems with locale:', displayLocale);
     const items = headerMenuItems.map((item) => {
       const label = getBilingualText(item.title_uz, item.title_ru, displayLocale);
-      console.log('[SiteHeader] Menu item:', { title_uz: item.title_uz, title_ru: item.title_ru, locale: displayLocale, label });
       
       // For /catalog, always use catalogs instead of menu children (categories are only for filters)
       const dropdownChildren =
@@ -440,23 +566,28 @@ export default function SiteHeader({ initialSettings = null, initialLocale }: Si
         icon: getIconForHref(item.href),
       };
     });
-    console.log('[SiteHeader] navItems built with locale:', displayLocale, 'Items count:', items.length);
-    setNavItems(items);
-  }, [headerMenuItems, catalogMenuItems, displayLocale, mounted]);
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[SiteHeader] navItems built with locale:', displayLocale, 'Items count:', items.length);
+    }
+    
+    return items;
+  }, [headerMenuItems, catalogMenuItems, displayLocale, getIconForHref]);
 
-  // Log current state for debugging
+  // Log current state for debugging (development only)
   useEffect(() => {
-    console.log('[SiteHeader] Current state:', {
-      displayLocale,
-      menuRefreshKey,
-      hasMenuData: !!headerMenu,
-      menuItemsCount: headerMenu?.items?.length || 0,
-      navItemsCount: navItems.length,
-    });
-  }, [displayLocale, menuRefreshKey, headerMenu, navItems.length]);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[SiteHeader] Current state:', {
+        displayLocale,
+        menuItemsCount: headerMenuItems.length,
+        navItemsCount: navItems.length,
+        catalogMenuItemsCount: catalogMenuItems.length,
+      });
+    }
+  }, [displayLocale, headerMenuItems.length, navItems.length, catalogMenuItems.length]);
 
   return (
-    <header className="border-b shadow-sm" key={`header-${displayLocale}-${menuRefreshKey}`} suppressHydrationWarning>
+    <header className="border-b shadow-sm" key={`header-${displayLocale}`} suppressHydrationWarning>
       <div className="bg-white" suppressHydrationWarning>
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 md:px-6" suppressHydrationWarning>
           {/* Logo - Left */}
@@ -482,30 +613,7 @@ export default function SiteHeader({ initialSettings = null, initialLocale }: Si
           </div>
 
           {/* Search Bar - Center (desktop only) */}
-          <div className="hidden flex-1 md:block">
-            <form 
-              action="/search" 
-              method="get"
-              className="relative max-w-md mx-auto"
-              onSubmit={(e) => {
-                e.preventDefault();
-                const formData = new FormData(e.currentTarget);
-                const query = formData.get('q') as string;
-                if (query && query.trim()) {
-                  window.location.href = `/search?q=${encodeURIComponent(query.trim())}`;
-                }
-              }}
-            >
-              <input
-                type="search"
-                name="q"
-                placeholder={displayLocale === 'ru' ? 'Поиск' : 'Qidiruv'}
-                className="w-full rounded-full border border-border/60 bg-white px-10 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/40"
-                suppressHydrationWarning
-              />
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            </form>
-          </div>
+          <SearchAutocomplete locale={displayLocale} />
 
           {/* Right side - Phone, Language, Menu */}
           <div className="flex items-center gap-2 md:gap-3">
@@ -548,36 +656,15 @@ export default function SiteHeader({ initialSettings = null, initialLocale }: Si
         
         {/* Search Bar - Mobile only (below header) */}
         <div className="mx-auto max-w-6xl px-4 pb-3 md:hidden">
-          <form 
-            action="/search" 
-            method="get"
-            className="relative"
-            onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.currentTarget);
-              const query = formData.get('q') as string;
-              if (query && query.trim()) {
-                window.location.href = `/search?q=${encodeURIComponent(query.trim())}`;
-              }
-            }}
-          >
-            <input
-              type="search"
-              name="q"
-              placeholder={displayLocale === 'ru' ? 'Поиск' : 'Qidiruv'}
-              className="w-full rounded-full border border-border/60 bg-white px-10 py-2 text-sm focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/40"
-              suppressHydrationWarning
-            />
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          </form>
+          <SearchAutocomplete locale={displayLocale} isMobile={true} />
         </div>
       </div>
 
       <div className="bg-brand-primary" suppressHydrationWarning>
         <div className="mx-auto hidden max-w-6xl items-center px-4 md:px-6 lg:flex" suppressHydrationWarning>
           <nav key={`nav-${displayLocale}`} className="flex w-full items-stretch min-h-[52px]" suppressHydrationWarning>
-            {!mounted || (navItems.length === 0 && (isLoadingMenu || isLoadingCatalogs) && !headerMenu) ? (
-              // Show skeleton menu items while loading to maintain layout (only if no cached data)
+            {navItems.length === 0 && isLoadingCatalogs ? (
+              // Show skeleton menu items while loading to maintain layout (only if no cached data and no fallback)
               Array.from({ length: 6 }).map((_, index) => (
                 <div
                   key={`skeleton-${index}`}
@@ -589,7 +676,7 @@ export default function SiteHeader({ initialSettings = null, initialLocale }: Si
                   </div>
                 </div>
               ))
-            ) : (
+            ) : navItems.length > 0 ? (
               navItems.map((item, index) => {
               const borderClass = index === 0 ? '' : 'border-l border-white/20';
               // Use locale in key to force remount when locale changes
@@ -644,7 +731,7 @@ export default function SiteHeader({ initialSettings = null, initialLocale }: Si
                 </Link>
               );
             })
-            )}
+            ) : null}
           </nav>
         </div>
 
@@ -658,14 +745,14 @@ export default function SiteHeader({ initialSettings = null, initialLocale }: Si
             >
               <Phone size={16} /> 1385
             </Link>
-            {!mounted || (navItems.length === 0 && (isLoadingMenu || isLoadingCatalogs) && !headerMenu) ? (
-              // Show skeleton menu items while loading for mobile (only if no cached data)
+            {navItems.length === 0 && isLoadingCatalogs ? (
+              // Show skeleton menu items while loading for mobile (only if no cached data and no fallback)
               Array.from({ length: 5 }).map((_, index) => (
                 <div key={`mobile-skeleton-${index}`} className="space-y-2 rounded-lg border border-white/20 p-3 animate-pulse" suppressHydrationWarning>
                   <div className="h-5 w-32 rounded bg-white/20"></div>
                 </div>
               ))
-            ) : (
+            ) : navItems.length > 0 ? (
               navItems.map((item) => {
               // Use locale in key to force remount when locale changes
               return item.type === 'dropdown' ? (
@@ -717,7 +804,7 @@ export default function SiteHeader({ initialSettings = null, initialLocale }: Si
                 </Link>
               );
             })
-            )}
+            ) : null}
             <LanguageSwitcherMobile initialLocale={displayLocale} />
           </nav>
         )}

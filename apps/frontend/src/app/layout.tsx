@@ -143,7 +143,7 @@ export default async function RootLayout({
         <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
         
         {/* Preload critical resources */}
-        <link rel="preload" href="/favicon.ico" as="image" />
+        {/* Favicon preload removed - handled by route */}
         
         <Script
           id="organization-jsonld"

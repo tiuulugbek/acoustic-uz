@@ -98,7 +98,7 @@ async function fetchJson<T>(
 
     // Add timeout to prevent hanging requests
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout (increased for production network latency)
 
     try {
       // Add cache-busting timestamp for all homepage endpoints, menu endpoints, and products to ensure fresh data
@@ -483,9 +483,32 @@ export const getShowcase = (type: 'interacoustics' | 'cochlear', locale?: string
   return fetchJson<ShowcaseResponse | null>(`/showcases/${type}`, locale);
 };
 
-export const getProductBySlug = (slug: string, locale?: string): Promise<ProductResponse | null> => {
-  // fetchJson already handles errors gracefully and returns null for object endpoints
-  return fetchJson<ProductResponse | null>(`/products/slug/${slug}`, locale);
+export const getProductBySlug = async (slug: string, locale?: string): Promise<ProductResponse | null> => {
+  // Try direct endpoint first
+  try {
+    const directResult = await fetchJson<ProductResponse | null>(`/products/slug/${slug}`, locale);
+    // Check if we got a result AND it has galleryUrls with at least one image
+    if (directResult && directResult.galleryUrls && directResult.galleryUrls.length > 0) {
+      return directResult;
+    }
+    // If directResult exists but has no galleryUrls, continue to fallback
+  } catch {
+    // If direct endpoint fails, continue to fallback
+  }
+  
+  // Fallback: search in products list if direct endpoint doesn't return galleryUrls
+  try {
+    const searchResult = await fetchJson<{ items: ProductResponse[]; total: number }>(`/products?slug=${slug}`, locale);
+    if (searchResult && searchResult.items && searchResult.items.length > 0) {
+      const product = searchResult.items[0];
+      // Prefer the search result if it has galleryUrls, otherwise return it anyway
+      return product;
+    }
+  } catch {
+    // Return null if both methods fail
+  }
+  
+  return null;
 };
 
 export interface ProductListParams {
@@ -883,8 +906,16 @@ export interface HearingTestRequest {
   email?: string;
   deviceType: 'speaker' | 'headphone';
   volumeLevel?: number;
-  leftEarResults: Record<string, boolean>;
-  rightEarResults: Record<string, boolean>;
+  // Frequency test results
+  leftEarResults?: Record<string, number>;
+  rightEarResults?: Record<string, number>;
+  // Digits-in-Noise test results
+  testMethod?: 'frequency' | 'digits-in-noise';
+  leftEarSRT?: number;
+  rightEarSRT?: number;
+  overallSRT?: number;
+  leftEarSINResults?: any;
+  rightEarSINResults?: any;
 }
 
 export interface HearingTestResponse {
@@ -894,8 +925,17 @@ export interface HearingTestResponse {
   email?: string | null;
   deviceType: string;
   volumeLevel?: number | null;
-  leftEarResults: Record<string, boolean>;
-  rightEarResults: Record<string, boolean>;
+  testMethod?: string | null;
+  // Frequency test results
+  leftEarResults?: Record<string, number> | null;
+  rightEarResults?: Record<string, number> | null;
+  // Digits-in-Noise test results
+  leftEarSRT?: number | null;
+  rightEarSRT?: number | null;
+  overallSRT?: number | null;
+  leftEarSINResults?: any;
+  rightEarSINResults?: any;
+  // Scores
   leftEarScore?: number | null;
   rightEarScore?: number | null;
   overallScore?: number | null;

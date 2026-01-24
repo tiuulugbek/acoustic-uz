@@ -82,7 +82,7 @@ export class ProductsService {
     const total = await this.prisma.product.count({ where });
 
     // Fetch paginated products
-    const items = await this.prisma.product.findMany({
+    let items = await this.prisma.product.findMany({
       where,
       include: { brand: true, category: true, catalogs: true },
       orderBy,
@@ -90,6 +90,32 @@ export class ProductsService {
       skip: offset,
     });
 
+
+    // Populate galleryUrls from galleryIds
+    const itemsWithUrls = await Promise.all(
+      items.map(async (item) => {
+        if (item.galleryIds && item.galleryIds.length > 0) {
+          const mediaItems = await this.prisma.media.findMany({
+            where: { id: { in: item.galleryIds } },
+            select: { id: true, url: true },
+          });
+          const urlMap = new Map(mediaItems.map((m) => [m.id, m.url]));
+          const galleryUrls = item.galleryIds
+            .map((id) => urlMap.get(id))
+            .filter((url): url is string => url !== undefined);
+          
+          return {
+            ...item,
+            galleryUrls: galleryUrls.length > 0 ? galleryUrls : (item.galleryUrls || []),
+          };
+        }
+        return {
+          ...item,
+          galleryUrls: item.galleryUrls || [],
+        };
+      })
+    );
+    items = itemsWithUrls;
     // Calculate page number (1-based)
     const pageSize = limit;
     const page = Math.floor(offset / pageSize) + 1;
@@ -153,15 +179,38 @@ export class ProductsService {
     };
   }
 
+  async generateUniqueSlug(baseSlug: string): Promise<string> {
+    let slug = baseSlug;
+    let counter = 1;
+    
+    // Check if slug exists and generate unique one
+    while (true) {
+      const existing = await this.prisma.product.findUnique({
+        where: { slug },
+        select: { id: true },
+      });
+      
+      if (!existing) {
+        return slug;
+      }
+      
+      // Slug exists, append counter
+      slug = `${baseSlug}-${counter}`;
+      counter++;
+    }
+  }
+
   async create(data: unknown) {
     const validated = productSchema.parse(data);
+
+    const uniqueSlug = await this.generateUniqueSlug(validated.slug);
 
     const catalogIds = validated.catalogIds ?? [];
     
     const createData: Prisma.ProductCreateInput = {
       name_uz: validated.name_uz,
       name_ru: validated.name_ru,
-      slug: validated.slug,
+      slug: uniqueSlug,
       description_uz: validated.description_uz ?? null,
       description_ru: validated.description_ru ?? null,
       price: validated.price ?? undefined,
@@ -265,6 +314,9 @@ export class ProductsService {
     }
     if (validated.availabilityStatus !== undefined) {
       updateData.availabilityStatus = validated.availabilityStatus ?? null;
+    }
+    if (validated.productType !== undefined) {
+      updateData.productType = validated.productType ?? null;
     }
     if (validated.intro_uz !== undefined) updateData.intro_uz = validated.intro_uz ?? null;
     if (validated.intro_ru !== undefined) updateData.intro_ru = validated.intro_ru ?? null;

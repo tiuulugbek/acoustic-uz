@@ -65,23 +65,11 @@ export function normalizeImageUrl(url: string | null | undefined): string {
   }
   
   // If relative URL starting with /uploads/, make it absolute
+  // Always use production URL for uploads since files are stored on production server
   if (url.startsWith('/uploads/')) {
-    const apiBase = import.meta.env.VITE_API_URL || 'https://a.acoustic.uz/api';
-    console.log('🔧 Normalizing relative URL:', { url, apiBase });
-    
-    // Properly extract base URL by removing /api from the end
-    let baseUrl = apiBase;
-    if (baseUrl.endsWith('/api')) {
-      baseUrl = baseUrl.slice(0, -4); // Remove '/api'
-    } else if (baseUrl.endsWith('/api/')) {
-      baseUrl = baseUrl.slice(0, -5); // Remove '/api/'
-    }
-    // Ensure baseUrl doesn't end with /
-    if (baseUrl.endsWith('/')) {
-      baseUrl = baseUrl.slice(0, -1);
-    }
-    
-    console.log('🔧 Extracted base URL:', baseUrl);
+    // Always use production URL for uploads, regardless of environment
+    // This ensures images load correctly even in local development
+    const baseUrl = 'https://a.acoustic.uz';
     
     // Encode only the filename part
     const pathParts = url.split('/');
@@ -89,12 +77,9 @@ export function normalizeImageUrl(url: string | null | undefined): string {
     if (filename) {
       const encodedFilename = encodeURIComponent(filename);
       const normalized = `${baseUrl}${pathParts.join('/')}/${encodedFilename}`;
-      console.log('🔧 Normalized URL:', normalized);
       return normalized;
     }
-    const normalized = `${baseUrl}${url}`;
-    console.log('🔧 Normalized URL (no filename):', normalized);
-    return normalized;
+    return `${baseUrl}${url}`;
   }
   
   return url;

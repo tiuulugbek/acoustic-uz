@@ -45,6 +45,7 @@ export const serviceSchema = z.object({
   body_ru: z.string().optional(),
   slug: z.string().min(1),
   coverId: z.string().cuid().optional().nullable(),
+  alternativeCoverId: z.string().cuid().optional().nullable(),
   categoryId: z.string().cuid().optional().nullable(),
   order: z.number().int().default(0),
   status: z.enum(['published', 'draft', 'archived']).default('published'),
@@ -240,8 +241,17 @@ export const hearingTestSchema = z.object({
   email: z.string().email().optional(),
   deviceType: z.enum(['speaker', 'headphone']),
   volumeLevel: z.number().min(0).max(1).optional(),
-  leftEarResults: z.record(z.string(), z.number().min(0).max(1)), // Volume levels (0-1)
-  rightEarResults: z.record(z.string(), z.number().min(0).max(1)), // Volume levels (0-1)
+  // Frequency test results (old method)
+  leftEarResults: z.record(z.string(), z.number().min(0).max(1)).optional(), // Volume levels (0-1)
+  rightEarResults: z.record(z.string(), z.number().min(0).max(1)).optional(), // Volume levels (0-1)
+  // Digits-in-Noise test results (new method)
+  testMethod: z.enum(['frequency', 'digits-in-noise']).optional().default('frequency'),
+  leftEarSRT: z.number().optional(), // SRT-50 in dB
+  rightEarSRT: z.number().optional(), // SRT-50 in dB
+  overallSRT: z.number().optional(), // Overall SRT-50 in dB
+  leftEarSINResults: z.any().optional(), // Full SIN test results
+  rightEarSINResults: z.any().optional(), // Full SIN test results
+  // Scores (calculated)
   leftEarScore: z.number().int().min(0).max(100).optional(),
   rightEarScore: z.number().int().min(0).max(100).optional(),
   overallScore: z.number().int().min(0).max(100).optional(),

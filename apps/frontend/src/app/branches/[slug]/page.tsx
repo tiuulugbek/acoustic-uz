@@ -109,12 +109,8 @@ export default async function BranchPage({ params }: BranchPageProps) {
     hasServiceIds: !!branch.serviceIds && Array.isArray(branch.serviceIds) && branch.serviceIds.length > 0,
   });
 
-  // Build image URL
-  let imageUrl = branch.image?.url || '';
-  if (imageUrl && imageUrl.startsWith('/') && !imageUrl.startsWith('//')) {
-    const baseUrl = API_BASE_URL.replace('/api', '');
-    imageUrl = `${baseUrl}${imageUrl}`;
-  }
+  // Build image URL - use normalizeImageUrl to ensure production URL
+  const imageUrl = branch.image?.url ? normalizeImageUrl(branch.image.url) : '';
 
   // Build navigation links
   const yandexNavUrl = branch.latitude && branch.longitude
@@ -153,7 +149,7 @@ export default async function BranchPage({ params }: BranchPageProps) {
     '@type': 'LocalBusiness',
     '@id': branchUrl,
     name: name,
-    image: branchImageUrl.startsWith('http') ? branchImageUrl : `${baseUrl}${branchImageUrl}`,
+    image: branchImageUrl, // normalizeImageUrl already returns full URL
     address: {
       '@type': 'PostalAddress',
       streetAddress: address,

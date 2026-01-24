@@ -7,8 +7,13 @@ import { RbacGuard } from '../common/guards/rbac.guard';
 import { RequirePermissions } from '../common/decorators/permissions.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import { diskStorage } from 'multer';
-import { extname } from 'path';
+import * as path from 'path';
 import { Response } from 'express';
+
+function getUploadsTempDir(): string {
+  const base = process.env.UPLOADS_DIR || path.join(__dirname, '..', '..', 'uploads');
+  return path.join(base, 'temp');
+}
 
 @ApiTags('public', 'admin')
 @Controller('products')
@@ -143,15 +148,15 @@ export class ProductsController {
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
-        destination: './uploads/temp',
+        destination: (req, file, cb) => cb(null, getUploadsTempDir()),
         filename: (req, file, cb) => {
           const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-          cb(null, `excel-${uniqueSuffix}${extname(file.originalname)}`);
+          cb(null, `excel-${uniqueSuffix}${path.extname(file.originalname)}`);
         },
       }),
       fileFilter: (req, file, cb) => {
         const allowedExtensions = ['.xlsx', '.xls'];
-        const ext = extname(file.originalname).toLowerCase();
+        const ext = path.extname(file.originalname).toLowerCase();
         if (allowedExtensions.includes(ext)) {
           cb(null, true);
         } else {
@@ -169,12 +174,9 @@ export class ProductsController {
     }
 
     const fs = require('fs').promises;
-    const path = require('path');
-    const uploadsDir = path.join(process.cwd(), 'uploads', 'temp');
-    
-    // Ensure uploads directory exists
+    const uploadsDir = getUploadsTempDir();
     await fs.mkdir(uploadsDir, { recursive: true }).catch(() => {});
-    
+
     const fileBuffer = await fs.readFile(file.path);
     
     try {
@@ -203,5 +205,6 @@ export class ProductsController {
     res.setHeader('Content-Disposition', 'attachment; filename="products-template.xlsx"');
     res.send(buffer);
   }
+
 }
 
