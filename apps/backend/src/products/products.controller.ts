@@ -100,7 +100,9 @@ export class ProductsController {
   @Get('admin/:id')
   @RequirePermissions('content.read')
   @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get product by ID (supports both UUID and numericId)' })
   findOne(@Param('id') id: string) {
+    // Supports both UUID (e.g., "clx123abc456") and numericId (e.g., "123")
     return this.productsService.findOne(id);
   }
 
@@ -116,7 +118,9 @@ export class ProductsController {
   @Patch(':id')
   @RequirePermissions('content.write')
   @ApiBearerAuth()
+  @ApiOperation({ summary: 'Update product by ID (supports both UUID and numericId)' })
   update(@Param('id') id: string, @Body() updateDto: unknown) {
+    // Supports both UUID (e.g., "clx123abc456") and numericId (e.g., "123")
     return this.productsService.update(id, updateDto);
   }
 
@@ -124,7 +128,9 @@ export class ProductsController {
   @Delete(':id')
   @RequirePermissions('content.write')
   @ApiBearerAuth()
+  @ApiOperation({ summary: 'Delete product by ID (supports both UUID and numericId)' })
   remove(@Param('id') id: string) {
+    // Supports both UUID (e.g., "clx123abc456") and numericId (e.g., "123")
     return this.productsService.delete(id);
   }
 

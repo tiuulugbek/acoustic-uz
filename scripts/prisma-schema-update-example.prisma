@@ -1,0 +1,102 @@
+// ============================================
+// Prisma Schema Update Example (Variant A)
+// ============================================
+// 
+// Migration'dan keyin Prisma schema'ni yangilash kerak
+// Har bir model'ga numericId maydoni qo'shiladi
+//
+// ============================================
+
+// OLD Schema (before migration):
+/*
+model Product {
+  id        String   @id @default(cuid())
+  name_uz   String
+  name_ru   String
+  // ... qolgan maydonlar
+}
+*/
+
+// NEW Schema (after migration):
+model Product {
+  id        String   @id @default(cuid())
+  numericId BigInt?  @unique @default(autoincrement()) @map("numeric_id")
+  name_uz   String
+  name_ru   String
+  // ... qolgan maydonlar
+
+  @@index([numericId])
+}
+
+model Brand {
+  id        String   @id @default(cuid())
+  numericId BigInt?  @unique @default(autoincrement()) @map("numeric_id")
+  name      String   @unique
+  slug      String   @unique
+  // ... qolgan maydonlar
+
+  @@index([numericId])
+}
+
+model Media {
+  id        String   @id @default(cuid())
+  numericId BigInt?  @unique @default(autoincrement()) @map("numeric_id")
+  url       String
+  // ... qolgan maydonlar
+
+  @@index([numericId])
+}
+
+model User {
+  id        String   @id @default(cuid())
+  numericId BigInt?  @unique @default(autoincrement()) @map("numeric_id")
+  email     String   @unique
+  // ... qolgan maydonlar
+
+  @@index([numericId])
+}
+
+model Role {
+  id        String   @id @default(cuid())
+  numericId BigInt?  @unique @default(autoincrement()) @map("numeric_id")
+  name      String   @unique
+  // ... qolgan maydonlar
+
+  @@index([numericId])
+}
+
+model Service {
+  id        String   @id @default(cuid())
+  numericId BigInt?  @unique @default(autoincrement()) @map("numeric_id")
+  title_uz  String
+  // ... qolgan maydonlar
+
+  @@index([numericId])
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  numericId BigInt?  @unique @default(autoincrement()) @map("numeric_id")
+  title_uz  String
+  // ... qolgan maydonlar
+
+  @@index([numericId])
+}
+
+// ... boshqa barcha modellar uchun ham shunday
+
+// ============================================
+// Migration Command:
+// ============================================
+// 
+// 1. Schema'ni yangilang (yuqoridagi kabi)
+// 2. Prisma client'ni generate qiling:
+//    npx prisma generate
+// 
+// 3. Migration yaratish (optional, chunki SQL allaqachon ishlatilgan):
+//    npx prisma migrate dev --name add_numeric_id
+// 
+//    Yoki faqat schema'ni sync qiling:
+//    npx prisma db push
+//
+// ============================================

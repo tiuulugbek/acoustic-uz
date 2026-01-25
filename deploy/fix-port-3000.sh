@@ -1,57 +1,42 @@
 #!/bin/bash
+# Port 3000'ni faqat bu proekt uchun qulay qilish
 
-# Port 3000 muammosini hal qilish
+echo "=== Port 3000'ni tekshirish va tuzatish ==="
 
-set -e
+# 1. Port 3000'ni ishlatayotgan process'larni to'xtatish
+echo "1. Port 3000'ni ishlatayotgan process'larni to'xtatish..."
+lsof -ti:3000 2>/dev/null | xargs kill -9 2>/dev/null
+fuser -k 3000/tcp 2>/dev/null
+pkill -f "next.*3000" 2>/dev/null
+sleep 2
 
-cd /var/www/news.acoustic.uz
-
-echo "🔧 Port 3000 muammosini hal qilish..."
-
-# 1. Port 3000 ni ishlatayotgan processlarni topish
-echo "📋 Port 3000 ni ishlatayotgan processlar:"
-lsof -ti:3000 2>/dev/null || echo "Port 3000 bo'sh"
-
-# 2. Port 3000 ni ishlatayotgan processlarni to'xtatish
-echo "🛑 Port 3000 ni ishlatayotgan processlarni to'xtatish..."
-lsof -ti:3000 | xargs kill -9 2>/dev/null || echo "Hech qanday process topilmadi"
-
-# 3. PM2 frontend ni to'xtatish
-echo "🛑 PM2 frontend ni to'xtatish..."
-pm2 delete acoustic-frontend 2>/dev/null || true
-
-# 4. Boshqa frontend processlarni to'xtatish
-echo "🛑 Boshqa frontend processlarni to'xtatish..."
-pkill -f "frontend.*server.js" 2>/dev/null || true
-pkill -f "node.*3000" 2>/dev/null || true
-
-# 5. Kichik kutish
-echo "⏳ 3 soniya kutish..."
-sleep 3
-
-# 6. Port 3000 ni qayta tekshirish
-echo "📋 Port 3000 ni qayta tekshirish..."
-if lsof -ti:3000 >/dev/null 2>&1; then
-    echo "⚠️ Port 3000 hali ham ishlatilmoqda!"
-    lsof -i:3000
-    echo "Qo'lda to'xtatish kerak: kill -9 \$(lsof -ti:3000)"
-    exit 1
+# 2. Port 3000'ni tekshirish
+echo "2. Port 3000'ni tekshirish..."
+if netstat -tuln 2>/dev/null | grep -q ":3000 " || ss -tuln 2>/dev/null | grep -q ":3000 "; then
+    echo "⚠️ Port 3000 hali ham band"
+    netstat -tulpn 2>/dev/null | grep :3000 || ss -tulpn 2>/dev/null | grep :3000
 else
-    echo "✅ Port 3000 bo'sh!"
+    echo "✅ Port 3000 bo'sh"
 fi
 
-# 7. PM2 frontend ni qayta ishga tushirish
-echo "🚀 PM2 frontend ni qayta ishga tushirish..."
-pm2 start deploy/ecosystem.config.js --only acoustic-frontend
+# 3. Node.js'ni tekshirish
+echo "3. Node.js'ni tekshirish..."
+NODE_PATH=$(which node)
+if [ -n "$NODE_PATH" ]; then
+    echo "✅ Node.js topildi: $NODE_PATH"
+    getcap "$NODE_PATH" 2>/dev/null || echo "⚠️ Capabilities yo'q"
+else
+    echo "❌ Node.js topilmadi"
+fi
 
-# 8. PM2 statusini ko'rsatish
-echo "📊 PM2 status:"
-pm2 status
+# 4. Test qilish
+echo "4. Test qilish..."
+cd /root/acoustic.uz/apps/frontend
+export NODE_ENV=production
+export PORT=3000
+export NEXT_PUBLIC_API_URL=https://a.acoustic.uz/api
+export NEXT_PUBLIC_SITE_URL=https://acoustic.uz
 
-# 9. PM2 frontend loglarini ko'rish (10 soniya)
-echo "📋 PM2 frontend loglari (10 soniya):"
-timeout 10 pm2 logs acoustic-frontend --lines 30 || true
+timeout 5 node_modules/.bin/next start 2>&1 | head -10 || echo "Test yakunlandi"
 
-echo "✅ Port 3000 muammosi hal qilindi!"
-
-
+echo "=== Tugadi ==="

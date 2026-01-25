@@ -1,0 +1,99 @@
+[
+  {
+    "name_uz": "Oticon More 1",
+    "name_ru": "Oticon More 1",
+    "slug": "oticon-more-1",
+    "description_uz": "Zamonaviy eshitish apparati bolalar uchun. Yuqori sifatli signal qayta ishlash texnologiyasi.",
+    "description_ru": "Современный слуховой аппарат для детей. Высококачественная технология обработки сигнала.",
+    "price": 15000000,
+    "productType": "hearing-aids",
+    "brandName": "Oticon",
+    "intro_uz": "Oticon More 1 - bolalar uchun maxsus yaratilgan eshitish apparati",
+    "intro_ru": "Oticon More 1 - слуховой аппарат, специально созданный для детей",
+    "features_uz": [
+      "Bolalar uchun maxsus dizayn",
+      "Yuqori sifatli signal qayta ishlash",
+      "Smartfon bilan integratsiya"
+    ],
+    "features_ru": [
+      "Специальный дизайн для детей",
+      "Высококачественная обработка сигнала",
+      "Интеграция со смартфоном"
+    ],
+    "benefits_uz": [
+      "Tabiiy eshitish tajribasi",
+      "Shovqinni kamaytirish",
+      "Qulay foydalanish"
+    ],
+    "benefits_ru": [
+      "Естественный слуховой опыт",
+      "Снижение шума",
+      "Удобное использование"
+    ],
+    "tech_uz": "BrainHearing texnologiyasi - miyani eshitish jarayonida qo'llab-quvvatlaydi",
+    "tech_ru": "Технология BrainHearing - поддерживает мозг в процессе слушания",
+    "specsText": "Quvvat: Yuqori\nSignal qayta ishlash: BrainHearing\nBog'lanish: Bluetooth",
+    "galleryUrls": [
+      "https://example.com/images/oticon-more-1-1.jpg",
+      "https://example.com/images/oticon-more-1-2.jpg"
+    ],
+    "thumbnailUrl": "https://example.com/images/oticon-more-1-thumb.jpg",
+    "audience": ["children"],
+    "formFactors": ["bte"],
+    "signalProcessing": "BrainHearing",
+    "powerLevel": "High",
+    "hearingLossLevels": ["mild", "moderate"],
+    "smartphoneCompatibility": ["iOS", "Android"],
+    "paymentOptions": ["cash", "installment"],
+    "availabilityStatus": "in-stock",
+    "tinnitusSupport": true
+  },
+  {
+    "name_uz": "Phonak Audéo Lumity",
+    "name_ru": "Phonak Audéo Lumity",
+    "slug": "phonak-audeo-lumity",
+    "description_uz": "Keksalar uchun qulay va zamonaviy eshitish apparati. Avtomatik sozlamalar bilan.",
+    "description_ru": "Удобный и современный слуховой аппарат для пожилых. С автоматическими настройками.",
+    "price": 17500000,
+    "productType": "hearing-aids",
+    "brandName": "Phonak",
+    "intro_uz": "Phonak Audéo Lumity - keksalar uchun ideal yechim",
+    "intro_ru": "Phonak Audéo Lumity - идеальное решение для пожилых",
+    "features_uz": [
+      "Avtomatik sozlamalar",
+      "Shovqinni kamaytirish",
+      "Kuchli batareya"
+    ],
+    "features_ru": [
+      "Автоматические настройки",
+      "Снижение шума",
+      "Мощная батарея"
+    ],
+    "benefits_uz": [
+      "Oson foydalanish",
+      "Uzoq ishlash muddati",
+      "Qulay dizayn"
+    ],
+    "benefits_ru": [
+      "Легкое использование",
+      "Длительный срок работы",
+      "Удобный дизайн"
+    ],
+    "tech_uz": "AutoSense OS - avtomatik muhitni aniqlash va sozlash",
+    "tech_ru": "AutoSense OS - автоматическое определение и настройка окружения",
+    "specsText": "Quvvat: O'rta\nSignal qayta ishlash: AutoSense OS\nBog'lanish: Bluetooth",
+    "galleryUrls": [
+      "https://example.com/images/phonak-lumity-1.jpg"
+    ],
+    "thumbnailUrl": "https://example.com/images/phonak-lumity-thumb.jpg",
+    "audience": ["elderly"],
+    "formFactors": ["bte", "ite"],
+    "signalProcessing": "AutoSense OS",
+    "powerLevel": "Medium",
+    "hearingLossLevels": ["moderate", "severe"],
+    "smartphoneCompatibility": ["iOS", "Android"],
+    "paymentOptions": ["cash", "installment"],
+    "availabilityStatus": "in-stock",
+    "tinnitusSupport": false
+  }
+]

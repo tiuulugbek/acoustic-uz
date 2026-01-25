@@ -4,7 +4,7 @@
   "description": "Backend API for acoustic.uz",
   "scripts": {
     "postinstall": "node postinstall.js",
-    "build": "tsc",
+    "build": "tsc && node postbuild.js",
     "build:nest": "pnpm exec nest build",
     "dev": "pnpm exec nest start --watch",
     "start": "node dist/main",

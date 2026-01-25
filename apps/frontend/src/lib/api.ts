@@ -522,7 +522,6 @@ export interface ProductListParams {
   formFactor?: string;
   signalProcessing?: string;
   powerLevel?: string;
-  hearingLossLevel?: string;
   smartphoneCompatibility?: string;
   paymentOption?: string;
   availabilityStatus?: string;
@@ -550,7 +549,6 @@ export const getProducts = (params?: ProductListParams, locale?: string): Promis
   if (params?.formFactor) query.set('formFactor', params.formFactor);
   if (params?.signalProcessing) query.set('signalProcessing', params.signalProcessing);
   if (params?.powerLevel) query.set('powerLevel', params.powerLevel);
-  if (params?.hearingLossLevel) query.set('hearingLossLevel', params.hearingLossLevel);
   if (params?.smartphoneCompatibility) query.set('smartphoneCompatibility', params.smartphoneCompatibility);
   if (params?.paymentOption) query.set('paymentOption', params.paymentOption);
   if (params?.availabilityStatus) query.set('availabilityStatus', params.availabilityStatus);

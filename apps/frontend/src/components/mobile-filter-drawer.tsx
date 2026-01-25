@@ -16,7 +16,6 @@ interface MobileFilterDrawerProps {
     formFactor?: string;
     signalProcessing?: string;
     powerLevel?: string;
-    hearingLossLevel?: string;
     smartphoneCompatibility?: string;
   };
 }
@@ -44,7 +43,6 @@ export default function MobileFilterDrawer({ locale, brandTabs, searchParams }: 
     searchParams.formFactor,
     searchParams.signalProcessing,
     searchParams.powerLevel,
-    searchParams.hearingLossLevel,
     searchParams.smartphoneCompatibility,
   ].filter(Boolean).length;
 

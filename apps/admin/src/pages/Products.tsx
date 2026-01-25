@@ -29,14 +29,14 @@ import {
   updateProduct,
   deleteProduct,
   getBrands,
-  getProductCategoriesAdmin,
+  // getProductCategoriesAdmin, // Kategoriya o'chirildi
   getPosts,
   getCatalogs,
   type ProductDto,
   type CreateProductPayload,
   type UpdateProductPayload,
   type BrandDto,
-  type ProductCategoryDto,
+  // type ProductCategoryDto, // Kategoriya o'chirildi
   type PostDto,
   type CatalogDto,
   ApiError,
@@ -220,10 +220,11 @@ export default function ProductsPage() {
     queryFn: getBrands,
   });
 
-  const { data: categories } = useQuery<ProductCategoryDto[], ApiError>({
-    queryKey: ['product-categories-admin'],
-    queryFn: getProductCategoriesAdmin,
-  });
+  // Kategoriya query o'chirildi - Korpus turi (formFactors) ishlatiladi
+  // const { data: categories } = useQuery<ProductCategoryDto[], ApiError>({
+  //   queryKey: ['product-categories-admin'],
+  //   queryFn: getProductCategoriesAdmin,
+  // });
 
   const { data: posts } = useQuery<PostDto[], ApiError>({
     queryKey: ['posts'],
@@ -362,7 +363,7 @@ export default function ProductsPage() {
       price: product.price ? Number(product.price) : undefined,
       stock: product.stock ?? undefined,
       brandId: product.brandId ?? product.brand?.id ?? undefined,
-      categoryId: product.categoryId ?? product.category?.id ?? undefined,
+      // categoryId o'chirildi - Korpus turi (formFactors) ishlatiladi
       status: product.status,
       specsText: product.specsText ?? undefined,
       galleryIds: product.galleryIds ?? [],
@@ -414,7 +415,7 @@ export default function ProductsPage() {
             ? Number(values.stock)
             : undefined,
         brandId: values.brandId || undefined,
-        categoryId: values.categoryId || undefined,
+        // categoryId o'chirildi - Korpus turi (formFactors) ishlatiladi
         catalogIds: values.catalogIds || [],
         status: values.status,
         specsText: values.specsText || undefined,
@@ -463,11 +464,6 @@ export default function ProductsPage() {
             {record.name_ru ? <div style={{ fontSize: 12, color: '#6b7280' }}>{record.name_ru}</div> : null}
           </div>
         ),
-      },
-      {
-        title: 'Kategoriya',
-        key: 'category',
-        render: (_, record) => record.category?.name_uz ?? '—',
       },
       {
         title: 'Kataloglar',
@@ -532,7 +528,7 @@ export default function ProductsPage() {
   );
 
   const brandOptions = (brands ?? []).map((brand) => ({ value: brand.id, label: brand.name }));
-  const categoryOptions = (categories ?? []).map((category) => ({ value: category.id, label: category.name_uz }));
+  // categoryOptions o'chirildi - Korpus turi (formFactors) ishlatiladi
   const catalogOptions = (catalogs ?? []).map((catalog) => ({ value: catalog.id, label: `${catalog.name_uz}${catalog.name_ru ? ` (${catalog.name_ru})` : ''}` }));
 
   return (
@@ -643,17 +639,6 @@ export default function ProductsPage() {
           </Row>
 
           <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item label="Kategoriya" name="categoryId">
-                <Select
-                  allowClear
-                  placeholder="Kategoriyani tanlang"
-                  options={categoryOptions}
-                  showSearch
-                  optionFilterProp="label"
-                />
-              </Form.Item>
-            </Col>
             <Col span={12}>
               <Form.Item label="Holat" name="status">
                 <Select options={statusOptions} />

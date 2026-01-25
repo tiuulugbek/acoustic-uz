@@ -1,0 +1,12 @@
+[
+  {
+    "name_uz": "Mahsulot nomi (o'zbek)",
+    "name_ru": "Название продукта (русский)"
+  },
+  {
+    "name_uz": "Ikkinchi mahsulot",
+    "name_ru": "Второй продукт",
+    "price": 20000000,
+    "brandName": "Oticon"
+  }
+]
